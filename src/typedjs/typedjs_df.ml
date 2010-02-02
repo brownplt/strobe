@@ -2,7 +2,7 @@ open Prelude
 open Typedjs_anf
 open Typedjs_dfLattice
 
-type bound_id = id * Lexing.position
+type bound_id = id * pos
 
 module BoundIdOrdered = struct
   type t = bound_id

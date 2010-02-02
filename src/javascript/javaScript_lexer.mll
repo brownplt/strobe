@@ -25,7 +25,8 @@ let parse_num_lit (s : string) (l : pos) : token =
                   then Float (l,float_of_string s)
                   else Int (l,int_of_string s)
 
-let mk_loc buf = Lexing.lexeme_start_p buf
+let mk_loc (buf : lexbuf) : pos =
+  Lexing.lexeme_start_p buf, Lexing.lexeme_end_p buf
 
 let comments : (pos * string) list ref = ref []
 
@@ -78,7 +79,7 @@ let single_quoted_string_char =
 rule token = parse
    | blank + { token lexbuf }
    | '\n' { new_line lexbuf; token lexbuf }
-   | "/*" { block_comment_pos := mk_loc lexbuf; block_comment lexbuf }
+   | "/*" { block_comment_pos := lexeme_start_p lexbuf; block_comment lexbuf }
    | "//" { line_comment lexbuf }
 
    (* ContinueId and BreakId are tokens for labelled break and continue.  They
@@ -184,7 +185,8 @@ rule token = parse
 
 and block_comment = parse
     "*/" 
-      { new_comment !block_comment_pos (Buffer.contents block_comment_buf);
+      { new_comment (!block_comment_pos, lexeme_end_p lexbuf)
+          (Buffer.contents block_comment_buf);
         Buffer.clear block_comment_buf;
         token lexbuf }
   | '*'

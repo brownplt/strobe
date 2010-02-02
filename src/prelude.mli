@@ -1,6 +1,6 @@
 type id = string
 
-type pos = Lexing.position
+type pos = Lexing.position * Lexing.position
 
 module IdSet : Set.S 
   with type elt = id
@@ -10,17 +10,17 @@ module IdSetExt : SetExt.S
   and type t = IdSet.t
 
 module PosSet : Set.S 
-  with type elt = Lexing.position
+  with type elt = pos
 
 module PosSetExt : SetExt.S 
-  with type elt = Lexing.position 
+  with type elt = pos
   and type t = PosSet.t
 
 module PosMap : Map.S
-  with type key = Lexing.position
+  with type key = pos
 
 module PosMapExt : MapExt.S
-  with type key = Lexing.position
+  with type key = pos
   with type +'a t = 'a PosMap.t
 
 module IdMap : Map.S
@@ -39,7 +39,7 @@ val map : ('a -> 'b) -> 'a list -> 'b list
 
 val second2 : ('b -> 'c) -> 'a * 'b -> 'a * 'c
 
-val string_of_position : Lexing.position -> string
+val string_of_position : pos -> string
 
 val snd3 : 'a * 'b * 'c -> 'b
 

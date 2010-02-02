@@ -13,7 +13,7 @@ open Typedjs_syntax
 open Exprjs_syntax
 open Typedjs_types
 
-let type_from_comment (pos, str) =
+let type_from_comment ((pos, end_p), str) =
   let lexbuf = Lexing.from_string str in
     lexbuf.Lexing.lex_start_p <- pos;
     lexbuf.Lexing.lex_curr_p <- pos;

@@ -91,7 +91,7 @@ let rec aborts (expr : 'a expr) : bool = match expr with
 module S = JavaScript_syntax
 module L = List
 
-let dum = Lexing.dummy_pos
+let dum = (Lexing.dummy_pos, Lexing.dummy_pos)
 
 let infix_of_assignOp op = match op with
     S.OpAssignAdd -> S.OpAdd

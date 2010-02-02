@@ -2,7 +2,8 @@ open Lexing
 
 type id = string
 
-type pos = Lexing.position
+(** We track the start and end position of each syntactic form. *)
+type pos = Lexing.position * Lexing.position 
 
 module IdOrderedType = struct
   type t = id
@@ -11,17 +12,10 @@ end
 
 module PosOrderedType = struct
 
-  type t = Lexing.position
+  type t = pos
 
-  let compare p1 p2 = match p1.pos_fname = p2.pos_fname with
-      true -> (match p1.pos_bol - p2.pos_bol with
-                   0 -> p1.pos_cnum - p2.pos_cnum
-                 | n -> n)
-    | false -> 
-        failwith (Format.sprintf 
-                    "cannot compare positions from different sources: %s and %s"
-                    p1.pos_fname p2.pos_fname)
-    
+  let compare = Pervasives.compare
+   
 end
 
 module IdSet = Set.Make (IdOrderedType)
@@ -52,7 +46,7 @@ let sprintf = Printf.sprintf
 
 let second2 f (a, b) = (a, f b)
 
-let string_of_position p = 
+let string_of_position (p, _) = 
   Format.sprintf "%s:%d:%d" p.pos_fname p.pos_lnum (p.pos_cnum - p.pos_bol)
 
 let snd3 (a, b, c) = b
