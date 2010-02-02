@@ -35,7 +35,7 @@ let new_comment (p : pos) (c : string) =
 
 let block_comment_buf = Buffer.create 120
 
-let block_comment_pos = ref dummy_pos
+let comment_start_p = ref dummy_pos
 
 }
 
@@ -79,8 +79,8 @@ let single_quoted_string_char =
 rule token = parse
    | blank + { token lexbuf }
    | '\n' { new_line lexbuf; token lexbuf }
-   | "/*" { block_comment_pos := lexeme_start_p lexbuf; block_comment lexbuf }
-   | "//" { line_comment lexbuf }
+   | "/*" { comment_start_p := lexeme_start_p lexbuf; block_comment lexbuf }
+   | "//" { comment_start_p := lexeme_start_p lexbuf; line_comment lexbuf }
 
    (* ContinueId and BreakId are tokens for labelled break and continue.  They
     * include their target label.
@@ -185,7 +185,7 @@ rule token = parse
 
 and block_comment = parse
     "*/" 
-      { new_comment (!block_comment_pos, lexeme_end_p lexbuf)
+      { new_comment (!comment_start_p, lexeme_end_p lexbuf)
           (Buffer.contents block_comment_buf);
         Buffer.clear block_comment_buf;
         token lexbuf }
@@ -202,4 +202,4 @@ and block_comment = parse
 
 and line_comment = parse
     ([^ '\n' '\r'])* as x
-      { new_comment (mk_loc lexbuf) x; token lexbuf }
+      { new_comment (!comment_start_p, lexeme_end_p lexbuf) x; token lexbuf }
