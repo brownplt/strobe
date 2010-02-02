@@ -1,0 +1,338 @@
+open Prelude
+
+(* TODO: actually use these *)
+type op1 =
+    OPrefix of JavaScript_syntax.prefixOp    
+
+type op2 = 
+    OInfix of JavaScript_syntax.infixOp
+
+type 'a expr
+  = StringExpr of 'a * string
+  | RegexpExpr of 'a * string * bool * bool
+  | NumExpr of 'a * float
+  | IntExpr of 'a * int
+  | BoolExpr of 'a * bool
+  | NullExpr of 'a
+  | ArrayExpr of 'a * 'a expr list
+  (** Object properties are transformed into string literals *)
+  | ObjectExpr of 'a * (string * 'a expr) list
+  | ThisExpr of 'a
+  | VarExpr of 'a * id
+  | BracketExpr of 'a * 'a expr * 'a expr
+  | NewExpr of 'a * 'a expr * 'a expr list
+  | PrefixExpr of 'a * JavaScript_syntax.prefixOp * 'a expr
+  | InfixExpr of 'a * JavaScript_syntax.infixOp * 'a expr * 'a expr
+  | IfExpr of 'a * 'a expr * 'a expr * 'a expr
+  | AssignExpr of 'a * 'a lvalue * 'a expr
+  | AppExpr of 'a * 'a expr * 'a expr list
+  | FuncExpr of 'a * id list * 'a expr
+  | UndefinedExpr of 'a
+  (* let-expressions are needed to simplify statements *)
+  | LetExpr of 'a * id * 'a expr * 'a expr
+  | SeqExpr of 'a * 'a expr * 'a expr
+  | WhileExpr of 'a * 'a expr * 'a expr
+  | LabelledExpr of 'a * id * 'a expr
+  | BreakExpr of 'a * id * 'a expr
+  | ForInExpr of 'a * id * 'a expr * 'a expr
+  (* We do not transform VarDeclStmts to let-bindings, yet *)
+  | VarDeclExpr of 'a * id * 'a expr
+  | TryCatchExpr of 'a * 'a expr * id * 'a expr
+  | TryFinallyExpr of 'a * 'a expr * 'a expr
+  | ThrowExpr of 'a * 'a expr
+  (** We leave function statements in place so that they may be lifted.
+      However, we transform the body into an expression *)
+  | FuncStmtExpr of 'a * id * id list * 'a expr
+
+and 'a lvalue =
+    VarLValue of 'a * id
+  | PropLValue of 'a * 'a expr * 'a expr
+
+(******************************************************************************)
+
+let rec aborts (expr : 'a expr) : bool = match expr with
+   StringExpr _ -> false
+  | RegexpExpr _ -> false
+  | NumExpr _ -> false
+  | IntExpr _ -> false
+  | BoolExpr _ -> false
+  | NullExpr _ -> false
+  | ArrayExpr (_, es) -> List.exists aborts es
+  | ObjectExpr (_, ps) -> List.exists (fun (_, e) -> aborts e) ps
+  | ThisExpr _ -> false
+  | VarExpr _ -> false
+  | BracketExpr (_, e1, e2) -> aborts e1 || aborts e2
+  | NewExpr (_, c, args) -> List.exists aborts (c :: args)
+      (* JavaScript's operators never signal exceptions--right? *)
+  | PrefixExpr (_, _, e) -> aborts e
+  | InfixExpr (_, _, e1, e2) -> aborts e1 || aborts e2
+  | IfExpr (_, e1, e2, e3) -> aborts e1 || (aborts e2 && aborts e3)
+  | AssignExpr (_, VarLValue _, e) -> aborts e
+  | AssignExpr (_, PropLValue (_, e1, e2), e3) ->
+      aborts e1 || aborts e2 || aborts e3
+  | AppExpr (_, f, args) -> List.exists aborts (f :: args)
+  | FuncExpr _  -> false
+  | UndefinedExpr _ -> false
+  | LetExpr (_, _, e1, e2) -> aborts e1 || aborts e2
+  | SeqExpr (_, e1, e2) -> aborts e1 || aborts e2
+  | WhileExpr (_, e1, e2) -> aborts e1 || aborts e2
+  | LabelledExpr (_, _, e) -> aborts e
+  | BreakExpr _ -> true
+  | ForInExpr (_, _, e1, e2) -> aborts e1 || aborts e2
+  (* We do not transform VarDeclStmts to let-bindings, yet *)
+  | VarDeclExpr (_, _, e) -> aborts e 
+  | TryCatchExpr (_, e1, _, e2) -> aborts e1 || aborts e2
+  | TryFinallyExpr (_, _, e2) -> aborts e2
+  | ThrowExpr (_, e) -> aborts e
+  | FuncStmtExpr _ -> false
+
+(******************************************************************************)
+
+module S = JavaScript_syntax
+module L = List
+
+let dum = Lexing.dummy_pos
+
+let infix_of_assignOp op = match op with
+    S.OpAssignAdd -> S.OpAdd
+  | S.OpAssignSub -> S.OpSub
+  | S.OpAssignMul -> S.OpMul
+  | S.OpAssignDiv -> S.OpDiv
+  | S.OpAssignMod -> S.OpMod
+  | S.OpAssignLShift -> S.OpLShift
+  | S.OpAssignSpRShift -> S.OpSpRShift
+  | S.OpAssignZfRShift -> S.OpZfRShift
+  | S.OpAssignBAnd -> S.OpBAnd
+  | S.OpAssignBXor -> S.OpBXor
+  | S.OpAssignBOr -> S.OpBOr
+  | S.OpAssign -> failwith "infix_of_assignOp applied to OpAssign"
+
+(** [seq a e1 e2] removes dead code from [SeqExpr] (code after a break) and
+    rearranges sequences so that nested [SeqExpr]s are on the right. However,
+    it breaks the syntactic compositionality that \JS touts. *)
+let rec seq a e1 e2 = 
+  if aborts e1 then e1
+  else (match e1 with
+          | SeqExpr (a', e11, e12) -> SeqExpr (a, e11, seq a' e12 e2)
+          | _ -> SeqExpr (a, e1, e2))
+
+let rec expr (e : 'a S.expr) = match e with
+    S.StringExpr (a,s) -> StringExpr (a,s)
+  | S.RegexpExpr (a,re,g,i) -> RegexpExpr (a,re,g,i)
+  | S.NumExpr (a,f) -> NumExpr (a,f)
+  | S.IntExpr (a,n) -> IntExpr (a,n)
+  | S.BoolExpr (a,b) -> BoolExpr (a,b)
+  | S.NullExpr a -> NullExpr a
+  | S.ArrayExpr (a,es) -> ArrayExpr (a,L.map expr es)
+  | S.ObjectExpr (a,ps) -> ObjectExpr (a,L.map prop ps)
+  | S.ThisExpr a -> ThisExpr a
+  | S.VarExpr (a,x) -> VarExpr (a,x)
+  | S.DotExpr (a,e,x) -> BracketExpr (a, expr e, StringExpr (a, x))
+  | S.BracketExpr (a,e1,e2) -> BracketExpr (a,expr e1,expr e2)
+  | S.NewExpr (a,e,es) -> NewExpr (a,expr e,L.map expr es)
+  | S.PrefixExpr (a,op,e) -> PrefixExpr (a,op,expr e)
+  | S.UnaryAssignExpr (a, op, lv) ->
+      let func (lv, e) = 
+        (match op with
+             S.PrefixInc ->
+               seq a
+                 (AssignExpr 
+                    (a, lv, InfixExpr (dum, S.OpAdd, e, IntExpr (dum, 1))))
+                 e
+           | S.PrefixDec ->
+               seq
+                 a
+                 (AssignExpr 
+                    (a, lv, InfixExpr (dum, S.OpSub, e, IntExpr (dum, 1))))
+                  e
+           | S.PostfixInc ->
+               LetExpr
+                 (dum, "%postfixinc", e,
+                  seq a
+                    (AssignExpr 
+                       (a, lv, InfixExpr 
+                          (* TODO: use numeric addition with casts. *)
+                          (dum, S.OpAdd, VarExpr (dum, "%postfixinc"), 
+                           IntExpr (dum, 1))))
+                    (VarExpr (dum, "%postfixinc")))
+           | S.PostfixDec ->
+               LetExpr
+                 (dum, "%postfixdec", e,
+                  seq a
+                    (AssignExpr 
+                       (a, lv, InfixExpr 
+                          (* TODO use numeric subtraction with casts *)
+                          (dum, S.OpSub, VarExpr (dum, "%prefixinc"), 
+                           IntExpr (dum, 1))))
+                       (VarExpr (dum, "%prefixinc"))))
+         in eval_lvalue lv func
+  | S.InfixExpr (a,op,e1,e2) -> InfixExpr (a,op,expr e1,expr e2)
+  | S.IfExpr (a,e1,e2,e3) -> IfExpr (a,expr e1,expr e2,expr e3)
+  | S.AssignExpr (a,S.OpAssign,lv,e) -> AssignExpr (a,lvalue lv,expr e)
+  | S.AssignExpr (a,op,lv,e) -> 
+      let body_fn (lv,lv_e) = 
+        AssignExpr (a,lv,InfixExpr (dum,infix_of_assignOp op,lv_e,expr e))
+      in eval_lvalue lv body_fn
+  | S.ParenExpr (_,e) -> expr e
+  | S.ListExpr (a,e1,e2) -> seq a (expr e1) (expr e2)
+  | S.CallExpr (a,func,args) -> AppExpr (a,expr func,L.map expr args)
+  | S.FuncExpr (a,args,body) ->
+      FuncExpr (a,args,LabelledExpr (a,"%return",stmt body))
+  | S.UndefinedExpr a -> UndefinedExpr a
+  | S.NamedFuncExpr (a,name,args,body) ->
+      let anonymous_func = 
+        FuncExpr (a,args,LabelledExpr (a,"%return",stmt body)) in
+      LetExpr (dum,name,UndefinedExpr dum,
+               seq dum
+                 (AssignExpr (dum,
+                              VarLValue (dum,name),anonymous_func))
+                 (VarExpr (dum,name)))
+                        
+and lvalue (lv : 'a S.lvalue) = match lv with
+    S.VarLValue (a,x) -> VarLValue (a,x)
+  | S.DotLValue (a,e,x) -> PropLValue (a,expr e,StringExpr (dum,x))
+  | S.BracketLValue (a,e1,e2) -> PropLValue (a,expr e1,expr e2)
+
+and stmt (s : 'a S.stmt) = match s with 
+    S.BlockStmt (a,[]) -> UndefinedExpr a
+  | S.BlockStmt (a,s1::ss) -> seq a (stmt s1) (stmt (S.BlockStmt (dum, ss)))
+  | S.EmptyStmt a -> UndefinedExpr a
+  | S.IfStmt (a,e,s1,s2) -> IfExpr (a,expr e,stmt s1,stmt s2)
+  | S.IfSingleStmt (a,e,s) -> IfExpr (a,expr e,stmt s,UndefinedExpr dum)
+  | S.SwitchStmt (p,e,clauses) ->
+      LetExpr (p,"%v",expr e,
+               LetExpr (dum,"%t",BoolExpr (dum,false),caseClauses clauses))
+  | S.LabelledStmt (p1, lbl ,S.WhileStmt (p2, test, body)) -> LabelledExpr 
+        (dum, "%break", LabelledExpr
+           (p1,lbl,WhileExpr
+              (p2,expr test,LabelledExpr 
+                 (dum,"%continue",LabelledExpr
+                    (dum,"%continue-"^lbl,stmt body)))))
+                             
+                                             
+  | S.WhileStmt (p,test,body) -> LabelledExpr
+        (dum,"%break",WhileExpr 
+           (p,expr test,LabelledExpr 
+              (dum,"%continue",stmt body)))
+  (* TODO: | S.DoWhileStmt (p,body,test) -> *)
+  | S.BreakStmt a -> BreakExpr (a,"%break",UndefinedExpr dum)
+  | S.BreakToStmt (a,lbl) -> BreakExpr (a,lbl,UndefinedExpr dum)
+  | S.ContinueStmt a -> BreakExpr (a,"%continue",UndefinedExpr dum)
+  | S.ContinueToStmt (a,lbl) -> BreakExpr (a,"%continue-"^lbl,UndefinedExpr dum)
+  | S.FuncStmt (a, f, args, s) -> 
+      FuncStmtExpr (a, f, args, LabelledExpr (dum, "%return", stmt s))
+  | S.ExprStmt e -> expr e
+  | S.ThrowStmt (a, e) -> ThrowExpr (a, expr e)
+  | S.ReturnStmt (a, e) -> BreakExpr (a, "%return", expr e)
+  | S.WithStmt _ -> failwith "we do not account for with statements"
+  | S.TryStmt (a, body, catches, finally) ->
+      let f body (S.CatchClause (a, x, s)) = TryCatchExpr (a, body, x, stmt s)
+      in TryFinallyExpr (a, fold_left f (stmt body) catches, stmt finally)
+  | S.ForStmt (a, init, incr, stop, body) ->
+      seq a
+        (forInit init)
+        (LabelledExpr 
+           (dum, "%break",
+            WhileExpr 
+              (dum, expr stop, 
+               seq a
+                 (LabelledExpr (dum, "%continue", stmt body))
+                 (expr incr))))
+  | S.VarDeclStmt (a, decls) -> varDeclList decls
+
+and forInit (fi : 'a S.forInit) = match fi with
+    S.NoForInit -> UndefinedExpr dum
+  | S.ExprForInit e -> expr e
+  | S.VarForInit decls -> varDeclList decls
+
+and varDeclList decls = match decls with
+    [] -> UndefinedExpr dum
+  | [d] -> varDecl d
+  | d :: ds -> seq dum (varDecl d) (varDeclList ds)
+
+and varDecl (decl : 'a S.varDecl) = match decl with
+    S.VarDeclNoInit (a, x) -> VarDeclExpr (a, x, UndefinedExpr dum)
+  | S.VarDecl (a, x, e) -> VarDeclExpr (a, x, expr e)
+
+and caseClauses (clauses : 'a S.caseClause list) = match clauses with
+    [] -> UndefinedExpr dum
+  | (S.CaseDefault (a,s)::clauses) -> seq a (stmt s) (caseClauses clauses)
+  | (S.CaseClause (a,e,s)::clauses) ->
+      LetExpr (a,"%t",
+               IfExpr (dum,VarExpr (dum,"%t"), 
+                       (BoolExpr (dum,true)),
+                       (expr e)),
+               SeqExpr (dum,
+                        IfExpr (dum,VarExpr (dum,"%t"),
+                                stmt s,
+                                UndefinedExpr dum),
+                        caseClauses clauses))
+
+and prop (p : S.prop * 'a S.expr) = match p with
+    (S.PropId x,e) -> (x,expr e)
+  | (S.PropString s,e) -> (s,expr e)
+  | (S.PropNum n,e) -> (string_of_int n, expr e)
+
+
+(** Generates an expression that evaluates and binds lv, then produces the
+    the value of body_fn.  body_fn is applied with references to lv as an
+    lvalue and lv as an expression. *)
+and eval_lvalue (lv : 'a S.lvalue) (body_fn : 'a lvalue * 'a expr -> 'a expr) =
+  match lv with
+    S.VarLValue (a,x) -> body_fn (VarLValue (a,x),VarExpr (dum,x))
+  | S.DotLValue (a,e,x) -> 
+      LetExpr (dum,"%lhs",expr e,
+        body_fn (PropLValue (a,VarExpr (dum,"%lhs"),StringExpr (dum,x)),
+                 BracketExpr (dum,VarExpr (dum,"%lhs"),StringExpr (dum,x))))
+  | S.BracketLValue (a,e1,e2) -> 
+      LetExpr (dum,"%lhs",expr e1,
+      LetExpr (dum,"%field",expr e2,
+      body_fn (PropLValue (a,VarExpr (dum,"%lhs"),VarExpr (dum,"%field")),
+               BracketExpr (dum,VarExpr (dum,"%lhs"),VarExpr (dum,"%field")))))
+
+let from_javascript stmts = 
+  let f s e = seq dum (stmt s) e
+  in fold_right f stmts (UndefinedExpr dum)
+
+(******************************************************************************)
+
+let rec locals expr = match expr with
+   StringExpr _ -> IdSet.empty
+  | RegexpExpr _ -> IdSet.empty
+  | NumExpr _ -> IdSet.empty
+  | IntExpr _ -> IdSet.empty
+  | BoolExpr _ -> IdSet.empty
+  | NullExpr _ -> IdSet.empty
+  | ArrayExpr (_, es) -> IdSetExt.unions (map locals es)
+  | ObjectExpr (_, ps) -> IdSetExt.unions (map (fun (_, e) -> locals e) ps)
+  | ThisExpr _ -> IdSet.empty
+  | VarExpr _ -> IdSet.empty
+  | BracketExpr (_, e1, e2) -> IdSet.union (locals e1) (locals e2)
+  | NewExpr (_, c, args) -> IdSetExt.unions (map locals (c :: args))
+  | PrefixExpr (_, _, e) -> locals e
+  | InfixExpr (_, _, e1, e2) -> IdSet.union (locals e1) (locals e2)
+  | IfExpr (_, e1, e2, e3) -> IdSetExt.unions (map locals [e1; e2; e3])
+  | AssignExpr (_, l, e) -> IdSet.union (lv_locals l) (locals e)
+  | AppExpr (_, f, args) -> IdSetExt.unions (map locals (f :: args))
+  | FuncExpr _ -> IdSet.empty
+  | UndefinedExpr _ -> IdSet.empty
+  | LetExpr (_, _, e1, e2) -> 
+      (* We are computing properties of the local scope object, not identifers
+         introduced by the expression transformation. *)
+      IdSet.union (locals e1) (locals e2)
+  | SeqExpr (_, e1, e2) -> IdSet.union (locals e1) (locals e2)
+  | WhileExpr (_, e1, e2) -> IdSet.union (locals e1) (locals e2)
+  | LabelledExpr (_, _, e) -> locals e
+  | BreakExpr (_, _, e) -> locals e
+  | ForInExpr (_, _, e1, e2) -> IdSet.union (locals e1) (locals e2)
+  | VarDeclExpr (_, x, e) -> IdSet.add x (locals e)
+  | TryCatchExpr (_, e1, _, e2) ->
+      (* TODO: figure out how to handle catch-bound identifiers *)
+      IdSet.union (locals e1) (locals e2)
+  | TryFinallyExpr (_, e1, e2) -> IdSet.union (locals e1) (locals e2)
+  | ThrowExpr (_, e) -> locals e
+  | FuncStmtExpr (_, f, _, _) -> IdSet.singleton f
+
+and lv_locals lvalue = match lvalue with
+    VarLValue _ -> IdSet.empty
+  | PropLValue (_, e1, e2) -> IdSet.union (locals e1) (locals e2)

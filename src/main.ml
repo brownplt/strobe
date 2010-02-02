@@ -1,0 +1,101 @@
+open JavaScript
+open Exprjs
+open Typedjs
+open Prelude
+open Printf
+open Typedjs_df
+open Typedjs_stxutil
+open Typedjs_anf
+open Typedjs_types
+open Typedjs_tc
+
+let cin = ref stdin
+
+let cin_name = ref "stdin"
+
+let action_load_file path =
+  cin := open_in path;
+  cin_name := path
+
+
+let action_pretty () : unit = 
+  let (prog, _) = parse_javascript !cin !cin_name in
+    print_string (JavaScript_pretty.render_stmts prog);
+    print_newline ()
+
+let action_comments () : unit = 
+    let (_, comments) = parse_javascript !cin !cin_name in
+    let pc (pos, str) = printf "%s %s\n" (string_of_position pos) str in
+      List.iter pc comments
+
+let action_expr () : unit =
+  let (prog, _) = parse_javascript !cin !cin_name in
+  let e = from_javascript prog in
+    print_expr e
+
+let action_pretypecheck () : unit = 
+  let (js, comments) = parse_javascript !cin !cin_name in
+  let exprjs = from_javascript js in
+  let typedjs = Typedjs.from_exprjs exprjs comments in
+    Typedjs_pretty.print_exp typedjs
+
+let action_tc () : unit = 
+  let (js, comments) = parse_javascript !cin !cin_name in
+  let exprjs = from_javascript js in
+  let typedjs = Typedjs.from_exprjs exprjs comments in
+  let _ = Typedjs_tc.tc_exp Env.empty_env typedjs in
+    ()
+
+let action_anf () : unit =
+  let (js, comments) = parse_javascript !cin !cin_name in
+  let exprjs = from_javascript js in
+  let typedjs = Typedjs.from_exprjs exprjs comments in
+  let anf = Typedjs_anf.from_typedjs typedjs in
+    Typedjs_anf.print_anfexp anf
+
+let action_df () : unit =
+  let (js, comments) = parse_javascript !cin !cin_name in
+  let exprjs = from_javascript js in
+  let typedjs = Typedjs.from_exprjs exprjs comments in
+  let anf = Typedjs_anf.from_typedjs typedjs in
+  let ns, _ = Typedjs_df.local_type_analysis Typedjs_dfLattice.empty_env anf in
+  let pr (x : node) av =
+    Format.fprintf Format.std_formatter "At node %d:\n" x;
+    Typedjs_dfLattice.pretty_env Format.std_formatter av;
+    Format.pp_print_newline Format.std_formatter ()
+  in NodeMap.iter pr ns
+   
+let action = ref action_tc
+
+let is_action_set = ref false
+
+let set_action (thunk : unit -> unit) (() : unit) : unit =
+  if !is_action_set then
+    (eprintf "invalid arguments (-help for help)\n"; exit 1)
+  else 
+    (is_action_set := true; action := thunk)
+
+let main () : unit =
+  Arg.parse
+    [ ("-pretty", Arg.Unit (set_action action_pretty),
+       "pretty-print JavaScript");
+      ("-comments", Arg.Unit (set_action action_comments),
+       "extract comments from JavaScript");
+      ("-expr", Arg.Unit (set_action action_expr),
+       "simplify JavaScript to exprjs");
+      ("-pretc", Arg.Unit (set_action action_pretypecheck),
+       "basic well-formedness checks before typing");
+      ("-anf", Arg.Unit (set_action action_anf),
+       "convert program to ANF");
+      ("-df", Arg.Unit (set_action action_df),
+       "convert program to ANF, then apply dataflow analysis");
+      ("-tc", Arg.Unit (set_action action_tc),
+       "type-check (default action)") ]
+    (fun s -> action_load_file s)
+    "Typed JavaScript [action] [path]";;
+
+Printexc.print main ();
+try
+  !action ()
+with Failure s ->
+  prerr_string s; prerr_newline (); exit 2

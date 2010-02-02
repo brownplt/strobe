@@ -1,0 +1,6 @@
+_build
+main.native
+main.byte
+main.d.native
+main.d.byte
+doc.docdir

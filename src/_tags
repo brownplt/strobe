@@ -1,0 +1,2 @@
+<expr> or <javascript> or <typedjs> : include
+<**/*.ml> or "main.native" or "main.byte" or "main.d.byte": pkg_easy-format

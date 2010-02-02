@@ -1,0 +1,188 @@
+{
+open Prelude
+open Lexing
+open JavaScript_parser
+
+module S = String
+
+(* Requires: start < String.length str *)
+let rec drop_spaces (str : string) (start : int) = 
+  match String.get str start with
+    ' '  -> drop_spaces str (start + 1)
+  | '\t' -> drop_spaces str (start + 1)
+  | '\r' -> drop_spaces str (start + 1)
+  | '\n' -> drop_spaces str (start + 1)
+  |  _   -> String.sub str start (String.length str - start)
+
+
+(* TODO: if integer conversions overflow, treat as a float *)
+let parse_num_lit (s : string) (l : pos) : token =
+  if S.contains s 'x' || S.contains s 'X'
+    then Int (l,int_of_string s)
+    else if S.contains s '.'
+           then Float (l,float_of_string s)
+           else if S.contains s 'e' || S.contains s 'E'
+                  then Float (l,float_of_string s)
+                  else Int (l,int_of_string s)
+
+let mk_loc buf = Lexing.lexeme_start_p buf
+
+let comments : (pos * string) list ref = ref []
+
+let new_comment (p : pos) (c : string) = 
+  comments := (p, c) :: !comments
+
+}
+
+(* dec_digit+ corresponds to DecimalDigits in the spec. *)
+let dec_digit = ['0'-'9']
+
+let signed_int = dec_digit+ | ('+' dec_digit+) | ('-' dec_digit+)
+
+let expt_part = ['e' 'E'] signed_int
+
+let dec_int_lit = '0' | (['1'-'9'] dec_digit*)
+
+let hex = ['0'-'9' 'A'-'f' 'a'-'f']
+
+let hex_lit = ("0x" | "0X") hex+
+
+let dec_lit = 
+  (dec_int_lit '.' dec_digit* expt_part?) | 
+  ('.' dec_digit+ expt_part?) |
+  (dec_int_lit expt_part?)
+
+let num_lit = dec_lit | hex_lit
+
+let ident = ['a'-'z' 'A'-'Z' '$' '_']['a'-'z' 'A'-'Z' '0'-'9' '$' '_']*
+
+let digit = ['0'-'9']
+
+let char = [^ '"' '\\']
+
+let blank = [ ' ' '\t' ]
+
+let escape_sequence
+  = [^ '\r' '\n'] | ('x' hex hex) | ('u' hex hex hex hex)
+
+let double_quoted_string_char = 
+  [^ '\r' '\n' '"' '\\'] | ('\\' escape_sequence)
+
+let single_quoted_string_char =
+  [^ '\r' '\n' '\'' '\\'] | ('\\' escape_sequence)
+
+rule token = parse
+   | blank + { token lexbuf }
+   | '\n' { new_line lexbuf; token lexbuf }
+   | "/*" { block_comment lexbuf }
+   | "//" { line_comment lexbuf }
+
+   (* ContinueId and BreakId are tokens for labelled break and continue.  They
+    * include their target label.
+    *)
+   | "continue" [ ' ' '\t' ]+ ident as cont 
+       { ContinueId (drop_spaces cont 8) }
+   | "break" [ ' ' '\t' ]+ ident as cont 
+       { BreakId (drop_spaces cont 8) }
+
+
+   (* TODO: fixme; add regexps *)
+   | '"' (double_quoted_string_char* as x) '"'
+     { String (mk_loc lexbuf, x) }
+   | ''' (single_quoted_string_char* as x) '''
+     { String (mk_loc lexbuf, x) }
+   
+   | num_lit as x { parse_num_lit x (mk_loc lexbuf) }
+   | "{" { LBrace }
+   | "}" { RBrace }
+   | '(' { LParen }
+   | ')' { RParen }
+   | "|=" { AssignBOr }
+   | "^=" { AssignBXor }
+   | "&=" { AssignBAnd }
+   | "<<=" { AssignLShift }
+   | ">>=" { AssignRShift }
+   | ">>>=" { AssignSpRShift }
+   | "+=" { AssignAdd }
+   | "-=" { AssignSub }
+   | "*=" { AssignMul }
+   | "/=" { AssignDiv }
+   | "%=" { AssignMod }
+   | "=" { Assign }
+   | ";" { Semi }
+   | "," { Comma }
+   | "?" { Ques }
+   | ":" { Colon }
+   | "||" { LOr }
+   | "&&" { LAnd }
+   | "|" { BOr }
+   | "^" { BXor }
+   | "&" { BAnd }
+   | "===" { StrictEq }
+   | "==" { AbstractEq }
+   | "!=" { AbstractNEq }
+   | "!==" { StrictNEq }
+   | "<<" { LShift }
+   | ">>" { RShift }
+   | ">>>" { SpRShift }
+   | "<=" { LEq }
+   | "<" { LT }
+   | ">=" { GEq }
+   | ">" { GT }
+   | "++" { PlusPlus }
+   | "--" { MinusMinus }
+   | "+" { Plus }
+   | "-" { Minus }
+   | "*" { Times }
+   | "/" { Div }
+   | "!" { Exclamation }
+   | "~" { Tilde }
+   | "!" { Exclamation }
+   | "." { Period }
+   | "[" { LBrack }
+   | "]" { RBrack }
+
+   | "if" { If  }
+   | "then" { Then  }
+   | "else" { Else  }
+   | "true" { True  }
+   | "false" { False  }
+   | "new" { New  }
+   | "instanceof" { Instanceof  }
+   | "this" { This  }
+   | "null" { Null  }
+   | "function" { Function  }
+   | "typeof" { Typeof  }
+   | "void" { Void  }
+   | "delete" { Delete  }
+   | "switch" { Switch  }
+   | "default" { Default  }
+   | "case" { Case  }
+   | "while" { While  }
+   | "do" { Do  }
+   | "break" { Break  }
+   | "var" { Var  }
+   | "in" { In  }
+   | "for" { For  }
+   | "try" { Try  }
+   | "catch" { Catch  }
+   | "finally" { Finally  }
+   | "throw" { Throw  }
+   | "return" { Return  }
+   | "with" { With  }
+   | "continue" { Continue  }
+   | "instanceof" { Instanceof  }
+
+   | ident as x { Id (mk_loc lexbuf,x) }
+
+  
+   | eof { EOF }
+
+and block_comment = parse
+     "*/" { token lexbuf }
+   | [ '\n' '\r' ] { new_line lexbuf; block_comment lexbuf }
+   | _ { block_comment lexbuf }
+
+and line_comment = parse
+    ([^ '\n' '\r'])* as x
+      { new_comment (mk_loc lexbuf) x; token lexbuf }

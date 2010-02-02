@@ -1,0 +1,2 @@
+#!/bin/sh
+ocamlbuild doc.docdir/index.html
