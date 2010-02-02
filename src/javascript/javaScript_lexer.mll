@@ -32,6 +32,10 @@ let comments : (pos * string) list ref = ref []
 let new_comment (p : pos) (c : string) = 
   comments := (p, c) :: !comments
 
+let block_comment_buf = Buffer.create 120
+
+let block_comment_pos = ref dummy_pos
+
 }
 
 (* dec_digit+ corresponds to DecimalDigits in the spec. *)
@@ -74,7 +78,7 @@ let single_quoted_string_char =
 rule token = parse
    | blank + { token lexbuf }
    | '\n' { new_line lexbuf; token lexbuf }
-   | "/*" { block_comment lexbuf }
+   | "/*" { block_comment_pos := mk_loc lexbuf; block_comment lexbuf }
    | "//" { line_comment lexbuf }
 
    (* ContinueId and BreakId are tokens for labelled break and continue.  They
@@ -179,9 +183,20 @@ rule token = parse
    | eof { EOF }
 
 and block_comment = parse
-     "*/" { token lexbuf }
-   | [ '\n' '\r' ] { new_line lexbuf; block_comment lexbuf }
-   | _ { block_comment lexbuf }
+    "*/" 
+      { new_comment !block_comment_pos (Buffer.contents block_comment_buf);
+        Buffer.clear block_comment_buf;
+        token lexbuf }
+  | '*'
+      { Buffer.add_char block_comment_buf '*';
+        block_comment lexbuf }
+  | [ '\n' '\r' ] 
+      { new_line lexbuf;
+        Buffer.add_char block_comment_buf '\n';
+        block_comment lexbuf }
+  | ([^ '\n' '\r' '*'])+ as txt
+      { Buffer.add_string block_comment_buf txt;
+        block_comment lexbuf }
 
 and line_comment = parse
     ([^ '\n' '\r'])* as x
