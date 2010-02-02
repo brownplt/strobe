@@ -1,2 +1,3 @@
 #!/bin/sh
-ocamlbuild doc.docdir/index.html
+mkdir ../build 2> /dev/null
+ocamlbuild -build-dir ../build doc.docdir/index.html

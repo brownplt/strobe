@@ -1,3 +1,2 @@
 #!/bin/bash
-
-./main.d.byte $@
+../build/main.d.byte $@
