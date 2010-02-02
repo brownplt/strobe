@@ -21,6 +21,7 @@ rule token = parse
    | "Int" { INT }
    | "Double" { NUM }
    | "String" { STR }
+   | "Bool" { BOOL }
    | "*" { STAR }
    | ":" { COLON }
    | "+" { UNION }

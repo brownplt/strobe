@@ -8,7 +8,7 @@ open Typedjs_types
 
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
-       UNDEF
+       UNDEF BOOL
 
 %right UNION
 
@@ -31,6 +31,7 @@ arg_typ
   | INT { typ_int }
   | NUM { typ_num }
   | STR { typ_str }
+  | BOOL { typ_bool }
   | UNDEF { typ_undef }
   | arg_typ UNION arg_typ { typ_union $1 $3 }
   | LPAREN typ RPAREN { $2 }
