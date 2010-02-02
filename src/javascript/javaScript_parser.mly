@@ -142,7 +142,8 @@ member_expr
   : primary_expr 
       { $1 }
   | Function LParen ids RParen LBrace src_elts RBrace
-    { FuncExpr ((symbol_start_pos (), symbol_end_pos ()), $3, BlockStmt ((symbol_start_pos (), symbol_end_pos ()), $6)) }
+    { FuncExpr ((symbol_start_pos (), symbol_end_pos ()), $3, 
+                BlockStmt ((rhs_start_pos 5, rhs_end_pos 7), $6)) }
 /* Reduce/reduce conflict with function statements.  Who here knew that
    named function expressions existed?  
   | Function Id LParen ids RParen LBrace src_elts RBrace

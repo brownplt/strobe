@@ -88,6 +88,7 @@ let rec aborts (expr : 'a expr) : bool = match expr with
 
 (******************************************************************************)
 
+open JavaScript_stxutil
 module S = JavaScript_syntax
 module L = List
 
@@ -176,10 +177,15 @@ let rec expr (e : 'a S.expr) = match e with
   | S.ParenExpr (_,e) -> expr e
   | S.ListExpr (a,e1,e2) -> seq a (expr e1) (expr e2)
   | S.CallExpr (a,func,args) -> AppExpr (a,expr func,L.map expr args)
-  | S.FuncExpr (a,args,body) ->
-      FuncExpr (a,args,LabelledExpr (a,"%return",stmt body))
+  | S.FuncExpr (a, args, body) ->
+      FuncExpr (a, args,
+                LabelledExpr (stmt_annotation body, "%return", stmt body))
   | S.UndefinedExpr a -> UndefinedExpr a
-  | S.NamedFuncExpr (a,name,args,body) ->
+  | S.NamedFuncExpr (a, name, args, body) ->
+      (* INFO: This translation is absurd and makes typing impossible.
+         Introduce FIX and eliminate loops in the process. Note that the
+         parser does not produce NamedFuncExprs, so for the moment, this is
+         inconsequential. *)
       let anonymous_func = 
         FuncExpr (a,args,LabelledExpr (a,"%return",stmt body)) in
       LetExpr (dum,name,UndefinedExpr dum,
@@ -220,7 +226,9 @@ and stmt (s : 'a S.stmt) = match s with
   | S.ContinueStmt a -> BreakExpr (a,"%continue",UndefinedExpr dum)
   | S.ContinueToStmt (a,lbl) -> BreakExpr (a,"%continue-"^lbl,UndefinedExpr dum)
   | S.FuncStmt (a, f, args, s) -> 
-      FuncStmtExpr (a, f, args, LabelledExpr (dum, "%return", stmt s))
+      FuncStmtExpr 
+        (a, f, args, LabelledExpr 
+           (stmt_annotation s, "%return", stmt s))
   | S.ExprStmt e -> expr e
   | S.ThrowStmt (a, e) -> ThrowExpr (a, expr e)
   | S.ReturnStmt (a, e) -> BreakExpr (a, "%return", expr e)

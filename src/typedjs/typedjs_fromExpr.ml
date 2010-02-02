@@ -30,21 +30,30 @@ let type_dbs : annotation PosMap.t ref = ref PosMap.empty
 let init_types lst = 
   type_dbs := types_from_comments lst
 
+let type_between (start_p : Lexing.position) (end_p : Lexing.position) : typ =
+  let found = ref None in
+  let f (typ_start_p, typ_end_p) ann = 
+    if typ_start_p.Lexing.pos_cnum > start_p.Lexing.pos_cnum &&
+      typ_end_p.Lexing.pos_cnum < end_p.Lexing.pos_cnum then
+        begin match ann, !found with
+            ATyp typ, None -> found := Some ((typ_start_p, typ_end_p), typ)
+          | _, Some _ ->
+              failwith (sprintf "found multiple type annotations at %s"
+                          (string_of_position (start_p, end_p)))
 
-let type_at stx_pos = 
-  let closest = ref None in
-  let f typ_pos ann = 
-    if compare typ_pos stx_pos > 0 then ()
-    else (match ann with
-              ATyp typ -> closest := Some (typ_pos, typ)
-            | _ -> ())
-  in PosMap.iter f !type_dbs;
-    match !closest with
+          | _, None -> failwith 
+              (sprintf "expected a type annotation at %s; found something else"
+                 (string_of_position (start_p, end_p)))
+
+        end in
+    PosMap.iter f !type_dbs;
+    match !found with
         Some (pos, typ) -> 
           type_dbs := PosMap.remove pos !type_dbs;
-          (pos, typ)
-      | None -> raise Not_found
-
+          typ
+      | None ->
+          failwith (sprintf "expected a type annotation at %s"
+                      (string_of_position (start_p, end_p)))
 
 
 (******************************************************************************)
@@ -98,11 +107,7 @@ let rec exp (env : env) expr = match expr with
   | AssignExpr (a, lv, e) -> EAssign (a, lvalue env lv, exp env e)
   | AppExpr (a, f, args) -> EApp (a, exp env f, map (exp env) args)
   | FuncExpr (a, args, LabelledExpr (a', "%return", body)) ->
-      let (_, typ) =
-        try type_at a 
-        with Not_found -> 
-          failwith (sprintf "expected a type annotation on the function at %s"
-                      (string_of_position a)) in
+      let typ = type_between (fst2 a) (fst2 a') in
         (* Within [body], a free variable, [x] cannot be referenced, if there
            is any local variable with the name [x]. *)
       let visible_free_vars = IdSet.diff env (locals body) in
@@ -144,7 +149,7 @@ let rec exp (env : env) expr = match expr with
       ELet (a, x, exp env e, EUndefined a)
   | FuncStmtExpr (a, f, args, LabelledExpr (a', "%return", body)) -> 
       (*  peculiar code: body or block ends with a function *)
-      let _, typ = type_at a in
+      let typ = type_between (fst2 a) (fst2 a') in
       let visible_free_vars = IdSet.diff env (locals body) in
       let env' = IdSet.union visible_free_vars (IdSetExt.from_list args) in
         (match typ with

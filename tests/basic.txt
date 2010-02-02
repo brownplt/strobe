@@ -2,9 +2,9 @@
 ; (true ? 4 : 5) @@ Int
 ; (true ? "hi there" : "bob jones") @@ String
 ; (true ? "HELLO" : 6) @@ Int + String
-; /*: Double -> Double */ function (a) { return a; } @@ Double -> Double
-; (/*: Double -> Double */ function (a) { return a; })(20) @@  Double
-; (/*: Double -> Double */ function (a) { return a+5; })(20) @@ Double
-; /*: Int * Int -> Int */ function(x,x)  { return x; } @@fails
+; function (a) /*: Double -> Double */ { return a; } @@ Double -> Double
+; (function (a) /*: Double -> Double */ { return a; })(20) @@  Double
+; (function (a) /*: Double -> Double */ { return a+5; })(20) @@ Double
+; function(x,x)  /*: Int * Int -> Int */ { return x; } @@fails
 ;
 
