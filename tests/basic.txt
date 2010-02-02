@@ -1,4 +1,4 @@
-45 @@ Int
+  45 @@ Int
 ; (true ? 4 : 5) @@ Int
 ; (true ? "hi there" : "bob jones") @@ String
 ; (true ? "HELLO" : 6) @@ Int + String
@@ -6,5 +6,18 @@
 ; (function (a) /*: Double -> Double */ { return a; })(20) @@  Double
 ; (function (a) /*: Double -> Double */ { return a+5; })(20) @@ Double
 ; function(x,x)  /*: Int * Int -> Int */ { return x; } @@fails
+; 5 + "4" @@ String
+; "5" + 34 @@ String
+; "blah" + "hoomegl" @@ String
+; 5.03 >> 3 @@fails
+; 5.0 >> 3 @@fails
+; 5e9 >> 7 @@fails
+; -"arjun" @@fails
+; -5  @@ Int
+; -7.3  @@ Double
+; 4 / 343 @@ Double
+; true && false @@ Bool
+; true && (false || true) @@ Bool
+; true && ((6 == 7) || (9 == 13)) @@ Bool
+; true && x @@fails
 ;
-

@@ -163,6 +163,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | JS.PrefixPlus, TApp ("Number", []) -> typ_num 
       | JS.PrefixMinus, TApp ("Int", []) -> typ_int
       | JS.PrefixMinus, TApp ("Number", []) -> typ_num 
+      | JS.PrefixMinus, t -> typ_error p
+          (sprintf "- (minus) expects an Int/Double operand, but it received %s"
+             (string_of_typ t))
       | JS.PrefixTypeof, _ -> typ_str
       | JS.PrefixVoid, _ -> typ_undef
           (* | PrefixDelete *)
