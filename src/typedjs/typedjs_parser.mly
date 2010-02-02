@@ -12,7 +12,10 @@ open Typedjs_types
 
 %right UNION
 
+%start typ
 %start typ_ann
+
+%type <Typedjs_syntax.typ> typ
 
 %type <Typedjs_syntax.annotation> typ_ann
 

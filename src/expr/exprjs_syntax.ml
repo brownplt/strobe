@@ -294,6 +294,8 @@ let from_javascript stmts =
   let f s e = seq dum (stmt s) e
   in fold_right f stmts (UndefinedExpr dum)
 
+let from_javascript_expr = expr
+
 (******************************************************************************)
 
 let rec locals expr = match expr with

@@ -8,6 +8,7 @@ open Typedjs_stxutil
 open Typedjs_anf
 open Typedjs_types
 open Typedjs_tc
+open Typedjs_testing
 
 let cin = ref stdin
 
@@ -64,6 +65,9 @@ let action_df () : unit =
     Typedjs_dfLattice.pretty_env Format.std_formatter av;
     Format.pp_print_newline Format.std_formatter ()
   in NodeMap.iter pr ns
+
+let action_test_tc () : unit =
+  Typedjs_testing.parse_and_test !cin !cin_name
    
 let action = ref action_tc
 
@@ -89,6 +93,8 @@ let main () : unit =
        "convert program to ANF");
       ("-df", Arg.Unit (set_action action_df),
        "convert program to ANF, then apply dataflow analysis");
+      ("-unittest", Arg.Unit (set_action action_test_tc),
+       "(undocumented)");
       ("-tc", Arg.Unit (set_action action_tc),
        "type-check (default action)") ]
     (fun s -> action_load_file s)

@@ -53,8 +53,10 @@ let rec expr_to_lvalue (e : 'a expr) : ('a lvalue) =  match e with
 %left ShiftElse
 
 %start program
+%start expression
 
 %type <Prelude.pos JavaScript_syntax.stmt list> program
+%type <Prelude.pos JavaScript_syntax.expr> expression
 
 %%
 
@@ -436,5 +438,7 @@ src_elt
     { let _,x = $2 in FuncStmt ((symbol_start_pos (), symbol_end_pos ()),x,$4,$6) } 
 
 program : src_elts EOF { $1 }
+
+expression : expr EOF { $1 }
 
 %%
