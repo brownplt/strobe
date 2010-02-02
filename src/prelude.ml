@@ -42,6 +42,8 @@ let map = List.map
 
 let printf = Printf.printf
 
+let eprintf = Printf.eprintf
+
 let sprintf = Printf.sprintf
 
 let second2 f (a, b) = (a, f b)

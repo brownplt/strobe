@@ -244,8 +244,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
         List.iter tc_bind binds;
         tc_exp !env body
   | EFunc (p, args, fn_typ, body) -> 
-      printf "Assignable ids are:\n";
-      IdSetExt.pretty Format.std_formatter (Format.pp_print_string) 
+      eprintf "Assignable ids are:\n";
+      IdSetExt.pretty Format.err_formatter (Format.pp_print_string) 
         (Env.assignable_ids env);
       begin match fn_typ with
         TArrow (_, arg_typs, result_typ) ->

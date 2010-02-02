@@ -53,6 +53,8 @@ val thd3 : 'a * 'b * 'c -> 'c
 
 val printf : ('a, out_channel, unit) format -> 'a
 
+val eprintf : ('a, out_channel, unit) format -> 'a
+
 val sprintf : ('a, unit, string) format -> 'a
 
 val intersperse : 'a -> 'a list -> 'a list
