@@ -1,3 +1,4 @@
+// Continue from line 63 of old test suite.
   45 @@ Int
 ; (true ? 4 : 5) @@ Int
 ; (true ? "hi there" : "bob jones") @@ String
@@ -20,4 +21,19 @@
 ; true && (false || true) @@ Bool
 ; true && ((6 == 7) || (9 == 13)) @@ Bool
 ; true && x @@fails
+; 4 / "home" @@fails
+; 4 * "3" @@fails
+; 5 + 4 @@ Int
+; 4 * 3 @@ Int
+; 4 / "13" @@fails
+; 4 + (function(x) /*: Double -> Void */ { return; }) @@fails
+; (3 == 0) + 10 @@fails
+; (function (x) /*: Double -> Void */ { return; }) @@ Double -> Void
+; (function (x) /*: Double -> Void */ { return; }) @@ Double -> Void
+; (function (x) /*: Double -> Void */ { return 5; }) @@fails
+; (function (x) /*: -> Void */ { return; }) @@fails
+; (function () /*: Int -> Void */ { return; }) @@fails
+; (function (x) /*: Int -> Int */ { return "HAH"; }) @@fails
+; (function (x) /*: Int -> Int */ { return; }) @@fails
 ;
+ 
