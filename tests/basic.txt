@@ -5,6 +5,6 @@
 ; /*: Double -> Double */ function (a) { return a; } @@ Double -> Double
 ; (/*: Double -> Double */ function (a) { return a; })(20) @@  Double
 ; (/*: Double -> Double */ function (a) { return a+5; })(20) @@ Double
-; function(x,x)  { return x; } @@fails
+; /*: Int * Int -> Int */ function(x,x)  { return x; } @@fails
 ;
 

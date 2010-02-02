@@ -75,3 +75,11 @@ let rec take_while f xs = match xs with
       else
         [], xs
 
+
+let rec rem (elt : 'a) (lst : 'a list) : 'a list = match lst with
+    [] -> []
+  | x :: xs -> if elt = x then rem elt xs else x :: (rem elt xs)
+
+let rec nub (lst : 'a list) : 'a list = match lst with
+    [] -> []
+  | x :: xs -> x :: (nub (rem x xs))

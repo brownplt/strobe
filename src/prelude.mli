@@ -60,3 +60,7 @@ val sprintf : ('a, unit, string) format -> 'a
 val intersperse : 'a -> 'a list -> 'a list
 
 val take_while : ('a -> bool) -> 'a list -> 'a list * 'a list
+
+(** [nub lst] removes duplicates from the [lst]. Duplicates are identified by
+    structural equality. *)
+val nub : 'a list -> 'a list

@@ -247,19 +247,21 @@ let rec tc_exp (env : Env.env) exp = match exp with
       eprintf "Assignable ids are:\n";
       IdSetExt.pretty Format.err_formatter (Format.pp_print_string) 
         (Env.assignable_ids env);
+      if List.length args != List.length (nub args) then
+        typ_error p "each argument must have a distinct name";
       begin match fn_typ with
-        TArrow (_, arg_typs, result_typ) ->
-          if List.length arg_typs = List.length args then ()
-          else typ_error p "not all arguments have types";
-          let bind_arg env (x, t) = Env.bind_id x t env in
-          let env' = fold_left bind_arg env (List.combine args arg_typs) in
-          let body_typ = tc_exp env' body in
-            if subtype body_typ result_typ then fn_typ
-            else typ_error p
-              (sprintf "function body has type %s, but the function\'s return \
-                        type is %s" (string_of_typ body_typ) 
-                 (string_of_typ result_typ))
-      | _ -> typ_error p "invalid type annotation on a function"
+          TArrow (_, arg_typs, result_typ) ->
+            if List.length arg_typs = List.length args then ()
+            else typ_error p "not all arguments have types";
+            let bind_arg env (x, t) = Env.bind_id x t env in
+            let env' = fold_left bind_arg env (List.combine args arg_typs) in
+            let body_typ = tc_exp env' body in
+              if subtype body_typ result_typ then fn_typ
+              else typ_error p
+                (sprintf "function body has type %s, but the function\'s \
+                          return type is %s" (string_of_typ body_typ) 
+                   (string_of_typ result_typ))
+        | _ -> typ_error p "invalid type annotation on a function"
     end
 
 and tc_exps env es = map (tc_exp env) es
