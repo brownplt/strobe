@@ -1,28 +1,32 @@
 //__typedJsVars["\"flapjax.js\" (line 38, column 13)"]
 
-var $jstraceid = "$global"; //mark the global object so we don't deeply inspect it
+this.$jstraceid = "$global"; //mark the global object so we don't deeply inspect it
 
-var __typedJsVars = {}; //map var names to their rttypes
-var __typedJsTypes = {$global: {kind: 'object', type: {}}}; //map type aliases to their rttypes
-
-//an rttype is an object of form:
-//{kind: the kind of the type, one of: object_ref, function_ref, object, function, flat, undefined
+//an rttype (run time type) is an object of the form:
+//{kind: the kind of the type which is one of object_ref; function_ref; object; function; flat; or undefined,
 // type: the type information}
 //a union-rttype is an array of rttypes
+//a named rttype is an object: {name: var name if any, rttype: the rttype of the var}
 
+//type varies based on kind:
 //for flat, type is a string from typeof
 //for object, it is an object mapping property names to rttypes
 //for function, it is an object:
 //  {args: an array of union-rttypes indicating the rttypes of the arguments
 //   ret: the union-rttype of the ret type
-///  thist: the union-rttype of the 'this' type}
+///  thist: the union-rttype of the 'this' type,
+//   nested: an array of named rttypes representing local vars/local funcs in order of appearance}
+//
 //objects and functions also have a 'seen' field which is true if we've seen the object while
 //  trying to find out its type (meaning we have a recursive type)
 
-//for a object_ref or function_ref, it is a string representing the type alias. the type it
-//  refers to can be found in __typedJsTypes
+//for object_ref or function_ref, type is a string representing the type alias. the type it
+//refers to can be found in __typedJsTypes.
 
 var __typedjs = (function() {  //lambda to hide all these local funcs
+  var __typedJsTypes = {$global: {kind: 'object', type: {}}}; //map type aliases to their rttypes
+  var __orderedVars = []; //map order of appearance to named rttypes
+  
   var symnum = 0;
   var gensym = function(name) {
     if (name) {
@@ -30,12 +34,24 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     }
     return "$gen" + (symnum++);
   }
+  var arrayContains = function(arr, val) {
+    for (var i = 0; i < arr.length; i++) {
+      if (rtequal(arr[i], val)) { return true; } 
+    }
+    return false;
+  };
+  
+  var copyFrom = function(b, a) { //copy everything from b to a
+    for (var prop in b) {
+      a[prop] = b[prop];
+    }
+  }
 
-  var rttype = function(rtval) { //pjs value --> rttype (as described above)
+  //pjs value --> rttype (as described above)
+  var rttype = function(rtval) { 
     var res = typeof(rtval);
     if (res == "object") {
       if ("$jstraceid" in rtval) {
-        //pln("((SAWD IT REDY (" + rtval.$jstraceid + ":: " + strType(__typedJsTypes[rtval.$jstraceid]).answer + ")");
         return {kind: 'object_ref', type: rtval.$jstraceid};
       }
       
@@ -73,9 +89,10 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     
     return {kind:'flat', type:res};
   }
-  
+
+  //return the rttype, and return a reference to a type if given
+  //an object or a function
   var reffed_rttype = function (rtval) {
-    //return the rttype, and return a reference to a type if possible
     var rtt = rttype(rtval);
     if (rtt.kind == "object")
       return {kind: 'object_ref', type: rtval.$jstraceid};
@@ -83,8 +100,9 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       return {kind: 'function_ref', type: rtval.$jstraceid};
     return rtt;
   }
-  
-  var rtequal = function(rt1, rt2) { //whether two rttypes are equal
+
+  //return whether two rttypes are equal
+  var rtequal = function(rt1, rt2) { 
     if (rt1 == rt2) return true;
     if (rt1===undefined && rt2===undefined) return true;
     if (rt1===undefined || rt2===undefined) return false;
@@ -116,20 +134,11 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       
     return false;
   };
-  var arrayContains = function(arr, val) {
-    for (var i = 0; i < arr.length; i++) {
-      if (rtequal(arr[i], val)) { return true; } 
-    }
-    return false;
-  };
   
-  var copyFrom = function(b, a) { //copy everything from b to a
-    for (var prop in b) {
-      a[prop] = b[prop];
-    }
-  }
-
-  var strUnion = function(u) { //converts an array of rttypes to a union
+  //rttype -> string functions:
+  //convert a union-rttype to a str representing the union
+  //return: {answer: the str, typesSeen: the types seen in the union}
+  var strUnion = function(u) {
     if (u.length == 1) return strType(u[0]);
     
     var segmentsSeen = [];
@@ -155,12 +164,13 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     return {answer: res, typesSeen: typesSeen};
   };
   
+  //input: rttype
+  //output: object where 
+  //{answer: the string result of the answer,
+  // typesSeen: the names of the rttypes seen while iterating. needed to know whether
+  //   to put a 'rec .' in}
+  //don't go into nested functions
   var strType = function(t) { 
-    //input: rttype
-    //output: object where 
-    //{answer: the string result of the answer,
-    // typesSeen: the names of the rttypes seen while iterating. needed to know whether
-    //   to put a 'rec .' in}
     var typesSeen = {};
     if (t === undefined) return {answer: "any", typesSeen: typesSeen}; //no info available
     
@@ -242,9 +252,14 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     
     return {answer: "UNKNOWN KIND: " + t.kind, typesSeen: typesSeen};
   };
+  
+  //given a named rt type, print it out, and any nesting things it might have.
+  var strNestedNamedRttype = function(nrt) {
+    return "TODO";
+  }
 
-  // Convert an array of arguments to an array of abstract arguments.
-  var abstract = function(args) {
+  //convert an array of arguments to an array of abstract arguments.
+  var arrayToAbstract = function(args) {
     var abstractArgs = [ ];
     for (var i = 0; i < args.length; i++) {
       abstractArgs.push(reffed_rttype(args[i]));
@@ -263,8 +278,8 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     return existing;
   }
 
-  // Merge two abstract argument arrays
-  // existing is an array of unions of rttypes, args is an array of rttypes
+  //merge two abstract argument arrays
+  //existing is an array of unions of rttypes, args is an array of rttypes
   var processArguments = function(existing, args) {
     if (existing == undefined) {
       existing = [];
@@ -285,24 +300,42 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     return existing;
   }
   
-  //wrap every RHS with this function
+  //wrap every RHS with this function when assigning:
   /*var tracevar = function(label, v) {
     var traceid = gensym("var");*/
       
-  
-  
-  //wrap every function with this function.
-  //WARNING: cannot always tell when we are called as a constructor
-  var tracefunction = function(label, fn) {    
+
+  //wrap every function with this function. it makes
+  //every function call add trace information.
+  //nester is the function this function is nested in. 
+  //undefined if top-level. otherwise it should be wrapped
+  //name is the name, if any
+  //position is what position it occupies in the nester, e.g. 
+  //0 if the first position, 1 if the 2nd, etc. 
+  var tracefunction = function(fn, nester, name, position) {    
     var traceid = gensym("func");
     var func_rttype = {
       kind: "function",
       type: {
         args: undefined,
         ret: undefined,
-        thist: undefined},
-      seen: false};    
+        thist: undefined,
+        nested: []},
+      seen: false};
     var tjstype = func_rttype.type;
+    var ref = {
+      kind: "function_ref",
+      type: traceid};
+    
+    if (nester !== undefined) {
+      //insert the func in the proper position in the nester
+      __typedJsTypes[nester.$jstraceid].type.nested[position] = {
+        name: name, rttype: ref};
+    }
+    else {
+      //insert it in the right place in the global
+      __orderedVars[position] = {name: name, rttype: ref};
+    }
 
     var res = function() {
       var calledWithNew = this instanceof arguments.callee;
@@ -314,7 +347,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       }
       
       tjstype.args = processArguments(
-        tjstype.args, abstract(arguments));
+        tjstype.args, arrayToAbstract(arguments));
         
       var r = fn.apply(this, arguments);
 
@@ -329,38 +362,44 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       return r;
     };
     res.$jstraceid = traceid;
-    res.$label = label;
 
-    __typedJsVars[label] = {
-      kind: "function_ref",
-      type: res.$jstraceid};
-      
     __typedJsTypes[traceid] = func_rttype;
 
     return res;
   }
 
   //initialization code to open the popup and make the tracing code run
+  var __tracewin, __resdiv;
+  
   var update_tracewin = function() {
-  while (__resdiv.hasChildNodes()) 
+    while (__resdiv.hasChildNodes()) 
       __resdiv.removeChild(__resdiv.firstChild);
       
-    if (__typedJsVars.length == 0) {
+    if (__orderedVars.length == 0) {
       var txt = __tracewin.document.createTextNode("No tracing info yet...");
       __resdiv.appendChild(txt);
       __resdiv.appendChild(__tracewin.document.createElement('br'));
       return;
     }    
     
-    for (var p in __typedJsVars) {
-      var st = strType(__typedJsVars[p]).answer;
-      var txt = __tracewin.document.createTextNode(p + " :: " + st);
-      __resdiv.appendChild(txt);
-      __resdiv.appendChild(__tracewin.document.createElement('br'));
+    var mktext = function (s) {
+      return __tracewin.document.createTextNode(s);
     }
+    var mkbr = function () { 
+      return __tracewin.document.createElement('br');
+    }
+    var app = function (x) { return __resdiv.appendChild(x); }
+    
+    app(mktext("/*::")); app(mkbr());
+    
+    for (var i=0; i < __orderedVars.length; i++) {
+      var str = strNestedNamedRttype(__orderedVars[i]);
+      var txt = __tracewin.document.createTextNode("  " + str);
+      __resdiv.appendChild(txt);
+      __resdiv.appendChild(mkbr());
+    }
+    app(mktext("*/")); app(mkbr());
   }
-  
-  var __tracewin, __resdiv;
   
   __tracewin = window.open("", 
     document.title + " traced types", "width=640,height=480,scrollbars=yes");
@@ -380,8 +419,3 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
 })();
   
 
-  
-  
-  
-  
-  

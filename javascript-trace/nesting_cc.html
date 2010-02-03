@@ -1,0 +1,54 @@
+<html>
+<head>
+
+<script type="text/javascript" src="prototype.js"></script>
+<script type="text/javascript" src="data/jstrace.js"></script>
+
+<title>JSTrace test</title>
+
+<script type="text/javascript">
+var pln = __typedjs(
+  function (s) {
+   s = s || "";
+   var p = document.createTextNode(s);
+   var rezdiv = document.getElementById("rezdiv");
+   rezdiv.appendChild(p);
+   rezdiv.appendChild(document.createElement('br'));
+  },
+  undefined, "pln", 0);
+
+var simplefunc = __typedjs(
+  function (arg, arg2) {
+    return arg + arg2;
+  },
+  undefined, "simplefunc", 1);
+
+var nestedfunc = __typedjs(
+  function (a) {
+    var increment = __typedjs(function () { a = a + 1; }, 
+                              nestedfunc, "", 0);
+    increment(); increment();
+    return a;
+  },
+  undefined, "nestedfunc", 2);
+  
+//---------------
+
+function loader() {
+  setTimeout(useFunction, 600);
+}
+
+function useFunction() {
+  pln(nestedfunc(5));
+  pln(nestedfunc(6));
+  pln(nestedfunc(7));
+}
+
+</script>
+</head>
+
+<body id="body" onload="loader()">
+<div id="rezdiv"></div>
+</body>
+
+</html>
