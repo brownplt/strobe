@@ -10,6 +10,7 @@ open Typedjs_types
 open Typedjs_tc
 open Typedjs_testing
 open Format
+open Typedjs_syntax
 
 let cin = ref stdin
 

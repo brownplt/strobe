@@ -72,3 +72,29 @@ type 'a exp
 and 'a lvalue =
     LVar of 'a * id
   | LProp of 'a * 'a exp * 'a exp
+
+module type EnvType = sig
+  
+  type env
+
+  val empty_env : env
+
+  val bind_id : id -> typ -> env -> env
+
+  val bind_lbl : id -> typ -> env -> env
+
+  val lookup_id : id -> env -> typ
+
+  val lookup_lbl : id -> env -> typ
+
+  val assignable_ids : env -> IdSet.t
+
+  val new_assignable_id : id -> env -> env
+
+  val remove_assigned_ids : IdSet.t -> env -> env
+
+  val id_env : env -> typ IdMap.t
+
+end
+
+module Env : EnvType

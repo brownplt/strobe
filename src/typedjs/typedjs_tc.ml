@@ -7,57 +7,6 @@ open Typedjs_dftc
 
 module JS = JavaScript_syntax (* needed for operators *)
 
-module type EnvType = sig
-  
-  type env
-
-  val empty_env : env
-
-  val bind_id : id -> typ -> env -> env
-
-  val bind_lbl : id -> typ -> env -> env
-
-  val lookup_id : id -> env -> typ
-
-  val lookup_lbl : id -> env -> typ
-
-  val assignable_ids : env -> IdSet.t
-
-  val new_assignable_id : id -> env -> env
-
-  val remove_assigned_ids : IdSet.t -> env -> env
-
-end
-
-module Env : EnvType = struct
-
-  type env = { id_typs : typ IdMap.t; 
-               lbl_typs : typ IdMap.t;
-               asgn_ids : IdSet.t }
-
-
-  let empty_env = { id_typs = IdMap.empty;
-                    lbl_typs = IdMap.empty;
-                    asgn_ids = IdSet.empty }
-
-  let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
-
-  let bind_lbl x t env = { env with lbl_typs = IdMap.add x t env.lbl_typs }
-
-  let lookup_id x env = IdMap.find x env.id_typs
-
-  let lookup_lbl x env = IdMap.find x env.lbl_typs
-
-  let assignable_ids env = env.asgn_ids
-
-  let new_assignable_id x env = { env with asgn_ids = IdSet.add x env.asgn_ids }
-
-  let remove_assigned_ids assigned_ids env =
-    { env with asgn_ids = IdSet.diff env.asgn_ids assigned_ids }
-
-end
- 
-
 let typ_error (p : pos) (s : string) : 'a =
   failwith ("type error at " ^ string_of_position p ^ ": " ^ s)
 
@@ -137,9 +86,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EThrow (_, e) -> 
       let _ = tc_exp env e in
         TBot
-  | ETypecast (_, rt, e) -> 
-      let t = tc_exp env e in
-        static rt t
+  | ETypecast (_, rt, e) ->
+      static rt (tc_exp env e)
   | EArray (p, []) -> 
       typ_error p "an empty array literal requires a type annotation"
   | EArray (_, e :: es) -> 
@@ -250,18 +198,17 @@ let rec tc_exp (env : Env.env) exp = match exp with
         List.iter tc_bind binds;
         tc_exp !env body
   | EFunc (p, args, fn_typ, body) -> 
-      eprintf "Assignable ids are:\n";
-      IdSetExt.pretty Format.err_formatter (Format.pp_print_string) 
-        (Env.assignable_ids env);
       if List.length args != List.length (nub args) then
         typ_error p "each argument must have a distinct name";
       begin match fn_typ with
           TArrow (_, arg_typs, result_typ) ->
             if List.length arg_typs = List.length args then ()
             else typ_error p "not all arguments have types";
-            let bind_arg env (x, t) = Env.bind_id x t env in
+            let bind_arg env (x, t) = 
+              Env.new_assignable_id x (Env.bind_id x t env) in
             let env' = fold_left bind_arg env (List.combine args arg_typs) in
-            let body_typ = tc_exp env' body in
+            let body' = annotate env' body in
+            let body_typ = tc_exp env' body' in
               if subtype body_typ result_typ then fn_typ
               else typ_error p
                 (sprintf "function body has type %s, but the function\'s \

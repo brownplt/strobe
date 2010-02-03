@@ -3,6 +3,7 @@ open Typedjs_testLexer
 open Typedjs_pretty
 open Typedjs_tc
 open Typedjs_types
+open Typedjs_syntax
 
 let string_of_typ = pretty_string pretty_typ
 

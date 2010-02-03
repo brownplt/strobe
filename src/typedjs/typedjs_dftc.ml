@@ -4,6 +4,7 @@ open Typedjs_syntax
 open Typedjs_dfLattice
 open Typedjs_pretty
 open Typedjs_df
+open Typedjs_types
 
 let rec rt_of_typ (t : typ) : RTSet.t = match t with
     TArrow _ -> RTSet.singleton RTFunction
@@ -23,14 +24,25 @@ let rec rt_of_typ (t : typ) : RTSet.t = match t with
 
 let runtime (t : typ) : abs_value = AVType (rt_of_typ t)
 
-let static (rt : runtime_typs) (t : typ) : typ = failwith "NYI"
-
-let annotate (env : typ IdMap.t) (available_ids : IdSet.t) 
-    (exp : pos exp) : pos exp =
+let rec static (rt : runtime_typs) (typ : typ) : typ = match typ with
+    TTop -> TTop
+  | TBot -> TBot (* might change if we allow arbitrary casts *)
+  | TArrow _ -> if RTSet.mem RTFunction rt then typ else TBot
+  | TApp ("String", []) -> if RTSet.mem RTString rt then typ else TBot
+  | TApp ("RegExp", []) -> if RTSet.mem RTObject rt then typ else TBot
+  | TApp ("Number", []) -> if RTSet.mem RTNumber rt then typ else TBot
+  | TApp ("Int", []) -> if RTSet.mem RTNumber rt then typ else TBot
+  | TApp ("Boolean", []) -> if RTSet.mem RTBoolean rt then typ else TBot
+  | TApp ("Undefined", []) -> if RTSet.mem RTUndefined rt then typ else TBot
+  | TApp _ -> failwith (sprintf "unknown type in static: %s"
+                          (pretty_string pretty_typ typ))
+  | TUnion (s, t) -> typ_union (static rt s) (static rt t)
+ 
+let annotate (env : Env.env) (exp : pos exp) : pos exp =
   let anfexp = Typedjs_anf.from_typedjs exp in
   let df_env = 
     IdMap.fold (fun x t env -> bind_env x (runtime t) env) 
-      env empty_env in
+      (Env.id_env env) empty_env in
   let _, cast_env = Typedjs_df.local_type_analysis df_env anfexp in
   let rec cast (ids : IdSet.t) (exp : pos exp) : pos exp = match exp with
       EString _ -> exp
@@ -42,7 +54,7 @@ let annotate (env : typ IdMap.t) (available_ids : IdSet.t)
     | EArray (p, es) -> EArray (p, map (cast ids) es)
     | EObject (p, props) -> EObject (p, map (second2 (cast ids)) props)
     | EThis _ -> exp
-    | EId (q, x) -> if IdSet.mem x ids then 
+    | EId (q, x) -> if IdSet.mem x ids then
         let v = BoundIdMap.find (x, q) cast_env in
           ETypecast (q, abs_value_to_runtime_typs v, exp)
       else
@@ -66,5 +78,5 @@ let annotate (env : typ IdMap.t) (available_ids : IdSet.t)
     | ETryFinally (p, e1, e2) -> ETryFinally (p, cast ids e1, cast ids e2)
     | EThrow (p, e) -> EThrow (p, cast ids e)
     | ETypecast (p, t, e) -> ETypecast (p, t, cast ids e) in
-    cast available_ids exp
+    cast (Env.assignable_ids env) exp
     

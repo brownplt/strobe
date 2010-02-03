@@ -14,5 +14,5 @@ val static : runtime_typs -> typ -> typ
     [annotate] also returns [still_available_ids], which is a subset of of
     [available_ids]. This set should be threaded between functions in the
     same block. *)
-val annotate : typ IdMap.t -> IdSet.t -> pos exp -> pos exp
+val annotate : Env.env -> pos exp -> pos exp
 

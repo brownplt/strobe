@@ -29,8 +29,8 @@ and 'a bind =
   | BApp of 'a value * 'a value list
   | BBracket of 'a value * 'a value
   | BNew of 'a value * 'a value list
-  | BPrefixOp of JavaScript_syntax.prefixOp * id
-  | BInfixOp of JavaScript_syntax.infixOp * id * id
+  | BPrefixOp of JavaScript_syntax.prefixOp * 'a value
+  | BInfixOp of JavaScript_syntax.infixOp * 'a value * 'a value
   | BAssign of id * 'a value
   | BSetProp of 'a value * 'a value * 'a value
   | BIf of 'a value * 'a anfexp * 'a anfexp
