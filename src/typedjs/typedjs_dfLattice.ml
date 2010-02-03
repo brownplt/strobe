@@ -1,8 +1,6 @@
 open Prelude
 open Typedjs_syntax
 
-
-
 let any_runtime_typ =
   RTSetExt.from_list [ RTNumber; RTString; RTBoolean; RTFunction; RTObject; 
                        RTUndefined ]
@@ -44,6 +42,14 @@ let bind_env x v env =
       AVTypeof x' when x = x' -> AVType (RTSet.singleton RTString)
     | _ -> v
   in IdMap.add x v (IdMap.map f env)
+
+
+let abs_value_to_runtime_typs (v : abs_value) : runtime_typs = match v with
+    AVType rts -> rts
+  | AVTypeof _ -> RTSet.singleton RTString
+  | AVString _ -> RTSet.singleton RTString
+  | AVTypeIs _ -> RTSet.singleton RTBoolean
+
 
 let pretty_env (fmt : Format.formatter) (env : env) = 
   let pr x av =

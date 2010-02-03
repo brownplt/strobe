@@ -20,3 +20,6 @@ val lookup_env : id -> env -> abs_value
 val bind_env : id -> abs_value -> env -> env
 
 val pretty_env : Format.formatter -> env -> unit
+
+(** [abs_value_to_runtime_typ v] *)
+val abs_value_to_runtime_typs : abs_value -> runtime_typs

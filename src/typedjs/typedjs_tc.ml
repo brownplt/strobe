@@ -3,6 +3,7 @@ open Typedjs_syntax
 open Typedjs_types 
 open Typedjs_pretty
 open Typedjs_stxutil
+open Typedjs_dftc
 
 module JS = JavaScript_syntax (* needed for operators *)
 
@@ -136,9 +137,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EThrow (_, e) -> 
       let _ = tc_exp env e in
         TBot
-  | ETypecast (_, t, e) -> 
-      let _ = tc_exp env e in
-        t
+  | ETypecast (_, rt, e) -> 
+      let t = tc_exp env e in
+        static rt t
   | EArray (p, []) -> 
       typ_error p "an empty array literal requires a type annotation"
   | EArray (_, e :: es) -> 

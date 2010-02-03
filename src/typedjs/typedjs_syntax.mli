@@ -21,6 +21,7 @@ type abs_value =
   | AVString of string
   | AVTypeIs of id * RTSet.t
 
+type runtime_typs = RTSet.t
 
 type constr = string
 
@@ -66,7 +67,7 @@ type 'a exp
   | ETryCatch of 'a * 'a exp * id * 'a exp
   | ETryFinally of 'a * 'a exp * 'a exp
   | EThrow of 'a * 'a exp
-  | ETypecast of 'a * typ * 'a exp
+  | ETypecast of 'a * runtime_typs * 'a exp
 
 and 'a lvalue =
     LVar of 'a * id
