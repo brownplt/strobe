@@ -86,8 +86,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EThrow (_, e) -> 
       let _ = tc_exp env e in
         TBot
-  | ETypecast (_, rt, e) ->
-      static rt (tc_exp env e)
+  | ETypecast (p, rt, e) ->
+      let string_of_rt rt = 
+        RTSetExt.pretty Format.str_formatter pretty_runtime_typ rt;
+        Format.flush_str_formatter ()
+      in printf "%s: Typecasting to %s\n" (string_of_position p) 
+           (string_of_rt rt);
+        static rt (tc_exp env e)
   | EArray (p, []) -> 
       typ_error p "an empty array literal requires a type annotation"
   | EArray (_, e :: es) -> 
@@ -157,7 +162,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
        let s = (try Env.lookup_id x env 
                 with Not_found -> typ_error p (sprintf "%s is unbound" x))
        and t = tc_exp env e in
-         if subtype t s && subtype s t then t
+         if subtype t s then t
          else typ_error p 
            (sprintf "%s has type %s, but the right-hand side of this \
               assignment has type %s" x (string_of_typ s) (string_of_typ t))
@@ -205,10 +210,16 @@ let rec tc_exp (env : Env.env) exp = match exp with
             if List.length arg_typs = List.length args then ()
             else typ_error p "not all arguments have types";
             let bind_arg env (x, t) = 
+              (* all arguments are available for dataflow in the body *)
               Env.new_assignable_id x (Env.bind_id x t env) in
             let env' = fold_left bind_arg env (List.combine args arg_typs) in
             let body' = annotate env' body in
-            let body_typ = tc_exp env' body' in
+              (* The env. in which we type the annotated body specifies the
+                 env. in which we do dataflow for nested functions. Remove the
+                 locally assigned identifiers from this env. (accounts for
+                 assigning to arguments.) *)
+            let env'' = Env.remove_assigned_ids (local_av_exp body') env' in
+            let body_typ = tc_exp env'' body' in
               if subtype body_typ result_typ then fn_typ
               else typ_error p
                 (sprintf "function body has type %s, but the function\'s \

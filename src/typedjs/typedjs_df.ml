@@ -94,18 +94,26 @@ let rec anfexp (env : env) (exp : pos anfexp) : result =
       let env2, env3 = match value env v1 with
           AVTypeIs (x, rt) -> 
             let x_rt = abs_value_to_runtime_typs (lookup_env x env) in
+            let x_false = RTSet.diff x_rt rt in 
+              printf "Splitting %s: %s in true, %s in false\n"
+                x (string_of_rt rt) (string_of_rt x_false);
               (bind_env x (AVType rt) env, 
-               bind_env x (AVType (RTSet.diff x_rt rt)) env)
+               bind_env x (AVType x_false) env)
         | _ -> env, env in
         
       let vals2, label_env2 = anfexp env2 e2 in
       let vals3, label_env3 = anfexp env3 e3 in
       let vals = NodeMapExt.join union_abs_value vals2 vals3 in
-      let label_env = IdMapExt.join union_abs_value label_env2 label_env3 in
+      let u v1 v2 = if v1 = v2 then v1 else begin
+        printf "Joining %s and %s\n" (pretty_string pretty_abs_value v1)
+          (pretty_string pretty_abs_value v2);
+        union_abs_value v1 v2
+      end in
+      let label_env = IdMapExt.join u label_env2 label_env3 in
       let x_val = union_abs_value
         (NodeMap.find (node_of_anfexp e2) vals)
         (NodeMap.find (node_of_anfexp e3) vals) in
-      let vals', label_env' = anfexp (bind_env x x_val env) body in
+      let vals', label_env' = anfexp (bind_env x x_val label_env) body in
         (NodeMap.add node (NodeMap.find (node_of_anfexp body) vals') vals',
          IdMapExt.join union_abs_value label_env label_env')
   | ALet (node, x, b, e) ->
@@ -135,7 +143,7 @@ let rec anfexp (env : env) (exp : pos anfexp) : result =
       (NodeMap.add n (AVType RTSet.empty) NodeMap.empty, 
        IdMap.add x (value env v) IdMap.empty)
   | AValue (n, v) ->
-      (NodeMap.add n (value env v) NodeMap.empty, IdMap.empty)
+      (NodeMap.add n (value env v) NodeMap.empty, env)
 
 let local_type_analysis env exp =
   env_at_node := NodeMap.empty;

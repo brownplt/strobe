@@ -2,7 +2,7 @@ open Prelude
 
 open Typedjs_syntax
 
-type env
+type env = abs_value IdMap.t
 
 val any_runtime_typ : RTSet.t
 
