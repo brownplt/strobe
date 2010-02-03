@@ -3,6 +3,7 @@
 open Prelude
 open Typedjs_anf
 open Typedjs_dfLattice
+open Typedjs_syntax
 
 type bound_id = id * pos
 

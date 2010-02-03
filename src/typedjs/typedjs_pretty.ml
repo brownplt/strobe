@@ -118,12 +118,22 @@ and bind (x, e) =
 and rec_bind (x, t, e) = 
   parens [text x; text ":"; typ t; text "="; exp e]
 
+let pretty_runtime_typ (fmt : formatter) (rt : runtime_typ) = match rt with
+    RTNumber -> pp_print_string fmt "number"
+  | RTString -> pp_print_string fmt "string"
+  | RTBoolean -> pp_print_string fmt "boolean"
+  | RTObject -> pp_print_string fmt "object"
+  | RTUndefined -> pp_print_string fmt "undefined"
+  | RTFunction -> pp_print_string fmt "function"
+
+let pretty_abs_value (fmt : formatter) (v : abs_value) = match v with
+    AVType s -> RTSetExt.pretty fmt pretty_runtime_typ s
+  | AVTypeof x -> fprintf fmt "typeof %s" x
+  | AVString s -> pp_print_string fmt ("\"" ^ s ^ "\"")
+  | AVTypeIs (x, s) -> 
+      fprintf fmt "typeof %s === " x;
+      RTSetExt.pretty fmt pretty_runtime_typ s
+
 let pretty_exp fmt e = exp e fmt
 
-let print_exp e = exp e std_formatter; print_newline ()
-
 let pretty_typ fmt t = typ t fmt
-
-let string_of_typ t =
-  typ t str_formatter;
-  flush_str_formatter ()

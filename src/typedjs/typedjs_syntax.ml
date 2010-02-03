@@ -1,5 +1,28 @@
 open Prelude
 
+type runtime_typ =
+    RTNumber
+  | RTString
+  | RTBoolean
+  | RTFunction
+  | RTObject
+  | RTUndefined
+
+module RTOrdered = struct
+  type t = runtime_typ
+  let compare = Pervasives.compare
+end
+
+module RTSet = Set.Make (RTOrdered)
+
+module RTSetExt = SetExt.Make (RTSet)
+
+type abs_value =
+    AVType of RTSet.t
+  | AVTypeof of id
+  | AVString of string
+  | AVTypeIs of id * RTSet.t
+
 type constr = string
 
 type typ = 

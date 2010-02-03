@@ -1,6 +1,7 @@
 open Prelude
 open Typedjs_anf
 open Typedjs_dfLattice
+open Typedjs_syntax
 
 type bound_id = id * pos
 
@@ -16,10 +17,7 @@ module BoundIdMap = Map.Make (BoundIdOrdered)
 
 module J = JavaScript_syntax
 
-let any_val = 
-  AVType (RTSetExt.from_list 
-            [ RTNumber; RTString; RTBoolean; RTFunction; RTObject; 
-              RTUndefined ])
+let any_val = AVType any_runtime_typ
 
 let single_value rt = AVType (RTSet.singleton rt)
 

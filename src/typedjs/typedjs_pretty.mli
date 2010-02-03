@@ -1,9 +1,9 @@
 open Prelude
+open Format
+open Typedjs_syntax
 
-val pretty_exp : Format.formatter -> 'a Typedjs_syntax.exp -> unit
+val pretty_exp : formatter -> 'a exp -> unit
 
-val print_exp : 'a Typedjs_syntax.exp -> unit
+val pretty_typ : formatter -> typ -> unit
 
-val pretty_typ : Format.formatter -> Typedjs_syntax.typ -> unit
-
-val string_of_typ : Typedjs_syntax.typ -> string
+val pretty_abs_value : formatter -> abs_value -> unit

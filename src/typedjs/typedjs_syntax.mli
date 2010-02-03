@@ -1,5 +1,27 @@
 open Prelude
 
+type runtime_typ =
+    RTNumber
+  | RTString
+  | RTBoolean
+  | RTFunction
+  | RTObject
+  | RTUndefined
+
+module RTSet : Set.S
+  with type elt = runtime_typ
+
+module RTSetExt : SetExt.S
+  with type elt = runtime_typ
+  and type t = RTSet.t
+
+type abs_value =
+    AVType of RTSet.t
+  | AVTypeof of id
+  | AVString of string
+  | AVTypeIs of id * RTSet.t
+
+
 type constr = string
 
 type typ = 

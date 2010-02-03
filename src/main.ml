@@ -9,6 +9,7 @@ open Typedjs_anf
 open Typedjs_types
 open Typedjs_tc
 open Typedjs_testing
+open Format
 
 let cin = ref stdin
 
@@ -38,7 +39,7 @@ let action_pretypecheck () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments in
-    Typedjs_pretty.print_exp typedjs
+    Typedjs_pretty.pretty_exp std_formatter typedjs
 
 let action_tc () : unit = 
   let (js, comments) = parse_javascript !cin !cin_name in

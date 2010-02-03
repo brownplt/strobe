@@ -60,6 +60,8 @@ end
 let typ_error (p : pos) (s : string) : 'a =
   failwith ("type error at " ^ string_of_position p ^ ": " ^ s)
 
+let string_of_typ = pretty_string pretty_typ
+
 let tc_arith (p : pos) (t1 : typ) (t2 : typ) (int_args : bool) 
     (num_result : bool) : typ =
   let result_typ = 

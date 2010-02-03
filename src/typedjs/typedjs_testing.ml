@@ -4,6 +4,8 @@ open Typedjs_pretty
 open Typedjs_tc
 open Typedjs_types
 
+let string_of_typ = pretty_string pretty_typ
+
 (* It would better to use a state monad for this. Since the test function
    should not modify num_tests, we should have 
 
