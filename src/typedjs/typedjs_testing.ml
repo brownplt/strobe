@@ -34,6 +34,7 @@ let test ((pos, js_expr, comments, expected) : test) : unit =
                 (string_of_typ actual_typ)
             end
         | ExpectedFails ->
+            incr num_failures;
             printf "@%s:\n expected failure, succeeded with type %s\n" 
               (string_of_position pos) (string_of_typ actual_typ)
       end

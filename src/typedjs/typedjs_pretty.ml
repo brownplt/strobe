@@ -69,8 +69,8 @@ let rec exp e fmt = match e with
       parens [text "if"; exp e1; exp e2; exp e3] fmt
   | EApp (_, f, args) ->
       parens (exp f :: map exp args) fmt
-  | EFunc (_, args, typ, body) ->
-      parens [text "fun"; parens (map text args); exp body] fmt
+  | EFunc (_, args, t, body) ->
+      parens [text "fun"; parens (map text args); text ":"; typ t; exp body] fmt
   | ELet (_, x, bound, body) ->
       parens [text "let"; parens (map bind [(x, bound)]); exp body] fmt
   | ERec (binds, body) ->

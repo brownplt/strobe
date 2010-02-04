@@ -95,8 +95,8 @@ let rec anfexp (env : env) (exp : pos anfexp) : result =
           AVTypeIs (x, rt) -> 
             let x_rt = abs_value_to_runtime_typs (lookup_env x env) in
             let x_false = RTSet.diff x_rt rt in 
-              printf "Splitting %s: %s in true, %s in false\n"
-                x (string_of_rt rt) (string_of_rt x_false);
+              (* printf "Splitting %s: %s in true, %s in false\n"
+                x (string_of_rt rt) (string_of_rt x_false); *)
               (bind_env x (AVType rt) env, 
                bind_env x (AVType x_false) env)
         | _ -> env, env in
@@ -105,8 +105,8 @@ let rec anfexp (env : env) (exp : pos anfexp) : result =
       let vals3, label_env3 = anfexp env3 e3 in
       let vals = NodeMapExt.join union_abs_value vals2 vals3 in
       let u v1 v2 = if v1 = v2 then v1 else begin
-        printf "Joining %s and %s\n" (pretty_string pretty_abs_value v1)
-          (pretty_string pretty_abs_value v2);
+        (* printf "Joining %s and %s\n" (pretty_string pretty_abs_value v1)
+          (pretty_string pretty_abs_value v2); *)
         union_abs_value v1 v2
       end in
       let label_env = IdMapExt.join u label_env2 label_env3 in

@@ -14,6 +14,11 @@ let rec expr_to_lvalue (e : 'a expr) : ('a lvalue) =  match e with
   | ParenExpr (_, e) -> expr_to_lvalue e
   | _ -> raise Expected_lvalue
 
+let parse_error s =
+  eprintf "%s : %s\n" 
+    (string_of_position (symbol_start_pos (), symbol_end_pos ()))
+    s
+
 %}
 
 %token <string> ContinueId

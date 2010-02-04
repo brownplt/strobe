@@ -87,12 +87,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let _ = tc_exp env e in
         TBot
   | ETypecast (p, rt, e) ->
-      let string_of_rt rt = 
-        RTSetExt.pretty Format.str_formatter pretty_runtime_typ rt;
-        Format.flush_str_formatter ()
-      in printf "%s: Typecasting to %s\n" (string_of_position p) 
-           (string_of_rt rt);
-        static rt (tc_exp env e)
+      static rt (tc_exp env e)
   | EArray (p, []) -> 
       typ_error p "an empty array literal requires a type annotation"
   | EArray (_, e :: es) -> 
