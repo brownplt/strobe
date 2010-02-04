@@ -1,3 +1,0 @@
-#!/bin/bash
-mkdir ../build 2> /dev/null
-ocamlbuild -build-dir ../build main.d.byte
