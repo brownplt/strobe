@@ -1,27 +1,10 @@
 open Prelude
 
-type runtime_type =
-    RTNumber
-  | RTString
-  | RTBoolean
-  | RTFunction
-  | RTObject
-  | RTUndefined
+open Typedjs_syntax
 
-module RTSet : Set.S
-  with type elt = runtime_type
+type env = abs_value IdMap.t
 
-module RTSetExt : SetExt.S
-  with type elt = runtime_type
-  and type t = RTSet.t
-
-type abs_value =
-    AVType of RTSet.t
-  | AVTypeof of id
-  | AVString of string
-  | AVTypeIs of id * RTSet.t
-
-type env
+val any_runtime_typ : RTSet.t
 
 val empty_env : env
 
@@ -31,11 +14,14 @@ val union_env : env -> env -> env
 
 val lookup_env : id -> env -> abs_value
 
+val env_binds : id -> env -> bool
+
 
 (** [bind_env x v env] performs a conventional binding and also updates
     bindings that reference [x]. *)
 val bind_env : id -> abs_value -> env -> env
 
-val pretty_abs_value : Format.formatter -> abs_value -> unit
-
 val pretty_env : Format.formatter -> env -> unit
+
+(** [abs_value_to_runtime_typ v] *)
+val abs_value_to_runtime_typs : abs_value -> runtime_typs

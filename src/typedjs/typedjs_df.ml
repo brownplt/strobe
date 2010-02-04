@@ -1,6 +1,8 @@
 open Prelude
 open Typedjs_anf
 open Typedjs_dfLattice
+open Typedjs_syntax
+open Typedjs_pretty
 
 type bound_id = id * pos
 
@@ -13,13 +15,9 @@ module BoundIdMap = Map.Make (BoundIdOrdered)
 
 (******************************************************************************)
 
-
 module J = JavaScript_syntax
 
-let any_val = 
-  AVType (RTSetExt.from_list 
-            [ RTNumber; RTString; RTBoolean; RTFunction; RTObject; 
-              RTUndefined ])
+let any_val = AVType any_runtime_typ
 
 let single_value rt = AVType (RTSet.singleton rt)
 
@@ -28,15 +26,21 @@ let single_value rt = AVType (RTSet.singleton rt)
     enclosing labels to abstract values. *)
 type result = abs_value NodeMap.t * abs_value IdMap.t
 
-let env_at_node : env NodeMap.t ref = ref NodeMap.empty
-
 let bound_id_map : abs_value BoundIdMap.t ref = ref BoundIdMap.empty
+
+let string_of_rt rt = 
+  RTSetExt.pretty Format.str_formatter pretty_runtime_typ rt;
+  Format.flush_str_formatter ()
+
 
 let value (env : env) (value : pos value) = match value with
     VId (p, x) -> 
-      let t = lookup_env x env in
-        bound_id_map := BoundIdMap.add (x, p) t !bound_id_map;
-        t
+      if env_binds x env then
+        let t = lookup_env x env in
+          bound_id_map := BoundIdMap.add (x, p) t !bound_id_map;
+          t
+      else
+        any_val
   | VString str -> AVString str
   | VNum _ -> single_value RTNumber
   | VInt _ -> single_value RTNumber
@@ -63,13 +67,19 @@ let bindexp (env : env) (exp : pos bind) : abs_value * env = match exp with
   | BApp _ -> (any_val, env)
   | BBracket _ -> (any_val, env)
   | BNew _ -> (any_val, env)
-  | BPrefixOp (J.PrefixTypeof, x) -> (AVTypeof x, env)
-  | BPrefixOp _ -> (any_val, env)
-  | BInfixOp (J.OpStrictEq, x, y) -> 
-      (match lookup_env x env, lookup_env y env with
-           AVTypeof x, AVString s -> (mk_type_is x s , env)
-         | AVString s,  AVTypeof x  -> (mk_type_is x s, env)
-         | _ -> (single_value RTBoolean, env))
+  | BPrefixOp (J.PrefixTypeof, v) -> 
+      let _ = value env v in
+        begin match v with
+            VId (_, x) when env_binds x env -> AVTypeof x, env
+          | _ -> any_val, env
+        end
+  | BInfixOp (op, v1, v2) -> 
+      begin match op, value env v1, value env v2 with
+          J.OpStrictEq, AVTypeof x, AVString s -> (mk_type_is x s , env)
+        | J.OpStrictEq, AVString s,  AVTypeof x  -> (mk_type_is x s, env)
+        | J.OpStrictEq, _, _ -> single_value RTBoolean, env
+        | _ -> any_val, env
+      end
   | BAssign (x, v) -> 
       let av = value env v in
         (av, bind_env x av env)
@@ -78,18 +88,27 @@ let bindexp (env : env) (exp : pos bind) : abs_value * env = match exp with
   | BIf _ -> failwith "typedjs_df.ml : BIf should be handled in anfexp"
 
 
-let rec anfexp (env : env) (exp : pos anfexp) : result =  
-  env_at_node := NodeMap.add (node_of_anfexp exp) env !env_at_node;
-  match exp with
+let rec anfexp (env : env) (exp : pos anfexp) : result = match exp with
     ALet (node, x, BIf (v1, e2, e3), body) ->
-      let vals2, label_env2 = anfexp env e2 in
-      let vals3, label_env3 = anfexp env e3 in
+      let env2, env3 = match value env v1 with
+          AVTypeIs (x, rt) -> 
+            let x_rt = abs_value_to_runtime_typs (lookup_env x env) in
+            let x_false = RTSet.diff x_rt rt in 
+              (bind_env x (AVType rt) env, 
+               bind_env x (AVType x_false) env)
+        | _ -> env, env in
+        
+      let vals2, label_env2 = anfexp env2 e2 in
+      let vals3, label_env3 = anfexp env3 e3 in
       let vals = NodeMapExt.join union_abs_value vals2 vals3 in
-      let label_env = IdMapExt.join union_abs_value label_env2 label_env3 in
+      let u v1 v2 = if v1 = v2 then v1 else begin
+        union_abs_value v1 v2
+      end in
+      let label_env = IdMapExt.join u label_env2 label_env3 in
       let x_val = union_abs_value
         (NodeMap.find (node_of_anfexp e2) vals)
         (NodeMap.find (node_of_anfexp e3) vals) in
-      let vals', label_env' = anfexp (bind_env x x_val env) body in
+      let vals', label_env' = anfexp (bind_env x x_val label_env) body in
         (NodeMap.add node (NodeMap.find (node_of_anfexp body) vals') vals',
          IdMapExt.join union_abs_value label_env label_env')
   | ALet (node, x, b, e) ->
@@ -119,10 +138,9 @@ let rec anfexp (env : env) (exp : pos anfexp) : result =
       (NodeMap.add n (AVType RTSet.empty) NodeMap.empty, 
        IdMap.add x (value env v) IdMap.empty)
   | AValue (n, v) ->
-      (NodeMap.add n (value env v) NodeMap.empty, IdMap.empty)
+      (NodeMap.add n (value env v) NodeMap.empty, env)
 
 let local_type_analysis env exp =
-  env_at_node := NodeMap.empty;
   bound_id_map := BoundIdMap.empty;
   let vals, _ = anfexp env exp in
-    !env_at_node, !bound_id_map
+    !bound_id_map

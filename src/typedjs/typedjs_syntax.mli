@@ -1,5 +1,28 @@
 open Prelude
 
+type runtime_typ =
+    RTNumber
+  | RTString
+  | RTBoolean
+  | RTFunction
+  | RTObject
+  | RTUndefined
+
+module RTSet : Set.S
+  with type elt = runtime_typ
+
+module RTSetExt : SetExt.S
+  with type elt = runtime_typ
+  and type t = RTSet.t
+
+type abs_value =
+    AVType of RTSet.t
+  | AVTypeof of id
+  | AVString of string
+  | AVTypeIs of id * RTSet.t
+
+type runtime_typs = RTSet.t
+
 type constr = string
 
 type typ = 
@@ -44,8 +67,34 @@ type 'a exp
   | ETryCatch of 'a * 'a exp * id * 'a exp
   | ETryFinally of 'a * 'a exp * 'a exp
   | EThrow of 'a * 'a exp
-  | ETypecast of 'a * typ * 'a exp
+  | ETypecast of 'a * runtime_typs * 'a exp
 
 and 'a lvalue =
     LVar of 'a * id
   | LProp of 'a * 'a exp * 'a exp
+
+module type EnvType = sig
+  
+  type env
+
+  val empty_env : env
+
+  val bind_id : id -> typ -> env -> env
+
+  val bind_lbl : id -> typ -> env -> env
+
+  val lookup_id : id -> env -> typ
+
+  val lookup_lbl : id -> env -> typ
+
+  val assignable_ids : env -> IdSet.t
+
+  val new_assignable_id : id -> env -> env
+
+  val remove_assigned_ids : IdSet.t -> env -> env
+
+  val id_env : env -> typ IdMap.t
+
+end
+
+module Env : EnvType

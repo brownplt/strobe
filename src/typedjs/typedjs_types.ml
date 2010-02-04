@@ -40,7 +40,7 @@ and subtypes (ss : typ list) (ts : typ list) : bool =
   with Invalid_argument _ -> false (* unequal lengths *)
 
 let typ_union s t = match subtype s t, subtype t s with
-    true, true -> s
-  | true, false -> TUnion (s, t)
-  | false, true -> TUnion (t, s)
+    true, true -> s (* t = s *)
+  | true, false -> t (* s <: t *)
+  | false, true -> s (* t <: s *)
   | false, false -> TUnion (s, t)

@@ -9,6 +9,9 @@ open Typedjs_anf
 open Typedjs_types
 open Typedjs_tc
 open Typedjs_testing
+open Format
+open Typedjs_syntax
+open Typedjs_pretty
 
 let cin = ref stdin
 
@@ -38,7 +41,7 @@ let action_pretypecheck () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments in
-    Typedjs_pretty.print_exp typedjs
+    Typedjs_pretty.pretty_exp std_formatter typedjs
 
 let action_tc () : unit = 
   let (js, comments) = parse_javascript !cin !cin_name in
@@ -59,12 +62,11 @@ let action_df () : unit =
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments in
   let anf = Typedjs_anf.from_typedjs typedjs in
-  let ns, _ = Typedjs_df.local_type_analysis Typedjs_dfLattice.empty_env anf in
-  let pr (x : node) av =
-    Format.fprintf Format.std_formatter "At node %d:\n" x;
-    Typedjs_dfLattice.pretty_env Format.std_formatter av;
-    Format.pp_print_newline Format.std_formatter ()
-  in NodeMap.iter pr ns
+  let ids = Typedjs_df.local_type_analysis Typedjs_dfLattice.empty_env anf in
+  let pr (x, p) av =
+    printf "%s (%s): %s\n" x (string_of_position p)
+      (pretty_string pretty_abs_value av)
+  in BoundIdMap.iter pr ids
 
 let action_test_tc () : unit =
   Typedjs_testing.parse_and_test !cin !cin_name

@@ -1,27 +1,9 @@
 open Prelude
+open Typedjs_syntax
 
-type runtime_type =
-    RTNumber
-  | RTString
-  | RTBoolean
-  | RTFunction
-  | RTObject
-  | RTUndefined
-
-module RTOrdered = struct
-  type t = runtime_type
-  let compare = Pervasives.compare
-end
-
-module RTSet = Set.Make (RTOrdered)
-
-module RTSetExt = SetExt.Make (RTSet)
-
-type abs_value =
-    AVType of RTSet.t
-  | AVTypeof of id
-  | AVString of string
-  | AVTypeIs of id * RTSet.t
+let any_runtime_typ =
+  RTSetExt.from_list [ RTNumber; RTString; RTBoolean; RTFunction; RTObject; 
+                       RTUndefined ]
 
 type env = abs_value IdMap.t
 
@@ -62,31 +44,18 @@ let bind_env x v env =
   in IdMap.add x v (IdMap.map f env)
 
 
+let env_binds x env = IdMap.mem x env
 
-open Format
+let abs_value_to_runtime_typs (v : abs_value) : runtime_typs = match v with
+    AVType rts -> rts
+  | AVTypeof _ -> RTSet.singleton RTString
+  | AVString _ -> RTSet.singleton RTString
+  | AVTypeIs _ -> RTSet.singleton RTBoolean
 
-let pretty_runtime_type (fmt : formatter) (rt : runtime_type) = match rt with
-    RTNumber -> pp_print_string fmt "number"
-  | RTString -> pp_print_string fmt "string"
-  | RTBoolean -> pp_print_string fmt "boolean"
-  | RTObject -> pp_print_string fmt "object"
-  | RTUndefined -> pp_print_string fmt "undefined"
-  | RTFunction -> pp_print_string fmt "function"
 
-let pretty_abs_value (fmt : formatter) (v : abs_value) = match v with
-    AVType s -> RTSetExt.pretty fmt pretty_runtime_type s
-  | AVTypeof x -> fprintf fmt "typeof %s" x
-  | AVString s -> pp_print_string fmt ("\"" ^ s ^ "\"")
-  | AVTypeIs (x, s) -> 
-      fprintf fmt "typeof %s === " x;
-      RTSetExt.pretty fmt pretty_runtime_type s
-
-let pretty_env (fmt : formatter) (env : env) = 
+let pretty_env (fmt : Format.formatter) (env : env) = 
   let pr x av =
-    fprintf fmt "%s = " x;
-    pretty_abs_value fmt av;
-    pp_print_newline fmt ()
+    Format.fprintf fmt "%s = " x;
+    Typedjs_pretty.pretty_abs_value fmt av;
+    Format.pp_print_newline fmt ()
   in IdMap.iter pr env
-    
-
-

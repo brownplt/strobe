@@ -84,3 +84,7 @@ let rec rem (elt : 'a) (lst : 'a list) : 'a list = match lst with
 let rec nub (lst : 'a list) : 'a list = match lst with
     [] -> []
   | x :: xs -> x :: (nub (rem x xs))
+
+open Format
+
+let pretty_string f a = f str_formatter a; flush_str_formatter ()

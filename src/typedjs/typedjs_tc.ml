@@ -3,62 +3,14 @@ open Typedjs_syntax
 open Typedjs_types 
 open Typedjs_pretty
 open Typedjs_stxutil
+open Typedjs_dftc
 
 module JS = JavaScript_syntax (* needed for operators *)
 
-module type EnvType = sig
-  
-  type env
-
-  val empty_env : env
-
-  val bind_id : id -> typ -> env -> env
-
-  val bind_lbl : id -> typ -> env -> env
-
-  val lookup_id : id -> env -> typ
-
-  val lookup_lbl : id -> env -> typ
-
-  val assignable_ids : env -> IdSet.t
-
-  val new_assignable_id : id -> env -> env
-
-  val remove_assigned_ids : IdSet.t -> env -> env
-
-end
-
-module Env : EnvType = struct
-
-  type env = { id_typs : typ IdMap.t; 
-               lbl_typs : typ IdMap.t;
-               asgn_ids : IdSet.t }
-
-
-  let empty_env = { id_typs = IdMap.empty;
-                    lbl_typs = IdMap.empty;
-                    asgn_ids = IdSet.empty }
-
-  let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
-
-  let bind_lbl x t env = { env with lbl_typs = IdMap.add x t env.lbl_typs }
-
-  let lookup_id x env = IdMap.find x env.id_typs
-
-  let lookup_lbl x env = IdMap.find x env.lbl_typs
-
-  let assignable_ids env = env.asgn_ids
-
-  let new_assignable_id x env = { env with asgn_ids = IdSet.add x env.asgn_ids }
-
-  let remove_assigned_ids assigned_ids env =
-    { env with asgn_ids = IdSet.diff env.asgn_ids assigned_ids }
-
-end
- 
-
 let typ_error (p : pos) (s : string) : 'a =
   failwith ("type error at " ^ string_of_position p ^ ": " ^ s)
+
+let string_of_typ = pretty_string pretty_typ
 
 let tc_arith (p : pos) (t1 : typ) (t2 : typ) (int_args : bool) 
     (num_result : bool) : typ =
@@ -93,8 +45,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EBool _ -> typ_bool
   | ENull _ -> typ_null
   | EUndefined _ -> typ_undef
-  | EId (p, x) ->
-      (try Env.lookup_id x env
+  | EId (p, x) -> 
+      (try 
+         Env.lookup_id x env
        with Not_found -> typ_error p ("identifier " ^ x ^ " is unbound"))
   | ELet (_, x, e1, e2) ->
       let t = tc_exp env e1
@@ -134,9 +87,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EThrow (_, e) -> 
       let _ = tc_exp env e in
         TBot
-  | ETypecast (_, t, e) -> 
-      let _ = tc_exp env e in
-        t
+  | ETypecast (p, rt, e) ->
+      static rt (tc_exp env e)
   | EArray (p, []) -> 
       typ_error p "an empty array literal requires a type annotation"
   | EArray (_, e :: es) -> 
@@ -206,7 +158,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
        let s = (try Env.lookup_id x env 
                 with Not_found -> typ_error p (sprintf "%s is unbound" x))
        and t = tc_exp env e in
-         if subtype t s && subtype s t then t
+         if subtype t s then t
          else typ_error p 
            (sprintf "%s has type %s, but the right-hand side of this \
               assignment has type %s" x (string_of_typ s) (string_of_typ t))
@@ -234,31 +186,47 @@ let rec tc_exp (env : Env.env) exp = match exp with
     end
   | ERec (binds, body) -> 
       let f env (x, t, _) = Env.bind_id x t env in
-      let env = ref (fold_left f env binds) in
-      let tc_bind (x, t, e) =
-        let s = tc_exp !env e in
-          env := Env.remove_assigned_ids (av_exp e) !env;
+      let env = fold_left f env binds in
+      let bind_avs = map (fun (_, _, e) -> av_exp e) binds in
+      let body_env = Env.remove_assigned_ids (IdSetExt.unions bind_avs) env in
+      let rec mk_bind_envs (bind_avs : IdSet.t list) (prev_av : IdSet.t) 
+          : Env.env list = match bind_avs with
+          [] -> []
+        | bind_av :: next_avs -> 
+            let bind_env = 
+              Env.remove_assigned_ids (IdSetExt.unions (prev_av :: next_avs))
+                env in
+            let prev_av' = IdSet.union bind_av prev_av in
+              bind_env :: (mk_bind_envs next_avs prev_av') in
+      let bind_envs = mk_bind_envs bind_avs IdSet.empty in
+      let tc_bind (x, t, e) bind_env =
+        let s = tc_exp bind_env e in
           if subtype s t then ()
           else (* this should not happen; rec-annotation is a copy of the
                   function's type annotation. *)
             failwith (sprintf "%s is declared to have type %s, but the bound \
                              expression has type %s" x (string_of_typ t)
                         (string_of_typ s)) in
-        List.iter tc_bind binds;
-        tc_exp !env body
+        List.iter2 tc_bind binds bind_envs;
+        tc_exp body_env body
   | EFunc (p, args, fn_typ, body) -> 
-      eprintf "Assignable ids are:\n";
-      IdSetExt.pretty Format.err_formatter (Format.pp_print_string) 
-        (Env.assignable_ids env);
       if List.length args != List.length (nub args) then
         typ_error p "each argument must have a distinct name";
       begin match fn_typ with
           TArrow (_, arg_typs, result_typ) ->
             if List.length arg_typs = List.length args then ()
             else typ_error p "not all arguments have types";
-            let bind_arg env (x, t) = Env.bind_id x t env in
+            let bind_arg env (x, t) = 
+              (* all arguments are available for dataflow in the body *)
+              Env.new_assignable_id x (Env.bind_id x t env) in
             let env' = fold_left bind_arg env (List.combine args arg_typs) in
-            let body_typ = tc_exp env' body in
+            let body' = annotate env' body in
+              (* The env. in which we type the annotated body specifies the
+                 env. in which we do dataflow for nested functions. Remove the
+                 locally assigned identifiers from this env. (accounts for
+                 assigning to arguments.) *)
+            let env'' = Env.remove_assigned_ids (local_av_exp body') env' in
+            let body_typ = tc_exp env'' body' in
               if subtype body_typ result_typ then fn_typ
               else typ_error p
                 (sprintf "function body has type %s, but the function\'s \

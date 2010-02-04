@@ -138,6 +138,16 @@ let rec exp (env : env) expr = match expr with
                                   EApp (a, EId (a, "%loop"), [])),
                             EUndefined a)))],
               EApp (a, EId (a, "%loop"), []))
+  | DoWhileExpr (a, e1, e2) ->
+      let loop_typ = TArrow (TTop, [], typ_undef) in
+        ERec ([("%while", loop_typ,
+                EFunc (a, [], loop_typ,
+                       ESeq (a, exp env e1, 
+                             EIf (a, exp env e2, 
+                                  EApp (a, EId (a, "%loop"), []),
+                                    EUndefined a))))],
+              EApp (a, EId (a, "%loop"), []))
+
   | LabelledExpr (a, x, e) -> 
       (** We assume that this [LabelledExpr] is from a [LabelledStmt]. 
           Therefore, the return type is [ty_undef]. *)

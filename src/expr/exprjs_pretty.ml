@@ -71,6 +71,8 @@ let rec expr e fmt = match e with
       expr e fmt
   | WhileExpr (_, e1, e2) ->
       parens [text "while"; expr e1; expr e2] fmt
+  | DoWhileExpr (_, e1, e2) ->
+      parens [text "do-while"; expr e1; expr e2] fmt
   | LabelledExpr (_, x, e) ->
       parens [text "label"; text x; expr e] fmt
   | BreakExpr (_, x, e) ->

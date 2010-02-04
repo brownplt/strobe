@@ -3,6 +3,9 @@ open Typedjs_testLexer
 open Typedjs_pretty
 open Typedjs_tc
 open Typedjs_types
+open Typedjs_syntax
+
+let string_of_typ = pretty_string pretty_typ
 
 (* It would better to use a state monad for this. Since the test function
    should not modify num_tests, we should have 
@@ -31,6 +34,7 @@ let test ((pos, js_expr, comments, expected) : test) : unit =
                 (string_of_typ actual_typ)
             end
         | ExpectedFails ->
+            incr num_failures;
             printf "@%s:\n expected failure, succeeded with type %s\n" 
               (string_of_position pos) (string_of_typ actual_typ)
       end

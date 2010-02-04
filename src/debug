@@ -1,0 +1,4 @@
+#!/bin/sh
+pushd ../build
+ocamldebug -I javascript -I expr -I typedjs main.d.byte  $@
+popd
