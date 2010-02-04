@@ -148,11 +148,9 @@ and to_anf exp (k : 'a value -> 'a anfexp) = match exp with
         (fun v1 ->
            ALet (node (), x, BValue v1, to_anf e2 k))
   | ERec (binds, body) ->
-(*      let bound_ids = map fst2 binds in
-      let bound_bodies = to_anf_exps  *)
       let mk_bind (x, _, e) = 
         (match to_anf e (fun v -> AValue (node (), v)) with
-             AValue (_, v) -> (x, BValue v) (* requires 2nd-order polymorphism *)
+             AValue (_, v) -> (x, BValue v)
            | _ -> failwith "typedjs_anf.ml : error in ERec") in
         ARec (node (), map mk_bind binds, to_anf body k)
   | ESeq (p, e1, e2) ->
@@ -164,10 +162,12 @@ and to_anf exp (k : 'a value -> 'a anfexp) = match exp with
       to_anf e (fun v -> ABreak (node (), x, v)) (* ignore the continuation *)
   | ELabel (p, x, _, e) ->
       ALabel (node (), x, to_anf e k)
+  | EThrow (p, e) ->
+      (* Discard the continuation since it is unreachable. *)
+      to_anf e (fun v -> AThrow (node (), v))
 (*
   | ETryCatch of 'a * 'a exp * id * 'a exp
   | ETryFinally of 'a * 'a exp * 'a exp
-  | EThrow of 'a * 'a exp
 *)
 
 let from_typedjs e = to_anf e (fun v -> AValue (node (), v))
