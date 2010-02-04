@@ -48,7 +48,7 @@ let annotate (env : Env.env) (exp : pos exp) : pos exp =
                   else
                     env)
       (Env.id_env env) empty_env in
-  let _, cast_env = Typedjs_df.local_type_analysis df_env anfexp in
+  let cast_env = Typedjs_df.local_type_analysis df_env anfexp in
   let rec cast (ids : IdSet.t) (exp : pos exp) : pos exp = match exp with
       EString _ -> exp
     | ERegexp _ -> exp
