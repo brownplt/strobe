@@ -40,8 +40,13 @@ let rec static (rt : runtime_typs) (typ : typ) : typ = match typ with
  
 let annotate (env : Env.env) (exp : pos exp) : pos exp =
   let anfexp = Typedjs_anf.from_typedjs exp in
+  let assignable_ids = Env.assignable_ids env in
   let df_env = 
-    IdMap.fold (fun x t env -> bind_env x (runtime t) env) 
+    IdMap.fold (fun x t env -> 
+                  if IdSet.mem x assignable_ids then 
+                    bind_env x (runtime t) env
+                  else
+                    env)
       (Env.id_env env) empty_env in
   let _, cast_env = Typedjs_df.local_type_analysis df_env anfexp in
   let rec cast (ids : IdSet.t) (exp : pos exp) : pos exp = match exp with
@@ -69,7 +74,11 @@ let annotate (env : Env.env) (exp : pos exp) : pos exp =
     | EFunc _ -> exp (* intraprocedural *)
     | EUndefined _ -> exp
     | ELet (p, x, e1, e2) -> ELet (p, x, cast ids e1, cast (IdSet.add x ids) e2)
-    | ERec (binds, body) -> ERec (binds, cast ids body)
+    | ERec (binds, body) -> 
+        let removed_ids = IdSetExt.unions 
+          (map (fun (_, _, e) -> av_exp e) binds) in
+        let ids' = IdSet.diff ids removed_ids in
+          ERec (binds, cast ids' body)
     | ESeq (p, e1, e2) -> ESeq (p, cast ids e1, cast ids e2)
     | ELabel (p, l, t, e) -> ELabel (p, l, t, cast ids e)
     | EBreak (p, x, e) -> EBreak (p, x, cast ids e)

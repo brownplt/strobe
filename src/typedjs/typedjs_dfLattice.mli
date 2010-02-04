@@ -14,6 +14,8 @@ val union_env : env -> env -> env
 
 val lookup_env : id -> env -> abs_value
 
+val env_binds : id -> env -> bool
+
 
 (** [bind_env x v env] performs a conventional binding and also updates
     bindings that reference [x]. *)

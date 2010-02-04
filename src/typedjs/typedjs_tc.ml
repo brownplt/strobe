@@ -45,8 +45,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EBool _ -> typ_bool
   | ENull _ -> typ_null
   | EUndefined _ -> typ_undef
-  | EId (p, x) ->
-      (try Env.lookup_id x env
+  | EId (p, x) -> 
+      (try 
+         Env.lookup_id x env
        with Not_found -> typ_error p ("identifier " ^ x ^ " is unbound"))
   | ELet (_, x, e1, e2) ->
       let t = tc_exp env e1
@@ -185,18 +186,29 @@ let rec tc_exp (env : Env.env) exp = match exp with
     end
   | ERec (binds, body) -> 
       let f env (x, t, _) = Env.bind_id x t env in
-      let env = ref (fold_left f env binds) in
-      let tc_bind (x, t, e) =
-        let s = tc_exp !env e in
-          env := Env.remove_assigned_ids (av_exp e) !env;
+      let env = fold_left f env binds in
+      let bind_avs = map (fun (_, _, e) -> av_exp e) binds in
+      let body_env = Env.remove_assigned_ids (IdSetExt.unions bind_avs) env in
+      let rec mk_bind_envs (bind_avs : IdSet.t list) (prev_av : IdSet.t) 
+          : Env.env list = match bind_avs with
+          [] -> []
+        | bind_av :: next_avs -> 
+            let bind_env = 
+              Env.remove_assigned_ids (IdSetExt.unions (prev_av :: next_avs))
+                env in
+            let prev_av' = IdSet.union bind_av prev_av in
+              bind_env :: (mk_bind_envs next_avs prev_av') in
+      let bind_envs = mk_bind_envs bind_avs IdSet.empty in
+      let tc_bind (x, t, e) bind_env =
+        let s = tc_exp bind_env e in
           if subtype s t then ()
           else (* this should not happen; rec-annotation is a copy of the
                   function's type annotation. *)
             failwith (sprintf "%s is declared to have type %s, but the bound \
                              expression has type %s" x (string_of_typ t)
                         (string_of_typ s)) in
-        List.iter tc_bind binds;
-        tc_exp !env body
+        List.iter2 tc_bind binds bind_envs;
+        tc_exp body_env body
   | EFunc (p, args, fn_typ, body) -> 
       if List.length args != List.length (nub args) then
         typ_error p "each argument must have a distinct name";

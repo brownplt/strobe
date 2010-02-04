@@ -37,9 +37,12 @@ let string_of_rt rt =
 
 let value (env : env) (value : pos value) = match value with
     VId (p, x) -> 
-      let t = lookup_env x env in
-        bound_id_map := BoundIdMap.add (x, p) t !bound_id_map;
-        t
+      if env_binds x env then
+        let t = lookup_env x env in
+          bound_id_map := BoundIdMap.add (x, p) t !bound_id_map;
+          t
+      else
+        any_val
   | VString str -> AVString str
   | VNum _ -> single_value RTNumber
   | VInt _ -> single_value RTNumber
@@ -69,7 +72,7 @@ let bindexp (env : env) (exp : pos bind) : abs_value * env = match exp with
   | BPrefixOp (J.PrefixTypeof, v) -> 
       let _ = value env v in
         begin match v with
-            VId (_, x) -> AVTypeof x, env
+            VId (_, x) when env_binds x env -> AVTypeof x, env
           | _ -> any_val, env
         end
   | BInfixOp (op, v1, v2) -> 

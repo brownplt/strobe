@@ -44,6 +44,8 @@ let bind_env x v env =
   in IdMap.add x v (IdMap.map f env)
 
 
+let env_binds x env = IdMap.mem x env
+
 let abs_value_to_runtime_typs (v : abs_value) : runtime_typs = match v with
     AVType rts -> rts
   | AVTypeof _ -> RTSet.singleton RTString
