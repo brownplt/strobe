@@ -25,13 +25,30 @@ var simplefunc = __typedjs(
 
 var nestedfunc = __typedjs(
   function (a) {
-    var increment = __typedjs(function () { a = a + 1; }, 
-                              nestedfunc, "", 0);
-    increment(); increment();
+    var increment = __typedjs(function (a) { return a + 1; }, 
+                              nestedfunc, "increment", 0);
+    a = increment(a); a = increment(a);
     return a;
   },
   undefined, "nestedfunc", 2);
-  
+
+var doublenest = __typedjs(
+  function (a) {
+    var tostr = __typedjs(
+      function (b) {
+        var add1 = __typedjs(
+          function (c) {
+            return c + 1;
+          }, tostr, "add1", 0);
+        var addhi = __typedjs(
+          function (c) {
+            return c + "hi";
+          }, tostr, "addhi", 1);
+        return addhi("" + add1(b));
+      }, doublenest, "tostr", 0);
+    return tostr(a);
+  }, undefined, "doublenest", 3);
+
 //---------------
 
 function loader() {
@@ -39,9 +56,11 @@ function loader() {
 }
 
 function useFunction() {
+  pln(simplefunc("1",2));
   pln(nestedfunc(5));
   pln(nestedfunc(6));
   pln(nestedfunc(7));
+  pln(doublenest(10));
 }
 
 </script>
