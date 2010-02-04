@@ -32,6 +32,7 @@ type 'a expr
   | LetExpr of 'a * id * 'a expr * 'a expr
   | SeqExpr of 'a * 'a expr * 'a expr
   | WhileExpr of 'a * 'a expr * 'a expr
+  | DoWhileExpr of 'a * 'a expr * 'a expr
   | LabelledExpr of 'a * id * 'a expr
   | BreakExpr of 'a * id * 'a expr
   | ForInExpr of 'a * id * 'a expr * 'a expr
@@ -76,6 +77,7 @@ let rec aborts (expr : 'a expr) : bool = match expr with
   | LetExpr (_, _, e1, e2) -> aborts e1 || aborts e2
   | SeqExpr (_, e1, e2) -> aborts e1 || aborts e2
   | WhileExpr (_, e1, e2) -> aborts e1 || aborts e2
+  | DoWhileExpr (_, e1, e2) -> aborts e1 || aborts e2
   | LabelledExpr (_, _, e) -> aborts e
   | BreakExpr _ -> true
   | ForInExpr (_, _, e1, e2) -> aborts e1 || aborts e2
@@ -220,6 +222,18 @@ and stmt (s : 'a S.stmt) = match s with
         (dum,"%break",WhileExpr 
            (p,expr test,LabelledExpr 
               (dum,"%continue",stmt body)))
+  | S.LabelledStmt (p1, lbl ,S.DoWhileStmt (p2, body, test)) -> LabelledExpr 
+        (dum, "%break", LabelledExpr
+           (p1,lbl,DoWhileExpr
+              (p2, LabelledExpr 
+                 (dum,"%continue",LabelledExpr
+                    (dum,"%continue-"^lbl,stmt body)),
+              expr test)))
+  | S.DoWhileStmt (p, body, test) -> LabelledExpr
+      (dum, "%break", WhileExpr 
+           (p, LabelledExpr (dum, "%continue", stmt body),
+            expr test))
+
   (* TODO: | S.DoWhileStmt (p,body,test) -> *)
   | S.BreakStmt a -> BreakExpr (a,"%break",UndefinedExpr dum)
   | S.BreakToStmt (a,lbl) -> BreakExpr (a,lbl,UndefinedExpr dum)
@@ -332,6 +346,7 @@ let rec locals expr = match expr with
       IdSet.union (locals e1) (locals e2)
   | SeqExpr (_, e1, e2) -> IdSet.union (locals e1) (locals e2)
   | WhileExpr (_, e1, e2) -> IdSet.union (locals e1) (locals e2)
+  | DoWhileExpr (_, e1, e2) -> IdSet.union (locals e1) (locals e2)
   | LabelledExpr (_, _, e) -> locals e
   | BreakExpr (_, _, e) -> locals e
   | ForInExpr (_, _, e1, e2) -> IdSet.union (locals e1) (locals e2)

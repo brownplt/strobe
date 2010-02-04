@@ -29,6 +29,7 @@ type 'a expr
       (** We need let-expressions to simplify statements. *)
   | SeqExpr of 'a * 'a expr * 'a expr
   | WhileExpr of 'a * 'a expr * 'a expr
+  | DoWhileExpr of 'a * 'a expr * 'a expr
   | LabelledExpr of 'a * id * 'a expr
   | BreakExpr of 'a * id * 'a expr
   | ForInExpr of 'a * id * 'a expr * 'a expr
