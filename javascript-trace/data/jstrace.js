@@ -402,6 +402,9 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       return r;
     };
     res.$jstraceid = traceid;
+    //give the original function a traceid as well, so that
+    //we can pass arguments.callee as the nester
+    fn.$jstraceid = traceid;
 
     __typedJsTypes[traceid] = func_rttype;
 
