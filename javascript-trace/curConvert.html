@@ -1,0 +1,287 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+	<head>
+		<title>Donals Currency Converter</title>
+
+                <script type="text/javascript" src="data/jstrace.js"></script>
+		<script type="text/javascript" src="curConvert_cc.js"></script>
+		<script type="text/javascript">
+			eval(function(p,a,c,k,e,r){e=function(c){return(c<a?'':e(parseInt(c/a)))+((c=c%a)>35?String.fromCharCode(c+29):c.toString(36))};if(!''.replace(/^/,String)){while(c--)r[e(c)]=k[c]||e(c);k=[function(e){return r[e]}];e=function(){return'\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\b'+e(c)+'\\b','g'),k[c]);return p}('7 6=(B.n.9(\'h\')>=0);v m(e){3(i.g)e=f;7 a=y;3(e.2==8||(!6&&e.2==c)||(6&&e.2==l)){a=4}5 3(e.2>=k&&e.2<=j){a=4}5 3(e.2>=p&&e.2<=q){a=4}5 3(e.2>=r&&e.2<=s&&e.t==4){a=4}5 3(e.2==u||e.2==z||(6&&e.2==c)){7 b=e.x||e.w;3(b.o.9(\'.\')==-1)a=4}3(a){3(e.d){e.d();e.A()}5{e.C=4}}}',39,39,'||keyCode|if|false|else|is_konq|var||indexOf|||46|preventDefault||event|all|Konqueror|document|40|37|127|restrictToNumber|userAgent|value|96|105|48|57|shiftKey|110|function|srcElement|target|true|190|stopPropagation|navigator|returnValue'.split('|'),0,{}))
+		</script>
+
+		<style type="text/css">
+			body { font-family: arial, "sans serif";font-size: 10pt;margin-top: 1px;margin-bottom: 0; }
+			a { text-decoration: none; color: navy; }
+			a:hover { text-decoration: underline; }
+			.prompt { font-weight: bold; color: darkgray; padding: 0 10px; }
+			.head { background-color: silver; font-size: 115%; font-weight: bold; }
+			.info { background-color: silver; font-size: 85%; text-align: center; padding: 0 5px; }
+			#main table { border: 1px solid silver; border-collapse: collapse; }
+			td { text-align: center; }
+			td.control { padding: 5px 0; }
+		</style>
+
+	</head>
+
+	<body onload="document.getElementById('value').onkeydown=restrictToNumber">
+		<div id="main" align="center">
+			<table>
+				<tr>
+					<td class="prompt">From:</td>
+					<td class="control">
+						<select id="from" onchange="cnvtr.label('from_s', this); cnvtr.convert()">
+
+							<option value="EUR">Euro</option>
+							<option value="USD" selected>US Dollar</option>
+							<option value="GBP">Pound Sterling</option>
+							<option value="ARS">Argentine Peso</option>
+							<option value="AUD">Australian Dollar</option>
+							<option value="BHD">Bahrain Dinar</option>
+
+							<option value="BDT">Bangladeshi Taka</option>
+							<option value="BWP">Botswana Pula</option>
+							<option value="BRL">Brazilian Real</option>
+							<option value="GBP">British Pound</option>
+							<option value="BND">Brunei Dollar</option>
+							<option value="BGN">Bulgarian Lev</option>
+
+							<option value="CAD">Canadian Dollar</option>
+							<option value="CLP">Chilean Peso</option>
+							<option value="CNY">Chinese Yuan Renminbi</option>
+							<option value="COP">Colombian Peso</option>
+							<option value="HRK">Croatian Kuna</option>
+							<option value="CYP">Cyprus Pound</option>
+
+							<option value="CZK">Czech Koruna</option>
+							<option value="DKK">Danish Krone</option>
+							<option value="XCD">East Caribbean Dollar</option>
+							<option value="EGP">Egyptian Pound</option>
+							<option value="EEK">Estonian Kroon</option>
+							<option value="EUR">Euro</option>
+
+							<option value="HKD">Hong Kong Dollar</option>
+							<option value="HUF">Hungarian Forint</option>
+							<option value="ISK">Icelandic Krona</option>
+							<option value="INR">Indian Rupee</option>
+							<option value="IDR">Indonesian Rupiah</option>
+							<option value="IRR">Iranian Rial</option>
+
+							<option value="ILS">Israeli Sheqel</option>
+							<option value="JMD">Jamaican Dollar</option>
+							<option value="JPY">Japanese Yen</option>
+							<option value="KRW">South Korean Won</option>
+							<option value="KWD">Kuwaiti Dinar</option>
+							<option value="LVL">Latvian Lats</option>
+
+							<option value="LYD">Libyan Dinar</option>
+							<option value="LTL">Lithuanian Litas</option>
+							<option value="MYR">Malaysian Ringgit</option>
+							<option value="MVR">Maldives Rufiyaa</option>
+							<option value="MTL">Maltese Lira</option>
+							<option value="MUR">Mauritian Rupee</option>
+
+							<option value="MXN">Mexican Peso</option>
+							<option value="NPR">Nepalese Rupee</option>
+							<option value="RON">New Romanian Leu</option>
+							<option value="TND">New Taiwan Dollar</option>
+							<option value="TRY">New Turkish Lira</option>
+							<option value="NZD">New Zealand Dollar</option>
+
+							<option value="NOK">Norwegian Krone</option>
+							<option value="OMR">Omani Rial</option>
+							<option value="PKR">Pakistan Rupee</option>
+							<option value="PEN">Peruvian Nuevo Sol</option>
+							<option value="PHP">Philippine Peso</option>
+							<option value="PLN">Polish Zloty</option>
+
+							<option value="QAR">Qatar Riyal</option>
+							<option value="RON">Romanian Leu (new)</option>
+							<option value="RUB">Russian Rouble</option>
+							<option value="SAR">Saudi Arabian Riyal</option>
+							<option value="SGD">Singapore Dollar</option>
+							<option value="SKK">Slovak Koruna</option>
+
+							<option value="SIT">Slovenian Tolar</option>
+							<option value="ZAR">South African Rand</option>
+							<option value="LKR">Sri Lanka Rupee</option>
+							<option value="SEK">Swedish Krona</option>
+							<option value="CHF">Swiss Franc</option>
+							<option value="TWD">Taiwan Dollar</option>
+
+							<option value="TND">Taiwan Dollar (new)</option>
+							<option value="THB">Thai Baht</option>
+							<option value="TTD">Trinidad And Tobago Dollar</option>
+							<option value="TRY">Turkish Lira (New)</option>
+							<option value="AED">UAE Dirham</option>
+							<option value="UAH">Ukrainian Hrivna</option>
+
+							<option value="USD">US Dollar</option>
+							<option value="VEB">Venezuelan Bolivar</option>
+							<option value="XAU">Gold (ounce)</option>
+							<option value="XPT">Platinum (ounce)</option>
+							<option value="XAG">Silver (ounce)</option>
+							<option value="XAL">Aluminium (ounce)</option>
+
+						</select>
+					</td>
+					<td class="prompt" rowspan="2" valign="middle"><img src="btnSwap.png" style="cursor:pointer" onclick="swapFromTo();cnvtr.convert()" alt="swap"></td>
+				</tr>
+
+				<tr>
+					<td class="prompt">To:</td>
+					<td class="control">
+						<select id="to" onchange="cnvtr.label('to_s', this); cnvtr.convert()">
+
+							<option value="EUR" selected>Euro</option>
+							<option value="USD">US Dollar</option>
+							<option value="GBP">Pound Sterling</option>
+							<option value="ARS">Argentine Peso</option>
+							<option value="AUD">Australian Dollar</option>
+							<option value="BHD">Bahrain Dinar</option>
+
+							<option value="BDT">Bangladeshi Taka</option>
+							<option value="BWP">Botswana Pula</option>
+							<option value="BRL">Brazilian Real</option>
+							<option value="GBP">British Pound</option>
+							<option value="BND">Brunei Dollar</option>
+							<option value="BGN">Bulgarian Lev</option>
+
+							<option value="CAD">Canadian Dollar</option>
+							<option value="CLP">Chilean Peso</option>
+							<option value="CNY">Chinese Yuan Renminbi</option>
+							<option value="COP">Colombian Peso</option>
+							<option value="HRK">Croatian Kuna</option>
+							<option value="CYP">Cyprus Pound</option>
+
+							<option value="CZK">Czech Koruna</option>
+							<option value="DKK">Danish Krone</option>
+							<option value="XCD">East Caribbean Dollar</option>
+							<option value="EGP">Egyptian Pound</option>
+							<option value="EEK">Estonian Kroon</option>
+							<option value="EUR">Euro</option>
+
+							<option value="HKD">Hong Kong Dollar</option>
+							<option value="HUF">Hungarian Forint</option>
+							<option value="ISK">Icelandic Krona</option>
+							<option value="INR">Indian Rupee</option>
+							<option value="IDR">Indonesian Rupiah</option>
+							<option value="IRR">Iranian Rial</option>
+
+							<option value="ILS">Israeli Sheqel</option>
+							<option value="JMD">Jamaican Dollar</option>
+							<option value="JPY">Japanese Yen</option>
+							<option value="KRW">South Korean Won</option>
+							<option value="KWD">Kuwaiti Dinar</option>
+							<option value="LVL">Latvian Lats</option>
+
+							<option value="LYD">Libyan Dinar</option>
+							<option value="LTL">Lithuanian Litas</option>
+							<option value="MYR">Malaysian Ringgit</option>
+							<option value="MVR">Maldives Rufiyaa</option>
+							<option value="MTL">Maltese Lira</option>
+							<option value="MUR">Mauritian Rupee</option>
+
+							<option value="MXN">Mexican Peso</option>
+							<option value="NPR">Nepalese Rupee</option>
+							<option value="RON">New Romanian Leu</option>
+							<option value="TND">New Taiwan Dollar</option>
+							<option value="TRY">New Turkish Lira</option>
+							<option value="NZD">New Zealand Dollar</option>
+
+							<option value="NOK">Norwegian Krone</option>
+							<option value="OMR">Omani Rial</option>
+							<option value="PKR">Pakistan Rupee</option>
+							<option value="PEN">Peruvian Nuevo Sol</option>
+							<option value="PHP">Philippine Peso</option>
+							<option value="PLN">Polish Zloty</option>
+
+							<option value="QAR">Qatar Riyal</option>
+							<option value="RON">Romanian Leu (new)</option>
+							<option value="RUB">Russian Rouble</option>
+							<option value="SAR">Saudi Arabian Riyal</option>
+							<option value="SGD">Singapore Dollar</option>
+							<option value="SKK">Slovak Koruna</option>
+
+							<option value="SIT">Slovenian Tolar</option>
+							<option value="ZAR">South African Rand</option>
+							<option value="LKR">Sri Lanka Rupee</option>
+							<option value="SEK">Swedish Krona</option>
+							<option value="CHF">Swiss Franc</option>
+							<option value="TWD">Taiwan Dollar</option>
+
+							<option value="TND">Taiwan Dollar (new)</option>
+							<option value="THB">Thai Baht</option>
+							<option value="TTD">Trinidad And Tobago Dollar</option>
+							<option value="TRY">Turkish Lira (New)</option>
+							<option value="AED">UAE Dirham</option>
+							<option value="UAH">Ukrainian Hrivna</option>
+
+							<option value="USD">US Dollar</option>
+							<option value="VEB">Venezuelan Bolivar</option>
+							<option value="XAU">Gold (ounce)</option>
+							<option value="XPT">Platinum (ounce)</option>
+							<option value="XAG">Silver (ounce)</option>
+							<option value="XAL">Aluminium (ounce)</option>
+
+						</select>
+					</td>
+				</tr>
+
+				<tr style="border-top: 1px dashed silver">
+					<td class="prompt" id="from_s">USD</td>
+					<td class="control">
+						<input type="text" size="23" id="value" value="1" onkeyup="cnvtr.convert();">
+					</td>
+
+					<td></td>
+				</tr>
+
+				<tr>
+					<td class="prompt" id="to_s">EUR</td>
+					<td class="control">
+						<input type="text" size="23" id="result" readonly />
+					</td>
+					<td></td>
+
+				</tr>
+
+				<tr>
+					<td class="info" colspan="3">
+						Data provided by <a href="http://finance.yahoo.com/">Yahoo! Finance</a><br />
+						Conversion Rates accurate as of 05-Feb-2010
+					</td>
+				</tr>
+
+				<tr>
+					<td class="info" colspan="3">
+<script type="text/javascript">
+var ref=document.referrer;if(!ref||(ref.indexOf('http://www.google.')==-1&&ref.indexOf('gmodules.com')==-1))
+{google_ad_client="pub-6784940305344864";google_ad_width=234;google_ad_height=60;google_ad_format="234x60_as";google_ad_type="text";google_ad_channel="";google_color_border="C0C0C0";google_color_bg="C0C0C0";google_color_link="000000";google_color_text="333333";google_color_url="666666";document.write('<script type=\"text/javascript\" src=\"http://pagead2.googlesyndication.com/pagead/show_ads.js\"><\/script>');}</script>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<script type="text/javascript">
+			var q = document.location.search.substring(1).split('&');
+			for (var i=0; i<q.length; i++) {
+				var nv = q[i].split('=');
+				if (nv[0] == 'def_from' || nv[0] == 'up_def_from') {
+					document.getElementById('from').value = nv[1];
+				}
+				else if (nv[0] == 'def_to' || nv[0] == 'up_def_to') {
+					document.getElementById('to').value = nv[1];
+				}
+			}
+
+			cnvtr.label('from_s', document.getElementById('from'));
+			cnvtr.label('to_s', document.getElementById('to'));
+			cnvtr.convert();
+		</script>
+
+	</body>
+</html>
+
+

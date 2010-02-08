@@ -49,31 +49,41 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
 
   //pjs value --> rttype (as described above)
   var rttype = function(rtval) {
+    if (rtval === null) return {kind: 'flat', type: 'null'};
     var res = typeof(rtval);
     if (res == "object") {
-      if ("$jstraceid" in rtval) {
+      if (rtval.hasOwnProperty("$jstraceid")) {
         return {kind: 'object_ref', type: rtval.$jstraceid};
       }
 
-      typeObj = {};
+      var traceid = gensym("obj");
+      var typeObj = {};
 
       //mark the object
-      rtval.$jstraceid = gensym("obj");
-
-      for (var p in rtval) {
-        if (p == "$jstraceid") continue;
-        //pln("((SEEING PROPERTY: " + p + "))");
-        try {
-          var property = rtval[p];
-        } catch (errorrrr) {
-          //'security exception' with skype or something
-          var property = undefined;
+      try {
+        rtval.$jstraceid = traceid;
+        for (var p in rtval) {
+          if (p == "$jstraceid") continue;
+          //pln("((SEEING PROPERTY: " + p + "))");
+          try {
+            var property = rtval[p];
+          } catch (errorrrr) {
+            //'security exception' with skype or something
+            var property = undefined;
+          }
+          typeObj[p] = rttype(property);
         }
-        typeObj[p] = rttype(property);
+      }
+      catch (errorr) {
+        //various possibilities:
+        //"security error" with them not wanting you to enumerate an object
+        //inability to set $jstraceid on a native object..
+        //dnno what to do
+        typeObj["$js_error"] = "cannot inspect object";
       }
 
       var resRttype = {kind:'object', type:typeObj, seen: false};
-      __typedJsTypes[rtval.$jstraceid] = resRttype;
+      __typedJsTypes[traceid] = resRttype;
       return resRttype;
     }
     else if (res == "function") {
@@ -229,6 +239,10 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
 
     if (t.kind == "function_ref" || t.kind == "object_ref") {
       var realObj = __typedJsTypes[t.type];
+      if (realObj === undefined) {
+        return {answer: "BROKEN " + t.kind, typesSeen: typesSeen};
+        //alert(t.type + " not found!");
+      }
       typesSeen[t.type] = true;
       if (realObj.seen)
       {
@@ -256,6 +270,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
   //given a named rt type, return an array of strings representing the lines
   //of this type and any nestings it might have, if it's a function.
   var strNestedNamedRttype = function(nrt) {
+    var typesSeen = {}
     var n = nrt.name;
     if (!n) n = "";
     var rt = nrt.rttype;
@@ -267,11 +282,13 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       line += n + " :: ";
     }
     else {
-      return "ERROR: NOT FUNC OR NAMED";
+      return {answer: ["ERROR: NOT FUNC OR NAMED"], typesSeen: typesSeen};
     }
 
-    var tstr = strType(rt).answer;
+    var res = strType(rt);
+    var tstr = res.answer;
     line += tstr;
+    copyFrom(res.typesSeen, typesSeen);
 
     var isFunc = false;
     if (rt.kind === "function") {
@@ -282,20 +299,21 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     }
 
     if (isFunc === false || isFunc.nested.length === 0) {
-      return [line + ";"];
+      return {answer: [line + ";"], typesSeen: typesSeen};
     }
 
     var res = [line + " {"];
 
     for (var i=0; i < isFunc.nested.length; i++) {
       var innerRes = strNestedNamedRttype(isFunc.nested[i]);
-      for (var j = 0; j < innerRes.length; j++) {
-        res.push("  " + innerRes[j]);
+      for (var j = 0; j < innerRes.answer.length; j++) {
+        res.push("  " + innerRes.answer[j]);
       }
+      copyFrom(innerRes.typesSeen, typesSeen);
     }
     res.push("};");
 
-    return res;
+    return {answer: res, typesSeen: typesSeen};
   };
 
   //convert an array of arguments to an array of abstract arguments.
@@ -435,8 +453,12 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
 
     app(mktext("/*::")); app(mkbr());
 
+    var typesSeen = {};
+
     for (var i=0; i < __orderedVars.length; i++) {
-      var strs = strNestedNamedRttype(__orderedVars[i]);
+      var res = strNestedNamedRttype(__orderedVars[i]);
+      var strs = res.answer;
+      copyFrom(res.typesSeen, typesSeen);
       for (var j = 0; j < strs.length; j++) {
         var str = strs[j];
         var txt = __tracewin.document.createTextNode("  " + str);
@@ -445,6 +467,14 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       }
     }
     app(mktext("*/")); app(mkbr());
+
+    app(mktext("/*:::")); app(mkbr());
+    for (var ts in typesSeen) {
+      var res = strType(__typedJsTypes[ts]);
+      app(mktext("  type " + ts + " :: " + res.answer)); app(mkbr());
+    }
+    app(mktext("*/")); app(mkbr());
+
   };
 
   __tracewin = window.open("",
