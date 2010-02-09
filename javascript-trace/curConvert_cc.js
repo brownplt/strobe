@@ -57,7 +57,12 @@ Currency.prototype.label = __typedjs(function  (el,sl)
                                      },
                                      undefined,
                                      "Currency.prototype.label",
-                                     3);
+                                     3, false);
+/*function (el, sl)                                      {
+                                       var txt = document.createTextNode(sl.value);
+                                       var e = document.getElementById(el);
+                                       e.replaceChild(txt,e.firstChild);
+                                     };*/
 var cnvtr = new Currency();
 swapFromTo = __typedjs(function swapFromTo ()
                        {

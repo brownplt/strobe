@@ -24,9 +24,58 @@ this.$jstraceid = "$global"; //mark the global object so we don't deeply inspect
 //refers to can be found in __typedJsTypes.
 
 var __typedjs = (function() {  //lambda to hide all these local funcs
+  //-------------------
+  //stuff for outputting:
+  var mktext = function (win, s) {
+    return win.win.document.createTextNode(s);
+  };
+  var mkbr = function (win) {
+    return win.win.document.createElement('br');
+  };
+  var app = function (win, x) { return win.div.appendChild(x); };
+  var println = function (win, s) {
+    for (var i=0; i < win.level; i++) {
+      s = "  " + s;
+    }
+    app(win, mktext(win, s)); app(win, mkbr(win));
+  };
+  var clearwin = function (win) {
+    while (win.div.hasChildNodes())
+      win.div.removeChild(win.div.firstChild);
+  };
+
+  var mkwin = function (title) {
+    var res = window.open(
+      "", title,
+      "width=640,height=480,scrollbars=yes");
+
+    //for firefox: 'zero' is doctype, '1' is the htmlelement
+    var twbody = res.document.childNodes.item(1).childNodes.item(1);
+    while (twbody.hasChildNodes()) twbody.removeChild(twbody.firstChild);
+    var resdiv = res.document.createElement("pre");
+    resdiv.innerHTML = "Tracing initialized! Results come soon";
+    twbody.appendChild(resdiv);
+
+    return {win:res, div: resdiv, level: 0};
+  };
+  var __alertcount = 0;
+  var __tracewin = mkwin(document.title + " traced types");
+  var __dbgwin = mkwin(document.title + " DEBUG INFO");
+  var debug = function(s) {
+    __alertcount += 1;
+    //if (__alertcount % 10 == 0) alert("-");
+    return println(__dbgwin, s);
+  };
+  var incdbg = function() { __dbgwin.level += 1; };
+  var decdbg = function() { __dbgwin.level -= 1; };
+
+  //-------------------
+  //important variables:
   var __typedJsTypes = {$global: {kind: 'object', type: {}}}; //map type aliases to their rttypes
   var __orderedVars = []; //map order of appearance to named rttypes
 
+  //-------------------
+  //helper functions
   var symnum = 0;
   var gensym = function(name) {
     if (name) {
@@ -52,6 +101,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     if (rtval === null) return {kind: 'flat', type: 'null'};
     var res = typeof(rtval);
     if (res == "object") {
+      if (rtval instanceof Node) return {kind: 'flat', type: 'DOM'};
       if (rtval.hasOwnProperty("$jstraceid")) {
         return {kind: 'object_ref', type: rtval.$jstraceid};
       }
@@ -148,8 +198,14 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
   //rttype -> string functions:
   //convert a union-rttype to a str representing the union
   //return: {answer: the str, typesSeen: the types seen in the union}
-  var strUnion = function(u) {
-    if (u.length == 1) return strType(u[0]);
+  var strUnion = function(u, dbg) {
+    if (dbg) debug("strUnion of len " + u.length);
+    incdbg();
+    if (u.length == 1) {
+      var res = strType(u[0], dbg);
+      decdbg();
+      return res;
+    }
 
     var segmentsSeen = [];
     var needComma = false;
@@ -158,7 +214,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     var typesSeen = {};
 
     for (var j=0; j < u.length; j++) {
-      var innard = strType(u[j]);
+      var innard = strType(u[j], dbg);
       var s = innard.answer;
       if (!arrayContains(segmentsSeen, s)) {
         if (needComma)
@@ -171,7 +227,22 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       }
     }
     if (elementsIn != 1) res = "U(" + res + ")";
+    decdbg();
     return {answer: res, typesSeen: typesSeen};
+  };
+
+  var flatOrRef = function(t) {
+    if (t.kind == "flat" ||
+        t.kind == "object_ref" ||
+        t.kind == "function_ref")
+      return true;
+    return false;
+  };
+  var _quickStrType = function(t) {
+    //return brief description of the rttype
+    if (flatOrRef(t))
+      return t.kind + ", " + t.type;
+    return t.kind;
   };
 
   //input: rttype
@@ -180,12 +251,19 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
   // typesSeen: the names of the rttypes seen while iterating. needed to know whether
   //   to put a 'rec .' in}
   //don't go into nested functions
-  var strType = function(t) {
+  var strType = function(t, dbg) {
+    incdbg(); Node;
+    if (dbg) debug("strType " + _quickStrType(t));
     var typesSeen = {};
-    if (t === undefined) return {answer: "any", typesSeen: typesSeen}; //no info available
+    if (t === undefined) {
+      decdbg();
+      return {answer: "any", typesSeen: typesSeen}; //no info available
+    }
 
-    if (t.kind == "flat")
+    if (t.kind == "flat") {
+      decdbg();
       return {answer: t.type, typesSeen: typesSeen};
+    }
 
     if (t.kind == "object") {
       var res = "{";
@@ -193,17 +271,26 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       for (var p in t.type) {
         if (needComma) res += ", ";
         needComma = true;
-        var innard = strType(t.type[p])
+        if (dbg) {
+          if (flatOrRef(t.type[p])) {
+            debug("field " + p + ": " + _quickStrType(t.type[p]));
+          }
+          else
+            debug("field " + p + "...");
+        }
+        var innard = strType(t.type[p], dbg && !(t.type[p].kind == "flat"));
         res += p + " :: " + innard.answer;
         copyFrom(innard.typesSeen, typesSeen);
       }
+      decdbg();
       return {answer: res + "}", typesSeen: typesSeen};
     }
 
     if (t.kind == "function") {
       var res = "(";
       if (t.type.thist) {
-        var innard = strUnion(t.type.thist);
+        if (dbg) debug("function this type...");
+        var innard = strUnion(t.type.thist, dbg);
         var strthist = innard.answer;
         if (!(strthist == "{}"))
             res += "[" + strthist + "] ";
@@ -212,7 +299,8 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
 
       if (t.type.args) {
         for (var i=0; i < t.type.args.length; i++) {
-          var innard = strUnion(t.type.args[i]);
+          if (dbg) debug("function arg #" + i + "...");
+          var innard = strUnion(t.type.args[i], dbg);
           res += innard.answer;
           if (i != t.type.args.length-1)
             res += ", ";
@@ -227,19 +315,24 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
         res += "any";
       else
       {
-        var innard = strUnion(t.type.ret);
+        if (dbg) debug("function ret type...");
+        var innard = strUnion(t.type.ret, dbg);
         res += innard.answer;
         copyFrom(innard.typesSeen, typesSeen);
       }
+      decdbg();
       return {answer: res + ")", typesSeen: typesSeen};
     }
 
-    if (t.kind == undefined)
+    if (t.kind == undefined) {
+      decdbg();
       return {answer: "undefined", typesSeen: typesSeen};
+    }
 
     if (t.kind == "function_ref" || t.kind == "object_ref") {
       var realObj = __typedJsTypes[t.type];
       if (realObj === undefined) {
+        decdbg();
         return {answer: "BROKEN " + t.kind, typesSeen: typesSeen};
         //alert(t.type + " not found!");
       }
@@ -247,11 +340,12 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       if (realObj.seen)
       {
         //we're in a "rec" construct
+        decdbg();
         return {answer: t.type, typesSeen: typesSeen};
       }
 
       realObj.seen = true;
-      var innard = strType(realObj)
+      var innard = strType(realObj, dbg)
       var strRealObj = innard.answer;
 
       if (t.type in innard.typesSeen)
@@ -261,16 +355,21 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
 
       realObj.seen = false;
       copyFrom(innard.typesSeen, typesSeen);
+      decdbg();
       return {answer: resStr, typesSeen: typesSeen};
     }
 
+    decdbg();
     return {answer: "UNKNOWN KIND: " + t.kind, typesSeen: typesSeen};
   };
 
   //given a named rt type, return an array of strings representing the lines
   //of this type and any nestings it might have, if it's a function.
-  var strNestedNamedRttype = function(nrt) {
-    var typesSeen = {}
+  var strNestedNamedRttype = function(nrt, dbg) {
+    var typesSeen = {};
+    if (nrt === undefined) {
+      return {answer: ["ERROR: BLANK"], typesSeen: typesSeen};
+    }
     var n = nrt.name;
     if (!n) n = "";
     var rt = nrt.rttype;
@@ -285,7 +384,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       return {answer: ["ERROR: NOT FUNC OR NAMED"], typesSeen: typesSeen};
     }
 
-    var res = strType(rt);
+    var res = strType(rt, dbg);
     var tstr = res.answer;
     line += tstr;
     copyFrom(res.typesSeen, typesSeen);
@@ -370,7 +469,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
   //name is the name, if any
   //position is what position it occupies in the nester, e.g.
   //0 if the first position, 1 if the 2nd, etc.
-  var tracefunction = function(fn, nester, name, position) {
+  var tracefunction = function(fn, nester, name, position, dbg) {
     var traceid = gensym("func");
     var func_rttype = {
       kind: "function",
@@ -397,6 +496,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
 
     var res = function() {
       var calledWithNew = this instanceof arguments.callee;
+      if (dbg) debug("traced function called!" + calledWithNew);
 
       if (!calledWithNew) {
         //update the type of this upon entering the function
@@ -406,12 +506,12 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
 
       tjstype.args = processArguments(
         tjstype.args, arrayToAbstract(arguments));
-
+      if (dbg) debug("done proc args, abt to apply...");
       var r = fn.apply(this, arguments);
-
+      if (dbg) debug("traced function applied! proccing ret...");
       tjstype.ret = mergeRttypes(
         tjstype.ret, reffed_rttype(r));
-
+      if (dbg) debug("procced ret!");
       if (calledWithNew) {
         //update the type of this upon exiting the constructor
         tjstype.thist = mergeRttypes(
@@ -429,67 +529,44 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     return res;
   };
 
-  //initialization code to open the popup and make the tracing code run
-  var __tracewin, __resdiv;
-
+  //code to update the tracing output:
   var update_tracewin = function() {
-    while (__resdiv.hasChildNodes())
-      __resdiv.removeChild(__resdiv.firstChild);
-
+    clearwin(__dbgwin);
+    clearwin(__tracewin);
     if (__orderedVars.length == 0) {
-      var txt = __tracewin.document.createTextNode("No tracing info yet...");
-      __resdiv.appendChild(txt);
-      __resdiv.appendChild(__tracewin.document.createElement('br'));
+      println(__tracewin, "No tracing info yet...");
       return;
     }
 
-    var mktext = function (s) {
-      return __tracewin.document.createTextNode(s);
-    };
-    var mkbr = function () {
-      return __tracewin.document.createElement('br');
-    };
-    var app = function (x) { return __resdiv.appendChild(x); }
-
-    app(mktext("/*::")); app(mkbr());
+    println(__tracewin, "/*::");
 
     var typesSeen = {};
 
     for (var i=0; i < __orderedVars.length; i++) {
-      var res = strNestedNamedRttype(__orderedVars[i]);
+      println(__dbgwin, "stringing var #" + i);
+      var res = strNestedNamedRttype(__orderedVars[i], true);
+      println(__dbgwin, "done with var #" + i);
       var strs = res.answer;
       copyFrom(res.typesSeen, typesSeen);
       for (var j = 0; j < strs.length; j++) {
-        var str = strs[j];
-        var txt = __tracewin.document.createTextNode("  " + str);
-        __resdiv.appendChild(txt);
-        __resdiv.appendChild(mkbr());
+        println(__tracewin, "  " + strs[j]);
       }
     }
-    app(mktext("*/")); app(mkbr());
-
-    app(mktext("/*:::")); app(mkbr());
+    println(__tracewin, "*/");
+    println(__tracewin, "/*:::");
     for (var ts in typesSeen) {
       var res = strType(__typedJsTypes[ts]);
-      app(mktext("  type " + ts + " :: " + res.answer)); app(mkbr());
+      println(__tracewin, "  type " + ts + " :: " + res.answer);
     }
-    app(mktext("*/")); app(mkbr());
-
+    println(__tracewin, "*/");
   };
 
-  __tracewin = window.open("",
-    document.title + " traced types", "width=640,height=480,scrollbars=yes");
 
-  //for firefox: 'zero' is doctype, '1' is the htmlelement
-  var twbody = __tracewin.document.childNodes.item(1).childNodes.item(1);
-  while (twbody.hasChildNodes()) twbody.removeChild(twbody.firstChild);
-
-  __resdiv = __tracewin.document.createElement("pre");
-  __resdiv.innerHTML = "Tracing initialized! Results come soon";
-
-  twbody.appendChild(__resdiv);
-
+  var breathe = function() {
+    alert("Breathing...");
+  };
   setInterval(update_tracewin, 500);
+  //setInterval(breathe, 1000);
 
   return tracefunction;
 })();
