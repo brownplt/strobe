@@ -121,7 +121,8 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
             //'security exception' with skype or something
             var property = undefined;
           }
-          typeObj[p] = rttype(property);
+          var innerres = reffed_rttype(property);
+          typeObj[p] = innerres;
         }
       }
       catch (errorr) {
@@ -330,6 +331,10 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     }
 
     if (t.kind == "function_ref" || t.kind == "object_ref") {
+      decdbg();
+      typesSeen[t.type] = true;
+      return {answer: t.type, typesSeen: typesSeen};
+
       var realObj = __typedJsTypes[t.type];
       if (realObj === undefined) {
         decdbg();
@@ -470,7 +475,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
   //position is what position it occupies in the nester, e.g.
   //0 if the first position, 1 if the 2nd, etc.
   var tracefunction = function(fn, nester, name, position, dbg) {
-    var traceid = gensym("func");
+    var traceid = gensym("func" + (name ? ("_" + (name.substring(name.lastIndexOf(".")+1))) : ""));
     var func_rttype = {
       kind: "function",
       type: {
@@ -553,10 +558,22 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       }
     }
     println(__tracewin, "*/");
+
     println(__tracewin, "/*:::");
-    for (var ts in typesSeen) {
-      var res = strType(__typedJsTypes[ts]);
-      println(__tracewin, "  type " + ts + " :: " + res.answer);
+    var typesPrinted = {};
+    while (true) {
+      var printedSmth = false;
+      var newTs = {};
+      for (var ts in typesSeen) {
+        if (ts in typesPrinted) continue;
+        var res = strType(__typedJsTypes[ts], true);
+        println(__tracewin, "  type " + ts + " :: " + res.answer);
+        copyFrom(res.typesSeen, newTs);
+        typesPrinted[ts] = true;
+        printedSmth = true;
+      }
+      typesSeen = newTs;
+      if (!printedSmth) break;
     }
     println(__tracewin, "*/");
   };
