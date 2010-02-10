@@ -217,7 +217,9 @@ stmt s = case s of
     decls' <- mapM varDecl decls 
     return $ VarDeclStmt p decls'
   FunctionStmt p (Id pp name) args body -> do
-    let func = FuncExpr p (Just (Id pp name)) args body
+    --we don't want the funcexprs to be named, since any references
+    --to the function should be to the wrapped one.
+    let func = FuncExpr p Nothing args body
     let fexpr = ExprStmt p (AssignExpr p OpAssign (LVar p name) func)
     stmt fexpr
  where

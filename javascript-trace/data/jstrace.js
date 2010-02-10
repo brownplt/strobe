@@ -233,6 +233,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
   };
 
   var flatOrRef = function(t) {
+    if (t === undefined) return true;
     if (t.kind == "flat" ||
         t.kind == "object_ref" ||
         t.kind == "function_ref")
@@ -241,6 +242,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
   };
   var _quickStrType = function(t) {
     //return brief description of the rttype
+    if (t === undefined) return "ERRUNDEF";
     if (flatOrRef(t))
       return t.kind + ", " + t.type;
     return t.kind;
@@ -582,7 +584,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
   var breathe = function() {
     alert("Breathing...");
   };
-  setInterval(update_tracewin, 500);
+  setInterval(update_tracewin, 5000);
   //setInterval(breathe, 1000);
 
   return tracefunction;
