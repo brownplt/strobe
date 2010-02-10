@@ -167,6 +167,8 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     if (rt1 == rt2) return true;
     if (rt1===undefined && rt2===undefined) return true;
     if (rt1===undefined || rt2===undefined) return false;
+    if (rt1===null && rt2===null) return true;
+    if (rt1===null || rt2===null) return false;
 
     if (rt1.kind != rt2.kind) return false;
 
@@ -411,7 +413,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     var res = [line + " {"];
 
     for (var i=0; i < isFunc.nested.length; i++) {
-      var innerRes = strNestedNamedRttype(isFunc.nested[i]);
+      var innerRes = strNestedNamedRttype(isFunc.nested[i], dbg);
       for (var j = 0; j < innerRes.answer.length; j++) {
         res.push("  " + innerRes.answer[j]);
       }
@@ -493,6 +495,9 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
 
     if (nester !== undefined) {
       //insert the func in the proper position in the nester
+      /*alert("trace id of nester is " + nester.$jstraceid);
+      alert("len of nested: " +
+            __typedJsTypes[nester.$jstraceid].type.nested.length);*/
       __typedJsTypes[nester.$jstraceid].type.nested[position] = {
         name: name, rttype: ref};
     }
