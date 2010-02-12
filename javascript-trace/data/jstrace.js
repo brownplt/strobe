@@ -589,7 +589,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
   var breathe = function() {
     alert("Breathing...");
   };
-  setInterval(update_tracewin, 5000);
+  setInterval(update_tracewin, 1000);
   //setInterval(breathe, 1000);
 
   return tracefunction;
