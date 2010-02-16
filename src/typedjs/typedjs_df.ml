@@ -27,7 +27,7 @@ let string_of_rt rt =
 
 let bound_id_map : abs_value BoundIdMap.t ref = ref BoundIdMap.empty
 
-let value (env : env) (value : pos value) = match value with
+let value (env : env) (value : value) = match value with
     VId (p, x) -> 
       if env_binds x env then
         let t = lookup_env x env in
@@ -56,7 +56,7 @@ let mk_type_is x s = match s with
   | "undefined" -> AVTypeIs (x, RTSet.singleton RTUndefined)
   | _ -> single_value RTBoolean
 
-let bindexp (env : env) (exp : pos bind) : abs_value * env = match exp with
+let bindexp (env : env) (exp : bind) : abs_value * env = match exp with
     BValue v -> (value env v, env)
   | BApp _ -> (any_val, env)
   | BBracket _ -> (any_val, env)
@@ -86,17 +86,15 @@ let bindexp (env : env) (exp : pos bind) : abs_value * env = match exp with
     enclosing labels to abstract values. *)
 type result = abs_value IdMap.t
 
-
-
 let local_type_analysis env exp =
   bound_id_map := BoundIdMap.empty;
   let node_values : abs_value NodeMap.t ref = ref NodeMap.empty in
-  let node_value (e : 'a anfexp) : abs_value = 
+  let node_value (e : anfexp) : abs_value = 
     NodeMap.find (node_of_anfexp e) !node_values in
   let set_node_value (n : node) (v : abs_value) : unit =
     node_values := NodeMap.add n v !node_values in
 
-  let rec anfexp (env : env) (exp : pos anfexp) : result = match exp with
+  let rec anfexp (env : env) (exp : anfexp) : result = match exp with
       ALet (node, x, BIf (v1, e2, e3), body) ->
         let env2, env3 = match value env v1 with
             AVTypeIs (x, rt) -> 

@@ -10,46 +10,46 @@ module NodeMapExt : MapExt.S
   with type key = node
   and type +'a t = 'a NodeMap.t
 
-type 'a value =
-    VId of 'a * id
+type value =
+    VId of pos * id
   | VString of string
   | VNum of float
   | VInt of int
   | VRegexp of string * bool * bool
   | VBool of bool
   | VNull
-  | VArray of 'a value list
-  | VObject of (string * 'a value) list
+  | VArray of value list
+  | VObject of (string * value) list
   | VThis
-  | VFunc of id list * typ * 'a anfexp
+  | VFunc of id list * typ * anfexp
   | VUndefined
 
-and 'a bind =
-  | BValue of 'a value
-  | BApp of 'a value * 'a value list
-  | BBracket of 'a value * 'a value
-  | BNew of 'a value * 'a value list
-  | BPrefixOp of JavaScript_syntax.prefixOp * 'a value
-  | BInfixOp of JavaScript_syntax.infixOp * 'a value * 'a value
-  | BAssign of id * 'a value
-  | BSetProp of 'a value * 'a value * 'a value
-  | BIf of 'a value * 'a anfexp * 'a anfexp
-  | BTryCatch of 'a anfexp * 'a anfexp
-  | BTryFinally of 'a anfexp * 'a anfexp
+and bind =
+  | BValue of value
+  | BApp of value * value list
+  | BBracket of value * value
+  | BNew of value * value list
+  | BPrefixOp of JavaScript_syntax.prefixOp * value
+  | BInfixOp of JavaScript_syntax.infixOp * value * value
+  | BAssign of id * value
+  | BSetProp of value * value * value
+  | BIf of value * anfexp * anfexp
+  | BTryCatch of anfexp * anfexp
+  | BTryFinally of anfexp * anfexp
 
 
-and 'a anfexp =
-    ALet of node * id * 'a bind * 'a anfexp
-  | ARec of node * (id * 'a bind) list * 'a anfexp
-  | ALabel of node * id * 'a anfexp
-  | ABreak of node * id * 'a value
-  | AThrow of node * 'a value
-  | AValue of node * 'a value
+and anfexp =
+    ALet of node * id * bind * anfexp
+  | ARec of node * (id * bind) list * anfexp
+  | ALabel of node * id * anfexp
+  | ABreak of node * id * value
+  | AThrow of node * value
+  | AValue of node * value
 
-val from_typedjs : exp -> pos anfexp
+val from_typedjs : exp -> anfexp
 
-val pretty_anfexp : Format.formatter -> 'a anfexp -> unit
+val pretty_anfexp : Format.formatter -> anfexp -> unit
 
-val print_anfexp : 'a anfexp -> unit
+val print_anfexp : anfexp -> unit
 
-val node_of_anfexp : 'a anfexp -> node
+val node_of_anfexp : anfexp -> node

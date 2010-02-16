@@ -14,41 +14,41 @@ module NodeMap = Map.Make (NodeOrderedType)
 
 module NodeMapExt = MapExt.Make (NodeOrderedType) (NodeMap)
 
-type 'a value =
-    VId of 'a * id
+type value =
+    VId of pos * id
   | VString of string
   | VNum of float
   | VInt of int
   | VRegexp of string * bool * bool
   | VBool of bool
   | VNull
-  | VArray of 'a value list
-  | VObject of (string * 'a value) list
+  | VArray of value list
+  | VObject of (string * value) list
   | VThis
-  | VFunc of id list * typ * 'a anfexp
+  | VFunc of id list * typ * anfexp
   | VUndefined
 
-and 'a bind =
-  | BValue of 'a value
-  | BApp of 'a value * 'a value list
-  | BBracket of 'a value * 'a value
-  | BNew of 'a value * 'a value list
-  | BPrefixOp of JavaScript_syntax.prefixOp * 'a value
-  | BInfixOp of JavaScript_syntax.infixOp * 'a value * 'a value
-  | BAssign of id * 'a value
-  | BSetProp of 'a value * 'a value * 'a value
-  | BIf of 'a value * 'a anfexp * 'a anfexp
-  | BTryCatch of 'a anfexp * 'a anfexp
-  | BTryFinally of 'a anfexp * 'a anfexp
+and bind =
+  | BValue of value
+  | BApp of value * value list
+  | BBracket of value * value
+  | BNew of value * value list
+  | BPrefixOp of JavaScript_syntax.prefixOp * value
+  | BInfixOp of JavaScript_syntax.infixOp * value * value
+  | BAssign of id * value
+  | BSetProp of value * value * value
+  | BIf of value * anfexp * anfexp
+  | BTryCatch of anfexp * anfexp
+  | BTryFinally of anfexp * anfexp
 
 
-and 'a anfexp =
-    ALet of node * id * 'a bind * 'a anfexp
-  | ARec of node * (id * 'a bind) list * 'a anfexp
-  | ALabel of node * id * 'a anfexp
-  | ABreak of node * id * 'a value
-  | AThrow of node * 'a value
-  | AValue of node * 'a value
+and anfexp =
+    ALet of node * id * bind * anfexp
+  | ARec of node * (id * bind) list * anfexp
+  | ALabel of node * id * anfexp
+  | ABreak of node * id * value
+  | AThrow of node * value
+  | AValue of node * value
 
 let next_name = ref 0
 
@@ -73,7 +73,7 @@ let name_value v k = match v with
   | v -> let x = new_name () in
       ALet (node (), x, BValue v, k x)
 
-let rec to_anf_exps exps (k : 'a value list -> 'a anfexp) = match exps with
+let rec to_anf_exps exps (k : value list -> anfexp) = match exps with
     [] -> k []
   | e :: es -> 
       to_anf e 
@@ -82,7 +82,7 @@ let rec to_anf_exps exps (k : 'a value list -> 'a anfexp) = match exps with
               (fun vs -> 
                  k (v :: vs))))
 
-and to_anf exp (k : 'a value -> 'a anfexp) = match exp with
+and to_anf exp (k : value -> anfexp) = match exp with
     EString (_, s) -> k (VString s)
   | ERegexp (_, s, g, i) -> k (VRegexp (s, g, i))
   | ENum (_, x) -> k (VNum x)

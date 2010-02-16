@@ -14,4 +14,4 @@ module BoundIdMap : Map.S
 (** [local_type_analysis env anfexp] returns a map from bound
     identifiers to abstract values. The analysis is intraprocedural, so
     the map does not bind nodes from nested functions. *)
-val local_type_analysis : env -> pos anfexp -> abs_value BoundIdMap.t
+val local_type_analysis : env -> anfexp -> abs_value BoundIdMap.t
