@@ -108,12 +108,12 @@ let prop (p : prop) = match p with
   | PropNum n -> int n
 
 
-let rec varDecl (decl : pos varDecl) = match decl with
+let rec varDecl decl = match decl with
     VarDeclNoInit (_,x) -> text x
   | VarDecl (_,x,e) -> sepBy " " [text x; text "="; expr e]
 
 
-and caseClause (clause : pos caseClause) = match clause with
+and caseClause clause = match clause with
     CaseClause (_,e,s) -> sepBy " " [expr e; text ":"; stmt s]
   | CaseDefault (_,s) -> sepBy " " [text "default:"; stmt s]
 
@@ -139,17 +139,17 @@ and for_in_init fii = match fii with
   | NoVarForInInit (_,x) -> text x
 
 
-and lvalue (lv : pos lvalue) = match lv with
+and lvalue lv = match lv with
     VarLValue (_,x) -> text x
   | DotLValue (_,e,x) -> sepBy "" [expr e; text "."; text x]
   | BracketLValue (_,e1,e2) -> seq [expr e1; brackets [expr e2]]
 
 
-and catch (clause : pos catch) = match clause with
+and catch clause = match clause with
     CatchClause (_,x,s) -> seq [text "catch"; parensBy "" [text x]; block s]
 
 
-and expr (e : pos expr) = match e with
+and expr e = match e with
     StringExpr (_,s) -> string s
   | RegexpExpr (p,s,g,i) -> string s (* TODO: fixme *)
   | NumExpr (_,f) -> text (string_of_float f)
@@ -188,7 +188,7 @@ and expr (e : pos expr) = match e with
                  stmt body]
   | UndefinedExpr _ -> text ""
 
-and stmt (s : pos stmt) = match s with
+and stmt s = match s with
    BlockStmt (_,ss) -> bracesBy "" (List.map stmt ss)
   | EmptyStmt _ -> text ";"
   | ExprStmt e -> sepEndBy "" ";" [expr e]
@@ -230,10 +230,10 @@ and stmt (s : pos stmt) = match s with
 
 
 
-let render_expr (e : pos expr) : string = 
+let render_expr e : string = 
   Easy_format.Pretty.to_string (expr e)
 
-let render_stmts (ss : pos stmt list) : string =
+let render_stmts ss : string =
   Easy_format.Pretty.to_string (sepBy "\n" (List.map stmt ss))
 
 let render_prefixOp op =

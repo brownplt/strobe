@@ -7,7 +7,7 @@ exception Expected_lvalue
 
 exception Parse_failure of string
 
-let rec expr_to_lvalue (e : 'a expr) : ('a lvalue) =  match e with
+let rec expr_to_lvalue (e : expr) : lvalue =  match e with
     VarExpr (p,x) -> VarLValue (p,x)
   | DotExpr (p,e,x) -> DotLValue (p,e,x)
   | BracketExpr (p,e1,e2) -> BracketLValue (p,e1,e2)
@@ -60,8 +60,8 @@ let parse_error s =
 %start program
 %start expression
 
-%type <Prelude.pos JavaScript_syntax.stmt list> program
-%type <Prelude.pos JavaScript_syntax.expr> expression
+%type <JavaScript_syntax.stmt list> program
+%type <JavaScript_syntax.expr> expression
 
 %%
 

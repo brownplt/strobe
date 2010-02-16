@@ -59,78 +59,79 @@ type prop
   | PropString of string
   | PropNum of int
 
-type 'a varDecl
-  = VarDeclNoInit of 'a * id
-  | VarDecl of 'a * id * 'a expr
-and 'a forInit
+type varDecl
+  = VarDeclNoInit of pos * id
+  | VarDecl of pos * id * expr
+
+and forInit
   = NoForInit
-  | VarForInit of 'a varDecl list
-  | ExprForInit of 'a expr
+  | VarForInit of varDecl list
+  | ExprForInit of expr
 
-and 'a catch
-  = CatchClause of 'a * id * 'a stmt
+and catch
+  = CatchClause of pos * id * stmt
 
-and 'a forInInit
- = VarForInInit of 'a * id
- | NoVarForInInit of 'a * id
+and forInInit
+ = VarForInInit of pos * id
+ | NoVarForInInit of pos * id
 
-and 'a caseClause
-  = CaseClause of 'a * 'a expr * 'a stmt
-  | CaseDefault of 'a * 'a stmt
+and caseClause
+  = CaseClause of pos * expr * stmt
+  | CaseDefault of pos * stmt
 
-and 'a lvalue
-  = VarLValue of 'a * id
-  | DotLValue of 'a * 'a expr * id
-  | BracketLValue of 'a * 'a expr * 'a expr
+and lvalue
+  = VarLValue of pos * id
+  | DotLValue of pos * expr * id
+  | BracketLValue of pos * expr * expr
 
-and 'a expr 
-  = StringExpr of 'a * string
-  | RegexpExpr of 'a * string * bool * bool
-  | NumExpr of 'a * float
-  | IntExpr of 'a * int
-  | BoolExpr of 'a * bool
-  | NullExpr of 'a
-  | ArrayExpr of 'a * 'a expr list
-  | ObjectExpr of 'a * ('a * prop * 'a expr) list
-  | ThisExpr of 'a
-  | VarExpr of 'a * id
-  | DotExpr of 'a * 'a expr * id
-  | BracketExpr of 'a * 'a expr * 'a expr
-  | NewExpr of 'a * 'a expr * 'a expr list
-  | PrefixExpr of 'a * prefixOp * 'a expr
-  | UnaryAssignExpr of 'a * unaryAssignOp * 'a lvalue
-  | InfixExpr of 'a * infixOp * 'a expr * 'a expr
-  | IfExpr of 'a * 'a expr * 'a expr * 'a expr
-  | AssignExpr of 'a * assignOp * 'a lvalue * 'a expr
-  | ParenExpr of 'a * 'a expr
-  | ListExpr of 'a * 'a expr * 'a expr
-  | CallExpr of 'a * 'a expr * 'a expr list
-  | FuncExpr of 'a * id list * 'a stmt
-  | NamedFuncExpr of 'a * id * id list * 'a stmt
+and expr 
+  = StringExpr of pos * string
+  | RegexpExpr of pos * string * bool * bool
+  | NumExpr of pos * float
+  | IntExpr of pos * int
+  | BoolExpr of pos * bool
+  | NullExpr of pos
+  | ArrayExpr of pos * expr list
+  | ObjectExpr of pos * (pos * prop * expr) list
+  | ThisExpr of pos
+  | VarExpr of pos * id
+  | DotExpr of pos * expr * id
+  | BracketExpr of pos * expr * expr
+  | NewExpr of pos * expr * expr list
+  | PrefixExpr of pos * prefixOp * expr
+  | UnaryAssignExpr of pos * unaryAssignOp * lvalue
+  | InfixExpr of pos * infixOp * expr * expr
+  | IfExpr of pos * expr * expr * expr
+  | AssignExpr of pos * assignOp * lvalue * expr
+  | ParenExpr of pos * expr
+  | ListExpr of pos * expr * expr
+  | CallExpr of pos * expr * expr list
+  | FuncExpr of pos * id list * stmt
+  | NamedFuncExpr of pos * id * id list * stmt
   (* While parsing, these are created by elisions in array literals and by
      omitted results in return statements.  Semantically, both stand for the
      value undefined.  We pretty-print it as an empty string *)
-  | UndefinedExpr of 'a
+  | UndefinedExpr of pos
 
-and 'a stmt 
-  = BlockStmt of 'a * ('a stmt list)
-  | EmptyStmt of 'a  
-  | ExprStmt of 'a expr
-  | IfStmt of 'a * ('a expr) * ('a stmt) * ('a stmt)
-  | IfSingleStmt of 'a * ('a expr) * ('a stmt)
-  | SwitchStmt of 'a * 'a expr * 'a caseClause list
-  | WhileStmt of 'a * 'a expr * 'a stmt
-  | DoWhileStmt of 'a * 'a stmt * 'a expr
-  | BreakStmt of 'a
-  | BreakToStmt of 'a * id
-  | ContinueStmt of 'a
-  | ContinueToStmt of 'a * id
-  | LabelledStmt of 'a * id * 'a stmt
-  | ForInStmt of 'a * 'a forInInit * 'a expr * 'a stmt
-  | ForStmt of 'a * 'a forInit * 'a expr * 'a expr * 'a stmt
-  | TryStmt of 'a * 'a stmt * 'a catch list * 'a stmt
-  | ThrowStmt of 'a * 'a expr
-  | ReturnStmt of 'a * 'a expr
-  | WithStmt of 'a expr * 'a stmt
-  | VarDeclStmt of 'a * 'a varDecl list
-  | FuncStmt of 'a * id * id list * 'a stmt
+and stmt 
+  = BlockStmt of pos * stmt list
+  | EmptyStmt of pos  
+  | ExprStmt of expr
+  | IfStmt of pos * expr * stmt * stmt
+  | IfSingleStmt of pos * expr * stmt
+  | SwitchStmt of pos * expr * caseClause list
+  | WhileStmt of pos * expr * stmt
+  | DoWhileStmt of pos * stmt * expr
+  | BreakStmt of pos
+  | BreakToStmt of pos * id
+  | ContinueStmt of pos
+  | ContinueToStmt of pos * id
+  | LabelledStmt of pos * id * stmt
+  | ForInStmt of pos * forInInit * expr * stmt
+  | ForStmt of pos * forInit * expr * expr * stmt
+  | TryStmt of pos * stmt * catch list * stmt
+  | ThrowStmt of pos * expr
+  | ReturnStmt of pos * expr
+  | WithStmt of expr * stmt
+  | VarDeclStmt of pos * varDecl list
+  | FuncStmt of pos * id * id list * stmt

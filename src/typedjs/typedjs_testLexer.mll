@@ -8,7 +8,7 @@
     | ExpectedFails
 
   type test =
-      pos * (pos JavaScript_syntax.expr) * (pos * string) list * expected
+      pos * JavaScript_syntax.expr * (pos * string) list * expected
 
   let expr_buf = Buffer.create 120
 

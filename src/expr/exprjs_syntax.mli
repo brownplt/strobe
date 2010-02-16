@@ -47,8 +47,8 @@ and 'a lvalue =
     VarLValue of 'a * id
   | PropLValue of 'a * 'a expr * 'a expr
 
-val from_javascript : pos JavaScript_syntax.stmt list -> pos expr
+val from_javascript : JavaScript_syntax.stmt list -> pos expr
 
-val from_javascript_expr : pos JavaScript_syntax.expr -> pos expr
+val from_javascript_expr : JavaScript_syntax.expr -> pos expr
 
 val locals : 'a expr -> IdSet.t

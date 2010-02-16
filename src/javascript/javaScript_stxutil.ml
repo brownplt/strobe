@@ -1,7 +1,7 @@
 open Prelude
 open JavaScript_syntax
 
-let expr_annotation (e : 'a expr) = match e with
+let expr_annotation (e : expr) = match e with
     StringExpr (a, _) -> a
   | RegexpExpr (a, _, _, _) -> a
   | NumExpr (a, _) -> a
@@ -27,7 +27,7 @@ let expr_annotation (e : 'a expr) = match e with
   | NamedFuncExpr (a, _, _, _) -> a
   | UndefinedExpr a -> a
 
-let stmt_annotation (s : 'a stmt) = match s with
+let stmt_annotation (s : stmt) = match s with
     BlockStmt (a, _) -> a
   | EmptyStmt a -> a  
   | ExprStmt e -> expr_annotation e

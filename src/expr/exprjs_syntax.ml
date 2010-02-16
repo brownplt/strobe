@@ -118,7 +118,7 @@ let rec seq a e1 e2 =
           | SeqExpr (a', e11, e12) -> SeqExpr (a, e11, seq a' e12 e2)
           | _ -> SeqExpr (a, e1, e2))
 
-let rec expr (e : 'a S.expr) = match e with
+let rec expr (e : S.expr) = match e with
     S.StringExpr (a,s) -> StringExpr (a,s)
   | S.RegexpExpr (a,re,g,i) -> RegexpExpr (a,re,g,i)
   | S.NumExpr (a,f) -> NumExpr (a,f)
@@ -195,12 +195,12 @@ let rec expr (e : 'a S.expr) = match e with
                               VarLValue (dum,name),anonymous_func))
                  (VarExpr (dum,name)))
                         
-and lvalue (lv : 'a S.lvalue) = match lv with
+and lvalue (lv : S.lvalue) = match lv with
     S.VarLValue (a,x) -> VarLValue (a,x)
   | S.DotLValue (a,e,x) -> PropLValue (a,expr e,StringExpr (dum,x))
   | S.BracketLValue (a,e1,e2) -> PropLValue (a,expr e1,expr e2)
 
-and stmt (s : 'a S.stmt) = match s with 
+and stmt (s : S.stmt) = match s with 
     S.BlockStmt (a,[]) -> UndefinedExpr a
   | S.BlockStmt (a,s1::ss) -> seq a (stmt s1) (stmt (S.BlockStmt (dum, ss)))
   | S.EmptyStmt a -> UndefinedExpr a
@@ -261,7 +261,7 @@ and stmt (s : 'a S.stmt) = match s with
                  (expr incr))))
   | S.VarDeclStmt (a, decls) -> varDeclList decls
 
-and forInit (fi : 'a S.forInit) = match fi with
+and forInit (fi : S.forInit) = match fi with
     S.NoForInit -> UndefinedExpr dum
   | S.ExprForInit e -> expr e
   | S.VarForInit decls -> varDeclList decls
@@ -271,11 +271,11 @@ and varDeclList decls = match decls with
   | [d] -> varDecl d
   | d :: ds -> seq dum (varDecl d) (varDeclList ds)
 
-and varDecl (decl : 'a S.varDecl) = match decl with
+and varDecl (decl : S.varDecl) = match decl with
     S.VarDeclNoInit (a, x) -> VarDeclExpr (a, x, UndefinedExpr dum)
   | S.VarDecl (a, x, e) -> VarDeclExpr (a, x, expr e)
 
-and caseClauses (clauses : 'a S.caseClause list) = match clauses with
+and caseClauses (clauses : S.caseClause list) = match clauses with
     [] -> UndefinedExpr dum
   | (S.CaseDefault (a,s)::clauses) -> seq a (stmt s) (caseClauses clauses)
   | (S.CaseClause (a,e,s)::clauses) ->
@@ -298,7 +298,7 @@ and prop pr =  match pr with
 (** Generates an expression that evaluates and binds lv, then produces the
     the value of body_fn.  body_fn is applied with references to lv as an
     lvalue and lv as an expression. *)
-and eval_lvalue (lv : 'a S.lvalue) (body_fn : 'a lvalue * 'a expr -> 'a expr) =
+and eval_lvalue (lv :  S.lvalue) (body_fn : pos lvalue * pos expr -> pos expr) =
   match lv with
     S.VarLValue (a,x) -> body_fn (VarLValue (a,x),VarExpr (dum,x))
   | S.DotLValue (a,e,x) -> 
