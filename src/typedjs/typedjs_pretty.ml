@@ -2,38 +2,7 @@ open Prelude
 open Typedjs_syntax
 open JavaScript_pretty
 open Format
-
-type printer = formatter -> unit
-
-let rec sep (lst : printer list) (fmt : formatter) : unit = match lst with
-    x1 :: x2 :: xs' ->
-      pp_open_box fmt 2;
-      x1 fmt; 
-      pp_close_box fmt ();
-      pp_print_space fmt (); 
-      sep (x2 :: xs') fmt
-  | [x] -> 
-      pp_open_box fmt 2;
-      x fmt;
-      pp_close_box fmt ()
-  | [] -> ()
-
-let text s fmt = pp_print_string fmt s
-
-let enclose l r (lst : printer list) (fmt : formatter) = 
-  pp_open_box fmt 2;
-  pp_print_string fmt l;
-  sep lst fmt;    
-  pp_print_string fmt r;
-  pp_close_box fmt ()
-
-let parens = enclose "(" ")"
-
-let braces = enclose "{" "}"
-
-let brackets = enclose "[" "]"
-
-let angles = enclose "<" ">"
+open FormatExt
 
 let rec typ t  = match t with
     TTop -> text "Any"
