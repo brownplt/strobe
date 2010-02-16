@@ -34,6 +34,7 @@ and 'a bind =
   | BAssign of id * 'a value
   | BSetProp of 'a value * 'a value * 'a value
   | BIf of 'a value * 'a anfexp * 'a anfexp
+  | BTryCatch of 'a anfexp * 'a anfexp
 
 
 and 'a anfexp =
@@ -41,7 +42,6 @@ and 'a anfexp =
   | ARec of node * (id * 'a bind) list * 'a anfexp
   | ALabel of node * id * 'a anfexp
   | ABreak of node * id * 'a value
-  | ATryCatch of node * 'a anfexp * id * 'a anfexp
   | ATryFinally of node * 'a anfexp * 'a anfexp
   | AThrow of node * 'a value
   | AValue of node * 'a value

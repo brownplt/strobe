@@ -38,6 +38,7 @@ and 'a bind =
   | BAssign of id * 'a value
   | BSetProp of 'a value * 'a value * 'a value
   | BIf of 'a value * 'a anfexp * 'a anfexp
+  | BTryCatch of 'a anfexp * 'a anfexp
 
 
 and 'a anfexp =
@@ -45,7 +46,6 @@ and 'a anfexp =
   | ARec of node * (id * 'a bind) list * 'a anfexp
   | ALabel of node * id * 'a anfexp
   | ABreak of node * id * 'a value
-  | ATryCatch of node * 'a anfexp * id * 'a anfexp
   | ATryFinally of node * 'a anfexp * 'a anfexp
   | AThrow of node * 'a value
   | AValue of node * 'a value
@@ -165,6 +165,12 @@ and to_anf exp (k : 'a value -> 'a anfexp) = match exp with
   | EThrow (p, e) ->
       (* Discard the continuation since it is unreachable. *)
       to_anf e (fun v -> AThrow (node (), v))
+  | ETryCatch (p, e1, x, e2) ->
+      name_bind k p 
+        (BTryCatch (to_anf e1 (fun v -> AValue (node (), v)),
+                    to_anf e2 (fun v -> AValue (node (), v))))
+                       
+      
 (*
   | ETryCatch of 'a * 'a exp * id * 'a exp
   | ETryFinally of 'a * 'a exp * 'a exp
@@ -175,36 +181,7 @@ let from_typedjs e = to_anf e (fun v -> AValue (node (), v))
 (******************************************************************************)
 
 open Format
-
-type printer = formatter -> unit
-
-let rec sep (lst : printer list) (fmt : formatter) : unit = match lst with
-    x1 :: x2 :: xs' ->
-      pp_open_box fmt 2;
-      x1 fmt; 
-      pp_close_box fmt ();
-      pp_print_space fmt (); 
-      sep (x2 :: xs') fmt
-  | [x] -> 
-      pp_open_box fmt 2;
-      x fmt;
-      pp_close_box fmt ()
-  | [] -> ()
-
-let text s fmt = pp_print_string fmt s
-
-let enclose l r (lst : printer list) (fmt : formatter) = 
-  pp_open_box fmt 2;
-  pp_print_string fmt l;
-  sep lst fmt;    
-  pp_print_string fmt r;
-  pp_close_box fmt ()
-
-let parens = enclose "(" ")"
-
-let braces = enclose "{" "}"
-
-let brackets = enclose "[" "]"
+open FormatExt
 
 let p_node n fmt =
   pp_print_string fmt "/";
@@ -279,7 +256,6 @@ let node_of_anfexp e = match e with
   | ARec (n, _, _) -> n
   | ALabel (n, _, _) -> n
   | ABreak (n, _, _) -> n
-  | ATryCatch (n, _, _, _) -> n
   | ATryFinally (n, _, _) -> n
   | AThrow (n, _) -> n
   | AValue (n, _) -> n
