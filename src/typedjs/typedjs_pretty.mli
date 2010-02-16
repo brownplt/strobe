@@ -2,7 +2,7 @@ open Prelude
 open Format
 open Typedjs_syntax
 
-val pretty_exp : formatter -> 'a exp -> unit
+val pretty_exp : formatter -> exp -> unit
 
 val pretty_typ : formatter -> typ -> unit
 

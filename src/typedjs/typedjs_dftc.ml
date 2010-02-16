@@ -42,7 +42,7 @@ let rec static (rt : runtime_typs) (typ : typ) : typ = match typ with
   | TRef t -> TRef t
   | TUnion (s, t) -> typ_union (static rt s) (static rt t)
  
-let annotate (env : Env.env) (exp : pos exp) : pos exp =
+let annotate (env : Env.env) (exp : exp) : exp =
   let anfexp = Typedjs_anf.from_typedjs exp in
   let assignable_ids = Env.assignable_ids env in
   let df_env = 
@@ -53,7 +53,7 @@ let annotate (env : Env.env) (exp : pos exp) : pos exp =
                     env)
       (Env.id_env env) empty_env in
   let cast_env = Typedjs_df.local_type_analysis df_env anfexp in
-  let rec cast (ids : IdSet.t) (exp : pos exp) : pos exp = match exp with
+  let rec cast (ids : IdSet.t) (exp : exp) : exp = match exp with
       EString _ -> exp
     | ERegexp _ -> exp
     | ENum _ -> exp

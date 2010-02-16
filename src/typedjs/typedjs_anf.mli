@@ -46,7 +46,7 @@ and 'a anfexp =
   | AThrow of node * 'a value
   | AValue of node * 'a value
 
-val from_typedjs : 'a exp -> 'a anfexp
+val from_typedjs : exp -> pos anfexp
 
 val pretty_anfexp : Format.formatter -> 'a anfexp -> unit
 

@@ -5,7 +5,7 @@ open IdSet
 open IdSetExt
 
 
-let rec local_av_exp (exp : 'a exp) : IdSet.t = match exp with
+let rec local_av_exp (exp : exp) : IdSet.t = match exp with
     EString _ -> IdSet.empty
   | ERegexp _ -> IdSet.empty
   | ENum _ -> IdSet.empty
@@ -42,7 +42,7 @@ let rec local_av_exp (exp : 'a exp) : IdSet.t = match exp with
   | EThrow (_, e) -> local_av_exp e
   | ETypecast (_, _, e) -> local_av_exp e
 
-let rec av_exp (exp : 'a exp) : IdSet.t = match exp with
+let rec av_exp (exp : exp) : IdSet.t = match exp with
     EString _ -> IdSet.empty
   | ERegexp _ -> IdSet.empty
   | ENum _ -> IdSet.empty
@@ -79,7 +79,7 @@ let rec av_exp (exp : 'a exp) : IdSet.t = match exp with
 
 let concat = List.concat
 
-let rec nested_funcs (exp : 'a exp) : 'a exp list = match exp with
+let rec nested_funcs (exp : exp) : exp list = match exp with
     EString _ -> []
   | ERegexp _ -> []
   | ENum _ -> []
