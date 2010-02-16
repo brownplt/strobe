@@ -95,9 +95,9 @@ type def =
   | DExternalField of pos * id * id * exp
       (** [DExternalField pos c_name f_name e] represents a statement of the
           form [c_name.prototype.f_name = e;]. *)
-  | DExternalMethods of pos * id * (id * typ * exp) list
-      (** [DExternalMethods pos c_name method_decls] represents a sequence of
-          methods that are added to the same prototype. *)
+  | DExternalMethods of (pos * id * id * typ * exp) list
+      (** [DExternalMethods method_decls] represents a sequence of external
+          methods definitions. *)
           
 
 module type EnvType = sig

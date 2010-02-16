@@ -90,6 +90,12 @@ and rec_bind (x, t, e) =
 
 let def (d : def) = match d with
     DExp e -> exp e
+  | DExternalField (_, c_name, f_name, e) ->
+      sep [ text (sprintf "%s.prototype.%s" c_name f_name); text "="; exp e ]
+  | DExternalMethods methods -> 
+      let f (_, c_name, f_name, _, e) =
+        sep [ text (sprintf "%s.prototype.%s" c_name f_name); text "="; exp e ]
+      in vert (map f methods)
 
 let pretty_runtime_typ (fmt : formatter) (rt : runtime_typ) = match rt with
     RTNumber -> pp_print_string fmt "number"

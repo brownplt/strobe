@@ -216,8 +216,67 @@ and lvalue env lv = match lv with
     VarLValue (a, x) -> LVar (a, x)
   | PropLValue (a, e1, e2) -> LProp (a, exp env e1, exp env e2)
 
-let rec defs e  = match e with
-    SeqExpr (_, e1, e2) -> DExp (exp IdSet.empty e1) :: defs e2
-  | _ -> [ DExp (exp IdSet.empty e) ]
+(* assumes [SeqExpr]s are nested to the right. *)
+let rec flatten_seq (expr : expr) : expr list = match expr with
+    SeqExpr (_, e1, e2) -> e1 :: flatten_seq e2
+  | _ -> [ expr ]
 
-let from_exprjs = defs
+let match_func env expr = match expr with
+  | FuncExpr (a, args, LabelledExpr (a', "%return", body)) ->
+      if List.length args != List.length (nub args) then
+        failwith (sprintf "each argument must have a distinct name at %s"
+                    (string_of_position a));
+      let typ = type_between (fst2 a) (fst2 a') in
+        (* Within [body], a free variable, [x] cannot be referenced, if there
+           is any local variable with the name [x]. *)
+      let visible_free_vars = IdSet.diff env (locals body) in
+      let env' = IdSet.union visible_free_vars (IdSetExt.from_list args) in
+        begin match typ with
+            TArrow (_, _, r) ->
+              Some (typ, EFunc (a, args, typ, 
+                                ELabel (a', "%return", r, exp env' body)))
+          | _ ->
+              failwith (sprintf "expected an arrow type on the function at %s"
+                          (string_of_position a))
+        end
+  | FuncExpr (a, _, _) ->
+      failwith (sprintf "TypedJS error at %s: expected a LabelledExpr"
+                  (string_of_position a))
+  | _ -> None
+
+
+let match_external_method binds expr = match expr with
+    AssignExpr 
+      (p,
+       PropLValue 
+         (_, BracketExpr (_, VarExpr (_, c_name), StringExpr (_, "prototype")),
+          StringExpr (_, f_name)),
+       rhs_expr) -> begin match match_func binds rhs_expr with
+          Some (typ, e) -> Some (p, c_name, f_name, typ, e)
+        | None -> None
+      end
+  | _ -> None
+
+   
+let def binds expr = match expr with
+    AssignExpr 
+      (p,
+       PropLValue 
+         (_, BracketExpr (_, VarExpr (_, c_name), StringExpr (_, "prototype")),
+          StringExpr (_, f_name)),
+       rhs_expr) ->
+        DExternalField (p, c_name, f_name, exp binds rhs_expr), binds
+  | VarDeclExpr (_, x, _) -> DExp (exp binds expr), IdSet.add x binds
+  | _ -> DExp (exp binds expr), binds
+
+let rec defs binds lst  = 
+  match match_while (match_external_method binds) lst with
+    | [], [] -> []
+    | [],  e :: lst'  ->
+        let d, binds' = def binds e in
+          d :: defs binds' lst'
+    | exts, lst ->
+        DExternalMethods exts :: defs binds lst
+
+
+let from_exprjs expr = defs IdSet.empty (flatten_seq expr)

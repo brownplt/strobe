@@ -89,7 +89,7 @@ type def =
     DExp of exp
   | DConstructor of pos * id * typ * (id * exp) list * exp
   | DExternalField of pos * id * id * exp
-  | DExternalMethods of pos * id * (id * typ * exp) list
+  | DExternalMethods of (pos * id * id * typ * exp) list
 
 (******************************************************************************)
 

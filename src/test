@@ -1,5 +1,5 @@
 #!/bin/sh
-for file in ../tests/*
+for file in ../tests/*.txt
 do
   ../build/main.d.byte -unittest $file
 done

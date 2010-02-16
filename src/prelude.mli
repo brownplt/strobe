@@ -63,6 +63,8 @@ val intersperse : 'a -> 'a list -> 'a list
 
 val take_while : ('a -> bool) -> 'a list -> 'a list * 'a list
 
+val  match_while : ( 'a -> 'b option) -> 'a list -> 'b list * 'a list
+
 (** [nub lst] removes duplicates from the [lst]. Duplicates are identified by
     structural equality. *)
 val nub : 'a list -> 'a list
@@ -71,3 +73,4 @@ val nub : 'a list -> 'a list
     formatter. [pretty_print] applies [f] with [Format.str_formatter] and
     returns the pretty-printed string. *)
 val pretty_string : (Format.formatter -> 'a -> unit) -> 'a -> string
+

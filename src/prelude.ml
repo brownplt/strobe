@@ -78,6 +78,16 @@ let rec take_while f xs = match xs with
       else
         [], xs
 
+let rec match_while f xs = match xs with
+    [] -> [], []
+  | x :: xs' -> begin match f x with
+        Some y ->
+          let ys, xs'' = match_while f xs' in
+            y :: ys, xs''
+      | None -> [], xs
+    end
+
+
 
 let rec rem (elt : 'a) (lst : 'a list) : 'a list = match lst with
     [] -> []
