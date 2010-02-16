@@ -1,56 +1,51 @@
 open Prelude
 
-(* TODO: actually use these *)
-type op1 =
-    OPrefix of JavaScript_syntax.prefixOp    
+type expr
+  = StringExpr of pos * string
+  | RegexpExpr of pos * string * bool * bool
+  | NumExpr of pos * float
+  | IntExpr of pos * int
+  | BoolExpr of pos * bool
+  | NullExpr of pos
+  | ArrayExpr of pos * expr list
+  | ObjectExpr of pos * (pos * string * expr) list
+      (** Object properties are transformed into string literals *)
+  | ThisExpr of pos
+  | VarExpr of pos * id
+  | BracketExpr of pos * expr * expr
+  | NewExpr of pos * expr * expr list
+  | PrefixExpr of pos * JavaScript_syntax.prefixOp * expr
+  | InfixExpr of pos * JavaScript_syntax.infixOp * expr * expr
+  | IfExpr of pos * expr * expr * expr
+  | AssignExpr of pos * lvalue * expr
+  | AppExpr of pos * expr * expr list
+  | FuncExpr of pos * id list * expr
+  | UndefinedExpr of pos
+  | LetExpr of pos * id * expr * expr
+      (** We need let-expressions to simplify statements. *)
+  | SeqExpr of pos * expr * expr
+  | WhileExpr of pos * expr * expr
+  | DoWhileExpr of pos * expr * expr
+  | LabelledExpr of pos * id * expr
+  | BreakExpr of pos * id * expr
+  | ForInExpr of pos * id * expr * expr
+  | VarDeclExpr of pos * id * expr
+      (** We do not transform VarDeclStmts to let-bindings at this stage *)
+  | TryCatchExpr of pos * expr * id * expr
+  | TryFinallyExpr of pos * expr * expr
+  | ThrowExpr of pos * expr
+  | FuncStmtExpr of pos * id * id list * expr
+      (** We leave function statements in place, so that they can be lifted
+          for JavaScript to turned into letrecs for Typed JavaScript. *)
 
-type op2 = 
-    OInfix of JavaScript_syntax.infixOp
 
-type 'a expr
-  = StringExpr of 'a * string
-  | RegexpExpr of 'a * string * bool * bool
-  | NumExpr of 'a * float
-  | IntExpr of 'a * int
-  | BoolExpr of 'a * bool
-  | NullExpr of 'a
-  | ArrayExpr of 'a * 'a expr list
-  | ObjectExpr of 'a * ('a * string * 'a expr) list
-  | ThisExpr of 'a
-  | VarExpr of 'a * id
-  | BracketExpr of 'a * 'a expr * 'a expr
-  | NewExpr of 'a * 'a expr * 'a expr list
-  | PrefixExpr of 'a * JavaScript_syntax.prefixOp * 'a expr
-  | InfixExpr of 'a * JavaScript_syntax.infixOp * 'a expr * 'a expr
-  | IfExpr of 'a * 'a expr * 'a expr * 'a expr
-  | AssignExpr of 'a * 'a lvalue * 'a expr
-  | AppExpr of 'a * 'a expr * 'a expr list
-  | FuncExpr of 'a * id list * 'a expr
-  | UndefinedExpr of 'a
-  (* let-expressions are needed to simplify statements *)
-  | LetExpr of 'a * id * 'a expr * 'a expr
-  | SeqExpr of 'a * 'a expr * 'a expr
-  | WhileExpr of 'a * 'a expr * 'a expr
-  | DoWhileExpr of 'a * 'a expr * 'a expr
-  | LabelledExpr of 'a * id * 'a expr
-  | BreakExpr of 'a * id * 'a expr
-  | ForInExpr of 'a * id * 'a expr * 'a expr
-  (* We do not transform VarDeclStmts to let-bindings, yet *)
-  | VarDeclExpr of 'a * id * 'a expr
-  | TryCatchExpr of 'a * 'a expr * id * 'a expr
-  | TryFinallyExpr of 'a * 'a expr * 'a expr
-  | ThrowExpr of 'a * 'a expr
-  (** We leave function statements in place so that they may be lifted.
-      However, we transform the body into an expression *)
-  | FuncStmtExpr of 'a * id * id list * 'a expr
-
-and 'a lvalue =
-    VarLValue of 'a * id
-  | PropLValue of 'a * 'a expr * 'a expr
+and lvalue =
+    VarLValue of pos * id
+  | PropLValue of pos * expr * expr
 
 (******************************************************************************)
 
-let rec aborts (expr : 'a expr) : bool = match expr with
+let rec aborts (expr : expr) : bool = match expr with
    StringExpr _ -> false
   | RegexpExpr _ -> false
   | NumExpr _ -> false
@@ -298,7 +293,7 @@ and prop pr =  match pr with
 (** Generates an expression that evaluates and binds lv, then produces the
     the value of body_fn.  body_fn is applied with references to lv as an
     lvalue and lv as an expression. *)
-and eval_lvalue (lv :  S.lvalue) (body_fn : pos lvalue * pos expr -> pos expr) =
+and eval_lvalue (lv :  S.lvalue) (body_fn : lvalue * expr -> expr) =
   match lv with
     S.VarLValue (a,x) -> body_fn (VarLValue (a,x),VarExpr (dum,x))
   | S.DotLValue (a,e,x) -> 

@@ -4,5 +4,5 @@ open JavaScript_syntax
 
 val init_types : (pos * string) list -> unit
 
-val from_exprjs : pos Exprjs_syntax.expr -> pos exp
+val from_exprjs : Exprjs_syntax.expr -> pos exp
 
