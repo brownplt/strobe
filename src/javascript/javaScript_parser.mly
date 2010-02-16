@@ -94,6 +94,7 @@ prop
 
 fields
   : { [] }
+  | prop Colon expr { [($1, $3)] }
   | prop Colon expr Comma fields { ($1,$3)::$5 }
 
 varDecls
@@ -130,6 +131,9 @@ primary_expr
       { let loc,x = $1 in VarExpr (loc,x) }
   | LBrack element_list RBrack
       { ArrayExpr ((symbol_start_pos (), symbol_end_pos ()),$2) }
+  /* shift/reduce conflict with labelled statements when the next token
+      is Colon. We favor shift: if we see a colon, we assume we're starting
+      a labelled statement, not an object. */
   | LBrace fields RBrace 
       { ObjectExpr ((symbol_start_pos (), symbol_end_pos ()),$2) }
   | String

@@ -38,6 +38,8 @@ type annotation =
     ATyp of typ
   | AConstructor of typ 
 
+(** Typed JavaScript expressions. Additional well-formedness criteria are
+    inline. *)
 type 'a exp
   = EString of 'a * string
   | ERegexp of 'a * string * bool * bool
@@ -47,6 +49,8 @@ type 'a exp
   | ENull of 'a
   | EArray of 'a * 'a exp list
   | EObject of 'a * (string * 'a exp) list
+      (* [Typedjs_fromExpr.from_exprjs] ensures that the field names are 
+         unique. *)
   | EThis of 'a
   | EId of 'a * id
   | EBracket of 'a * 'a exp * 'a exp
@@ -57,6 +61,8 @@ type 'a exp
   | EAssign of 'a * 'a lvalue * 'a exp
   | EApp of 'a * 'a exp * 'a exp list
   | EFunc of 'a * id list * typ * 'a exp
+      (* [Typedjs_fromExpr.from_exprjs] ensures that the argument names are
+         unique. *)
   | EUndefined of 'a
   | ELet of 'a * id * 'a exp * 'a exp
   | ERec of (id * typ * 'a exp) list * 'a exp

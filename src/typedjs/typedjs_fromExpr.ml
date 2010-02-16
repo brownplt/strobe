@@ -94,7 +94,11 @@ let rec exp (env : env) expr = match expr with
   | BoolExpr (a, b) -> EBool (a, b)
   | NullExpr a -> ENull a
   | ArrayExpr (a, es) -> EArray (a, map (exp env) es)
-  | ObjectExpr (a, ps) -> EObject (a, map (second2 (exp env)) ps)
+  | ObjectExpr (a, ps) -> 
+      if List.length ps != List.length (nub (map fst2 ps)) then
+        failwith (sprintf "duplicate field names in the object literal at %s"
+                    (string_of_position a));
+      EObject (a, map (second2 (exp env)) ps)
   | ThisExpr a -> EThis a
   | VarExpr (a, x) ->
       if IdSet.mem x env then EId (a, x)
@@ -107,6 +111,9 @@ let rec exp (env : env) expr = match expr with
   | AssignExpr (a, lv, e) -> EAssign (a, lvalue env lv, exp env e)
   | AppExpr (a, f, args) -> EApp (a, exp env f, map (exp env) args)
   | FuncExpr (a, args, LabelledExpr (a', "%return", body)) ->
+      if List.length args != List.length (nub args) then
+        failwith (sprintf "each argument must have a distinct name at %s"
+                    (string_of_position a));
       let typ = type_between (fst2 a) (fst2 a') in
         (* Within [body], a free variable, [x] cannot be referenced, if there
            is any local variable with the name [x]. *)

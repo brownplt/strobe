@@ -99,11 +99,23 @@ let rec tc_exp (env : Env.env) exp = match exp with
           TApp ("Boolean", []), t2, t3 -> typ_union t2 t3
         | t, _, _ -> typ_error p "test expression must have type boolean"
     end
-(*  | EObject of 'a * (string * 'a exp) list
-  | EThis of 'a *)
-(*
-  | EBracket of 'a * 'a exp * 'a exp
-  | ENew of 'a * 'a exp * 'a exp list *)
+  | EObject (p, fields) ->
+      let tc_field (x, e) = (x, tc_exp env e) in
+        typ_permute (TObject (map tc_field fields))
+  | EBracket (p, obj, field) -> begin match tc_exp env obj, field with
+        TObject fs, EString (_, x) -> 
+          (try
+             snd2 (List.find (fun (x', _) -> x = x') fs)
+           with Not_found ->
+             typ_error p ("object does not have a field called " ^ x))
+      | t, EString _ ->
+          typ_error p ("expected an object, but expression has type " ^
+                         (string_of_typ t))
+      | _ -> 
+          typ_error p "field-lookup requires a string literal"
+    end
+(*  | EThis of 'a *)
+(*| ENew of 'a * 'a exp * 'a exp list *)
   | EPrefixOp (p, op, e) -> begin match op, tc_exp env e with
         JS.PrefixLNot, TApp ("Boolean", []) -> typ_bool
       | JS.PrefixBNot, TApp ("Int", []) -> typ_int
@@ -209,30 +221,27 @@ let rec tc_exp (env : Env.env) exp = match exp with
                         (string_of_typ s)) in
         List.iter2 tc_bind binds bind_envs;
         tc_exp body_env body
-  | EFunc (p, args, fn_typ, body) -> 
-      if List.length args != List.length (nub args) then
-        typ_error p "each argument must have a distinct name";
-      begin match fn_typ with
-          TArrow (_, arg_typs, result_typ) ->
-            if List.length arg_typs = List.length args then ()
-            else typ_error p "not all arguments have types";
-            let bind_arg env (x, t) = 
-              (* all arguments are available for dataflow in the body *)
-              Env.new_assignable_id x (Env.bind_id x t env) in
-            let env' = fold_left bind_arg env (List.combine args arg_typs) in
-            let body' = annotate env' body in
-              (* The env. in which we type the annotated body specifies the
-                 env. in which we do dataflow for nested functions. Remove the
-                 locally assigned identifiers from this env. (accounts for
-                 assigning to arguments.) *)
-            let env'' = Env.remove_assigned_ids (local_av_exp body') env' in
-            let body_typ = tc_exp env'' body' in
-              if subtype body_typ result_typ then fn_typ
-              else typ_error p
-                (sprintf "function body has type %s, but the function\'s \
+  | EFunc (p, args, fn_typ, body) -> begin match fn_typ with
+        TArrow (_, arg_typs, result_typ) ->
+          if List.length arg_typs = List.length args then ()
+          else typ_error p "not all arguments have types";
+          let bind_arg env (x, t) = 
+            (* all arguments are available for dataflow in the body *)
+            Env.new_assignable_id x (Env.bind_id x t env) in
+          let env' = fold_left bind_arg env (List.combine args arg_typs) in
+          let body' = annotate env' body in
+            (* The env. in which we type the annotated body specifies the
+               env. in which we do dataflow for nested functions. Remove the
+               locally assigned identifiers from this env. (accounts for
+               assigning to arguments.) *)
+          let env'' = Env.remove_assigned_ids (local_av_exp body') env' in
+          let body_typ = tc_exp env'' body' in
+            if subtype body_typ result_typ then fn_typ
+            else typ_error p
+              (sprintf "function body has type %s, but the function\'s \
                           return type is %s" (string_of_typ body_typ) 
-                   (string_of_typ result_typ))
-        | _ -> typ_error p "invalid type annotation on a function"
+                 (string_of_typ result_typ))
+      | _ -> typ_error p "invalid type annotation on a function"
     end
 
 and tc_exps env es = map (tc_exp env) es

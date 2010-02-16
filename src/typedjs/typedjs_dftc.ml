@@ -19,6 +19,7 @@ let rec rt_of_typ (t : typ) : RTSet.t = match t with
       | _ -> failwith (sprintf "unknown type: TApp (\"%s\", [])" s)
     end
   | TApp _ -> failwith (sprintf "unknown type: %s" (pretty_string pretty_typ t))
+  | TObject _ -> RTSet.singleton RTObject
   | TTop -> any_runtime_typ
   | TBot -> RTSet.empty
 
@@ -36,6 +37,7 @@ let rec static (rt : runtime_typs) (typ : typ) : typ = match typ with
   | TApp ("Undefined", []) -> if RTSet.mem RTUndefined rt then typ else TBot
   | TApp _ -> failwith (sprintf "unknown type in static: %s"
                           (pretty_string pretty_typ typ))
+  | TObject _ -> if RTSet.mem RTObject rt then typ else TBot
   | TUnion (s, t) -> typ_union (static rt s) (static rt t)
  
 let annotate (env : Env.env) (exp : pos exp) : pos exp =
