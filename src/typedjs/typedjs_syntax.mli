@@ -42,46 +42,46 @@ type annotation =
 
 (** Typed JavaScript expressions. Additional well-formedness criteria are
     inline. *)
-type 'a exp
-  = EString of 'a * string
-  | ERegexp of 'a * string * bool * bool
-  | ENum of 'a * float
-  | EInt of 'a * int
-  | EBool of 'a * bool
-  | ENull of 'a
-  | EArray of 'a * 'a exp list
-  | EObject of 'a * (string * bool * 'a exp) list
+type exp
+  = EString of pos * string
+  | ERegexp of pos * string * bool * bool
+  | ENum of pos * float
+  | EInt of pos * int
+  | EBool of pos * bool
+  | ENull of pos
+  | EArray of pos * exp list
+  | EObject of pos * (string * bool * exp) list
       (* [Typedjs_fromExpr.from_exprjs] ensures that the field names are 
          unique. If the [bool] on a field is true, the field is mutable. *)
-  | EThis of 'a
-  | EId of 'a * id
-  | EBracket of 'a * 'a exp * 'a exp
-  | ENew of 'a * 'a exp * 'a exp list
-  | EPrefixOp of 'a * JavaScript_syntax.prefixOp * 'a exp
-  | EInfixOp of 'a * JavaScript_syntax.infixOp * 'a exp * 'a exp
-  | EIf of 'a * 'a exp * 'a exp * 'a exp
-  | EAssign of 'a * 'a lvalue * 'a exp
-  | EApp of 'a * 'a exp * 'a exp list
-  | EFunc of 'a * id list * typ * 'a exp
+  | EThis of pos
+  | EId of pos * id
+  | EBracket of pos * exp * exp
+  | ENew of pos * exp * exp list
+  | EPrefixOp of pos * JavaScript_syntax.prefixOp * exp
+  | EInfixOp of pos * JavaScript_syntax.infixOp * exp * exp
+  | EIf of pos * exp * exp * exp
+  | EAssign of pos * lvalue * exp
+  | EApp of pos * exp * exp list
+  | EFunc of pos * id list * typ * exp
       (* [Typedjs_fromExpr.from_exprjs] ensures that the argument names are
          unique. *)
-  | EUndefined of 'a
-  | ELet of 'a * id * 'a exp * 'a exp
-  | ERec of (id * typ * 'a exp) list * 'a exp
-  | ESeq of 'a * 'a exp * 'a exp
-  | ELabel of 'a * id * typ * 'a exp 
+  | EUndefined of pos
+  | ELet of pos * id * exp * exp
+  | ERec of (id * typ * exp) list * exp
+  | ESeq of pos * exp * exp
+  | ELabel of pos * id * typ * exp 
       (** A labelled jump has a type-annotation to aid the type-checker. Without
           the annotation, we would have to union the types of all [EBreak]s to
           each label. *)
-  | EBreak of 'a * id * 'a exp
-  | ETryCatch of 'a * 'a exp * id * 'a exp
-  | ETryFinally of 'a * 'a exp * 'a exp
-  | EThrow of 'a * 'a exp
-  | ETypecast of 'a * runtime_typs * 'a exp
+  | EBreak of pos * id * exp
+  | ETryCatch of pos * exp * id * exp
+  | ETryFinally of pos * exp * exp
+  | EThrow of pos * exp
+  | ETypecast of pos * runtime_typs * exp
 
-and 'a lvalue =
-    LVar of 'a * id
-  | LProp of 'a * 'a exp * 'a exp
+and lvalue =
+    LVar of pos * id
+  | LProp of pos * exp * exp
 
 
 module type EnvType = sig
