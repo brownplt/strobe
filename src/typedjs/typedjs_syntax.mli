@@ -83,6 +83,23 @@ and lvalue =
     LVar of pos * id
   | LProp of pos * exp * exp
 
+type def =
+    DExp of exp
+  | DConstructor of pos * id * typ * (id * exp) list * exp
+      (** [DConstructor pos c_name c_typ c_inits c_body] is an object
+          constructor (a function with a constructor annotation). A constructor
+          begins by initializing its fields in a sequence of [this.x = e]
+          expressions. [c_inits] is the initialization sequence, and [c_body]
+          is the remainder of the constructor. In the initialization 
+          expressions, the fields that are being added cannot be used. *)
+  | DExternalField of pos * id * id * exp
+      (** [DExternalField pos c_name f_name e] represents a statement of the
+          form [c_name.prototype.f_name = e;]. *)
+  | DExternalMethods of pos * id * (id * typ * exp) list
+      (** [DExternalMethods pos c_name method_decls] represents a sequence of
+          methods that are added to the same prototype. *)
+          
+
 module type EnvType = sig
   
   type env

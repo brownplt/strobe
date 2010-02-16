@@ -85,6 +85,12 @@ and lvalue =
     LVar of pos * id
   | LProp of pos * exp * exp
 
+type def =
+    DExp of exp
+  | DConstructor of pos * id * typ * (id * exp) list * exp
+  | DExternalField of pos * id * id * exp
+  | DExternalMethods of pos * id * (id * typ * exp) list
+
 (******************************************************************************)
 
 module type EnvType = sig

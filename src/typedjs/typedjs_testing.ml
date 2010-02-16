@@ -21,7 +21,12 @@ let num_failures = ref 0
 let test ((pos, js_expr, comments, expected) : test) : unit =
   try
     let expr_stx = Exprjs_syntax.from_javascript_expr js_expr in
-    let typed_stx = Typedjs.from_exprjs expr_stx comments in
+    let typed_stx = begin match Typedjs.from_exprjs expr_stx comments with
+        [ DExp e ] -> e
+      | _ -> 
+          failwith (sprintf "@%s: expected a single expression; got other \
+                             definitions"  (string_of_position pos))
+    end in
     let actual_typ = tc_exp Env.empty_env typed_stx in
       begin match expected with
           ExpectedTyp t ->

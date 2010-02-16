@@ -216,4 +216,8 @@ and lvalue env lv = match lv with
     VarLValue (a, x) -> LVar (a, x)
   | PropLValue (a, e1, e2) -> LProp (a, exp env e1, exp env e2)
 
-let from_exprjs expr = exp IdSet.empty expr
+let rec defs e  = match e with
+    SeqExpr (_, e1, e2) -> DExp (exp IdSet.empty e1) :: defs e2
+  | _ -> [ DExp (exp IdSet.empty e) ]
+
+let from_exprjs = defs

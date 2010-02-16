@@ -247,3 +247,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
     end
 
 and tc_exps env es = map (tc_exp env) es
+
+let rec tc_defs env defs = match defs with
+    [] -> ()
+  | (DExp e) :: defs' ->
+      tc_exp env e;
+      tc_defs env defs'

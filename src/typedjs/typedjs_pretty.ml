@@ -88,6 +88,9 @@ and bind (x, e) =
 and rec_bind (x, t, e) = 
   parens [text x; text ":"; typ t; text "="; exp e]
 
+let def (d : def) = match d with
+    DExp e -> exp e
+
 let pretty_runtime_typ (fmt : formatter) (rt : runtime_typ) = match rt with
     RTNumber -> pp_print_string fmt "number"
   | RTString -> pp_print_string fmt "string"
@@ -107,3 +110,7 @@ let pretty_abs_value (fmt : formatter) (v : abs_value) = match v with
 let pretty_exp fmt e = exp e fmt
 
 let pretty_typ fmt t = typ t fmt
+
+let pretty_def fmt d = def d fmt
+
+let pretty_defs fmt defs =  vert (map def defs) fmt

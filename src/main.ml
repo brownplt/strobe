@@ -41,32 +41,41 @@ let action_pretypecheck () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments in
-    Typedjs_pretty.pretty_exp std_formatter typedjs
+    Typedjs_pretty.pretty_defs std_formatter typedjs
 
 let action_tc () : unit = 
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments in
-  let _ = Typedjs_tc.tc_exp Env.empty_env typedjs in
+  let _ = Typedjs_tc.tc_defs Env.empty_env typedjs in
     ()
 
 let action_anf () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments in
-  let anf = Typedjs_anf.from_typedjs typedjs in
-    Typedjs_anf.print_anfexp anf
+    begin match typedjs with
+        [ DExp e ] -> 
+          let anf = Typedjs_anf.from_typedjs e in
+            Typedjs_anf.print_anfexp anf
+      | _ -> failwith "expected a single expression"
+    end
 
 let action_df () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments in
-  let anf = Typedjs_anf.from_typedjs typedjs in
-  let ids = Typedjs_df.local_type_analysis Typedjs_dfLattice.empty_env anf in
-  let pr (x, p) av =
-    printf "%s (%s): %s\n" x (string_of_position p)
-      (pretty_string pretty_abs_value av)
-  in BoundIdMap.iter pr ids
+    begin match typedjs with
+        [ DExp e ] ->
+          let anf = Typedjs_anf.from_typedjs e in
+          let ids = Typedjs_df.local_type_analysis 
+            Typedjs_dfLattice.empty_env anf in
+          let pr (x, p) av =
+            printf "%s (%s): %s\n" x (string_of_position p)
+              (pretty_string pretty_abs_value av)
+          in BoundIdMap.iter pr ids
+      | _ -> failwith "expected a single expression"
+    end
 
 let action_test_tc () : unit =
   Typedjs_testing.parse_and_test !cin !cin_name
