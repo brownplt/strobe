@@ -39,6 +39,8 @@ val map : ('a -> 'b) -> 'a list -> 'b list
 
 val second2 : ('b -> 'c) -> 'a * 'b -> 'a * 'c
 
+val third3 : ('c -> 'd) -> 'a * 'b * 'c -> 'a * 'b * 'd
+
 val string_of_position : pos -> string
 
 val snd3 : 'a * 'b * 'c -> 'b

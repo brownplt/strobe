@@ -71,13 +71,8 @@ and lvalue lv fmt = match lv with
   | PropLValue (_, e1, e2) -> 
       expr e1 fmt;
       brackets [expr e2] fmt
-and prop (s, e) =
-  parens [ fun fmt ->
-             pp_print_string fmt ("\"" ^ s ^ "\"");
-             pp_print_space fmt ();
-             pp_print_string fmt ":";
-             pp_print_space fmt ();
-             expr e fmt ]
+
+and prop (_, s, e) =  parens [ text s; text ":"; expr e ]
 
 let pretty_expr fmt e = expr e fmt
 

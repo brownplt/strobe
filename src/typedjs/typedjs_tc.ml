@@ -100,7 +100,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
         | t, _, _ -> typ_error p "test expression must have type boolean"
     end
   | EObject (p, fields) ->
-      let tc_field (x, e) = (x, tc_exp env e) in
+      let tc_field (x, is_mutable, e) = 
+        let t = tc_exp env e in
+          (x, if is_mutable then TRef t else t) in
         typ_permute (TObject (map tc_field fields))
   | EBracket (p, obj, field) -> begin match tc_exp env obj, field with
         TObject fs, EString (_, x) -> 

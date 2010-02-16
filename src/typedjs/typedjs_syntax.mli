@@ -30,6 +30,7 @@ type typ =
   | TUnion of typ * typ
   | TArrow of typ * typ list * typ
   | TObject of (id * typ) list
+  | TRef of typ
   | TTop
   | TBot
 
@@ -37,6 +38,7 @@ type typ =
 type annotation =
     ATyp of typ
   | AConstructor of typ 
+  | AMutable
 
 (** Typed JavaScript expressions. Additional well-formedness criteria are
     inline. *)
@@ -48,9 +50,9 @@ type 'a exp
   | EBool of 'a * bool
   | ENull of 'a
   | EArray of 'a * 'a exp list
-  | EObject of 'a * (string * 'a exp) list
+  | EObject of 'a * (string * bool * 'a exp) list
       (* [Typedjs_fromExpr.from_exprjs] ensures that the field names are 
-         unique. *)
+         unique. If the [bool] on a field is true, the field is mutable. *)
   | EThis of 'a
   | EId of 'a * id
   | EBracket of 'a * 'a exp * 'a exp

@@ -15,8 +15,7 @@ type 'a expr
   | BoolExpr of 'a * bool
   | NullExpr of 'a
   | ArrayExpr of 'a * 'a expr list
-  (** Object properties are transformed into string literals *)
-  | ObjectExpr of 'a * (string * 'a expr) list
+  | ObjectExpr of 'a * ('a * string * 'a expr) list
   | ThisExpr of 'a
   | VarExpr of 'a * id
   | BracketExpr of 'a * 'a expr * 'a expr
@@ -59,7 +58,7 @@ let rec aborts (expr : 'a expr) : bool = match expr with
   | BoolExpr _ -> false
   | NullExpr _ -> false
   | ArrayExpr (_, es) -> List.exists aborts es
-  | ObjectExpr (_, ps) -> List.exists (fun (_, e) -> aborts e) ps
+  | ObjectExpr (_, ps) -> List.exists (fun (_, _, e) -> aborts e) ps
   | ThisExpr _ -> false
   | VarExpr _ -> false
   | BracketExpr (_, e1, e2) -> aborts e1 || aborts e2
@@ -290,10 +289,10 @@ and caseClauses (clauses : 'a S.caseClause list) = match clauses with
                                 UndefinedExpr dum),
                         caseClauses clauses))
 
-and prop (p : S.prop * 'a S.expr) = match p with
-    (S.PropId x,e) -> (x,expr e)
-  | (S.PropString s,e) -> (s,expr e)
-  | (S.PropNum n,e) -> (string_of_int n, expr e)
+and prop pr =  match pr with
+    (p, S.PropId x,e) -> (p, x, expr e)
+  | (p, S.PropString s,e) -> (p, s, expr e)
+  | (p, S.PropNum n,e) -> (p, string_of_int n, expr e)
 
 
 (** Generates an expression that evaluates and binds lv, then produces the
@@ -328,7 +327,7 @@ let rec locals expr = match expr with
   | BoolExpr _ -> IdSet.empty
   | NullExpr _ -> IdSet.empty
   | ArrayExpr (_, es) -> IdSetExt.unions (map locals es)
-  | ObjectExpr (_, ps) -> IdSetExt.unions (map (fun (_, e) -> locals e) ps)
+  | ObjectExpr (_, ps) -> IdSetExt.unions (map (fun (_, _, e) -> locals e) ps)
   | ThisExpr _ -> IdSet.empty
   | VarExpr _ -> IdSet.empty
   | BracketExpr (_, e1, e2) -> IdSet.union (locals e1) (locals e2)

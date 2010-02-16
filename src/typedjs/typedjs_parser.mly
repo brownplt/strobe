@@ -13,7 +13,7 @@ let parse_error s =
 
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
-       UNDEF BOOL LBRACE RBRACE COMMA
+       UNDEF BOOL LBRACE RBRACE COMMA MUTABLE
 
 %right UNION
 
@@ -33,6 +33,7 @@ args
 
 field
   : ID COLON typ { ($1, $3) }
+  | ID COLON MUTABLE typ { ($1, TRef $4) }
 
 fields
   : { [] }
@@ -55,7 +56,8 @@ typ
   | args ARROW typ { TArrow (TTop, $1, $3) }
 
 typ_ann
-  : COLON typ { ATyp $2 }
-  | COLON CONSTRUCTOR typ { AConstructor $3 }
+  : COLON typ EOF { ATyp $2 }
+  | COLON MUTABLE EOF { AMutable }
+  | COLON CONSTRUCTOR typ EOF { AConstructor $3 }
 
 %%

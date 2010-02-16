@@ -12,7 +12,7 @@ type 'a expr
   | BoolExpr of 'a * bool
   | NullExpr of 'a
   | ArrayExpr of 'a * 'a expr list
-  | ObjectExpr of 'a * (string * 'a expr) list
+  | ObjectExpr of 'a * ('a * string * 'a expr) list
       (** Object properties are transformed into string literals *)
   | ThisExpr of 'a
   | VarExpr of 'a * id

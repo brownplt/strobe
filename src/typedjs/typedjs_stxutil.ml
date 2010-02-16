@@ -13,7 +13,8 @@ let rec local_av_exp (exp : 'a exp) : IdSet.t = match exp with
   | EBool _ -> IdSet.empty
   | ENull _ -> IdSet.empty
   | EArray (_, es) -> IdSetExt.unions (map local_av_exp es)
-  | EObject (_, ps) -> IdSetExt.unions (map (fun (_, e) -> local_av_exp e) ps)
+  | EObject (_, ps) -> 
+      IdSetExt.unions (map (fun (_, _, e) -> local_av_exp e) ps)
   | EThis _ -> IdSet.empty
   | EId _ -> IdSet.empty
   | EBracket (_, e1, e2) -> IdSet.union (local_av_exp e1) (local_av_exp e2)
@@ -49,7 +50,7 @@ let rec av_exp (exp : 'a exp) : IdSet.t = match exp with
   | EBool _ -> IdSet.empty
   | ENull _ -> IdSet.empty
   | EArray (_, es) -> IdSetExt.unions (map av_exp es)
-  | EObject (_, ps) -> IdSetExt.unions (map (fun (_, e) -> av_exp e) ps)
+  | EObject (_, ps) -> IdSetExt.unions (map (fun (_, _, e) -> av_exp e) ps)
   | EThis _ -> IdSet.empty
   | EId _ -> IdSet.empty
   | EBracket (_, e1, e2) -> IdSet.union (av_exp e1) (av_exp e2)
@@ -86,7 +87,7 @@ let rec nested_funcs (exp : 'a exp) : 'a exp list = match exp with
   | EBool _ -> []
   | ENull _ -> []
   | EArray (_, es) -> concat (map nested_funcs es)
-  | EObject (_, ps) -> concat (map (fun (_, e) -> nested_funcs e) ps)
+  | EObject (_, ps) -> concat (map (fun (_, _, e) -> nested_funcs e) ps)
   | EThis _ -> []
   | EId _ -> []
   | EBracket (_, e1, e2) ->nested_funcs e1 @ nested_funcs e2

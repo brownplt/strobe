@@ -19,6 +19,7 @@ let rec typ t  = match t with
   | TObject fs ->
       let f (k, t) = sep [ text k; text ":"; typ t ] in
         braces (intersperse (text ",") (map f fs))
+  | TRef s -> sep [ text "mutable"; parens [ typ s ] ]
 
 let rec exp e fmt = match e with
     EString (_, s) -> pp_print_string fmt ("\"" ^ s ^ "\"")
@@ -76,13 +77,10 @@ and lvalue lv fmt = match lv with
       exp e1 fmt;
       brackets [exp e2] fmt
 
-and prop (s, e) =
-  parens [ fun fmt ->
-             pp_print_string fmt ("\"" ^ s ^ "\"");
-             pp_print_space fmt ();
-             pp_print_string fmt ":";
-             pp_print_space fmt ();
-             exp e fmt ]
+and prop (s, is_mutable, e) =
+  parens [ text s; 
+           text (if is_mutable then "mutable:" else ":");
+           exp e ]
 
 and bind (x, e) = 
   parens [text x; text "="; exp e]

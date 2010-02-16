@@ -51,7 +51,7 @@ and 'a expr
   | BoolExpr of 'a * bool
   | NullExpr of 'a
   | ArrayExpr of 'a * 'a expr list
-  | ObjectExpr of 'a * (prop * 'a expr) list
+  | ObjectExpr of 'a * ('a * prop * 'a expr) list
   | ThisExpr of 'a
   | VarExpr of 'a * id
   | DotExpr of 'a * 'a expr * id

@@ -29,5 +29,7 @@ rule token = parse
    | ":" { COLON }
    | "+" { UNION }
    | "Void" { UNDEF }
+   | "constructor" { CONSTRUCTOR }
+   | "mutable" { MUTABLE }
    | eof { EOF }
    | ident as x { ID x }

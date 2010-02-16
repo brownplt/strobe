@@ -159,7 +159,7 @@ and expr (e : pos expr) = match e with
   | NullExpr _ -> text "null"
   | ArrayExpr (_,es) -> brackets (List.map expr es)
   | ObjectExpr (_,ps) -> 
-      let f (p,e) = sepBy "" [prop p; text ":"; expr e]
+      let f (_, p, e) = sepBy "" [prop p; text ":"; expr e]
       in bracesBy "," (List.map f ps)
   | ThisExpr _ -> text "this"
   | VarExpr (_,x) -> text x

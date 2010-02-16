@@ -90,8 +90,8 @@ and to_anf exp (k : 'a value -> 'a anfexp) = match exp with
   | EBool (_, b) -> k (VBool b)
   | ENull _ -> k VNull
   | EArray (_, es) -> to_anf_exps es (fun vs -> k (VArray vs))
-  | EObject (_, props) -> to_anf_exps (map snd2 props)
-      (fun vs -> k (VObject (List.combine (map fst2 props) vs)))
+  | EObject (_, props) -> to_anf_exps (map thd3 props)
+      (fun vs -> k (VObject (List.combine (map fst3 props) vs)))
   | EUndefined _ -> k VUndefined
   | EThis _ -> k VThis
   | EId (p, x) ->  k (VId (p, x))
@@ -172,7 +172,7 @@ and to_anf exp (k : 'a value -> 'a anfexp) = match exp with
   | ETryFinally (p, e1, e2) ->
       name_bind k p 
         (BTryFinally (to_anf e1 (fun v -> AValue (node (), v)),
-                    to_anf e2 (fun v -> AValue (node (), v))))
+                      to_anf e2 (fun v -> AValue (node (), v))))
 
 let from_typedjs e = to_anf e (fun v -> AValue (node (), v))
 

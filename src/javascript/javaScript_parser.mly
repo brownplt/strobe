@@ -90,12 +90,13 @@ ids
 
 prop
   : Id { let _,x = $1 in PropId x }
-  | String { let _,s = $1 in PropString s }
+  | String { let _,s = $1 in  PropString s }
 
 fields
   : { [] }
-  | prop Colon expr { [($1, $3)] }
-  | prop Colon expr Comma fields { ($1,$3)::$5 }
+  | prop Colon expr { [ ((rhs_start_pos 1, rhs_start_pos 3), $1, $3) ] }
+  | prop Colon expr Comma fields 
+      { ((rhs_start_pos 1, rhs_start_pos 3), $1, $3) :: $5 }
 
 varDecls
   : varDecl { [$1] }

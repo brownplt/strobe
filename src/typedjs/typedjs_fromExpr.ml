@@ -30,30 +30,37 @@ let type_dbs : annotation PosMap.t ref = ref PosMap.empty
 let init_types lst = 
   type_dbs := types_from_comments lst
 
-let type_between (start_p : Lexing.position) (end_p : Lexing.position) : typ =
+let annotation_between start_p end_p : annotation option =
   let found = ref None in
   let f (typ_start_p, typ_end_p) ann = 
     if typ_start_p.Lexing.pos_cnum > start_p.Lexing.pos_cnum &&
       typ_end_p.Lexing.pos_cnum < end_p.Lexing.pos_cnum then
-        begin match ann, !found with
-            ATyp typ, None -> found := Some ((typ_start_p, typ_end_p), typ)
-          | _, Some _ ->
-              failwith (sprintf "found multiple type annotations at %s"
+        begin match !found with
+           None -> found := Some ((typ_start_p, typ_end_p), ann)
+          | Some _ ->
+              failwith (sprintf "found multiple annotations at %s"
                           (string_of_position (start_p, end_p)))
-
-          | _, None -> failwith 
-              (sprintf "expected a type annotation at %s; found something else"
-                 (string_of_position (start_p, end_p)))
-
         end in
     PosMap.iter f !type_dbs;
     match !found with
         Some (pos, typ) -> 
           type_dbs := PosMap.remove pos !type_dbs;
-          typ
-      | None ->
-          failwith (sprintf "expected a type annotation at %s"
-                      (string_of_position (start_p, end_p)))
+          Some typ
+      | None -> None
+
+let type_between (start_p : Lexing.position) (end_p : Lexing.position) : typ =
+  match annotation_between start_p end_p with
+      Some (ATyp typ) -> typ
+    | _ ->
+        failwith (sprintf "expected a type annotation at %s"
+                    (string_of_position (start_p, end_p)))
+
+let is_mutable_between start_p end_p : bool =
+  match annotation_between start_p end_p with
+      Some AMutable -> true
+    | None -> false
+    | Some _ -> failwith 
+        "unexpected annotation (expected either mutable or nothing)"
 
 
 (******************************************************************************)
@@ -95,10 +102,12 @@ let rec exp (env : env) expr = match expr with
   | NullExpr a -> ENull a
   | ArrayExpr (a, es) -> EArray (a, map (exp env) es)
   | ObjectExpr (a, ps) -> 
-      if List.length ps != List.length (nub (map fst2 ps)) then
+      if List.length ps != List.length (nub (map (fun (_,p,_) -> p) ps)) then
         failwith (sprintf "duplicate field names in the object literal at %s"
                     (string_of_position a));
-      EObject (a, map (second2 (exp env)) ps)
+      let prop ((start_p, end_p), x, e) = 
+        (x, is_mutable_between start_p end_p, exp env e) in
+        EObject (a, map prop ps)
   | ThisExpr a -> EThis a
   | VarExpr (a, x) ->
       if IdSet.mem x env then EId (a, x)

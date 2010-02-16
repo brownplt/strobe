@@ -32,12 +32,14 @@ type typ =
   | TUnion of typ * typ
   | TArrow of typ * typ list * typ
   | TObject of (id * typ) list
+  | TRef of typ
   | TTop
   | TBot
 
 type annotation =
     ATyp of typ
   | AConstructor of typ 
+  | AMutable
 
 type 'a exp
   = EString of 'a * string
@@ -47,7 +49,7 @@ type 'a exp
   | EBool of 'a * bool
   | ENull of 'a
   | EArray of 'a * 'a exp list
-  | EObject of 'a * (string * 'a exp) list
+  | EObject of 'a * (string * bool * 'a exp) list
   | EThis of 'a
   | EId of 'a * id
   | EBracket of 'a * 'a exp * 'a exp

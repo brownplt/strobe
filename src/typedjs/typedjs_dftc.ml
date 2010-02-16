@@ -20,6 +20,7 @@ let rec rt_of_typ (t : typ) : RTSet.t = match t with
     end
   | TApp _ -> failwith (sprintf "unknown type: %s" (pretty_string pretty_typ t))
   | TObject _ -> RTSet.singleton RTObject
+  | TRef t -> rt_of_typ t
   | TTop -> any_runtime_typ
   | TBot -> RTSet.empty
 
@@ -38,6 +39,7 @@ let rec static (rt : runtime_typs) (typ : typ) : typ = match typ with
   | TApp _ -> failwith (sprintf "unknown type in static: %s"
                           (pretty_string pretty_typ typ))
   | TObject _ -> if RTSet.mem RTObject rt then typ else TBot
+  | TRef t -> TRef t
   | TUnion (s, t) -> typ_union (static rt s) (static rt t)
  
 let annotate (env : Env.env) (exp : pos exp) : pos exp =
@@ -59,7 +61,7 @@ let annotate (env : Env.env) (exp : pos exp) : pos exp =
     | EBool _ -> exp
     | ENull _ -> exp
     | EArray (p, es) -> EArray (p, map (cast ids) es)
-    | EObject (p, props) -> EObject (p, map (second2 (cast ids)) props)
+    | EObject (p, props) -> EObject (p, map (third3 (cast ids)) props)
     | EThis _ -> exp
     | EId (q, x) -> if IdSet.mem x ids then
         let v = BoundIdMap.find (x, q) cast_env in
