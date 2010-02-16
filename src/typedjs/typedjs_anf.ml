@@ -39,6 +39,7 @@ and 'a bind =
   | BSetProp of 'a value * 'a value * 'a value
   | BIf of 'a value * 'a anfexp * 'a anfexp
   | BTryCatch of 'a anfexp * 'a anfexp
+  | BTryFinally of 'a anfexp * 'a anfexp
 
 
 and 'a anfexp =
@@ -46,7 +47,6 @@ and 'a anfexp =
   | ARec of node * (id * 'a bind) list * 'a anfexp
   | ALabel of node * id * 'a anfexp
   | ABreak of node * id * 'a value
-  | ATryFinally of node * 'a anfexp * 'a anfexp
   | AThrow of node * 'a value
   | AValue of node * 'a value
 
@@ -166,15 +166,13 @@ and to_anf exp (k : 'a value -> 'a anfexp) = match exp with
       (* Discard the continuation since it is unreachable. *)
       to_anf e (fun v -> AThrow (node (), v))
   | ETryCatch (p, e1, x, e2) ->
-      name_bind k p 
+      name_bind k p
         (BTryCatch (to_anf e1 (fun v -> AValue (node (), v)),
+                     to_anf e2 (fun v -> AValue (node (), v))))
+  | ETryFinally (p, e1, e2) ->
+      name_bind k p 
+        (BTryFinally (to_anf e1 (fun v -> AValue (node (), v)),
                     to_anf e2 (fun v -> AValue (node (), v))))
-                       
-      
-(*
-  | ETryCatch of 'a * 'a exp * id * 'a exp
-  | ETryFinally of 'a * 'a exp * 'a exp
-*)
 
 let from_typedjs e = to_anf e (fun v -> AValue (node (), v))
 
@@ -226,6 +224,10 @@ and p_bind b = match b with
       parens [ text "set-field!"; p_value v1; p_value v2; p_value v3 ]
   | BIf (v1, e2, e3) ->
       parens [ text "if";  p_value v1; p_anfexp e2; p_anfexp e3 ]
+  | BTryCatch (e1, e2) ->
+      parens [ text "try-catch"; p_anfexp e1; p_anfexp e2 ]
+  | BTryFinally (e1, e2) ->
+      parens [ text "try-finally"; p_anfexp e1; p_anfexp e2 ]
 
 and p_anfexp e = match e with
     ALet (n, x, b, e) ->
@@ -256,6 +258,5 @@ let node_of_anfexp e = match e with
   | ARec (n, _, _) -> n
   | ALabel (n, _, _) -> n
   | ABreak (n, _, _) -> n
-  | ATryFinally (n, _, _) -> n
   | AThrow (n, _) -> n
   | AValue (n, _) -> n

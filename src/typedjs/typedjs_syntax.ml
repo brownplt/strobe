@@ -31,6 +31,7 @@ type typ =
     TApp of constr * typ list
   | TUnion of typ * typ
   | TArrow of typ * typ list * typ
+  | TObject of (id * typ) list
   | TTop
   | TBot
 
