@@ -16,6 +16,9 @@ let rec typ t  = match t with
   | TApp (s, ts) ->
       sep [ text s; 
             angles [sep (intersperse (text ",") (map typ ts))] ]
+  | TObject fs ->
+      let f (k, t) = sep [ text k; text ":"; typ t ] in
+        braces (intersperse (text ",") (map f fs))
 
 let rec exp e fmt = match e with
     EString (_, s) -> pp_print_string fmt ("\"" ^ s ^ "\"")

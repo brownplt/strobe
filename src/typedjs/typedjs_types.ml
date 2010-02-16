@@ -1,3 +1,4 @@
+
 open Prelude
 open Typedjs_syntax
 
@@ -44,3 +45,9 @@ let typ_union s t = match subtype s t, subtype t s with
   | true, false -> t (* s <: t *)
   | false, true -> s (* t <: s *)
   | false, false -> TUnion (s, t)
+
+let typ_permute (obj_typ : typ) : typ = match obj_typ with
+    TObject fs -> 
+      TObject
+        (List.fast_sort (fun (k1, _) (k2, _) ->  Pervasives.compare k1 k2) fs)
+  | typ -> typ

@@ -13,7 +13,7 @@ let parse_error s =
 
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
-       UNDEF BOOL
+       UNDEF BOOL LBRACE RBRACE COMMA
 
 %right UNION
 
@@ -31,6 +31,14 @@ args
   | arg_typ { [$1] }
   | arg_typ STAR args { $1 :: $3 }
 
+field
+  : ID COLON typ { ($1, $3) }
+
+fields
+  : { [] }
+  | field { [$1] }
+  | field COMMA fields { $1 :: $3 }
+
 arg_typ
   : ANY { TTop }
   | INT { typ_int }
@@ -39,6 +47,7 @@ arg_typ
   | BOOL { typ_bool }
   | UNDEF { typ_undef }
   | arg_typ UNION arg_typ { typ_union $1 $3 }
+  | LBRACE fields RBRACE { TObject $2 }
   | LPAREN typ RPAREN { $2 }
 
 typ 

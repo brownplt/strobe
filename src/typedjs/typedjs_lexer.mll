@@ -17,6 +17,9 @@ rule token = parse
    | "->" { ARROW }
    | "(" { LPAREN }
    | ")" { RPAREN }
+   | "{" { LBRACE }
+   | "}" { RBRACE }
+   | "," { COMMA }
    | "Any" { ANY }
    | "Int" { INT }
    | "Double" { NUM }
