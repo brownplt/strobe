@@ -13,7 +13,7 @@ let parse_error s =
 
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
-       UNDEF BOOL LBRACE RBRACE COMMA MUTABLE
+       UNDEF BOOL LBRACE RBRACE COMMA MUTABLE COLONCOLON FUNCTION
 
 %right UNION
 
@@ -59,5 +59,13 @@ typ_ann
   : COLON typ EOF { ATyp $2 }
   | COLON MUTABLE EOF { AMutable }
   | COLON CONSTRUCTOR typ EOF { AConstructor $3 }
+  | COLONCOLON inferred_anns { AInferred $2 }
+
+inferred_anns 
+  : { [] }
+  | FUNCTION ID COLON typ inferred_anns { ATyp $4 :: $5 }
+
+
+
 
 %%
