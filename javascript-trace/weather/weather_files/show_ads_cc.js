@@ -3,7 +3,7 @@
              var g = true,
                  h = null,
                  j = false,
-                 aa = (new Date()).getTime(),
+                 aa = (__new(Date,[])).getTime(),
                  k = __typedjs(function  (a)
                                {
                                  var b = (new Date()).getTime() - aa;
@@ -178,7 +178,7 @@
                                15);
              s.prototype.clone = __typedjs(function  ()
                                            {
-                                             return new s(this.width,this.height);
+                                             return __new(s,[this.width,this.height]);
                                            },
                                            arguments.callee,
                                            "s.prototype.clone",
@@ -340,8 +340,8 @@
                                   {
                                     var f = a[e] || "",
                                         i = b[e] || "",
-                                        n = new RegExp("(\\d*)(\\D*)","g"),
-                                        z = new RegExp("(\\d*)(\\D*)","g");
+                                        n = __new(RegExp,["(\\d*)(\\D*)","g"]),
+                                        z = __new(RegExp,["(\\d*)(\\D*)","g"]);
                                     do
                                     {
                                       var G = n.exec(f) || ["","",""],H = z.exec(i) || ["","",""];
@@ -513,10 +513,10 @@
                                     if (a == a.top)
                                     if (c < b)
                                     b -= 15;
-                                    return new s(a.innerWidth,b);
+                                    return __new(s,[a.innerWidth,b]);
                                   };
                                   a = b.compatMode == "CSS1Compat" && (! B || B && F("9.50")) ? b.documentElement : b.body;
-                                  return new s(a.clientWidth,a.clientHeight);
+                                  return __new(s,[a.clientWidth,a.clientHeight]);
                                 },
                                 arguments.callee,
                                 "Qa",
@@ -690,7 +690,7 @@
              lb = __typedjs(function  (a,b)
                             {
                               a.google_image_requests || (a.google_image_requests = []);
-                              var c = new Image();
+                              var c = __new(Image,[]);
                               c.src = b;
                               a.google_image_requests.push(c);
                             },
@@ -722,7 +722,8 @@
                                      for (var b = 1; b;)
                                      try
                                      {
-                                       b = new ActiveXObject("ShockwaveFlash.ShockwaveFlash." + (a + 1));
+                                       b = __new(ActiveXObject,
+                                                 ["ShockwaveFlash.ShockwaveFlash." + (a + 1)]);
                                        a++;
                                      }
                                      catch (c) {
@@ -735,13 +736,15 @@
                                           b = h;
                                           try
                                           {
-                                            b = new ActiveXObject("ShockwaveFlash.ShockwaveFlash.7");
+                                            b = __new(ActiveXObject,
+                                                      ["ShockwaveFlash.ShockwaveFlash.7"]);
                                           }
                                           catch (d) {
                                                       a = 0;
                                                       try
                                                       {
-                                                        b = new ActiveXObject("ShockwaveFlash.ShockwaveFlash.6");
+                                                        b = __new(ActiveXObject,
+                                                                  ["ShockwaveFlash.ShockwaveFlash.6"]);
                                                         a = 6;
                                                         b.AllowScriptAccess = "always";
                                                       }
@@ -751,7 +754,8 @@
                                                                 };
                                                       try
                                                       {
-                                                        b = new ActiveXObject("ShockwaveFlash.ShockwaveFlash");
+                                                        b = __new(ActiveXObject,
+                                                                  ["ShockwaveFlash.ShockwaveFlash"]);
                                                       }
                                                       catch (f) {
                                                                 };
@@ -799,7 +803,7 @@
                            56);
              var qb = __typedjs(function  (a)
                                 {
-                                  a.u_tz = - (new Date()).getTimezoneOffset();
+                                  a.u_tz = - (__new(Date,[])).getTimezoneOffset();
                                   a.u_his = window.history.length;
                                   a.u_java = navigator.javaEnabled();
                                   if (window.screen)
@@ -825,11 +829,12 @@
                                   b = b.top;
                                   try
                                   {
-                                    return b.document && ! b.document.body ? new s(- 1,
-                                                                                   - 1) : Qa(b || window);
+                                    return b.document && ! b.document.body ? __new(s,
+                                                                                   [- 1,
+                                                                                    - 1]) : Qa(b || window);
                                   }
                                   catch (c) {
-                                              return new s(- 12245933,- 12245933);
+                                              return __new(s,[- 12245933,- 12245933]);
                                             };
                                 },
                                 arguments.callee,
@@ -1138,7 +1143,7 @@
                                   if (window.google_prev_ad_slotnames_by_region == h)
                                   window.google_prev_ad_slotnames_by_region = {};
                                   if (window.google_correlator == h)
-                                  window.google_correlator = (new Date()).getTime();
+                                  window.google_correlator = (__new(Date,[])).getTime();
                                   if (window.google_adslot_loaded == h)
                                   window.google_adslot_loaded = {};
                                   if (window.google_adContentsBySlot == h)
@@ -1157,7 +1162,7 @@
                                   window.google_num_sdo_slots = 0;
                                   window.google_ad_section = window.google_ad_section || window.google_ad_region || "";
                                   window.google_country = window.google_country || window.google_gl || "";
-                                  a = (new Date()).getTime();
+                                  a = (__new(Date,[])).getTime();
                                   if (o(window.google_color_bg))
                                   window.google_color_bg = R(window.google_color_bg,a);
                                   if (o(window.google_color_text))
@@ -2263,7 +2268,7 @@
                                {
                                  if (window.google_exp_persistent && $b(window.google_exp_persistent))
                                  return window.google_exp_persistent;
-                                 return new V("1","ac1");
+                                 return __new(V,["1","ac1"]);
                                },
                                arguments.callee,
                                "$",

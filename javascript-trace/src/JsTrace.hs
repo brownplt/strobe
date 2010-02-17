@@ -14,7 +14,8 @@ import Control.Monad.State
 type CounterM a = State (Int, Bool, String) a
 
 
-wrapperName = "__typedjs"
+funcWrapperName = "__typedjs"
+newWrapperName = "__new"
 
 
 prop :: (Prop SourcePos, Expression SourcePos) 
@@ -103,7 +104,10 @@ expr e = case e of
   NewExpr p constr argEs -> do
     constr' <- expr constr
     argEs' <- mapM expr argEs
-    return $ NewExpr p constr' argEs'
+
+    return $ CallExpr p (VarRef p (Id p newWrapperName))
+               [constr',
+                ArrayLit p argEs']
   PrefixExpr p op e -> do
     e' <- expr e
     return $ PrefixExpr p op e'
@@ -140,7 +144,7 @@ expr e = case e of
   FuncExpr p mname argNames body -> do
     (n, isNested, nameHint) <- get
     put (n + 1, isNested, nameHint)
-    return $ CallExpr p (VarRef p (Id p wrapperName))
+    return $ CallExpr p (VarRef p (Id p funcWrapperName))
                [FuncExpr p mname argNames (evalState (stmt body) (0, True, "")),
                 if isNested
                   then DotRef p (VarRef p (Id p "arguments"))  

@@ -113,16 +113,16 @@ var $global = this;
       }
       else if (rtval instanceof Date) {
         return {kind:'flat', type:'Date'};
-      }      
-      
+      }
+
       if (rtval.hasOwnProperty("$jstraceid")) {
         return {kind: 'object_ref', type: rtval.$jstraceid};
       }
-      
-      var traceid;      
+
+      var traceid;
       if (rtval.$constrBy) {
         //see if this is a constructed object. if so, use the
-        //constructor's name as the name of the type. 
+        //constructor's name as the name of the type.
         var ctype = __typedJsTypes[rtval.$constrBy];
         traceid = ctype.type.namehint;
       }
@@ -430,7 +430,7 @@ var $global = this;
     else {
       return {answer: ["ERROR: NOT FUNC OR NAMED"], typesSeen: typesSeen};
     }
-    
+
     var res = strType(rt, dbg);
     var tstr = res.answer;
     line += tstr;
@@ -539,7 +539,10 @@ var $global = this;
         if (ts == "Global") continue;
         if (ts in typesPrinted) continue;
         var res = strType(__typedJsTypes[ts], true);
-        var alort = __typedJsTypes[ts].constructed ? "type" : "alias";
+        var alort = "alias";
+        if (__typedJsTypes[ts] &&
+            __typedJsTypes[ts].constructed)
+          alort = "type";
         println(__tracewin, "  " + alort + " " + ts + " : " + res.answer);
         copyFrom(res.typesSeen, newTs);
         typesPrinted[ts] = true;
@@ -554,7 +557,7 @@ var $global = this;
 
   setInterval(update_tracewin, 1000);
   //setInterval(breathe, 1000);
-  
+
   //wrapping functions:
   //-----------------------------------------------------
   //wrap every function with this function. it makes
@@ -600,7 +603,7 @@ var $global = this;
       //to catch some more cases, "this instanceof arguments.callee" also works sometimes
       var calledWithNew = res.$callingAsNew || this instanceof arguments.callee
       if (dbg) debug("traced function called!" + calledWithNew);
-      
+
       //mark this function as either a function or a constructor
       if (calledWithNew) {
         if (tjstype.constrOrFunc == "function")
@@ -612,7 +615,7 @@ var $global = this;
           alert("Can't deal with functions called both as constrs and funcs!");
         tjstype.constrOrFunc = "function";
       }
-      
+
       //if we have a function, then the this type is valid upon
       //entering the function. if it's a constr, there is no 'this' type
       if (!calledWithNew) {
@@ -630,12 +633,12 @@ var $global = this;
       tjstype.ret = mergeRttypes(
         tjstype.ret, reffed_rttype(r));
       if (dbg) debug("procced ret!");
-      
+
       if (calledWithNew) {
         /*//update the type of this upon exiting the constructor
         tjstype.thist = mergeRttypes(
           tjstype.thist, reffed_rttype(this));*/
-        
+
         //mark the object as being constructed by this function
         this.$constrBy = traceid;
       }
@@ -649,8 +652,8 @@ var $global = this;
     __typedJsTypes[traceid] = func_rttype;
 
     return res;
-  };  
-  
+  };
+
   //wrap every call to "new" with this function
   //if the constructor has a $jstraceid, then the newly
   //created object will have a $constrby field to indicate
@@ -661,24 +664,30 @@ var $global = this;
     for (var i=0; i < args.length; i++) {
       argHolder["$" + i] = args[i];
     }
-    
+
     var newStr = "new (argHolder['c'])(";
     for (var i=0; i < args.length; i++) {
       newStr += "argHolder['$" + i + "']";
       if (i != args.length - 1) newStr += ", ";
     }
     newStr += ");";
-    
+
+    //if it's a non-wrapped constructor (e.g. Date), do nothing:
+    if (!constr.hasOwnProperty("$jstraceid")) {
+      return eval(newStr);
+    }
+
+    //otherwise let the tracing func know whats going on:
     if (!constr.hasOwnProperty("$callingAsNew"))
       constr.$callingAsNew = 0;
-    
+
     constr.$callingAsNew += 1;
     var res = eval(newStr);
     constr.$callingAsNew -= 1;
-    
+
     return res;
   }
-  
+
   $global.__typedjs = tracefunction;
   $global.__new = newwrapper;
 })();
