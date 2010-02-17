@@ -21,10 +21,19 @@ let rec rt_of_typ (t : typ) : RTSet.t = match t with
   | TApp _ -> failwith (sprintf "unknown type: %s" (pretty_string pretty_typ t))
   | TObject _ -> RTSet.singleton RTObject
   | TRef t -> rt_of_typ t
+  | TDom -> any_runtime_typ
   | TTop -> any_runtime_typ
   | TBot -> RTSet.empty
 
 let runtime (t : typ) : abs_value = AVType (rt_of_typ t)
+
+let rec simple_static (lst : runtime_typ list) : typ = match lst with
+    [] -> TBot
+  | RTNumber :: lst' ->typ_union typ_num (simple_static lst')
+  | RTString :: lst' ->typ_union typ_str (simple_static lst')
+  | RTBoolean :: lst' -> typ_union typ_bool (simple_static lst')
+  | _ -> TTop
+
 
 let rec static (rt : runtime_typs) (typ : typ) : typ = match typ with
     TTop -> TTop
@@ -40,6 +49,7 @@ let rec static (rt : runtime_typs) (typ : typ) : typ = match typ with
                           (pretty_string pretty_typ typ))
   | TObject _ -> if RTSet.mem RTObject rt then typ else TBot
   | TRef t -> TRef t
+  | TDom -> simple_static (RTSetExt.to_list rt)
   | TUnion (s, t) -> typ_union (static rt s) (static rt t)
  
 let annotate (env : Env.env) (exp : exp) : exp =

@@ -6,6 +6,7 @@ module type S = sig
 
   val unions : t list -> t
   val from_list : elt list -> t
+  val to_list : t -> elt list
   val pretty : formatter -> (formatter -> elt -> unit) -> t -> unit
 end
 
@@ -19,6 +20,9 @@ module Make (Set : Set.S) = struct
 
   let from_list lst = 
     List.fold_left (fun set x -> Set.add x set) Set.empty lst
+
+  let to_list set =
+    Set.fold (fun e lst -> e :: lst) set []    
 
   let pretty formatter print_elt set =
     let is_first = ref true in
