@@ -4,6 +4,7 @@ open Typedjs_pretty
 open Typedjs_tc
 open Typedjs_types
 open Typedjs_syntax
+open Typedjs_fromExpr
 
 let string_of_typ = pretty_string pretty_typ
 
@@ -43,12 +44,22 @@ let test ((pos, js_expr, comments, expected) : test) : unit =
             printf "@%s:\n expected failure, succeeded with type %s\n" 
               (string_of_position pos) (string_of_typ actual_typ)
       end
-  with Failure s -> match expected with
-      ExpectedFails -> ()
-    | ExpectedTyp t -> 
-        incr num_failures;
-        printf "@%s:\n expected type %s, failed with reason: %s\n"
-          (string_of_position pos) (string_of_typ t) s
+  with Failure s -> 
+    begin match expected with
+        ExpectedFails -> ()
+      | ExpectedTyp t -> 
+          incr num_failures;
+          printf "@%s:\n expected type %s, failed with reason: %s\n"
+            (string_of_position pos) (string_of_typ t) s
+    end
+    | Not_well_formed (p, s) ->
+        begin match expected with
+            ExpectedFails -> ()
+          | ExpectedTyp t -> 
+              incr num_failures;
+              printf "@%s:\n expected type %s, failed (Not_well_formed): %s\n"
+                (string_of_position pos) (string_of_typ t) s
+        end
 
 let parse_and_test cin name = 
   let tests = parse_tests cin name in

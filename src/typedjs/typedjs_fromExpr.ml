@@ -30,8 +30,8 @@ let annotation_between start_p end_p : annotation option =
         begin match !found with
            None -> found := Some ((typ_start_p, typ_end_p), ann)
           | Some _ ->
-              failwith (sprintf "found multiple annotations at %s"
-                          (string_of_position (start_p, end_p)))
+              raise (Not_well_formed ((start_p, end_p), 
+                                      "found multiple type annotations"))
         end in
     PosMap.iter f !type_dbs;
     match !found with
@@ -44,15 +44,15 @@ let type_between (start_p : Lexing.position) (end_p : Lexing.position) : typ =
   match annotation_between start_p end_p with
       Some (ATyp typ) -> typ
     | _ ->
-        failwith (sprintf "expected a type annotation at %s"
-                    (string_of_position (start_p, end_p)))
+        raise (Not_well_formed ((start_p, end_p), "expected a type annotation"))
 
 let is_mutable_between start_p end_p : bool =
   match annotation_between start_p end_p with
       Some AMutable -> true
     | None -> false
-    | Some _ -> failwith 
-        "unexpected annotation (expected either mutable or nothing)"
+    | Some _ ->
+        raise (Not_well_formed ((start_p, end_p),
+                                "unexpected annotation"))
 
 (******************************************************************************)
 
@@ -112,7 +112,7 @@ let rec exp (env : env) expr = match expr with
   | FuncExpr _ -> 
       (match match_func env expr with
            Some (_, e) -> e
-         | None -> failwith "match_func returned None on a FuncExpr")
+         | None -> failwith "match_func returned None on a FuncExpr (1)")
   | UndefinedExpr a -> EUndefined a
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdSet.add x env) e2)
@@ -149,23 +149,12 @@ let rec exp (env : env) expr = match expr with
   | VarDeclExpr (a, x, e) -> 
       (* peculiar code: body or block ends with var *)
       ELet (a, x, exp env e, EUndefined a)
-  | FuncStmtExpr (a, f, args, LabelledExpr (a', "%return", body)) -> 
-      (*  peculiar code: body or block ends with a function *)
-      let typ = type_between (fst2 a) (fst2 a') in
-      let visible_free_vars = IdSet.diff env (locals body) in
-      let env' = IdSet.union visible_free_vars (IdSetExt.from_list args) in
-        (match typ with
-             TArrow (_, _, r) ->
-               ELet (a, f,
-                     EFunc (a, args, typ,
-                            ELabel (a', "%return", r, exp env' body)),
-                     EUndefined a)
-           | _ ->
-               failwith (sprintf "expected an arrow type on the function at %s"
-                           (string_of_position a)))
-  | FuncStmtExpr (a, _, _, _) ->
-      failwith (sprintf "TypedJS error at %s: expected a LabelledExpr"
-                  (string_of_position a))
+  | FuncStmtExpr (a, f, args, body) ->
+      begin match match_func (IdSet.add f env) (FuncExpr (a, args, body)) with
+          Some (t, e) ->
+            ERec ([ (f,  t, e) ], EUndefined a)
+        | None -> failwith "match_func returned None on a FuncExpr (2)"
+      end
 
 and match_func env expr = match expr with
   | FuncExpr (a, args, LabelledExpr (a', "%return", body)) ->
@@ -197,8 +186,7 @@ and match_func env expr = match expr with
               raise (Not_well_formed (a, "expected a function type"))
         end
   | FuncExpr (a, _, _) ->
-      failwith (sprintf "TypedJS error at %s: expected a LabelledExpr"
-                  (string_of_position a))
+      failwith ("expected a LabelledExpr at " ^ string_of_position a)
   | _ -> None
 
 
@@ -218,7 +206,7 @@ and block_intro env (decls, body) = match take_while is_func_decl decls with
         let e = exp env' expr in
           (match e with
                EFunc (_, _, t, _) -> (x, t, e)
-             | _ -> failwith ("TypedJS error: expected a FuncExpr")) in
+             | _ -> failwith "expected a FuncExpr") in
         ERec (map mk_bind funcs,
               block_intro env' (rest, body))
 

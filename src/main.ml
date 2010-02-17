@@ -12,6 +12,7 @@ open Typedjs_testing
 open Format
 open Typedjs_syntax
 open Typedjs_pretty
+open Typedjs_fromExpr
 
 let cin = ref stdin
 
@@ -113,6 +114,13 @@ let main () : unit =
 
 Printexc.print main ();
 try
-  !action ()
-with Failure s ->
-  prerr_string s; prerr_newline (); exit 2
+  try
+    !action ()
+  with Failure s ->
+    prerr_string s; prerr_newline (); exit 2
+with Not_well_formed (p, s) ->
+  prerr_string (string_of_position p);
+  prerr_newline ();
+  prerr_string s;
+  prerr_newline ();
+  exit 3
