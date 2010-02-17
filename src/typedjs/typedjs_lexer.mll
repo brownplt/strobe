@@ -25,6 +25,7 @@ rule token = parse
    | "Double" { NUM }
    | "String" { STR }
    | "Bool" { BOOL }
+   | "Dom" { DOM }
    | "*" { STAR }
    | "::" { COLONCOLON }
    | ":" { COLON }

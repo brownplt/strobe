@@ -4,6 +4,7 @@ module type S = sig
 
   val from_list : (key * 'a) list -> 'a t
   val to_list : 'a t -> (key * 'a) list
+  val keys : 'a t -> key list
   val union : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
   val join : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
 end
@@ -19,6 +20,9 @@ module Make (Ord: Map.OrderedType) (Map : Map.S with type key = Ord.t) = struct
 
   let to_list m = 
     Map.fold (fun k v lst -> (k, v) :: lst) m []
+
+  let keys m =
+      Map.fold (fun k _ lst -> k :: lst) m []
 
   let union f m1 m2 = 
     let rec g (k1, v1) (k2, v2) =

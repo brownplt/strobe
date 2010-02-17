@@ -48,7 +48,7 @@ let action_tc () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments in
-  let _ = Typedjs_tc.tc_defs Env.empty_env typedjs in
+  let _ = Typedjs_tc.typecheck typedjs in
     ()
 
 let action_anf () : unit =

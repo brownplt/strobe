@@ -2,6 +2,7 @@ open Prelude
 open Typedjs_syntax
 open Exprjs_syntax
 open Typedjs_types
+open Typedjs_env
 
 exception Not_well_formed of pos * string
 
@@ -260,4 +261,6 @@ let rec defs binds lst  =
         DExternalMethods exts :: defs binds lst
 
 
-let from_exprjs expr = defs IdSet.empty (flatten_seq expr)
+let from_exprjs expr = 
+  defs (IdSetExt.from_list (IdMapExt.keys init_env))
+    (flatten_seq expr)

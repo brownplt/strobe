@@ -4,6 +4,7 @@ open Typedjs_types
 open Typedjs_pretty
 open Typedjs_stxutil
 open Typedjs_dftc
+open Typedjs_env
 
 module JS = JavaScript_syntax (* needed for operators *)
 
@@ -110,6 +111,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
              typ_error p ("object does not have a field called " ^ x))
+      | TDom, _ -> TDom (* TODO: banned fields? *)
       | t, EString _ ->
           typ_error p ("expected an object, but expression has type " ^
                          (string_of_typ t))
@@ -196,6 +198,12 @@ let rec tc_exp (env : Env.env) exp = match exp with
               (sprintf "arity-mismatch: the function expects %d arguments, but \
                       this application supplies %d arguments"
                  (List.length expected_typs) (List.length args))
+      | TDom -> 
+          let arg_typs = tc_exps env args in
+            if List.for_all (fun t -> subtype t TDom) arg_typs then
+              TDom
+            else
+              typ_error p "DOM-function application"
       | _ -> typ_error p "expected a function"
     end
   | ERec (binds, body) -> 
@@ -253,3 +261,7 @@ let rec tc_defs env defs = match defs with
   | (DExp e) :: defs' ->
       tc_exp env e;
       tc_defs env defs'
+
+let typecheck defs = 
+  let f env (x, t) = Env.bind_id x t env in
+    tc_defs (fold_left f Env.empty_env (IdMapExt.to_list init_env)) defs

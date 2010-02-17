@@ -32,6 +32,13 @@ let rec subtype (s : typ) (t : typ) : bool = match s, t with
       subtypes args2 args1 && subtype r1 r2
   | TObject fs1, TObject fs2 -> subtype_fields fs1 fs2
   | TRef s', TRef t' -> subtype s' t' && subtype t' s'
+  | TApp (c, []), TDom -> 
+      List.mem c [ "String"; "Number"; "RegExp"; "Int"; "Boolean"; "Null";
+                   "Undefined" ]
+  | TArrow (_, args, r), TDom ->
+      List.for_all (fun t -> subtype TDom t) args && subtype r TDom
+  | TDom, TArrow (_, args, r) ->
+      List.for_all (fun t -> subtype TDom t) args && subtype r TDom        
   | _, TTop ->
       true
   | TBot, _ ->

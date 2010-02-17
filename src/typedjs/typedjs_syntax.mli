@@ -33,6 +33,7 @@ type typ =
   | TRef of typ
   | TTop
   | TBot
+  | TDom
 
 
 type annotation =

@@ -13,7 +13,7 @@ let parse_error s =
 
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
-       UNDEF BOOL LBRACE RBRACE COMMA MUTABLE COLONCOLON FUNCTION
+       UNDEF BOOL LBRACE RBRACE COMMA MUTABLE COLONCOLON FUNCTION DOM
 
 %right UNION
 
@@ -47,6 +47,7 @@ arg_typ
   | STR { typ_str }
   | BOOL { typ_bool }
   | UNDEF { typ_undef }
+  | DOM { TDom }
   | arg_typ UNION arg_typ { typ_union $1 $3 }
   | LBRACE fields RBRACE { TObject $2 }
   | LPAREN typ RPAREN { $2 }

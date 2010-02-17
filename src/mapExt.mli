@@ -5,6 +5,7 @@ module type S = sig
 
   val from_list : (key * 'a) list -> 'a t
   val to_list : 'a t -> (key * 'a) list
+  val keys : 'a t -> key list
 
   (** [union f map1 map2] requires both [map1] and [map2] to have the same set
       of keys. [union] signals a [Not_found] exception if either contains keys
