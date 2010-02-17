@@ -113,14 +113,14 @@ let main () : unit =
     "Typed JavaScript [action] [path]";;
 
 Printexc.print main ();
-try
+let exitcode = begin
   try
-    !action ()
-  with Failure s ->
-    prerr_string s; prerr_newline (); exit 2
-with Not_well_formed (p, s) ->
-  prerr_string (string_of_position p);
-  prerr_newline ();
-  prerr_string s;
-  prerr_newline ();
-  exit 3
+    !action (); 0
+  with 
+      Failure s ->  eprintf "%s\n" s; 2
+    | Not_well_formed (p, s) -> 
+        eprintf "%s not well-formed:\n%s\n" (string_of_position p) s; 2
+end in
+  pp_print_flush std_formatter ();
+  pp_print_flush err_formatter ();
+  exit exitcode

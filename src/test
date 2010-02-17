@@ -3,3 +3,17 @@ for file in ../tests/*.txt
 do
   ../build/main.d.byte -unittest $file || echo "ERROR on $file"
 done
+
+
+for file in ../tests/not-well-formed/*.js
+do
+  result=`../build/main.d.byte -pretc $file 2>&1`
+  if [ $? -eq 0 ]; then
+      echo "$file: expected a well-formness error; no error signalled.\n"
+      continue
+  fi
+  errors=`echo "$result" | grep -ci "not well-formed"`
+  if [ $errors -ne 1 ]; then
+    echo "$file: expected a well-formness error; got\n$result\n"
+  fi
+done
