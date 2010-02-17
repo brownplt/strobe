@@ -14,4 +14,4 @@ debug: builddir
 	$(OCAMLBUILD) main.d.byte
 
 doc: builddir
-	$(OCAMLBUILD) ../build/doc.docdir/index.html
+	$(OCAMLBUILD) doc.docdir/index.html

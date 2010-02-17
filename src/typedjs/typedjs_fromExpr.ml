@@ -1,17 +1,9 @@
-(** In this module, we transform ExprJS into Typed JavaScript. The major
-    transformations are as follows:
-
-    1. We incorporate annotations from comments (e.g. type annotations).
-
-    2. We do away with scope objects.
-
-    3. We remove [WhileExpr]s, transforming them into recursive functions.
-*)
-
 open Prelude
 open Typedjs_syntax
 open Exprjs_syntax
 open Typedjs_types
+
+exception Not_well_formed of pos * string
 
 let type_from_comment ((pos, end_p), str) =
   let lexbuf = Lexing.from_string str in
@@ -62,7 +54,6 @@ let is_mutable_between start_p end_p : bool =
     | Some _ -> failwith 
         "unexpected annotation (expected either mutable or nothing)"
 
-
 (******************************************************************************)
 
 (** [seq expr] returns the [VarDeclExpr]s at the head of a sequence of
@@ -103,15 +94,14 @@ let rec exp (env : env) expr = match expr with
   | ArrayExpr (a, es) -> EArray (a, map (exp env) es)
   | ObjectExpr (a, ps) -> 
       if List.length ps != List.length (nub (map (fun (_,p,_) -> p) ps)) then
-        failwith (sprintf "duplicate field names in the object literal at %s"
-                    (string_of_position a));
+        raise (Not_well_formed (a, "repeated field names"));
       let prop ((start_p, end_p), x, e) = 
         (x, is_mutable_between start_p end_p, exp env e) in
         EObject (a, map prop ps)
   | ThisExpr a -> EThis a
   | VarExpr (a, x) ->
       if IdSet.mem x env then EId (a, x)
-      else failwith (sprintf "%s is unbound at %s" x (string_of_position a))
+      else (raise (Not_well_formed (a, x ^ " is not defined")))
   | BracketExpr (a, e1, e2) -> EBracket (a, exp env e1, exp env e2)
   | NewExpr (a, c, args) -> ENew (a, exp env c, map (exp env) args)
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
@@ -119,24 +109,10 @@ let rec exp (env : env) expr = match expr with
   | IfExpr (a, e1, e2, e3) -> EIf (a, exp env e1, exp env e2, exp env e3)
   | AssignExpr (a, lv, e) -> EAssign (a, lvalue env lv, exp env e)
   | AppExpr (a, f, args) -> EApp (a, exp env f, map (exp env) args)
-  | FuncExpr (a, args, LabelledExpr (a', "%return", body)) ->
-      if List.length args != List.length (nub args) then
-        failwith (sprintf "each argument must have a distinct name at %s"
-                    (string_of_position a));
-      let typ = type_between (fst2 a) (fst2 a') in
-        (* Within [body], a free variable, [x] cannot be referenced, if there
-           is any local variable with the name [x]. *)
-      let visible_free_vars = IdSet.diff env (locals body) in
-      let env' = IdSet.union visible_free_vars (IdSetExt.from_list args) in
-        (match typ with
-             TArrow (_, _, r) ->
-               EFunc (a, args, typ, ELabel (a', "%return", r, exp env' body))
-           | _ ->
-               failwith (sprintf "expected an arrow type on the function at %s"
-                           (string_of_position a)))
-  | FuncExpr (a, _, _) ->
-      failwith (sprintf "TypedJS error at %s: expected a LabelledExpr"
-                  (string_of_position a))
+  | FuncExpr _ -> 
+      (match match_func env expr with
+           Some (_, e) -> e
+         | None -> failwith "match_func returned None on a FuncExpr")
   | UndefinedExpr a -> EUndefined a
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdSet.add x env) e2)
@@ -191,6 +167,40 @@ let rec exp (env : env) expr = match expr with
       failwith (sprintf "TypedJS error at %s: expected a LabelledExpr"
                   (string_of_position a))
 
+and match_func env expr = match expr with
+  | FuncExpr (a, args, LabelledExpr (a', "%return", body)) ->
+      if List.length args != List.length (nub args) then
+        raise (Not_well_formed (a, "each argument must have a distinct name"));
+      let typ = type_between (fst2 a) (fst2 a') in
+        (* Within [body], a free variable, [x] cannot be referenced, if there
+           is any local variable with the name [x]. *)
+      let locally_defined_vars = locals body in
+      let visible_free_vars = IdSet.diff env locally_defined_vars in
+      let lambda_bound_vars = IdSetExt.from_list args in
+      let locally_shadowed_args = 
+        IdSet.inter lambda_bound_vars locally_defined_vars in
+      let env' = IdSet.union visible_free_vars lambda_bound_vars in
+        if not (IdSet.is_empty locally_shadowed_args) then
+          begin
+            let txt = 
+              IdSetExt.pretty Format.str_formatter Format.pp_print_string 
+                locally_shadowed_args in
+              raise (Not_well_formed 
+                       (a, "the following arguments are redefined as local \
+                             variables: " ^ Format.flush_str_formatter ()))
+          end;
+        begin match typ with
+            TArrow (_, _, r) ->
+              Some (typ, EFunc (a, args, typ, 
+                                ELabel (a', "%return", r, exp env' body)))
+          | _ ->
+              raise (Not_well_formed (a, "expected a function type"))
+        end
+  | FuncExpr (a, _, _) ->
+      failwith (sprintf "TypedJS error at %s: expected a LabelledExpr"
+                  (string_of_position a))
+  | _ -> None
+
 
 and exp_seq env e = match e with
     SeqExpr (a, e1, e2) -> ESeq (a, exp env e1, exp env e2)
@@ -221,28 +231,6 @@ let rec flatten_seq (expr : expr) : expr list = match expr with
     SeqExpr (_, e1, e2) -> e1 :: flatten_seq e2
   | _ -> [ expr ]
 
-let match_func env expr = match expr with
-  | FuncExpr (a, args, LabelledExpr (a', "%return", body)) ->
-      if List.length args != List.length (nub args) then
-        failwith (sprintf "each argument must have a distinct name at %s"
-                    (string_of_position a));
-      let typ = type_between (fst2 a) (fst2 a') in
-        (* Within [body], a free variable, [x] cannot be referenced, if there
-           is any local variable with the name [x]. *)
-      let visible_free_vars = IdSet.diff env (locals body) in
-      let env' = IdSet.union visible_free_vars (IdSetExt.from_list args) in
-        begin match typ with
-            TArrow (_, _, r) ->
-              Some (typ, EFunc (a, args, typ, 
-                                ELabel (a', "%return", r, exp env' body)))
-          | _ ->
-              failwith (sprintf "expected an arrow type on the function at %s"
-                          (string_of_position a))
-        end
-  | FuncExpr (a, _, _) ->
-      failwith (sprintf "TypedJS error at %s: expected a LabelledExpr"
-                  (string_of_position a))
-  | _ -> None
 
 
 let match_external_method binds expr = match expr with

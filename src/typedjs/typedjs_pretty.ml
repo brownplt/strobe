@@ -45,11 +45,12 @@ let rec exp e fmt = match e with
   | EFunc (_, args, t, body) ->
       parens [text "fun"; parens (map text args); text ":"; typ t; exp body] fmt
   | ELet (_, x, bound, body) ->
-      parens [text "let"; parens (map bind [(x, bound)]); exp body] fmt
+      parens [vert [ sep [ text "let"; parens (map bind [(x, bound)])] ;
+                     exp body ] ] fmt
   | ERec (binds, body) ->
       parens [text "rec"; parens (map rec_bind binds); exp body] fmt
   | ESeq (_, e1, e2) ->
-      parens [text "seq"; exp e1; exp e2] fmt
+      parens [ vert [ sep [ text "seq"; exp e1 ]; exp e2 ] ] fmt
   | ELabel (_, x, t, e) ->
       parens [text "label"; text x; exp e] fmt
   | EBreak (_, x, e) ->
