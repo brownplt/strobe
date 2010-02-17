@@ -26,10 +26,12 @@ rule token = parse
    | "String" { STR }
    | "Bool" { BOOL }
    | "*" { STAR }
+   | "::" { COLONCOLON }
    | ":" { COLON }
    | "+" { UNION }
    | "Void" { UNDEF }
    | "constructor" { CONSTRUCTOR }
    | "mutable" { MUTABLE }
+   | "function" { FUNCTION }
    | eof { EOF }
    | ident as x { ID x }

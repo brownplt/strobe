@@ -11,16 +11,21 @@ let type_from_comment ((pos, end_p), str) =
     lexbuf.Lexing.lex_curr_p <- pos;
     Typedjs_parser.typ_ann Typedjs_lexer.token lexbuf
 
-let rec types_from_comments lst = match lst with
-    [] -> PosMap.empty
-  | (pos, str) :: rest when String.length str > 0 && str.[0] == ':' ->
-      PosMap.add pos (type_from_comment (pos, str)) (types_from_comments rest)
-  | _ :: rest -> types_from_comments rest
-
 let type_dbs : annotation PosMap.t ref = ref PosMap.empty
 
-let init_types lst = 
-  type_dbs := types_from_comments lst
+let inferred_array : annotation array ref = ref (Array.make 0 AMutable)
+
+let rec init_types lst = match lst with
+    [] -> ()
+  | (pos, str) :: rest when String.length str > 0 && str.[0] == ':' ->
+      begin match type_from_comment (pos, str) with
+          AInferred xs -> 
+            inferred_array := Array.of_list xs
+        | x ->
+            type_dbs := PosMap.add pos x !type_dbs
+      end;
+      init_types rest
+  | _ :: rest -> init_types rest
 
 let annotation_between start_p end_p : annotation option =
   let found = ref None in
