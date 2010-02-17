@@ -1,0 +1,63 @@
+<html>
+<head>
+
+<script type="text/javascript" src="prototype.js"></script>
+<script type="text/javascript" src="data/jstrace.js"></script>
+
+<title>JSTrace test</title>
+
+<script type="text/javascript">
+var pln = __typedjs(
+  function (s) {
+   s = s || "";
+   var p = document.createTextNode(s);
+   var rezdiv = document.getElementById("rezdiv");
+   rezdiv.appendChild(p);
+   rezdiv.appendChild(document.createElement('br'));
+  },
+  undefined, "pln", 0);
+
+var Point = __typedjs(
+  function(x,y) {
+    this.x = x;
+    this.y = y;
+  }, undefined, "Point", 1);
+Point.prototype.sum = __typedjs(
+  function() {
+    return this.x + this.y;
+  }, undefined, "Point.prototype.sum", 2);
+Point.prototype.dubit = __typedjs(
+  function() {
+    this.x *= 2;
+  }, undefined, "Point.prototype.dubit", 3);
+
+var usePoints = __typedjs(
+  function() {
+    var x = __new(Point, [10, 20]); //new Point(10, 20);
+    pln(x.x);
+    pln(x.y);
+    pln(x.sum());
+    x.dubit();
+    pln(x.sum());
+
+    var y = __new(Point, [x.sum(), 100]); //new Point(x.sum(), 100);
+    pln(y.x);
+    pln(y.sum());
+    pln(y instanceof Point);
+  }, undefined, "usePoints", 4);
+
+//---------------
+
+function main() {
+  pln(new String("HAHAHA"));
+  pln(usePoints());
+}
+
+</script>
+</head>
+
+<body id="body" onload="setTimeout(main, 1500)">
+<div id="rezdiv"></div>
+</body>
+
+</html>

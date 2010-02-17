@@ -25,7 +25,7 @@ var simplefunc = __typedjs(
 
 var nestedfunc = __typedjs(
   function (a) {
-    var increment = __typedjs(function (a) { return a + 1; }, 
+    var increment = __typedjs(function (a) { return a + 1; },
                               arguments.callee, "increment", 0);
     a = increment(a); a = increment(a);
     return a;
@@ -56,7 +56,7 @@ var doublenest = __typedjs(
 
 var anonInner = __typedjs(
   function() {
-    return (__typedjs(function(a) { 
+    return (__typedjs(function(a) {
       return (__typedjs(function(b){return b;},arguments.callee,"",0))(a)+1; },
               arguments.callee, "", 0))(5);
   }, undefined, "anonInner", 4);
@@ -69,6 +69,7 @@ function loader() {
 }
 
 function useFunction() {
+  pln(new String("HAHAHA"));
   pln(simplefunc("1",2));
   pln(nestedfunc(5));
   pln(nestedfunc(6));

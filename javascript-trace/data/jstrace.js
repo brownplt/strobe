@@ -1,6 +1,6 @@
 //__typedJsVars["\"flapjax.js\" (line 38, column 13)"]
 
-this.$jstraceid = "$global"; //mark the global object so we don't deeply inspect it
+this.$jstraceid = "Global"; //mark the global object so we don't deeply inspect it
 
 //an rttype (run time type) is an object of the form:
 //{kind: the kind of the type which is one of object_ref; function_ref; object; function; flat; or undefined,
@@ -22,8 +22,9 @@ this.$jstraceid = "$global"; //mark the global object so we don't deeply inspect
 
 //for object_ref or function_ref, type is a string representing the type alias. the type it
 //refers to can be found in __typedJsTypes.
+var $global = this;
 
-var __typedjs = (function() {  //lambda to hide all these local funcs
+(function() {  //lambda to hide all these local funcs
   //-------------------
   //stuff for outputting:
   var mktext = function (win, s) {
@@ -79,9 +80,9 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
   var symnum = 0;
   var gensym = function(name) {
     if (name) {
-      return "$" + name + (symnum++);
+      return name + (symnum++);
     }
-    return "$gen" + (symnum++);
+    return "gen" + (symnum++);
   };
   var arrayContains = function(arr, val) {
     for (var i = 0; i < arr.length; i++) {
@@ -101,12 +102,33 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     if (rtval === null) return {kind: 'flat', type: 'null'};
     var res = typeof(rtval);
     if (res == "object") {
-      if (rtval instanceof Node) return {kind: 'flat', type: 'DOM'};
+      if (rtval instanceof Node) {
+        return {kind: 'flat', type: 'DOM'};
+      }
+      else if (rtval instanceof String) {
+	return {kind:'flat', type:'StringObj'};
+      }
+      else if (rtval instanceof Number) {
+        return {kind:'flat', type:'Number'};
+      }
+      else if (rtval instanceof Date) {
+        return {kind:'flat', type:'Date'};
+      }      
+      
       if (rtval.hasOwnProperty("$jstraceid")) {
         return {kind: 'object_ref', type: rtval.$jstraceid};
       }
-
-      var traceid = gensym("obj");
+      
+      var traceid;      
+      if (rtval.$constrBy) {
+        //see if this is a constructed object. if so, use the
+        //constructor's name as the name of the type. 
+        var ctype = __typedJsTypes[rtval.$constrBy];
+        traceid = ctype.type.namehint;
+      }
+      else {
+        traceid = gensym("obj");
+      }
       var typeObj = {};
 
       //mark the object
@@ -114,6 +136,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
         rtval.$jstraceid = traceid;
         for (var p in rtval) {
           if (p == "$jstraceid") continue;
+          if (p == "$constrBy") continue;
           //pln("((SEEING PROPERTY: " + p + "))");
           try {
             var property = rtval[p];
@@ -133,7 +156,8 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
         typeObj["$js_error"] = "cannot inspect object";
       }
 
-      var resRttype = {kind:'object', type:typeObj, seen: false};
+      var resRttype = {kind:'object', type:typeObj, seen: false,
+                       constructed: rtval.$constrBy !== undefined};
       __typedJsTypes[traceid] = resRttype;
       return resRttype;
     }
@@ -143,9 +167,18 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     }
     else if (res == "number") {
       if (Math.round(rtval) == rtval)
-        return {kind:'flat', type:'int'};
+        return {kind:'flat', type:'Int'};
       else
-        return {kind:'flat', type:'double'};
+        return {kind:'flat', type:'Double'};
+    }
+    else if (res == "string") {
+      return {kind:'flat', type:'String'};
+    }
+    else if (res == "boolean") {
+      return {kind:'flat', type:'Bool'};
+    }
+    else if (res == "undefined") {
+      return {kind:'flat', type:'Undefined'};
     }
 
     return {kind:'flat', type:res};
@@ -221,7 +254,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       var s = innard.answer;
       if (!arrayContains(segmentsSeen, s)) {
         if (needComma)
-          res += ", ";
+          res += " + ";
         res += s;
         elementsIn += 1;
         needComma = true;
@@ -229,7 +262,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
         copyFrom(innard.typesSeen, typesSeen);
       }
     }
-    if (elementsIn != 1) res = "U(" + res + ")";
+    if (elementsIn != 1) res = "(" + res + ")";
     decdbg();
     return {answer: res, typesSeen: typesSeen};
   };
@@ -257,12 +290,12 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
   //   to put a 'rec .' in}
   //don't go into nested functions
   var strType = function(t, dbg) {
-    incdbg(); Node;
+    incdbg();
     if (dbg) debug("strType " + _quickStrType(t));
     var typesSeen = {};
     if (t === undefined) {
       decdbg();
-      return {answer: "any", typesSeen: typesSeen}; //no info available
+      return {answer: "Any", typesSeen: typesSeen}; //no info available
     }
 
     if (t.kind == "flat") {
@@ -284,7 +317,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
             debug("field " + p + "...");
         }
         var innard = strType(t.type[p], dbg && !(t.type[p].kind == "flat"));
-        res += p + " :: " + innard.answer;
+        res += p + " : " + innard.answer;
         copyFrom(innard.typesSeen, typesSeen);
       }
       decdbg();
@@ -297,7 +330,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
         if (dbg) debug("function this type...");
         var innard = strUnion(t.type.thist, dbg);
         var strthist = innard.answer;
-        if (!(strthist == "{}"))
+        if (!(strthist == "{}" || strthist == "Global"))
             res += "[" + strthist + "] ";
         copyFrom(innard.typesSeen, typesSeen);
       }
@@ -308,7 +341,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
           var innard = strUnion(t.type.args[i], dbg);
           res += innard.answer;
           if (i != t.type.args.length-1)
-            res += ", ";
+            res += " * ";
           copyFrom(innard.typesSeen, typesSeen);
         }
       }
@@ -338,7 +371,8 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       decdbg();
       typesSeen[t.type] = true;
       return {answer: t.type, typesSeen: typesSeen};
-
+    }
+      /*don't do general rec constructs:
       var realObj = __typedJsTypes[t.type];
       if (realObj === undefined) {
         decdbg();
@@ -365,8 +399,7 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       realObj.seen = false;
       copyFrom(innard.typesSeen, typesSeen);
       decdbg();
-      return {answer: resStr, typesSeen: typesSeen};
-    }
+      return {answer: resStr, typesSeen: typesSeen};*/
 
     decdbg();
     return {answer: "UNKNOWN KIND: " + t.kind, typesSeen: typesSeen};
@@ -383,16 +416,21 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     if (!n) n = "";
     var rt = nrt.rttype;
     var line = "";
-    if (rt.kind === "function" || rt.kind === "function_ref") {
-      line += "function " + n + "() :: ";
+
+    if (rt.kind === "function_ref") {
+      rt = __typedJsTypes[rt.type];
+    }
+
+    if (rt.kind === "function") {
+      line += rt.type.constrOrFunc + " " + n + "() : ";
     }
     else if (n) {
-      line += n + " :: ";
+      line += n + " : ";
     }
     else {
       return {answer: ["ERROR: NOT FUNC OR NAMED"], typesSeen: typesSeen};
     }
-
+    
     var res = strType(rt, dbg);
     var tstr = res.answer;
     line += tstr;
@@ -466,80 +504,6 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
     return existing;
   };
 
-  //wrap every RHS with this function when assigning:
-  /*var tracevar = function(label, v) {
-    var traceid = gensym("var");*/
-
-
-  //wrap every function with this function. it makes
-  //every function call add trace information.
-  //nester is the function this function is nested in.
-  //undefined if top-level. otherwise it should be wrapped
-  //name is the name, if any
-  //position is what position it occupies in the nester, e.g.
-  //0 if the first position, 1 if the 2nd, etc.
-  var tracefunction = function(fn, nester, name, position, dbg) {
-    var traceid = gensym("func" + (name ? ("_" + (name.substring(name.lastIndexOf(".")+1))) : ""));
-    var func_rttype = {
-      kind: "function",
-      type: {
-        args: undefined,
-        ret: undefined,
-        thist: undefined,
-        nested: []},
-      seen: false};
-    var tjstype = func_rttype.type;
-    var ref = {
-      kind: "function_ref",
-      type: traceid};
-
-    if (nester !== undefined) {
-      //insert the func in the proper position in the nester
-      /*alert("trace id of nester is " + nester.$jstraceid);
-      alert("len of nested: " +
-            __typedJsTypes[nester.$jstraceid].type.nested.length);*/
-      __typedJsTypes[nester.$jstraceid].type.nested[position] = {
-        name: name, rttype: ref};
-    }
-    else {
-      //insert it in the right place in the global
-      __orderedVars[position] = {name: name, rttype: ref};
-    }
-
-    var res = function() {
-      var calledWithNew = this instanceof arguments.callee;
-      if (dbg) debug("traced function called!" + calledWithNew);
-
-      if (!calledWithNew) {
-        //update the type of this upon entering the function
-        tjstype.thist = mergeRttypes(
-          tjstype.thist, reffed_rttype(this));
-      }
-
-      tjstype.args = processArguments(
-        tjstype.args, arrayToAbstract(arguments));
-      if (dbg) debug("done proc args, abt to apply...");
-      var r = fn.apply(this, arguments);
-      if (dbg) debug("traced function applied! proccing ret...");
-      tjstype.ret = mergeRttypes(
-        tjstype.ret, reffed_rttype(r));
-      if (dbg) debug("procced ret!");
-      if (calledWithNew) {
-        //update the type of this upon exiting the constructor
-        tjstype.thist = mergeRttypes(
-          tjstype.thist, reffed_rttype(this));
-      }
-      return r;
-    };
-    res.$jstraceid = traceid;
-    //give the original function a traceid as well, so that
-    //we can pass arguments.callee as the nester
-    fn.$jstraceid = traceid;
-
-    __typedJsTypes[traceid] = func_rttype;
-
-    return res;
-  };
 
   //code to update the tracing output:
   var update_tracewin = function() {
@@ -572,9 +536,11 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
       var printedSmth = false;
       var newTs = {};
       for (var ts in typesSeen) {
+        if (ts == "Global") continue;
         if (ts in typesPrinted) continue;
         var res = strType(__typedJsTypes[ts], true);
-        println(__tracewin, "  type " + ts + " :: " + res.answer);
+        var alort = __typedJsTypes[ts].constructed ? "type" : "alias";
+        println(__tracewin, "  " + alort + " " + ts + " : " + res.answer);
         copyFrom(res.typesSeen, newTs);
         typesPrinted[ts] = true;
         printedSmth = true;
@@ -586,13 +552,135 @@ var __typedjs = (function() {  //lambda to hide all these local funcs
   };
 
 
-  var breathe = function() {
-    alert("Breathing...");
-  };
   setInterval(update_tracewin, 1000);
   //setInterval(breathe, 1000);
+  
+  //wrapping functions:
+  //-----------------------------------------------------
+  //wrap every function with this function. it makes
+  //every function call add trace information.
+  //nester is the function this function is nested in.
+  //undefined if top-level. otherwise it should be wrapped
+  //name is the name, if any
+  //position is what position it occupies in the nester, e.g.
+  //0 if the first position, 1 if the 2nd, etc.
+  var tracefunction = function(fn, nester, name, position, dbg) {
+    var traceid = gensym("func" + (name ? ("_" + (name.substring(name.lastIndexOf(".")+1))) : ""));
+    var func_rttype = {
+      kind: "function",
+      type: {
+        args: undefined,
+        ret: undefined,
+        thist: undefined,
+        nested: [],
+        constrOrFunc: "unknown",
+        namehint: name},
+      seen: false};
+    var tjstype = func_rttype.type;
+    var ref = {
+      kind: "function_ref",
+      type: traceid};
 
-  return tracefunction;
+    if (nester !== undefined) {
+      //insert the func in the proper position in the nester
+      /*alert("trace id of nester is " + nester.$jstraceid);
+      alert("len of nested: " +
+            __typedJsTypes[nester.$jstraceid].type.nested.length);*/
+      __typedJsTypes[nester.$jstraceid].type.nested[position] = {
+        name: name, rttype: ref};
+    }
+    else {
+      //insert it in the right place in the global
+      __orderedVars[position] = {name: name, rttype: ref};
+    }
+
+    var res = function() {
+      //since all calls to 'new' are wrapped, $callingAsNew will be set
+      //if it was called as a constructor
+      //to catch some more cases, "this instanceof arguments.callee" also works sometimes
+      var calledWithNew = res.$callingAsNew || this instanceof arguments.callee
+      if (dbg) debug("traced function called!" + calledWithNew);
+      
+      //mark this function as either a function or a constructor
+      if (calledWithNew) {
+        if (tjstype.constrOrFunc == "function")
+          alert("Can't deal with functions called both as constrs and funcs!");
+        tjstype.constrOrFunc = "constructor";
+      }
+      else {
+        if (tjstype.constrOrFunc == "constructor")
+          alert("Can't deal with functions called both as constrs and funcs!");
+        tjstype.constrOrFunc = "function";
+      }
+      
+      //if we have a function, then the this type is valid upon
+      //entering the function. if it's a constr, there is no 'this' type
+      if (!calledWithNew) {
+        tjstype.thist = mergeRttypes(
+          tjstype.thist, reffed_rttype(this));
+      }
+
+      tjstype.args = processArguments(
+        tjstype.args, arrayToAbstract(arguments));
+
+      if (dbg) debug("done proc args, abt to apply...");
+      var r = fn.apply(this, arguments);
+
+      if (dbg) debug("traced function applied! proccing ret...");
+      tjstype.ret = mergeRttypes(
+        tjstype.ret, reffed_rttype(r));
+      if (dbg) debug("procced ret!");
+      
+      if (calledWithNew) {
+        /*//update the type of this upon exiting the constructor
+        tjstype.thist = mergeRttypes(
+          tjstype.thist, reffed_rttype(this));*/
+        
+        //mark the object as being constructed by this function
+        this.$constrBy = traceid;
+      }
+      return r;
+    };
+    res.$jstraceid = traceid;
+    //give the original function a traceid as well, so that
+    //we can pass arguments.callee as the nester
+    fn.$jstraceid = traceid;
+
+    __typedJsTypes[traceid] = func_rttype;
+
+    return res;
+  };  
+  
+  //wrap every call to "new" with this function
+  //if the constructor has a $jstraceid, then the newly
+  //created object will have a $constrby field to indicate
+  //whence it came.
+  //WARNING: ABUSE OF EVAL INCOMING
+  var newwrapper = function (constr, args) {
+    var argHolder = {"c": constr};
+    for (var i=0; i < args.length; i++) {
+      argHolder["$" + i] = args[i];
+    }
+    
+    var newStr = "new (argHolder['c'])(";
+    for (var i=0; i < args.length; i++) {
+      newStr += "argHolder['$" + i + "']";
+      if (i != args.length - 1) newStr += ", ";
+    }
+    newStr += ");";
+    
+    if (!constr.hasOwnProperty("$callingAsNew"))
+      constr.$callingAsNew = 0;
+    
+    constr.$callingAsNew += 1;
+    var res = eval(newStr);
+    constr.$callingAsNew -= 1;
+    
+    return res;
+  }
+  
+  $global.__typedjs = tracefunction;
+  $global.__new = newwrapper;
 })();
 
 

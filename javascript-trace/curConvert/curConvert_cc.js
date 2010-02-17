@@ -63,7 +63,7 @@ Currency.prototype.label = __typedjs(function  (el,sl)
                                        var e = document.getElementById(el);
                                        e.replaceChild(txt,e.firstChild);
                                      };*/
-var cnvtr = new Currency();
+var cnvtr = __new(Currency, []); //new Currency();
 swapFromTo = __typedjs(function swapFromTo ()
                        {
                          var tmp = document.getElementById("from").value;
