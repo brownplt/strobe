@@ -90,9 +90,17 @@ and bind (x, e) =
 and rec_bind (x, t, e) = 
   parens [text x; text ":"; typ t; text "="; exp e]
 
+let constr (c : constr_exp) =
+  parens [ vert [ sep [ text "define-constructor"; text c.constr_name; 
+                        parens (map text c.constr_args);
+                        text ":"; typ c.constr_typ ];
+                  exp c.constr_exp ] ]
+           
+
 let rec def (d : def) = match d with
     DEnd -> fun fmt -> pp_print_newline fmt () 
   | DExp (e, d') -> vert [ exp e; def d' ]
+  | DConstructor (c, d') -> vert [ constr c; def d' ]
   | DLet  (_, x, e, d') ->
       vert [ parens [ text "define"; text x; exp e ]; def d' ]
   | DRec (binds, d') ->

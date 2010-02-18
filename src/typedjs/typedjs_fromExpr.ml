@@ -44,6 +44,12 @@ let annotation_between start_p end_p =
     PosMap.iter f !type_dbs;
     !found
 
+let constr_between (p1, p2) = match annotation_between p1 p2 with
+    Some (p, AConstructor typ) -> 
+      type_dbs := PosMap.remove p !type_dbs;
+      Some typ
+  | _ -> None
+
 let type_between (start_p : Lexing.position) (end_p : Lexing.position) : typ =
   match annotation_between start_p end_p with
       Some (pos, ATyp typ) -> 
@@ -235,6 +241,38 @@ let rec flatten_seq (expr : expr) : expr list = match expr with
     SeqExpr (_, e1, e2) -> e1 :: flatten_seq e2
   | _ -> [ expr ]
 
+let match_constr_body env expr = match expr with
+    (* we will drop the LabelledExpr, which will prevent us from using
+        return within a constructor. *)
+    FuncStmtExpr (p, f, args, LabelledExpr (p', l, body)) ->
+      begin match constr_between (fst2 p, fst2 p') with
+          None -> None
+        | Some typ -> 
+            let locally_defined_vars = locals body in
+            let visible_free_vars = IdSet.diff env locally_defined_vars in
+            let lambda_bound_vars = IdSetExt.from_list args in
+            let locally_shadowed_args = 
+              IdSet.inter lambda_bound_vars locally_defined_vars in
+            let env' = IdSet.union visible_free_vars lambda_bound_vars in
+              if not (IdSet.is_empty locally_shadowed_args) then
+                begin
+                  IdSetExt.pretty Format.str_formatter Format.pp_print_string 
+                    locally_shadowed_args;
+                  raise (Not_well_formed 
+                           (p, "the following arguments are redefined as local \
+                          variables: " ^ Format.flush_str_formatter ()))
+                end;
+              Some 
+                { constr_pos = p;
+                  constr_name = f;
+                  constr_typ = typ;
+                  constr_args = args;
+                  constr_inits = [];
+                  constr_exp = exp env' body;
+                  constr_prototype = EObject (p, []) (* may be updated later *)
+                }
+      end
+  | _ -> None
 
 
 (** [match_func_decl expr] matches function statements and variables bound to
@@ -252,18 +290,29 @@ let match_decl expr = match expr with
   | _ -> None
 
 
-let rec defs env lst = match match_while match_func_decl lst with
-    [], [] -> DEnd
-  | [], expr :: lst' -> begin match match_decl expr with
-        None -> DExp (exp env expr, defs env lst')
-      | Some (p, x, expr) -> DLet (p, x, exp env expr, defs env lst)
-    end
-  | func_binds, lst' ->
-      let env' = IdSet.union (IdSetExt.from_list (map snd3 func_binds)) env in
-      let mk_bind (_, x, expr) = match match_func env' expr with
-          Some (t, e) -> (x, t, e)
-        | None -> failwith "match_func returned none on a FuncExpr (defs)" in
-        DRec (map mk_bind func_binds, defs env' lst')
+let rec defs env lst = 
+  begin match lst with
+      [] -> DEnd
+    | expr :: lst' ->
+        begin match match_constr_body env expr with
+            Some c -> DConstructor (c, defs (IdSet.add c.constr_name env) lst')
+          | None ->
+              begin match match_while match_func_decl (expr :: lst') with
+                  [], expr :: lst' -> begin match match_decl expr with
+                      None -> DExp (exp env expr, defs env lst')
+                    | Some (p, x, expr) -> 
+                        DLet (p, x, exp env expr, defs env lst')
+                  end
+                | func_binds, lst' ->
+                    let env' = IdSet.union 
+                      (IdSetExt.from_list (map snd3 func_binds)) env in
+                    let mk_bind (_, x, expr) = match match_func env' expr with
+                        Some (t, e) -> (x, t, e)
+                      | None -> failwith "match_func returned None (defs)" in
+                      DRec (map mk_bind func_binds, defs env' lst')
+              end
+        end
+  end
 
 
 let from_exprjs expr = 

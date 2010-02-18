@@ -88,16 +88,22 @@ and lvalue =
     LVar of pos * id
   | LProp of pos * exp * exp
 
+type constr_exp = { 
+  constr_pos : pos;
+  constr_name : id;
+  constr_typ : typ;
+  constr_args : id list;
+  constr_inits : (id * exp) list;
+  constr_exp : exp;
+  constr_prototype : exp
+}
+
 type def =
     DEnd
   | DExp of exp * def
   | DLet of pos * id * exp * def
   | DRec of (id * typ * exp) list * def
-
-(*
-  | DConstructor of pos * id * typ * (id * exp) list * exp * exp
-  | DExternalField of pos * id * id * exp
-  | DExternalMethods of (pos * id * id * typ * exp) list *)
+  | DConstructor of constr_exp * def
 
 (******************************************************************************)
 

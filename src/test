@@ -17,3 +17,11 @@ do
     echo "$file: expected a well-formness error; got\n$result\n"
   fi
 done
+
+for file in ../tests/well-formed/*.js
+do
+  result=`../build/main.d.byte -pretc $file 2>&1`
+  if [ $? -ne 0 ]; then
+      echo "$file: aborted with exit code $?; output was:\n$result\n"
+  fi
+done
