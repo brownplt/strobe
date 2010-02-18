@@ -257,7 +257,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
 and tc_exps env es = map (tc_exp env) es
 
 let rec tc_def env def = match def with
-    DExp (e, d) -> 
+    DEnd -> ()
+  | DExp (e, d) -> 
       let _ = tc_exp env e in
         tc_def env d
   | DLet (p, x, e1, d2) ->
