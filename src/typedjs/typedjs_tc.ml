@@ -38,9 +38,7 @@ let tc_cmp (p : pos) (lhs : typ) (rhs : typ) : typ =
   else
     typ_error p "comparison type error"
 
-let let_env : Env.env option ref = ref None
-
-let rec tc_exp (env : Env.env) exp = let_env := None; match exp with
+let rec tc_exp (env : Env.env) exp = match exp with
     EString _ -> typ_str
   | ERegexp _ -> typ_regexp
   | ENum _ -> typ_num
@@ -58,9 +56,7 @@ let rec tc_exp (env : Env.env) exp = let_env := None; match exp with
       let env = Env.bind_id x t env in
       let env = Env.remove_assigned_ids (av_exp e1) env in
       let env = if x_available then Env.new_assignable_id x env else env in
-      let result_typ = tc_exp env e2 in
-        let_env := Some env;
-        result_typ
+        tc_exp env e2
   | ESeq (_, e1, e2) ->
       let _ = tc_exp env e1 in
         tc_exp env e2
@@ -234,9 +230,7 @@ let rec tc_exp (env : Env.env) exp = let_env := None; match exp with
                              expression has type %s" x (string_of_typ t)
                         (string_of_typ s)) in
         List.iter2 tc_bind binds bind_envs;
-        let result_typ = tc_exp body_env body in
-          let_env := Some env;
-          result_typ
+        tc_exp body_env body
   | EFunc (p, args, fn_typ, body) -> begin match fn_typ with
         TArrow (_, arg_typs, result_typ) ->
           if List.length arg_typs = List.length args then ()
@@ -262,17 +256,43 @@ let rec tc_exp (env : Env.env) exp = let_env := None; match exp with
 
 and tc_exps env es = map (tc_exp env) es
 
-let tc_def def = match def with
-    DExp e -> match !let_env with
-        None -> failwith "let_env is None"
-      | Some env ->     
-          tc_exp env e;
-          begin match !let_env with
-              None -> let_env := Some env
-            | Some _ -> ()
-          end
+let rec tc_def env def = match def with
+    DExp (e, d) -> 
+      let _ = tc_exp env e in
+        tc_def env d
+  | DLet (p, x, e1, d2) ->
+      let t = tc_exp env e1
+      and x_available = not (IdSet.mem x (local_av_def d2)) in
+      let env = Env.bind_id x t env in
+      let env = Env.remove_assigned_ids (av_exp e1) env in
+      let env = if x_available then Env.new_assignable_id x env else env in
+        tc_def env d2
+  | DRec (binds, d) ->
+      let f env (x, t, _) = Env.bind_id x t env in
+      let env = fold_left f env binds in
+      let bind_avs = map (fun (_, _, e) -> av_exp e) binds in
+      let body_env = Env.remove_assigned_ids (IdSetExt.unions bind_avs) env in
+      let rec mk_bind_envs (bind_avs : IdSet.t list) (prev_av : IdSet.t) 
+          : Env.env list = match bind_avs with
+          [] -> []
+        | bind_av :: next_avs -> 
+            let bind_env = 
+              Env.remove_assigned_ids (IdSetExt.unions (prev_av :: next_avs))
+                env in
+            let prev_av' = IdSet.union bind_av prev_av in
+              bind_env :: (mk_bind_envs next_avs prev_av') in
+      let bind_envs = mk_bind_envs bind_avs IdSet.empty in
+      let tc_bind (x, t, e) bind_env =
+        let s = tc_exp bind_env e in
+          if subtype s t then ()
+          else (* this should not happen; rec-annotation is a copy of the
+                  function's type annotation. *)
+            failwith (sprintf "%s is declared to have type %s, but the bound \
+                             expression has type %s" x (string_of_typ t)
+                        (string_of_typ s)) in
+        List.iter2 tc_bind binds bind_envs;
+        tc_def body_env d
 
 let typecheck defs = 
   let f env (x, t) = Env.bind_id x t env in
-    let_env := Some (fold_left f Env.empty_env (IdMapExt.to_list init_env));
-    List.iter tc_def defs
+    tc_def (fold_left f Env.empty_env (IdMapExt.to_list init_env)) defs

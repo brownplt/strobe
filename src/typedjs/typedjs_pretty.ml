@@ -90,14 +90,22 @@ and bind (x, e) =
 and rec_bind (x, t, e) = 
   parens [text x; text ":"; typ t; text "="; exp e]
 
-let def (d : def) = match d with
-    DExp e -> exp e
+let rec def (d : def) = match d with
+    DEnd -> fun fmt -> pp_print_newline fmt () 
+  | DExp (e, d') -> vert [ exp e; def d' ]
+  | DLet  (_, x, e, d') ->
+      vert [ parens [ text "define"; text x; exp e ]; def d' ]
+  | DRec (binds, d') ->
+      let p_bind (x, t, e) = brackets [ text x; exp e ] in
+      vert [ parens [ text "define-rec"; parens [ vert (map p_bind binds) ] ];
+             def d' ]
+(*
   | DExternalField (_, c_name, f_name, e) ->
       sep [ text (sprintf "%s.prototype.%s" c_name f_name); text "="; exp e ]
   | DExternalMethods methods -> 
       let f (_, c_name, f_name, _, e) =
         sep [ text (sprintf "%s.prototype.%s" c_name f_name); text "="; exp e ]
-      in vert (map f methods)
+      in vert (map f methods) *)
 
 let pretty_runtime_typ (fmt : formatter) (rt : runtime_typ) = match rt with
     RTNumber -> pp_print_string fmt "number"
@@ -121,4 +129,3 @@ let pretty_typ fmt t = typ t fmt
 
 let pretty_def fmt d = def d fmt
 
-let pretty_defs fmt defs =  vert (map def defs) fmt

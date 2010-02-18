@@ -42,7 +42,7 @@ let action_pretypecheck () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments in
-    Typedjs_pretty.pretty_defs std_formatter typedjs
+    Typedjs_pretty.pretty_def std_formatter typedjs
 
 let action_tc () : unit = 
   let (js, comments) = parse_javascript !cin !cin_name in
@@ -56,7 +56,7 @@ let action_anf () : unit =
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments in
     begin match typedjs with
-        [ DExp e ] -> 
+        DExp (e, _) -> 
           let anf = Typedjs_anf.from_typedjs e in
             Typedjs_anf.print_anfexp anf
       | _ -> failwith "expected a single expression"
@@ -67,7 +67,7 @@ let action_df () : unit =
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments in
     begin match typedjs with
-        [ DExp e ] ->
+        DExp (e, _) ->
           let anf = Typedjs_anf.from_typedjs e in
           let ids = Typedjs_df.local_type_analysis 
             Typedjs_dfLattice.empty_env anf in

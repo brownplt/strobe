@@ -89,10 +89,15 @@ and lvalue =
   | LProp of pos * exp * exp
 
 type def =
-    DExp of exp
+    DEnd
+  | DExp of exp * def
+  | DLet of pos * id * exp * def
+  | DRec of (id * typ * exp) list * def
+
+(*
   | DConstructor of pos * id * typ * (id * exp) list * exp * exp
   | DExternalField of pos * id * id * exp
-  | DExternalMethods of (pos * id * id * typ * exp) list
+  | DExternalMethods of (pos * id * id * typ * exp) list *)
 
 (******************************************************************************)
 

@@ -84,8 +84,14 @@ and lvalue =
     LVar of pos * id
   | LProp of pos * exp * exp
 
+(** Module-level definitions *)
 type def =
-    DExp of exp
+    DEnd
+  | DExp of exp * def
+  | DLet of pos * id * exp * def
+  | DRec of (id * typ * exp) list * def
+  
+(*
   | DConstructor of pos * id * typ * (id * exp) list * exp * exp
       (** [DConstructor pos c_name c_typ c_inits c_body prototype] is an object
           constructor (a function with a constructor annotation). A constructor
@@ -99,7 +105,7 @@ type def =
   | DExternalMethods of (pos * id * id * typ * exp) list
       (** [DExternalMethods method_decls] represents a sequence of external
           methods definitions. *)
-          
+*)          
 
 module type EnvType = sig
   

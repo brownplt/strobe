@@ -10,6 +10,8 @@ val av_exp : exp -> IdSet.t
     functions: it returns the locally-assigned free variables of [e]. *)
 val local_av_exp : exp -> IdSet.t
 
+val local_av_def : def -> IdSet.t
+
 (** [nested_funcs e] returns a list of [EFunc _] expressions nested within [e].
     If [e] is itself an [EFunc _], it returns [e]. *)
 val nested_funcs : exp -> exp list

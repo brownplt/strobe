@@ -42,6 +42,17 @@ let rec local_av_exp (exp : exp) : IdSet.t = match exp with
   | EThrow (_, e) -> local_av_exp e
   | ETypecast (_, _, e) -> local_av_exp e
 
+let rec local_av_def (def : def) : IdSet.t = match def with
+    DEnd -> IdSet.empty
+  | DExp (e, d) -> IdSet.union (local_av_exp e) (local_av_def d)
+  | DLet (_, x, e, d) ->
+      IdSet.union (local_av_exp e) (IdSet.remove x (local_av_def d))
+  | DRec (binds, d) ->
+      IdSet.diff 
+        (IdSetExt.unions 
+           (local_av_def d :: (map local_av_exp (map thd3 binds))))
+        (IdSetExt.from_list (map fst3 binds))
+
 let rec av_exp (exp : exp) : IdSet.t = match exp with
     EString _ -> IdSet.empty
   | ERegexp _ -> IdSet.empty

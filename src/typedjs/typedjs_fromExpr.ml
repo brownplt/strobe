@@ -71,6 +71,7 @@ let is_mutable_between start_p end_p : bool =
 
 (******************************************************************************)
 
+
 (** [seq expr] returns the [VarDeclExpr]s at the head of a sequence of
     expressions. Assumes that [SeqExpr]s are nested on the right.
 
@@ -236,6 +237,40 @@ let rec flatten_seq (expr : expr) : expr list = match expr with
 
 
 
+(** [match_func_decl expr] matches function statements and variables bound to
+    function expressions. *)
+let match_func_decl expr = match expr with
+    VarDeclExpr (p, x, e) ->
+      (match e with
+           FuncExpr _ -> Some (p, x, e)
+         | _ -> None)
+  | FuncStmtExpr (p, f, args, e) -> Some (p, f, FuncExpr (p, args, e))
+  | _ -> None
+
+let match_decl expr = match expr with
+    VarDeclExpr (p, x, e) -> Some (p, x, e)
+  | _ -> None
+
+
+let rec defs env lst = match match_while match_func_decl lst with
+    [], [] -> DEnd
+  | [], expr :: lst' -> begin match match_decl expr with
+        None -> DExp (exp env expr, defs env lst')
+      | Some (p, x, expr) -> DLet (p, x, exp env expr, defs env lst)
+    end
+  | func_binds, lst' ->
+      let env' = IdSet.union (IdSetExt.from_list (map snd3 func_binds)) env in
+      let mk_bind (_, x, expr) = match match_func env' expr with
+          Some (t, e) -> (x, t, e)
+        | None -> failwith "match_func returned none on a FuncExpr (defs)" in
+        DRec (map mk_bind func_binds, defs env' lst')
+
+
+let from_exprjs expr = 
+  defs (IdSetExt.from_list (IdMapExt.keys init_env)) (flatten_seq expr)
+
+(*
+
 let match_external_method binds expr = match expr with
     AssignExpr 
       (p,
@@ -293,9 +328,5 @@ let rec defs binds lst  =
         let d, binds' = def binds e in
           d :: defs binds' lst'
     | exts, lst ->
-        DExternalMethods exts :: defs binds lst
-
-
-let from_exprjs expr = 
-  defs (IdSetExt.from_list (IdMapExt.keys init_env))
-    (flatten_seq expr)
+        DExternalMethods exts :: defs binds lst 
+*)
