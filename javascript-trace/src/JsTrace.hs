@@ -117,7 +117,7 @@ expr e = case e of
   InfixExpr p op e1 e2 -> do 
     e1' <- expr e1
     e2' <- expr e2
-    return $ InfixExpr p op e1 e2
+    return $ InfixExpr p op e1' e2'
   CondExpr p c t f -> do
     c' <- expr c
     t' <- expr t
