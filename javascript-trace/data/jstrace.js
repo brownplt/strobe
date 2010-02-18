@@ -445,10 +445,10 @@ var $global = this;
     }
 
     if (isFunc === false || isFunc.nested.length === 0) {
-      return {answer: [line + ";"], typesSeen: typesSeen};
+      return {answer: [line], typesSeen: typesSeen};
     }
 
-    var res = [line + " {"];
+    var res = [line];
 
     for (var i=0; i < isFunc.nested.length; i++) {
       var innerRes = strNestedNamedRttype(isFunc.nested[i], dbg);
@@ -457,7 +457,7 @@ var $global = this;
       }
       copyFrom(innerRes.typesSeen, typesSeen);
     }
-    res.push("};");
+    res.push("");
 
     return {answer: res, typesSeen: typesSeen};
   };
