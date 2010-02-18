@@ -12,6 +12,8 @@ let type_from_comment ((pos, end_p), str) =
     lexbuf.Lexing.lex_curr_p <- pos;
     Typedjs_parser.typ_ann Typedjs_lexer.token lexbuf
 
+let func_index = ref 0
+
 let type_dbs : annotation PosMap.t ref = ref PosMap.empty
 
 let inferred_array : annotation array ref = ref (Array.make 0 AMutable)
@@ -28,7 +30,7 @@ let rec init_types lst = match lst with
       init_types rest
   | _ :: rest -> init_types rest
 
-let annotation_between start_p end_p : annotation option =
+let annotation_between start_p end_p =
   let found = ref None in
   let f (typ_start_p, typ_end_p) ann = 
     if typ_start_p.Lexing.pos_cnum > start_p.Lexing.pos_cnum &&
@@ -40,21 +42,28 @@ let annotation_between start_p end_p : annotation option =
                                       "found multiple type annotations"))
         end in
     PosMap.iter f !type_dbs;
-    match !found with
-        Some (pos, typ) -> 
-          type_dbs := PosMap.remove pos !type_dbs;
-          Some typ
-      | None -> None
+    !found
 
 let type_between (start_p : Lexing.position) (end_p : Lexing.position) : typ =
   match annotation_between start_p end_p with
-      Some (ATyp typ) -> typ
+      Some (pos, ATyp typ) -> 
+        type_dbs := PosMap.remove pos !type_dbs;
+        typ
+    | None when !func_index < Array.length !inferred_array ->
+        begin match !inferred_array.(!func_index) with
+            ATyp t -> t
+          | _ -> raise (Not_well_formed 
+                          ((start_p, end_p), "expected a type annotation"))
+        end
+        
     | _ ->
         raise (Not_well_formed ((start_p, end_p), "expected a type annotation"))
 
 let is_mutable_between start_p end_p : bool =
   match annotation_between start_p end_p with
-      Some AMutable -> true
+      Some (pos, AMutable) -> 
+        type_dbs := PosMap.remove pos !type_dbs;
+        true
     | None -> false
     | Some _ ->
         raise (Not_well_formed ((start_p, end_p),
@@ -177,15 +186,15 @@ and match_func env expr = match expr with
       let env' = IdSet.union visible_free_vars lambda_bound_vars in
         if not (IdSet.is_empty locally_shadowed_args) then
           begin
-            let txt = 
-              IdSetExt.pretty Format.str_formatter Format.pp_print_string 
-                locally_shadowed_args in
-              raise (Not_well_formed 
-                       (a, "the following arguments are redefined as local \
-                             variables: " ^ Format.flush_str_formatter ()))
+            IdSetExt.pretty Format.str_formatter Format.pp_print_string 
+              locally_shadowed_args;
+            raise (Not_well_formed 
+                     (a, "the following arguments are redefined as local \
+                          variables: " ^ Format.flush_str_formatter ()))
           end;
         begin match typ with
             TArrow (_, _, r) ->
+              incr func_index;
               Some (typ, EFunc (a, args, typ, 
                                 ELabel (a', "%return", r, exp env' body)))
           | _ ->
@@ -239,7 +248,15 @@ let match_external_method binds expr = match expr with
       end
   | _ -> None
 
-   
+let match_methods_for c_name env expr = match expr with
+    AssignExpr 
+      (p,
+       PropLValue 
+         (_, BracketExpr (_, VarExpr (_, c_name'), StringExpr (_, "prototype")),
+          StringExpr (_, f_name)),
+       rhs_expr) when c_name = c_name' -> Some (p, f_name, exp env rhs_expr)
+  | _ -> None
+  
 let def binds expr = match expr with
     AssignExpr 
       (p,
@@ -250,6 +267,24 @@ let def binds expr = match expr with
         DExternalField (p, c_name, f_name, exp binds rhs_expr), binds
   | VarDeclExpr (_, x, _) -> DExp (exp binds expr), IdSet.add x binds
   | _ -> DExp (exp binds expr), binds
+
+
+let match_prototype c_name env lst =
+  match match_while (match_methods_for c_name env) lst with
+      [], expr :: lst' ->
+        begin match expr with
+            AssignExpr
+              (p,
+               PropLValue
+                 (_, VarExpr (_, c_name'), StringExpr (_, "prototype")),
+               rhs_expr) when c_name = c_name' ->
+                Some (exp env rhs_expr), lst'
+          | _ -> None, lst
+        end
+    | (p, f_name, f_exp) :: fields, lst' -> 
+        let mk_field (_, x, e) = (x, false, e) in
+          Some (EObject (p, map mk_field ((p, f_name, f_exp) :: fields))), lst'
+      
 
 let rec defs binds lst  = 
   match match_while (match_external_method binds) lst with

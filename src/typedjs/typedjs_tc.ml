@@ -38,7 +38,9 @@ let tc_cmp (p : pos) (lhs : typ) (rhs : typ) : typ =
   else
     typ_error p "comparison type error"
 
-let rec tc_exp (env : Env.env) exp = match exp with
+let let_env : Env.env option ref = ref None
+
+let rec tc_exp (env : Env.env) exp = let_env := None; match exp with
     EString _ -> typ_str
   | ERegexp _ -> typ_regexp
   | ENum _ -> typ_num
@@ -56,7 +58,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let env = Env.bind_id x t env in
       let env = Env.remove_assigned_ids (av_exp e1) env in
       let env = if x_available then Env.new_assignable_id x env else env in
-        tc_exp env e2
+      let result_typ = tc_exp env e2 in
+        let_env := Some env;
+        result_typ
   | ESeq (_, e1, e2) ->
       let _ = tc_exp env e1 in
         tc_exp env e2
@@ -230,7 +234,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
                              expression has type %s" x (string_of_typ t)
                         (string_of_typ s)) in
         List.iter2 tc_bind binds bind_envs;
-        tc_exp body_env body
+        let result_typ = tc_exp body_env body in
+          let_env := Some env;
+          result_typ
   | EFunc (p, args, fn_typ, body) -> begin match fn_typ with
         TArrow (_, arg_typs, result_typ) ->
           if List.length arg_typs = List.length args then ()
@@ -256,12 +262,17 @@ let rec tc_exp (env : Env.env) exp = match exp with
 
 and tc_exps env es = map (tc_exp env) es
 
-let rec tc_defs env defs = match defs with
-    [] -> ()
-  | (DExp e) :: defs' ->
-      tc_exp env e;
-      tc_defs env defs'
+let tc_def def = match def with
+    DExp e -> match !let_env with
+        None -> failwith "let_env is None"
+      | Some env ->     
+          tc_exp env e;
+          begin match !let_env with
+              None -> let_env := Some env
+            | Some _ -> ()
+          end
 
 let typecheck defs = 
   let f env (x, t) = Env.bind_id x t env in
-    tc_defs (fold_left f Env.empty_env (IdMapExt.to_list init_env)) defs
+    let_env := Some (fold_left f Env.empty_env (IdMapExt.to_list init_env));
+    List.iter tc_def defs

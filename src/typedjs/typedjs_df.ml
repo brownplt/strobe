@@ -58,8 +58,13 @@ let mk_type_is x s = match s with
 
 let bindexp (env : env) (exp : bind) : abs_value * env = match exp with
     BValue v -> (value env v, env)
-  | BApp _ -> (any_val, env)
-  | BBracket _ -> (any_val, env)
+  | BApp (v, vs)-> 
+      List.iter (fun v -> ignore (value env v)) (v :: vs);
+      any_val, env
+  | BBracket (v1, v2) -> 
+      ignore (value env v1);
+      ignore (value env v2);
+      any_val, env
   | BNew _ -> (any_val, env)
   | BPrefixOp (J.PrefixTypeof, v) -> 
       let _ = value env v in

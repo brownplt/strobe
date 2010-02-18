@@ -65,6 +65,7 @@ typ_ann
 inferred_anns 
   : { [] }
   | FUNCTION ID COLON typ inferred_anns { ATyp $4 :: $5 }
+  | FUNCTION COLON typ inferred_anns { ATyp $3 :: $4 }
 
 
 

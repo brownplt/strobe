@@ -32,7 +32,7 @@ let rec simple_static (lst : runtime_typ list) : typ = match lst with
   | RTNumber :: lst' ->typ_union typ_num (simple_static lst')
   | RTString :: lst' ->typ_union typ_str (simple_static lst')
   | RTBoolean :: lst' -> typ_union typ_bool (simple_static lst')
-  | _ -> TTop
+  | _ -> TDom
 
 
 let rec static (rt : runtime_typs) (typ : typ) : typ = match typ with

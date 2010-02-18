@@ -1,33 +1,15 @@
 <html>
 <head>
 
-<!-- just uncomment this line, and change nesting to nesting_cc.js once its compiled-->
-<!--<script type="text/javascript" src="data/jstrace.js"></script>-->
+<script type="text/javascript" src="data/jstrace.js"></script>
 
-<script type="text/javascript" src="nesting.js"></script>
+<script type="text/javascript" src="nesting.traced.js"></script>
 
 <title>JSTrace test</title>
 
-<script type="text/javascript">
-
-function loader() {
-  setTimeout(useFunction, 600);
-}
-
-function useFunction() {
-  pln(new String("HAHAHA"));
-  pln(simplefunc("1",2));
-  pln(nestedfunc(5));
-  pln(nestedfunc(6));
-  pln(nestedfunc(7));
-  pln(doublenest(10));
-  pln(anonInner());
-}
-
-</script>
 </head>
 
-<body id="body" onload="loader()">
+<body id="body">
 <div id="rezdiv"></div>
 </body>
 

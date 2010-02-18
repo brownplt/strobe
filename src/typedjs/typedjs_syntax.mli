@@ -35,7 +35,6 @@ type typ =
   | TBot
   | TDom
 
-
 type annotation =
     ATyp of typ
   | AConstructor of typ 
@@ -87,8 +86,8 @@ and lvalue =
 
 type def =
     DExp of exp
-  | DConstructor of pos * id * typ * (id * exp) list * exp
-      (** [DConstructor pos c_name c_typ c_inits c_body] is an object
+  | DConstructor of pos * id * typ * (id * exp) list * exp * exp
+      (** [DConstructor pos c_name c_typ c_inits c_body prototype] is an object
           constructor (a function with a constructor annotation). A constructor
           begins by initializing its fields in a sequence of [this.x = e]
           expressions. [c_inits] is the initialization sequence, and [c_body]
