@@ -163,7 +163,8 @@ var $global = this;
       }
 
       var resRttype = {kind:'object', type:typeObj, seen: false,
-                       constructed: rtval.$constrBy !== undefined};
+                       constructed: rtval.$constrBy !== undefined,
+                       constrName: (rtval.$constrBy ? traceid : undefined)};
       __typedJsTypes[traceid] = resRttype;
       return resRttype;
     }
@@ -299,7 +300,9 @@ var $global = this;
   // typesSeen: the names of the rttypes seen while iterating. needed to know whether
   //   to put a 'rec .' in}
   //don't go into nested functions
-  var strType = function(t, dbg) {
+  //if forceConstrs is true, then it will unravel object types even if they
+  //were constructed. otherwise it just returns the type name
+  var strType = function(t, dbg, forceConstrs) {
     incdbg();
     if (dbg) debug("strType " + _quickStrType(t));
     var typesSeen = {};
@@ -314,6 +317,10 @@ var $global = this;
     }
 
     if (t.kind == "object") {
+      if (t.constructed && !forceConstrs) {
+        decdbg();
+        return {answer: t.constrName, typesSeen: typesSeen};
+      }
       var res = "{";
       var needComma = false;
       for (var p in t.type) {
@@ -364,7 +371,14 @@ var $global = this;
       else
       {
         if (dbg) debug("function ret type...");
-        var innard = strUnion(t.type.ret, dbg);
+        
+        var innard;
+        if (t.type.constrOrFunc === "constructor") {
+          innard = strType(__typedJsTypes[t.type.namehint], dbg, true);
+        }
+        else {       
+          innard = strUnion(t.type.ret, dbg);
+        }
         res += innard.answer;
         copyFrom(innard.typesSeen, typesSeen);
       }
@@ -388,6 +402,7 @@ var $global = this;
         decdbg();
         return {answer: "BROKEN " + t.kind + "(" + t.type + ")", typesSeen: typesSeen};
       }
+
       typesSeen[t.type] = true;
       if (realObj.seen)
       {
