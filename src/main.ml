@@ -25,7 +25,7 @@ let action_load_file path =
 
 let action_pretty () : unit = 
   let (prog, _) = parse_javascript !cin !cin_name in
-    print_string (JavaScript_pretty.render_stmts prog);
+    print_string (JavaScript_pretty.render_prog prog);
     print_newline ()
 
 let action_comments () : unit = 

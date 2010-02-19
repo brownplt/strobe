@@ -135,3 +135,6 @@ and stmt
   | WithStmt of expr * stmt
   | VarDeclStmt of pos * varDecl list
   | FuncStmt of pos * id * id list * stmt
+
+type prog =
+  Prog of pos * stmt list

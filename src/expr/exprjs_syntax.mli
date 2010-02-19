@@ -55,7 +55,7 @@ and lvalue =
     VarLValue of pos * id
   | PropLValue of pos * expr * expr
 
-val from_javascript : JavaScript_syntax.stmt list -> expr
+val from_javascript : JavaScript_syntax.prog -> expr
 
 val from_javascript_expr : JavaScript_syntax.expr -> expr
 

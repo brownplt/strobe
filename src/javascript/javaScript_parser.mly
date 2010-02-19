@@ -60,7 +60,7 @@ let parse_error s =
 %start program
 %start expression
 
-%type <JavaScript_syntax.stmt list> program
+%type <JavaScript_syntax.prog> program
 %type <JavaScript_syntax.expr> expression
 
 %%
@@ -448,7 +448,7 @@ src_elt
   | Function Id LParen ids RParen src_elt_block
     { let _,x = $2 in FuncStmt ((symbol_start_pos (), symbol_end_pos ()),x,$4,$6) } 
 
-program : src_elts EOF { $1 }
+program : src_elts EOF { Prog ((symbol_start_pos (), symbol_end_pos ()), $1) }
 
 expression : expr EOF { $1 }
 

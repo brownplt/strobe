@@ -213,7 +213,8 @@ and stmt s = match s with
 
 let render_expr e : string = to_string expr e
 
-let render_stmts ss : string = to_string (fun ss -> vert (map stmt ss)) ss
+let render_prog (Prog (_, ss)) : string = 
+  to_string (fun ss -> vert (map stmt ss)) ss
 
 let render_prefixOp op = to_string prefixOp op
 

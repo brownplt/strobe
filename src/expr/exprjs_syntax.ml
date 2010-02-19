@@ -42,8 +42,6 @@ and lvalue =
 open JavaScript_stxutil
 module S = JavaScript_syntax
 
-let dum = (Lexing.dummy_pos, Lexing.dummy_pos)
-
 let infix_of_assignOp op = match op with
     S.OpAssignAdd -> S.OpAdd
   | S.OpAssignSub -> S.OpSub
@@ -98,7 +96,7 @@ let rec expr (e : S.expr) = match e with
                           (* TODO: use numeric addition with casts. *)
                           (a, S.OpAdd, VarExpr (a, "%postfixinc"), 
                            IntExpr (a, 1))))
-                    (VarExpr (dum, "%postfixinc")))
+                    (VarExpr (a, "%postfixinc")))
            | S.PostfixDec ->
                LetExpr
                  (a, "%postfixdec", e,
@@ -267,9 +265,9 @@ and eval_lvalue (lv :  S.lvalue) (body_fn : lvalue * expr -> expr) =
       body_fn (PropLValue (a,VarExpr (a,"%lhs"),VarExpr (a,"%field")),
                BracketExpr (a,VarExpr (a,"%lhs"),VarExpr (a,"%field")))))
 
-let from_javascript stmts = 
-  let f s e = seq dum (stmt s) e
-  in fold_right f stmts (UndefinedExpr dum)
+let from_javascript (S.Prog (p, stmts)) = 
+  let f s e = seq p (stmt s) e
+  in fold_right f stmts (UndefinedExpr p)
 
 let from_javascript_expr = expr
 
