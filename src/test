@@ -25,3 +25,17 @@ do
       echo "$file: aborted with exit code $?; output was:\n$result\n"
   fi
 done
+
+
+for file in ../tests/untypable/*.js
+do
+  result=`../build/main.d.byte -tc $file 2>&1`
+  if [ $? -eq 0 ]; then
+      echo "$file: expected a type-error error; no error signalled.\n"
+      continue
+  fi
+  errors=`echo "$result" | grep -ci "type error"`
+  if [ $errors -ne 1 ]; then
+    echo "$file: expected a type error error; got\n$result\n"
+  fi
+done

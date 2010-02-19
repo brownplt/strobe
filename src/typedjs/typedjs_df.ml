@@ -140,6 +140,7 @@ let local_type_analysis env exp =
               (node_value e)
           else 
             (node_value e) in
+          set_node_value n absval;
           IdMap.remove x label_env
     | ABreak (node, x, v) -> 
         set_node_value node (AVType RTSet.empty);

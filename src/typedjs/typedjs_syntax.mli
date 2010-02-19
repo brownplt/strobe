@@ -143,6 +143,9 @@ module type EnvType = sig
 
   val id_env : env -> typ IdMap.t
 
+  (** JavaScript cannot perform a labelled jump across a function. *)
+  val clear_labels : env -> env
+
 end
 
 module Env : EnvType

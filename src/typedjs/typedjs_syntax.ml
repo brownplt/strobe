@@ -120,6 +120,7 @@ module type EnvType = sig
   val new_assignable_id : id -> env -> env
   val remove_assigned_ids : IdSet.t -> env -> env
   val id_env : env -> typ IdMap.t
+  val clear_labels : env -> env
 
 end
 
@@ -150,5 +151,7 @@ module Env : EnvType = struct
     { env with asgn_ids = IdSet.diff env.asgn_ids assigned_ids }
 
   let id_env env = env.id_typs
+
+  let clear_labels env = { env with lbl_typs = IdMap.empty }
 
 end

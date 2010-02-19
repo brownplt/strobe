@@ -8,6 +8,8 @@ open Typedjs_env
 
 module JS = JavaScript_syntax (* needed for operators *)
 
+exception Typ_error of pos * string
+
 let typ_error (p : pos) (s : string) : 'a =
   failwith ("type error at " ^ string_of_position p ^ ": " ^ s)
 
@@ -246,8 +248,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
                env. in which we do dataflow for nested functions. Remove the
                locally assigned identifiers from this env. (accounts for
                assigning to arguments.) *)
-          let env'' = Env.remove_assigned_ids (local_av_exp body') env' in
-          let body_typ = tc_exp env'' body' in
+          let env' = Env.remove_assigned_ids (local_av_exp body') env' in
+          let env' = Env.clear_labels env' in
+          let body_typ = tc_exp env' body' in
             if subtype body_typ result_typ then fn_typ
             else typ_error p
               (sprintf "function body has type %s, but the function\'s \
