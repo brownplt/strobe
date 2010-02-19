@@ -15,14 +15,12 @@ limitations under the License.
 -->
 
 <view width="250" height="150">
-  <script src="jstrace_gg.js" />
+  <script src="jstrace.js" />
 
   <script src="main_cc.js" />
 
   <img src="background.png" />
 
-  <label enabled="true" size="15"
-    onclick="showTypes();">Show types...</label>
   <label x="0" y="60" align="center" width="250" size="15" enabled="true"
     onclick="onTextClick();">&HELLO_WORLD;</label>
 </view>

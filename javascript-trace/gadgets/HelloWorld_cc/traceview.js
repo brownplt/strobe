@@ -11,4 +11,5 @@ function updateView() {
   display.value = res;
 }
 
+updateView();
 setInterval(updateView, 1000);
