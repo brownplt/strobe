@@ -224,7 +224,8 @@ stmt s = case s of
     --we don't want the funcexprs to be named, since any references
     --to the function should be to the wrapped one.
     let func = FuncExpr p Nothing args body
-    let fexpr = ExprStmt p (AssignExpr p OpAssign (LVar p name) func)
+    --let fexpr = ExprStmt p (AssignExpr p OpAssign (LVar p name) func)
+    let fexpr = VarDeclStmt p [VarDecl p (Id pp name) (Just func)]
     stmt fexpr
  where
   noop = return s
@@ -233,7 +234,6 @@ stmt s = case s of
     Just x -> do
       x' <- f x
       return $ Just x'
-
 {-
 instrumentFuncExpr :: String
                    -> Expression SourcePos -> Expression SourcePos

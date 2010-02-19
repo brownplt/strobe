@@ -1,6 +1,6 @@
 //__typedJsVars["\"flapjax.js\" (line 38, column 13)"]
 
-this.$jstraceid = "Global"; //mark the global object so we don't deeply inspect it
+var $jstraceid = "Global"; //mark the global object so we don't deeply inspect it
 
 //an rttype (run time type) is an object of the form:
 //{kind: the kind of the type which is one of object_ref; function_ref; object; function; flat; or undefined,
@@ -22,48 +22,87 @@ this.$jstraceid = "Global"; //mark the global object so we don't deeply inspect 
 
 //for object_ref or function_ref, type is a string representing the type alias. the type it
 //refers to can be found in __typedJsTypes.
-var $global = this;
 
-(function() {  //lambda to hide all these local funcs
+var holder = (function() {  //lambda to hide all these local funcs
   //-------------------
-  //stuff for outputting:
-  var mktext = function (win, s) {
-    return win.win.document.createTextNode(s);
-  };
-  var mkbr = function (win) {
-    return win.win.document.createElement('br');
-  };
-  var app = function (win, x) { return win.div.appendChild(x); };
+  //if we're on google gadgets, we have to do things differently
+  var isGG = (typeof navigator) === "undefined";
+
+  //stuff for outputting
+  //these just modify what the window contents should show, but
+  //don't actually show anything:
   var println = function (win, s) {
     for (var i=0; i < win.level; i++) {
       s = "  " + s;
     }
-    app(win, mktext(win, s)); app(win, mkbr(win));
+    win.data.push(s);
   };
   var clearwin = function (win) {
-    while (win.div.hasChildNodes())
-      win.div.removeChild(win.div.firstChild);
+    win.data.splice(0, win.data.length);
   };
 
   var mkwin = function (title) {
-    var res = window.open(
-      "", title,
-      "width=640,height=480,scrollbars=yes");
+    var res = {title: title, level: 0, data: []};
+    
+    if (!isGG) {
+      var win = window.open(
+        "", title,
+        "width=640,height=480,scrollbars=yes");
 
-    //for firefox: 'zero' is doctype, '1' is the htmlelement
-    var twbody = res.document.childNodes.item(1).childNodes.item(1);
-    while (twbody.hasChildNodes()) twbody.removeChild(twbody.firstChild);
-    var resdiv = res.document.createElement("pre");
-    resdiv.innerHTML = "Tracing initialized! Results come soon";
-    twbody.appendChild(resdiv);
+      //for firefox: 'zero' is doctype, '1' is the htmlelement
+      var twbody = win.document.childNodes.item(1).childNodes.item(1);
+      while (twbody.hasChildNodes()) twbody.removeChild(twbody.firstChild);
+      var resdiv = win.document.createElement("pre");
+      resdiv.innerHTML = "Tracing initialized! Results come soon";
+      twbody.appendChild(resdiv);
+      res.win = win;
+      res.div = resdiv;
+    }
+    
+    return res;
+  };  
+  
+  //this shows the window.
+  var showwin = function (win) {
+    //in GG it pops up the detail view
+    if (isGG) {
+      var detailsView = new DetailsView();
+  
+      // Create the details view and set its content.
+      detailsView.SetContent(
+        "",               // Item's displayed website/news source.
+        undefined,        // Time created
+        "traceview.xml",  // The XML file
+        false,            // Whether time is shown as absolute time
+        0);               // Content layout flags
 
-    return {win:res, div: resdiv, level: 0};
+      var refs = {__typedJsTypes: __typedJsTypes, __orderedVars: __orderedVars,
+                  win: win};
+      detailsView.detailsViewData.putValue("refs", refs);
+      
+      plugin.showDetailsView(
+        detailsView,  // The DetailsView object
+        win.title,      // The title
+        gddDetailsViewFlagNone,  // Flags
+        function(){});  // The handler to call when details view closes    
+      return;
+    }
+
+    //in FF it creates DOM elements to show stuff
+    while (win.div.hasChildNodes()) {
+      win.div.removeChild(win.div.firstChild);
+    };
+    
+    for (var i=0; i < win.data.length; i++) {
+      win.div.appendChild(win.win.document.createTextNode(win.data[i]));
+      win.div.appendChild(win.win.document.createElement('br'));
+    }
   };
-  var __alertcount = 0;
-  var __tracewin = mkwin(document.title + " traced types");
-  var __dbgwin = mkwin(document.title + " DEBUG INFO");
+    
+  var __tracewin = mkwin(" traced types");
+
+  var __dbgwin = mkwin(" DEBUG INFO");
   var debug = function(s) {
-    __alertcount += 1;
     //if (__alertcount % 10 == 0) alert("-");
     return println(__dbgwin, s);
   };
@@ -102,26 +141,30 @@ var $global = this;
     if (rtval === null) return {kind: 'flat', type: 'null'};
     var res = typeof(rtval);
     if (res == "object") {
-      if (rtval instanceof Node) {
-        return {kind: 'flat', type: 'DOM'};
+      if (!isGG) {
+        if (rtval instanceof Node) {
+          return {kind: 'flat', type: 'DOM'};
+        }
+        if (rtval instanceof Event) {
+          return {kind: 'flat', type: 'DOM'};
+        }
       }
-      if (rtval instanceof Event) {
-        return {kind: 'flat', type: 'DOM'};
+      if (rtval instanceof String) {
+        //indistinguishable from the primitive string:
+	return {kind:'flat', type:'String'};
       }
-      else if (rtval instanceof String) {
-	return {kind:'flat', type:'StringObj'};
-      }
-      else if (rtval instanceof Number) {
+      if (rtval instanceof Number) {
         return {kind:'flat', type:'Number'};
       }
-      else if (rtval instanceof Date) {
+      if (rtval instanceof Date) {
         return {kind:'flat', type:'Date'};
       }
-
-      if (rtval.hasOwnProperty("$jstraceid")) {
+      
+      //check for pre-traced objects:
+      if ((isGG && ("$jstraceid" in rtval)) ||
+          (!isGG && rtval.hasOwnProperty("$jstraceid"))) {
         if (rtval.$jstraceid == "Global")
           return {kind: 'flat', type: "Global"};
-          
         return {kind: 'object_ref', type: rtval.$jstraceid};
       }
 
@@ -158,8 +201,10 @@ var $global = this;
         //various possibilities:
         //"security error" with them not wanting you to enumerate an object
         //inability to set $jstraceid on a native object..
-        //dnno what to do
-        typeObj["$js_error"] = "cannot inspect object";
+        //so just give it type DOM! =)
+        //we can't return an object here, because the traceid might not
+        //have stuck on the object (that might have thrown the exception)
+        return {kind: 'flat', type: "DOM"};
       }
 
       var resRttype = {kind:'object', type:typeObj, seen: false,
@@ -363,11 +408,11 @@ var $global = this;
         }
       }
       else
-        res += "any..."; //no info available
+        res += "Any..."; //no info available
 
       res += " -> ";
       if (t.type.ret === undefined)
-        res += "any";
+        res += "Any";
       else
       {
         if (dbg) debug("function ret type...");
@@ -391,11 +436,6 @@ var $global = this;
       return {answer: "undefined", typesSeen: typesSeen};
     }
 
-    /*if (t.kind == "function_ref" || t.kind == "object_ref") {
-      decdbg();
-      typesSeen[t.type] = true;
-      return {answer: t.type, typesSeen: typesSeen};
-    }*/
     if (t.kind == "function_ref" || t.kind == "object_ref") {
       var realObj = __typedJsTypes[t.type];
       if (realObj === undefined) {
@@ -416,9 +456,6 @@ var $global = this;
       var innard = strType(realObj, dbg)
       var strRealObj = innard.answer;
 
-      /*if (t.type in innard.typesSeen)
-        var resStr = "rec " + t.type + " . " + strRealObj + "";
-      else*/
       var resStr = strRealObj;
 
       realObj.seen = false;
@@ -578,6 +615,11 @@ var $global = this;
     }
     println(__tracewin, "*-/"); */
     
+    //if we're not in google gadgets, show results right away:
+    if (!isGG) {
+      showwin(__tracewin);
+      showwin(__dbgwin);
+    }    
   };
 
 
@@ -633,13 +675,21 @@ var $global = this;
       //mark this function as either a function or a constructor
       if (calledWithNew) {
         if (tjstype.constrOrFunc == "function")
-          alert("Can't deal with functions called both as constrs and funcs!");
-        tjstype.constrOrFunc = "constructor";
+        {
+          //alert("Can't deal with functions called both as constrs and funcs!");
+          tjstype.constrOrFunc = "ERROR:FUNC+CONSTR";
+        }
+        else
+          tjstype.constrOrFunc = "constructor";
       }
       else {
         if (tjstype.constrOrFunc == "constructor")
-          alert("Can't deal with functions called both as constrs and funcs!");
-        tjstype.constrOrFunc = "function";
+        {
+          //alert("Can't deal with functions called both as constrs and funcs!");
+          tjstype.constrOrFunc = "ERROR:FUNC+CONSTR";
+        }
+        else
+          tjstype.constrOrFunc = "function";
       }
 
       //if we have a function, then the this type is valid upon
@@ -713,9 +763,15 @@ var $global = this;
 
     return res;
   }
-
-  $global.__typedjs = tracefunction;
-  $global.__new = newwrapper;
+  
+  return {
+    __typedjs: tracefunction,
+    __new: newwrapper,
+    showTypes: function () { return showwin(__tracewin); }
+  };
 })();
 
+var __typedjs = holder.__typedjs;
+var __new = holder.__new;
+var showTypes = holder.showTypes;
 
