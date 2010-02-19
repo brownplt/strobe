@@ -8,8 +8,9 @@ done
 for file in ../tests/not-well-formed/*.js
 do
   result=`../build/main.d.byte -pretc $file 2>&1`
-  if [ $? -eq 0 ]; then
-      echo "$file: expected a well-formness error; no error signalled.\n"
+  exitcode=$?
+  if [ $exitcode -ne 2 ]; then
+      echo "$file: expected a well-formedness error; exit code was $exitcode\n"
       continue
   fi
   errors=`echo "$result" | grep -ci "not well-formed"`
@@ -30,8 +31,9 @@ done
 for file in ../tests/untypable/*.js
 do
   result=`../build/main.d.byte -tc $file 2>&1`
-  if [ $? -eq 0 ]; then
-      echo "$file: expected a type-error error; no error signalled.\n"
+  exitcode=$?
+  if [ $exitcode -ne 2 ]; then
+      echo "$file: expected a type-error error; exit code was $exitcode\n"
       continue
   fi
   errors=`echo "$result" | grep -ci "type error"`

@@ -8,8 +8,6 @@ open Typedjs_env
 
 module JS = JavaScript_syntax (* needed for operators *)
 
-exception Typ_error of pos * string
-
 let typ_error (p : pos) (s : string) : 'a =
   failwith ("type error at " ^ string_of_position p ^ ": " ^ s)
 
@@ -69,8 +67,10 @@ let rec tc_exp (env : Env.env) exp = match exp with
         if subtype s t then t
         else typ_error p "label type mismatch"
   | EBreak (p, l, e) ->
-      let s = (try Env.lookup_lbl l env
-               with Not_found -> typ_error p ("label " ^ l ^ " is not defined"))
+      let s = 
+        try Env.lookup_lbl l env
+        with Not_found -> 
+          raise (Typ_error (p, "label " ^ l ^ " is not defined"))
       and t = tc_exp env e in
         if subtype t s then TBot
         else typ_error p 

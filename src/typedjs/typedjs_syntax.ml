@@ -1,5 +1,7 @@
 open Prelude
 
+exception Typ_error of pos * string
+
 type runtime_typ =
     RTNumber
   | RTString

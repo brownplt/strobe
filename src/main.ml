@@ -117,9 +117,11 @@ let exitcode = begin
   try
     !action (); 0
   with 
-      Failure s ->  eprintf "%s\n" s; 2
+      Failure s ->  eprintf "%s\n" s; 3
     | Not_well_formed (p, s) -> 
         eprintf "%s not well-formed:\n%s\n" (string_of_position p) s; 2
+    | Typ_error (p, s) ->
+        eprintf "%s type error:\n%s\n" (string_of_position p) s; 2
 end in
   pp_print_flush std_formatter ();
   pp_print_flush err_formatter ();
