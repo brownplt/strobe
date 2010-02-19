@@ -1,6 +1,14 @@
-(** Simplifies the syntax of JavaScript, primarily by removing statements.
-    To remove statements, we have to introduce a few new control operators as
-    expressions. *)
+(** A simplified syntax for JavaScript. The primary simplification is
+    that statements are eliminated. Expr{_ JS} is an expression-based syntax.
+
+    We map JavaScript's statements to Expr{_ JS}'s control operators. Some
+    statements map trivially to Expr{_ JS}. Others, such as switch and return,
+    require less-obvious transformations. See the implementation for details.
+
+    Expr{_ JS} has let-bindings [LetExpr]. We use let-bindings for some
+    transformations. However, we do not transform [VarDeclStmt]s into
+    let-bindings at this stage. Therefore, Expr{_ JS} uses both lexical scope
+    and scope objects. *)
 
 open Prelude
 

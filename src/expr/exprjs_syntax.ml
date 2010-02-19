@@ -9,7 +9,6 @@ type expr
   | NullExpr of pos
   | ArrayExpr of pos * expr list
   | ObjectExpr of pos * (pos * string * expr) list
-      (** Object properties are transformed into string literals *)
   | ThisExpr of pos
   | VarExpr of pos * id
   | BracketExpr of pos * expr * expr
@@ -22,7 +21,6 @@ type expr
   | FuncExpr of pos * id list * expr
   | UndefinedExpr of pos
   | LetExpr of pos * id * expr * expr
-      (** We need let-expressions to simplify statements. *)
   | SeqExpr of pos * expr * expr
   | WhileExpr of pos * expr * expr
   | DoWhileExpr of pos * expr * expr
@@ -30,14 +28,10 @@ type expr
   | BreakExpr of pos * id * expr
   | ForInExpr of pos * id * expr * expr
   | VarDeclExpr of pos * id * expr
-      (** We do not transform VarDeclStmts to let-bindings at this stage *)
   | TryCatchExpr of pos * expr * id * expr
   | TryFinallyExpr of pos * expr * expr
   | ThrowExpr of pos * expr
   | FuncStmtExpr of pos * id * id list * expr
-      (** We leave function statements in place, so that they can be lifted
-          for JavaScript to turned into letrecs for Typed JavaScript. *)
-
 
 and lvalue =
     VarLValue of pos * id
@@ -47,7 +41,6 @@ and lvalue =
 
 open JavaScript_stxutil
 module S = JavaScript_syntax
-module L = List
 
 let dum = (Lexing.dummy_pos, Lexing.dummy_pos)
 
@@ -74,13 +67,13 @@ let rec expr (e : S.expr) = match e with
   | S.IntExpr (a,n) -> IntExpr (a,n)
   | S.BoolExpr (a,b) -> BoolExpr (a,b)
   | S.NullExpr a -> NullExpr a
-  | S.ArrayExpr (a,es) -> ArrayExpr (a,L.map expr es)
-  | S.ObjectExpr (a,ps) -> ObjectExpr (a,L.map prop ps)
+  | S.ArrayExpr (a,es) -> ArrayExpr (a,map expr es)
+  | S.ObjectExpr (a,ps) -> ObjectExpr (a,map prop ps)
   | S.ThisExpr a -> ThisExpr a
   | S.VarExpr (a,x) -> VarExpr (a,x)
   | S.DotExpr (a,e,x) -> BracketExpr (a, expr e, StringExpr (a, x))
   | S.BracketExpr (a,e1,e2) -> BracketExpr (a,expr e1,expr e2)
-  | S.NewExpr (a,e,es) -> NewExpr (a,expr e,L.map expr es)
+  | S.NewExpr (a,e,es) -> NewExpr (a,expr e,map expr es)
   | S.PrefixExpr (a,op,e) -> PrefixExpr (a,op,expr e)
   | S.UnaryAssignExpr (a, op, lv) ->
       let func (lv, e) = 
@@ -88,45 +81,45 @@ let rec expr (e : S.expr) = match e with
              S.PrefixInc ->
                seq a
                  (AssignExpr 
-                    (a, lv, InfixExpr (dum, S.OpAdd, e, IntExpr (dum, 1))))
+                    (a, lv, InfixExpr (a, S.OpAdd, e, IntExpr (a, 1))))
                  e
            | S.PrefixDec ->
                seq
                  a
                  (AssignExpr 
-                    (a, lv, InfixExpr (dum, S.OpSub, e, IntExpr (dum, 1))))
+                    (a, lv, InfixExpr (a, S.OpSub, e, IntExpr (a, 1))))
                   e
            | S.PostfixInc ->
                LetExpr
-                 (dum, "%postfixinc", e,
+                 (a, "%postfixinc", e,
                   seq a
                     (AssignExpr 
                        (a, lv, InfixExpr 
                           (* TODO: use numeric addition with casts. *)
-                          (dum, S.OpAdd, VarExpr (dum, "%postfixinc"), 
-                           IntExpr (dum, 1))))
+                          (a, S.OpAdd, VarExpr (a, "%postfixinc"), 
+                           IntExpr (a, 1))))
                     (VarExpr (dum, "%postfixinc")))
            | S.PostfixDec ->
                LetExpr
-                 (dum, "%postfixdec", e,
+                 (a, "%postfixdec", e,
                   seq a
                     (AssignExpr 
                        (a, lv, InfixExpr 
                           (* TODO use numeric subtraction with casts *)
-                          (dum, S.OpSub, VarExpr (dum, "%prefixinc"), 
-                           IntExpr (dum, 1))))
-                       (VarExpr (dum, "%prefixinc"))))
+                          (a, S.OpSub, VarExpr (a, "%prefixinc"), 
+                           IntExpr (a, 1))))
+                       (VarExpr (a, "%prefixinc"))))
          in eval_lvalue lv func
   | S.InfixExpr (a,op,e1,e2) -> InfixExpr (a,op,expr e1,expr e2)
   | S.IfExpr (a,e1,e2,e3) -> IfExpr (a,expr e1,expr e2,expr e3)
   | S.AssignExpr (a,S.OpAssign,lv,e) -> AssignExpr (a,lvalue lv,expr e)
   | S.AssignExpr (a,op,lv,e) -> 
       let body_fn (lv,lv_e) = 
-        AssignExpr (a,lv,InfixExpr (dum,infix_of_assignOp op,lv_e,expr e))
+        AssignExpr (a,lv,InfixExpr (a,infix_of_assignOp op,lv_e,expr e))
       in eval_lvalue lv body_fn
   | S.ParenExpr (_,e) -> expr e
   | S.ListExpr (a,e1,e2) -> seq a (expr e1) (expr e2)
-  | S.CallExpr (a,func,args) -> AppExpr (a,expr func,L.map expr args)
+  | S.CallExpr (a,func,args) -> AppExpr (a,expr func,map expr args)
   | S.FuncExpr (a, args, body) ->
       FuncExpr (a, args,
                 LabelledExpr (stmt_annotation body, "%return", stmt body))
@@ -138,55 +131,53 @@ let rec expr (e : S.expr) = match e with
          inconsequential. *)
       let anonymous_func = 
         FuncExpr (a,args,LabelledExpr (a,"%return",stmt body)) in
-      LetExpr (dum,name,UndefinedExpr dum,
-               seq dum
-                 (AssignExpr (dum,
-                              VarLValue (dum,name),anonymous_func))
-                 (VarExpr (dum,name)))
+      LetExpr (a,name,UndefinedExpr a,
+               seq a
+                 (AssignExpr (a,
+                              VarLValue (a,name),anonymous_func))
+                 (VarExpr (a,name)))
                         
 and lvalue (lv : S.lvalue) = match lv with
     S.VarLValue (a,x) -> VarLValue (a,x)
-  | S.DotLValue (a,e,x) -> PropLValue (a,expr e,StringExpr (dum,x))
+  | S.DotLValue (a,e,x) -> PropLValue (a,expr e,StringExpr (a,x))
   | S.BracketLValue (a,e1,e2) -> PropLValue (a,expr e1,expr e2)
 
 and stmt (s : S.stmt) = match s with 
     S.BlockStmt (a,[]) -> UndefinedExpr a
-  | S.BlockStmt (a,s1::ss) -> seq a (stmt s1) (stmt (S.BlockStmt (dum, ss)))
+  | S.BlockStmt (a,s1::ss) -> seq a (stmt s1) (stmt (S.BlockStmt (a, ss)))
   | S.EmptyStmt a -> UndefinedExpr a
   | S.IfStmt (a,e,s1,s2) -> IfExpr (a,expr e,stmt s1,stmt s2)
-  | S.IfSingleStmt (a,e,s) -> IfExpr (a,expr e,stmt s,UndefinedExpr dum)
+  | S.IfSingleStmt (a,e,s) -> IfExpr (a,expr e,stmt s,UndefinedExpr a)
   | S.SwitchStmt (p,e,clauses) ->
       LetExpr (p,"%v",expr e,
-               LetExpr (dum,"%t",BoolExpr (dum,false),caseClauses clauses))
+               LetExpr (p,"%t",BoolExpr (p,false),caseClauses p clauses))
   | S.LabelledStmt (p1, lbl ,S.WhileStmt (p2, test, body)) -> LabelledExpr 
-        (dum, "%break", LabelledExpr
+        (p1, "%break", LabelledExpr
            (p1,lbl,WhileExpr
               (p2,expr test,LabelledExpr 
-                 (dum,"%continue",LabelledExpr
-                    (dum,"%continue-"^lbl,stmt body)))))
+                 (p2,"%continue",LabelledExpr
+                    (p1,"%continue-"^lbl,stmt body)))))
                              
                                              
   | S.WhileStmt (p,test,body) -> LabelledExpr
-        (dum,"%break",WhileExpr 
+        (p,"%break",WhileExpr 
            (p,expr test,LabelledExpr 
-              (dum,"%continue",stmt body)))
+              (p,"%continue",stmt body)))
   | S.LabelledStmt (p1, lbl ,S.DoWhileStmt (p2, body, test)) -> LabelledExpr 
-        (dum, "%break", LabelledExpr
+        (p1, "%break", LabelledExpr
            (p1,lbl,DoWhileExpr
               (p2, LabelledExpr 
-                 (dum,"%continue",LabelledExpr
-                    (dum,"%continue-"^lbl,stmt body)),
+                 (p1,"%continue",LabelledExpr
+                    (p2,"%continue-"^lbl,stmt body)),
               expr test)))
   | S.DoWhileStmt (p, body, test) -> LabelledExpr
-      (dum, "%break", WhileExpr 
-           (p, LabelledExpr (dum, "%continue", stmt body),
+      (p, "%break", WhileExpr 
+           (p, LabelledExpr (p, "%continue", stmt body),
             expr test))
-
-  (* TODO: | S.DoWhileStmt (p,body,test) -> *)
-  | S.BreakStmt a -> BreakExpr (a,"%break",UndefinedExpr dum)
-  | S.BreakToStmt (a,lbl) -> BreakExpr (a,lbl,UndefinedExpr dum)
-  | S.ContinueStmt a -> BreakExpr (a,"%continue",UndefinedExpr dum)
-  | S.ContinueToStmt (a,lbl) -> BreakExpr (a,"%continue-"^lbl,UndefinedExpr dum)
+  | S.BreakStmt a -> BreakExpr (a,"%break",UndefinedExpr a)
+  | S.BreakToStmt (a,lbl) -> BreakExpr (a,lbl,UndefinedExpr a)
+  | S.ContinueStmt a -> BreakExpr (a,"%continue",UndefinedExpr a)
+  | S.ContinueToStmt (a,lbl) -> BreakExpr (a,"%continue-"^lbl,UndefinedExpr a)
   | S.FuncStmt (a, f, args, s) -> 
       FuncStmtExpr 
         (a, f, args, LabelledExpr 
@@ -200,43 +191,59 @@ and stmt (s : S.stmt) = match s with
       in TryFinallyExpr (a, fold_left f (stmt body) catches, stmt finally)
   | S.ForStmt (a, init, incr, stop, body) ->
       seq a
-        (forInit init)
+        (forInit a init)
         (LabelledExpr 
-           (dum, "%break",
+           (a, "%break",
             WhileExpr 
-              (dum, expr stop, 
+              (a, expr stop, 
                seq a
-                 (LabelledExpr (dum, "%continue", stmt body))
+                 (LabelledExpr (a, "%continue", stmt body))
                  (expr incr))))
-  | S.VarDeclStmt (a, decls) -> varDeclList decls
+  | S.ForInStmt (p, init, e, body) ->
+      let (x, init_e) = forInInit init in
+        SeqExpr 
+          (p, init_e,
+           LabelledExpr
+             (p, "%break",
+              ForInExpr 
+                (p, x, expr e,
+                 LabelledExpr
+                   (p, "%continue", stmt body))))
+  | S.VarDeclStmt (a, decls) -> varDeclList a decls
+  | S.LabelledStmt (p, lbl, s) ->
+      LabelledExpr (p, lbl, stmt s)
 
-and forInit (fi : S.forInit) = match fi with
-    S.NoForInit -> UndefinedExpr dum
+and forInit p (fi : S.forInit) = match fi with
+    S.NoForInit -> UndefinedExpr p
   | S.ExprForInit e -> expr e
-  | S.VarForInit decls -> varDeclList decls
+  | S.VarForInit decls -> varDeclList p decls
 
-and varDeclList decls = match decls with
-    [] -> UndefinedExpr dum
-  | [d] -> varDecl d
-  | d :: ds -> seq dum (varDecl d) (varDeclList ds)
+and forInInit fii = match fii with
+    S.VarForInInit (p, x) -> (x, VarDeclExpr (p, x, UndefinedExpr p))
+  | S.NoVarForInInit (p, x) -> (x, UndefinedExpr p)
 
-and varDecl (decl : S.varDecl) = match decl with
-    S.VarDeclNoInit (a, x) -> VarDeclExpr (a, x, UndefinedExpr dum)
+and varDeclList p decls = match decls with
+    [] -> UndefinedExpr p
+  | [d] -> varDecl p d
+  | d :: ds -> seq p (varDecl p d) (varDeclList p ds)
+
+and varDecl p (decl : S.varDecl) = match decl with
+    S.VarDeclNoInit (a, x) -> VarDeclExpr (a, x, UndefinedExpr p)
   | S.VarDecl (a, x, e) -> VarDeclExpr (a, x, expr e)
 
-and caseClauses (clauses : S.caseClause list) = match clauses with
-    [] -> UndefinedExpr dum
-  | (S.CaseDefault (a,s)::clauses) -> seq a (stmt s) (caseClauses clauses)
+and caseClauses p (clauses : S.caseClause list) = match clauses with
+    [] -> UndefinedExpr p
+  | (S.CaseDefault (a,s)::clauses) -> seq a (stmt s) (caseClauses p clauses)
   | (S.CaseClause (a,e,s)::clauses) ->
       LetExpr (a,"%t",
-               IfExpr (dum,VarExpr (dum,"%t"), 
-                       (BoolExpr (dum,true)),
+               IfExpr (a,VarExpr (a,"%t"), 
+                       (BoolExpr (a,true)),
                        (expr e)),
-               SeqExpr (dum,
-                        IfExpr (dum,VarExpr (dum,"%t"),
+               SeqExpr (a,
+                        IfExpr (a,VarExpr (a,"%t"),
                                 stmt s,
-                                UndefinedExpr dum),
-                        caseClauses clauses))
+                                UndefinedExpr a),
+                        caseClauses p clauses))
 
 and prop pr =  match pr with
     (p, S.PropId x,e) -> (p, x, expr e)
@@ -249,16 +256,16 @@ and prop pr =  match pr with
     lvalue and lv as an expression. *)
 and eval_lvalue (lv :  S.lvalue) (body_fn : lvalue * expr -> expr) =
   match lv with
-    S.VarLValue (a,x) -> body_fn (VarLValue (a,x),VarExpr (dum,x))
+    S.VarLValue (a,x) -> body_fn (VarLValue (a,x),VarExpr (a,x))
   | S.DotLValue (a,e,x) -> 
-      LetExpr (dum,"%lhs",expr e,
-        body_fn (PropLValue (a,VarExpr (dum,"%lhs"),StringExpr (dum,x)),
-                 BracketExpr (dum,VarExpr (dum,"%lhs"),StringExpr (dum,x))))
+      LetExpr (a,"%lhs",expr e,
+        body_fn (PropLValue (a,VarExpr (a,"%lhs"),StringExpr (a,x)),
+                 BracketExpr (a,VarExpr (a,"%lhs"),StringExpr (a,x))))
   | S.BracketLValue (a,e1,e2) -> 
-      LetExpr (dum,"%lhs",expr e1,
-      LetExpr (dum,"%field",expr e2,
-      body_fn (PropLValue (a,VarExpr (dum,"%lhs"),VarExpr (dum,"%field")),
-               BracketExpr (dum,VarExpr (dum,"%lhs"),VarExpr (dum,"%field")))))
+      LetExpr (a,"%lhs",expr e1,
+      LetExpr (a,"%field",expr e2,
+      body_fn (PropLValue (a,VarExpr (a,"%lhs"),VarExpr (a,"%field")),
+               BracketExpr (a,VarExpr (a,"%lhs"),VarExpr (a,"%field")))))
 
 let from_javascript stmts = 
   let f s e = seq dum (stmt s) e
