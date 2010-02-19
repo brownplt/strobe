@@ -105,6 +105,9 @@ var $global = this;
       if (rtval instanceof Node) {
         return {kind: 'flat', type: 'DOM'};
       }
+      if (rtval instanceof Event) {
+        return {kind: 'flat', type: 'DOM'};
+      }
       else if (rtval instanceof String) {
 	return {kind:'flat', type:'StringObj'};
       }
@@ -116,6 +119,9 @@ var $global = this;
       }
 
       if (rtval.hasOwnProperty("$jstraceid")) {
+        if (rtval.$jstraceid == "Global")
+          return {kind: 'flat', type: "Global"};
+          
         return {kind: 'object_ref', type: rtval.$jstraceid};
       }
 
@@ -162,6 +168,10 @@ var $global = this;
       return resRttype;
     }
     else if (res == "function") {
+      if (!rtval.$jstraceid) {
+        //untraced function = something we cant inspect
+        return {kind: 'flat', type: "UntracedFunction"};
+      }
       //handled with the tracing
       return {kind: 'function_ref', type: rtval.$jstraceid};
     }
@@ -367,39 +377,40 @@ var $global = this;
       return {answer: "undefined", typesSeen: typesSeen};
     }
 
-    if (t.kind == "function_ref" || t.kind == "object_ref") {
+    /*if (t.kind == "function_ref" || t.kind == "object_ref") {
       decdbg();
       typesSeen[t.type] = true;
       return {answer: t.type, typesSeen: typesSeen};
-    }
-      /*don't do general rec constructs:
+    }*/
+    if (t.kind == "function_ref" || t.kind == "object_ref") {
       var realObj = __typedJsTypes[t.type];
       if (realObj === undefined) {
         decdbg();
-        return {answer: "BROKEN " + t.kind, typesSeen: typesSeen};
-        //alert(t.type + " not found!");
+        return {answer: "BROKEN " + t.kind + "(" + t.type + ")", typesSeen: typesSeen};
       }
       typesSeen[t.type] = true;
       if (realObj.seen)
       {
         //we're in a "rec" construct
         decdbg();
-        return {answer: t.type, typesSeen: typesSeen};
+        //return {answer: t.type, typesSeen: typesSeen};
+        return {answer: "ERROR - RECURSIVE STRUCTURES ", typesSeen: typesSeen};
       }
 
       realObj.seen = true;
       var innard = strType(realObj, dbg)
       var strRealObj = innard.answer;
 
-      if (t.type in innard.typesSeen)
+      /*if (t.type in innard.typesSeen)
         var resStr = "rec " + t.type + " . " + strRealObj + "";
-      else
-        var resStr = strRealObj;
+      else*/
+      var resStr = strRealObj;
 
       realObj.seen = false;
       copyFrom(innard.typesSeen, typesSeen);
       decdbg();
-      return {answer: resStr, typesSeen: typesSeen};*/
+      return {answer: resStr, typesSeen: typesSeen};
+    }
 
     decdbg();
     return {answer: "UNKNOWN KIND: " + t.kind, typesSeen: typesSeen};
@@ -457,7 +468,6 @@ var $global = this;
       }
       copyFrom(innerRes.typesSeen, typesSeen);
     }
-    res.push("");
 
     return {answer: res, typesSeen: typesSeen};
   };
@@ -530,7 +540,7 @@ var $global = this;
     }
     println(__tracewin, "*/");
 
-    println(__tracewin, "/*:::");
+    /*println(__tracewin, "/*:::");
     var typesPrinted = {};
     while (true) {
       var printedSmth = false;
@@ -551,7 +561,8 @@ var $global = this;
       typesSeen = newTs;
       if (!printedSmth) break;
     }
-    println(__tracewin, "*/");
+    println(__tracewin, "*-/"); */
+    
   };
 
 
