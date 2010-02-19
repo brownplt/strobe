@@ -8,9 +8,6 @@ open Typedjs_env
 
 module JS = JavaScript_syntax (* needed for operators *)
 
-let typ_error (p : pos) (s : string) : 'a =
-  failwith ("type error at " ^ string_of_position p ^ ": " ^ s)
-
 let string_of_typ = pretty_string pretty_typ
 
 let tc_arith (p : pos) (t1 : typ) (t2 : typ) (int_args : bool) 
@@ -22,21 +19,25 @@ let tc_arith (p : pos) (t1 : typ) (t2 : typ) (int_args : bool)
     if (int_args && subtype t1 typ_int && subtype t2 typ_int) ||
       (not int_args && subtype t1 typ_num && subtype t2 typ_num) then
       result_typ
-    else typ_error p
-      (match int_args with
-           true -> 
-             sprintf "operator expects arguments of type Int, but arguments \
-               have type %s and %s" (string_of_typ t1) (string_of_typ t2)
-         | false -> 
-             sprintf "operator expects Int or Double arguments, but arguments \
-               have type %s and %s" (string_of_typ t1) (string_of_typ t2))
+    else 
+      raise
+        (Typ_error 
+           (p, match int_args with
+                true -> 
+                  sprintf "operator expects arguments of type Int, but \
+                    arguments have type %s and %s" (string_of_typ t1) 
+                    (string_of_typ t2)
+              | false -> 
+                  sprintf "operator expects Int or Double arguments, but \
+                    arguments have type %s and %s" (string_of_typ t1)
+                    (string_of_typ t2)))
 
 let tc_cmp (p : pos) (lhs : typ) (rhs : typ) : typ = 
   if (subtype lhs typ_str && subtype rhs typ_str) || 
     (subtype lhs typ_num && subtype rhs typ_num) then
       typ_bool
   else
-    typ_error p "comparison type error"
+    raise (Typ_error (p, "comparision type error"))
 
 let rec tc_exp (env : Env.env) exp = match exp with
     EString _ -> typ_str
@@ -46,10 +47,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EBool _ -> typ_bool
   | ENull _ -> typ_null
   | EUndefined _ -> typ_undef
-  | EId (p, x) -> 
-      (try 
-         Env.lookup_id x env
-       with Not_found -> typ_error p ("identifier " ^ x ^ " is unbound"))
+  | EId (p, x) -> begin
+      try 
+        Env.lookup_id x env
+      with Not_found -> raise (Typ_error (p, x ^ " is not defined"))
+    end
   | ELet (_, x, e1, e2) ->
       let t = tc_exp env e1
       and x_available = not (IdSet.mem x (local_av_exp e2)) in
@@ -65,7 +67,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ELabel (p, l, t, e) -> 
       let s = tc_exp (Env.bind_lbl l t env) e in
         if subtype s t then t
-        else typ_error p "label type mismatch"
+        else raise (Typ_error (p, "label type mismatch"))
   | EBreak (p, l, e) ->
       let s = 
         try Env.lookup_lbl l env
@@ -73,15 +75,17 @@ let rec tc_exp (env : Env.env) exp = match exp with
           raise (Typ_error (p, "label " ^ l ^ " is not defined"))
       and t = tc_exp env e in
         if subtype t s then TBot
-        else typ_error p 
-          (match l with
-               "%return" -> sprintf 
-                 "this expression has type %s, but the function\'s return type \
-                  is %s" (string_of_typ t) (string_of_typ s)
-             | _ -> (* This should not happen. Breaks to labels always have 
-                       type typ_undef *)
-                 sprintf "this expression has type %s, but the label %s has \
-                          type %s" (string_of_typ t) l (string_of_typ s))
+        else raise
+          (Typ_error 
+             (p,
+              match l with
+                  "%return" -> sprintf 
+                    "this expression has type %s, but the function\'s return \
+                     type is %s" (string_of_typ t) (string_of_typ s)
+                | _ -> (* This should not happen. Breaks to labels always have 
+                          type typ_undef *)
+                    sprintf "this expression has type %s, but the label %s has \
+                          type %s" (string_of_typ t) l (string_of_typ s)))
   | ETryCatch (_, e1, x, e2) ->
       let t1 = tc_exp env e1
       and t2 = tc_exp (Env.bind_id x TTop env) e2 in
@@ -95,14 +99,14 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ETypecast (p, rt, e) ->
       static rt (tc_exp env e)
   | EArray (p, []) -> 
-      typ_error p "an empty array literal requires a type annotation"
+      raise (Typ_error (p, "an empty array literal requires a type annotation"))
   | EArray (_, e :: es) -> 
       let u = fold_left typ_union (tc_exp env e) (tc_exps env es) in
         TApp ("Array", [u])
   | EIf (p, e1, e2, e3) -> begin
       match tc_exp env e1, tc_exp env e2, tc_exp env e3 with
           TApp ("Boolean", []), t2, t3 -> typ_union t2 t3
-        | t, _, _ -> typ_error p "test expression must have type boolean"
+        | t, _, _ -> raise (Typ_error (p, "expected a boolean"))
     end
   | EObject (p, fields) ->
       let tc_field (x, is_mutable, e) = 
@@ -114,13 +118,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
           (try
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
-             typ_error p ("object does not have a field called " ^ x))
+             raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
       | TDom, _ -> TDom (* TODO: banned fields? *)
       | t, EString _ ->
-          typ_error p ("expected an object, but expression has type " ^
-                         (string_of_typ t))
+          raise (Typ_error
+                   (p, "expected an object, received " ^ string_of_typ t))
       | _ -> 
-          typ_error p "field-lookup requires a string literal"
+          raise (Typ_error (p, "field-lookup requires a string- literal"))
     end
 (*  | EThis of 'a *)
 (*| ENew of 'a * 'a exp * 'a exp list *)
@@ -135,9 +139,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | JS.PrefixPlus, TApp ("Number", []) -> typ_num 
       | JS.PrefixMinus, TApp ("Int", []) -> typ_int
       | JS.PrefixMinus, TApp ("Number", []) -> typ_num 
-      | JS.PrefixMinus, t -> typ_error p
-          (sprintf "- (minus) expects an Int/Double operand, but it received %s"
-             (string_of_typ t))
+      | JS.PrefixMinus, t -> 
+          raise 
+            (Typ_error 
+               (p, "- (minus) expects an Int/Double operand; received " ^
+                  string_of_typ t))
       | JS.PrefixTypeof, _ -> typ_str
       | JS.PrefixVoid, _ -> typ_undef
           (* | PrefixDelete *)
@@ -175,13 +181,18 @@ let rec tc_exp (env : Env.env) exp = match exp with
            end
        end
    | EAssign (p, LVar (_, x), e) -> 
-       let s = (try Env.lookup_id x env 
-                with Not_found -> typ_error p (sprintf "%s is unbound" x))
+       let s = 
+         try 
+           Env.lookup_id x env 
+         with Not_found ->
+           raise (Typ_error (p, x ^ " is not defined"))
        and t = tc_exp env e in
          if subtype t s then t
-         else typ_error p 
-           (sprintf "%s has type %s, but the right-hand side of this \
-              assignment has type %s" x (string_of_typ s) (string_of_typ t))
+         else raise
+           (Typ_error 
+              (p, 
+               sprintf "%s has type %s, but the right-hand side of this \
+                 assignment has type %s" x (string_of_typ s) (string_of_typ t)))
 (*   | EAssign of 'a * 'a lvalue * 'a exp  *)
   | EApp (p, f, args) -> begin match tc_exp env f with
         TArrow (_, expected_typs, result_typ) ->
@@ -194,21 +205,22 @@ let rec tc_exp (env : Env.env) exp = match exp with
                 if subtype arg_typ expected_typ then (incr arg_ix; false)
                 else true in
               let arg_typ, expected_typ = List.find find_typ_err typ_pairs in
-                typ_error p
-                  (sprintf "argument %d has type %s, but the function expects \
-                     an argument of type %s" !arg_ix (string_of_typ arg_typ)
-                     (string_of_typ expected_typ))
-            else typ_error p
-              (sprintf "arity-mismatch: the function expects %d arguments, but \
-                      this application supplies %d arguments"
-                 (List.length expected_typs) (List.length args))
+                raise (Typ_error 
+                         (p, sprintf "argument %d has type %s, but the \
+                               function expects an argument of type %s" 
+                            !arg_ix (string_of_typ arg_typ)
+                               (string_of_typ expected_typ)))
+            else raise (Typ_error 
+                          (p, sprintf "arity-mismatch: the function expects %d \
+                                arguments, but %d arguments given"
+                             (List.length expected_typs) (List.length args)))
       | TDom -> 
           let arg_typs = tc_exps env args in
             if List.for_all (fun t -> subtype t TDom) arg_typs then
               TDom
             else
-              typ_error p "DOM-function application"
-      | _ -> typ_error p "expected a function"
+              raise (Typ_error (p, "DOM-function application"))
+      | _ -> raise (Typ_error (p, "expected a function"))
     end
   | ERec (binds, body) -> 
       let f env (x, t, _) = Env.bind_id x t env in
@@ -238,7 +250,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EFunc (p, args, fn_typ, body) -> begin match fn_typ with
         TArrow (_, arg_typs, result_typ) ->
           if List.length arg_typs = List.length args then ()
-          else typ_error p "not all arguments have types";
+          else raise (Typ_error (p, "not all arguments have types"));
           let bind_arg env (x, t) = 
             (* all arguments are available for dataflow in the body *)
             Env.new_assignable_id x (Env.bind_id x t env) in
@@ -252,11 +264,12 @@ let rec tc_exp (env : Env.env) exp = match exp with
           let env' = Env.clear_labels env' in
           let body_typ = tc_exp env' body' in
             if subtype body_typ result_typ then fn_typ
-            else typ_error p
-              (sprintf "function body has type %s, but the function\'s \
-                          return type is %s" (string_of_typ body_typ) 
-                 (string_of_typ result_typ))
-      | _ -> typ_error p "invalid type annotation on a function"
+            else raise (Typ_error
+                          (p,
+                           sprintf "function body has type %s, but the \
+                             return type is %s" (string_of_typ body_typ)
+                             (string_of_typ result_typ)))
+      | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
     end
 
 and tc_exps env es = map (tc_exp env) es

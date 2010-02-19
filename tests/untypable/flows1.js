@@ -4,7 +4,5 @@ function(x) /*: Int + Void -> Void */ {
     x = y;
     return prev + y;
   };
-} @@ Int + Void -> Void
-;
-
-
+  x = 90;
+};
