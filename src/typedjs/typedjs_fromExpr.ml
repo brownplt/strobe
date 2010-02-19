@@ -242,7 +242,7 @@ let rec flatten_seq (expr : expr) : expr list = match expr with
   | _ -> [ expr ]
 
 let match_constr_body env expr = match expr with
-    (* we will drop the LabelledExpr, which will prevent us from using
+    (* we drop the LabelledExpr, which will prevents us from using
         return within a constructor. *)
     FuncStmtExpr (p, f, args, LabelledExpr (p', l, body)) ->
       begin match constr_between (fst2 p, fst2 p') with

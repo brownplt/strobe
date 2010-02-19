@@ -57,9 +57,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let env = Env.remove_assigned_ids (av_exp e1) env in
       let env = if x_available then Env.new_assignable_id x env else env in
         tc_exp env e2
-  | ESeq (_, e1, e2) ->
-      let _ = tc_exp env e1 in
-        tc_exp env e2
+  | ESeq (_, e1, e2) -> begin match tc_exp env e1 with
+        TBot -> (* e1 will not return; no need to typecheck e2 *)
+          TBot
+      | _ -> tc_exp env e2
+    end
   | ELabel (p, l, t, e) -> 
       let s = tc_exp (Env.bind_lbl l t env) e in
         if subtype s t then t

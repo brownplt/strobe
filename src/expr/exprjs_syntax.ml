@@ -45,45 +45,6 @@ and lvalue =
 
 (******************************************************************************)
 
-let rec aborts (expr : expr) : bool = match expr with
-   StringExpr _ -> false
-  | RegexpExpr _ -> false
-  | NumExpr _ -> false
-  | IntExpr _ -> false
-  | BoolExpr _ -> false
-  | NullExpr _ -> false
-  | ArrayExpr (_, es) -> List.exists aborts es
-  | ObjectExpr (_, ps) -> List.exists (fun (_, _, e) -> aborts e) ps
-  | ThisExpr _ -> false
-  | VarExpr _ -> false
-  | BracketExpr (_, e1, e2) -> aborts e1 || aborts e2
-  | NewExpr (_, c, args) -> List.exists aborts (c :: args)
-      (* JavaScript's operators never signal exceptions--right? *)
-  | PrefixExpr (_, _, e) -> aborts e
-  | InfixExpr (_, _, e1, e2) -> aborts e1 || aborts e2
-  | IfExpr (_, e1, e2, e3) -> aborts e1 || (aborts e2 && aborts e3)
-  | AssignExpr (_, VarLValue _, e) -> aborts e
-  | AssignExpr (_, PropLValue (_, e1, e2), e3) ->
-      aborts e1 || aborts e2 || aborts e3
-  | AppExpr (_, f, args) -> List.exists aborts (f :: args)
-  | FuncExpr _  -> false
-  | UndefinedExpr _ -> false
-  | LetExpr (_, _, e1, e2) -> aborts e1 || aborts e2
-  | SeqExpr (_, e1, e2) -> aborts e1 || aborts e2
-  | WhileExpr (_, e1, e2) -> aborts e1 || aborts e2
-  | DoWhileExpr (_, e1, e2) -> aborts e1 || aborts e2
-  | LabelledExpr (_, _, e) -> aborts e
-  | BreakExpr _ -> true
-  | ForInExpr (_, _, e1, e2) -> aborts e1 || aborts e2
-  (* We do not transform VarDeclStmts to let-bindings, yet *)
-  | VarDeclExpr (_, _, e) -> aborts e 
-  | TryCatchExpr (_, e1, _, e2) -> aborts e1 || aborts e2
-  | TryFinallyExpr (_, _, e2) -> aborts e2
-  | ThrowExpr (_, e) -> aborts e
-  | FuncStmtExpr _ -> false
-
-(******************************************************************************)
-
 open JavaScript_stxutil
 module S = JavaScript_syntax
 module L = List
@@ -104,14 +65,7 @@ let infix_of_assignOp op = match op with
   | S.OpAssignBOr -> S.OpBOr
   | S.OpAssign -> failwith "infix_of_assignOp applied to OpAssign"
 
-(** [seq a e1 e2] removes dead code from [SeqExpr] (code after a break) and
-    rearranges sequences so that nested [SeqExpr]s are on the right. However,
-    it breaks the syntactic compositionality that \JS touts. *)
-let rec seq a e1 e2 = 
-  if aborts e1 then e1
-  else (match e1 with
-          | SeqExpr (a', e11, e12) -> SeqExpr (a, e11, seq a' e12 e2)
-          | _ -> SeqExpr (a, e1, e2))
+let seq a e1 e2 = SeqExpr (a, e1, e2)
 
 let rec expr (e : S.expr) = match e with
     S.StringExpr (a,s) -> StringExpr (a,s)
