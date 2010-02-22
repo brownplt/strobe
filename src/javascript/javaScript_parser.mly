@@ -116,6 +116,7 @@ element_list
       { [] }
   | Comma 
       { [UndefinedExpr ((symbol_start_pos (), symbol_end_pos ()))] }
+  | assign_expr { [$1] }
   | assign_expr Comma element_list 
       { $1::$3 }
 
