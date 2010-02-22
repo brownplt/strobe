@@ -9,6 +9,15 @@ module JS = JavaScript_syntax (* needed for operators *)
 
 let string_of_typ = pretty_string pretty_typ
 
+let tc_const (const : const) = match const with
+    CString _ -> typ_str
+  | CRegexp _ -> typ_regexp
+  | CNum _ -> typ_num
+  | CInt _ -> typ_int
+  | CBool _ -> typ_bool
+  | CNull -> typ_bool
+  | CUndefined -> typ_undef
+
 let tc_arith (p : pos) (t1 : typ) (t2 : typ) (int_args : bool) 
     (num_result : bool) : typ =
   let result_typ = 
@@ -39,13 +48,7 @@ let tc_cmp (p : pos) (lhs : typ) (rhs : typ) : typ =
     raise (Typ_error (p, "comparision type error"))
 
 let rec tc_exp (env : Env.env) exp = match exp with
-    EString _ -> typ_str
-  | ERegexp _ -> typ_regexp
-  | ENum _ -> typ_num
-  | EInt _ -> typ_int
-  | EBool _ -> typ_bool
-  | ENull _ -> typ_null
-  | EUndefined _ -> typ_undef
+    EConst (_, c) -> tc_const c
   | EId (p, x) -> begin
       try 
         Env.lookup_id x env
@@ -113,13 +116,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
           (x, if is_mutable then TRef t else t) in
         typ_permute (TObject (map tc_field fields))
   | EBracket (p, obj, field) -> begin match tc_exp env obj, field with
-        TObject fs, EString (_, x) -> 
+        TObject fs, EConst (_, CString x) -> 
           (try
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
       | TDom, _ -> TDom (* TODO: banned fields? *)
-      | t, EString _ ->
+      | t, EConst (_, CString _) ->
           raise (Typ_error
                    (p, "expected an object, received " ^ string_of_typ t))
       | _ -> 

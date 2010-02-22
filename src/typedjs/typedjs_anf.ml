@@ -83,16 +83,19 @@ let rec to_anf_exps exps (k : value list -> anfexp) = match exps with
                  k (v :: vs))))
 
 and to_anf exp (k : value -> anfexp) = match exp with
-    EString (_, s) -> k (VString s)
-  | ERegexp (_, s, g, i) -> k (VRegexp (s, g, i))
-  | ENum (_, x) -> k (VNum x)
-  | EInt (_, n) -> k (VInt n)
-  | EBool (_, b) -> k (VBool b)
-  | ENull _ -> k VNull
+    EConst (_, c) -> begin match c with
+        CString s -> k (VString s)
+      | CRegexp (s, g, i) -> k (VRegexp (s, g, i))
+      | CNum x -> k (VNum x)
+      | CInt n -> k (VInt n)
+      | CBool b -> k (VBool b)
+      | CNull -> k VNull
+      | CUndefined -> k VUndefined
+    end
   | EArray (_, es) -> to_anf_exps es (fun vs -> k (VArray vs))
   | EObject (_, props) -> to_anf_exps (map thd3 props)
       (fun vs -> k (VObject (List.combine (map fst3 props) vs)))
-  | EUndefined _ -> k VUndefined
+
   | EThis _ -> k VThis
   | EId (p, x) ->  k (VId (p, x))
   | EBracket (p, e1, e2) ->

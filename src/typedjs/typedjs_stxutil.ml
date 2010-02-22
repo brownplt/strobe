@@ -6,12 +6,7 @@ open IdSetExt
 
 
 let rec local_av_exp (exp : exp) : IdSet.t = match exp with
-    EString _ -> IdSet.empty
-  | ERegexp _ -> IdSet.empty
-  | ENum _ -> IdSet.empty
-  | EInt _ -> IdSet.empty
-  | EBool _ -> IdSet.empty
-  | ENull _ -> IdSet.empty
+    EConst _ -> IdSet.empty
   | EArray (_, es) -> IdSetExt.unions (map local_av_exp es)
   | EObject (_, ps) -> 
       IdSetExt.unions (map (fun (_, _, e) -> local_av_exp e) ps)
@@ -27,7 +22,6 @@ let rec local_av_exp (exp : exp) : IdSet.t = match exp with
       IdSetExt.unions (map local_av_exp [e1; e2; e3])
   | EApp (_, f, args) -> IdSetExt.unions (map local_av_exp (f :: args))
   | EFunc (_, args, _, e) -> IdSet.empty (* do not recur into functions *)
-  | EUndefined _ -> IdSet.empty
   | ELet (_, x, e1, e2) ->
       IdSet.union (local_av_exp e1) (IdSet.remove x (local_av_exp e2))
   | ERec (binds, e) ->
@@ -54,12 +48,7 @@ let rec local_av_def (def : def) : IdSet.t = match def with
         (IdSetExt.from_list (map fst3 binds))
 
 let rec av_exp (exp : exp) : IdSet.t = match exp with
-    EString _ -> IdSet.empty
-  | ERegexp _ -> IdSet.empty
-  | ENum _ -> IdSet.empty
-  | EInt _ -> IdSet.empty
-  | EBool _ -> IdSet.empty
-  | ENull _ -> IdSet.empty
+    EConst _ -> IdSet.empty
   | EArray (_, es) -> IdSetExt.unions (map av_exp es)
   | EObject (_, ps) -> IdSetExt.unions (map (fun (_, _, e) -> av_exp e) ps)
   | EThis _ -> IdSet.empty
@@ -74,7 +63,6 @@ let rec av_exp (exp : exp) : IdSet.t = match exp with
       IdSetExt.unions (map av_exp [e1; e2; e3])
   | EApp (_, f, args) -> IdSetExt.unions (map av_exp (f :: args))
   | EFunc (_, args, _, e) -> IdSet.diff (av_exp e) (IdSetExt.from_list args)
-  | EUndefined _ -> IdSet.empty
   | ELet (_, x, e1, e2) -> IdSet.union (av_exp e1) (IdSet.remove x (av_exp e2))
   | ERec (binds, e) ->
       IdSet.diff (IdSetExt.unions (map av_exp (e :: map thd3 binds)))
@@ -91,12 +79,7 @@ let rec av_exp (exp : exp) : IdSet.t = match exp with
 let concat = List.concat
 
 let rec nested_funcs (exp : exp) : exp list = match exp with
-    EString _ -> []
-  | ERegexp _ -> []
-  | ENum _ -> []
-  | EInt _ -> []
-  | EBool _ -> []
-  | ENull _ -> []
+    EConst _ -> []
   | EArray (_, es) -> concat (map nested_funcs es)
   | EObject (_, ps) -> concat (map (fun (_, _, e) -> nested_funcs e) ps)
   | EThis _ -> []
@@ -110,7 +93,6 @@ let rec nested_funcs (exp : exp) : exp list = match exp with
   | EAssign (_, LProp (_, e1, e2), e3) -> concat (map nested_funcs [e1; e2; e3])
   | EApp (_, f, args) -> concat (map nested_funcs (f :: args))
   | EFunc _ -> [exp]
-  | EUndefined _ -> []
   | ELet (_, x, e1, e2) -> nested_funcs e1 @ nested_funcs e2
   | ERec (binds, e) -> concat  (map nested_funcs (e :: map thd3 binds))
   | ESeq (_, e1, e2) -> nested_funcs e1 @ nested_funcs e2

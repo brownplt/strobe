@@ -106,12 +106,13 @@ let is_empty lst = match lst with
 type env = IdSet.t
 
 let rec exp (env : env) expr = match expr with
-    StringExpr (a, s) -> EString (a, s)
-  | RegexpExpr (a, re, g, i) -> ERegexp (a, re, g, i)
-  | NumExpr (a, f) -> ENum (a, f)
-  | IntExpr (a, n) -> EInt (a, n)
-  | BoolExpr (a, b) -> EBool (a, b)
-  | NullExpr a -> ENull a
+    StringExpr (a, s) -> EConst (a, CString s)
+  | RegexpExpr (a, re, g, i) -> EConst (a, CRegexp (re, g, i))
+  | NumExpr (a, f) -> EConst (a, CNum f)
+  | IntExpr (a, n) -> EConst (a, CInt n)
+  | BoolExpr (a, b) -> EConst (a, CBool b)
+  | NullExpr a -> EConst (a, CNull)
+  | UndefinedExpr a -> EConst (a, CUndefined)
   | ArrayExpr (a, es) -> EArray (a, map (exp env) es)
   | ObjectExpr (a, ps) -> 
       if List.length ps != List.length (nub (map (fun (_,p,_) -> p) ps)) then
@@ -134,7 +135,6 @@ let rec exp (env : env) expr = match expr with
       (match match_func env expr with
            Some (_, e) -> e
          | None -> failwith "match_func returned None on a FuncExpr (1)")
-  | UndefinedExpr a -> EUndefined a
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdSet.add x env) e2)
   | TryCatchExpr (a, body, x, catch) ->
@@ -149,7 +149,7 @@ let rec exp (env : env) expr = match expr with
                        EIf (a, exp env e1, 
                             ESeq (a, exp env e2, 
                                   EApp (a, EId (a, "%loop"), [])),
-                            EUndefined a)))],
+                            EConst (a, CUndefined))))],
               EApp (a, EId (a, "%loop"), []))
   | DoWhileExpr (a, e1, e2) ->
       let loop_typ = TArrow (TTop, [], typ_undef) in
@@ -158,7 +158,7 @@ let rec exp (env : env) expr = match expr with
                        ESeq (a, exp env e1, 
                              EIf (a, exp env e2, 
                                   EApp (a, EId (a, "%loop"), []),
-                                    EUndefined a))))],
+                                    EConst (a, CUndefined)))))],
               EApp (a, EId (a, "%loop"), []))
 
   | LabelledExpr (a, x, e) -> 
@@ -169,11 +169,11 @@ let rec exp (env : env) expr = match expr with
   | SeqExpr (a, _, _) -> block_intro env (seq expr)
   | VarDeclExpr (a, x, e) -> 
       (* peculiar code: body or block ends with var *)
-      ELet (a, x, exp env e, EUndefined a)
+      ELet (a, x, exp env e, EConst (a, CUndefined))
   | FuncStmtExpr (a, f, args, body) ->
       begin match match_func (IdSet.add f env) (FuncExpr (a, args, body)) with
           Some (t, e) ->
-            ERec ([ (f,  t, e) ], EUndefined a)
+            ERec ([ (f,  t, e) ], EConst (a, CUndefined))
         | None -> failwith "match_func returned None on a FuncExpr (2)"
       end
 

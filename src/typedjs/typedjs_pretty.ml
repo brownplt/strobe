@@ -22,17 +22,21 @@ let rec typ t  = match t with
   | TRef s -> sep [ text "mutable"; parens [ typ s ] ]
   | TDom -> text "Dom"
 
+let const e = match e with
+    CString s -> text  ("\"" ^ s ^ "\"")
+  | CRegexp (re, _, _) -> text ("/" ^ re ^ "/")
+  | CNum f -> fun fmt -> pp_print_float fmt f
+  | CInt n -> int n
+  | CBool b -> fun fmt -> pp_print_bool fmt b
+  | CNull -> text "#null"
+  | CUndefined -> text "#undefined"
+    
+
 let rec exp e fmt = match e with
-    EString (_, s) -> pp_print_string fmt ("\"" ^ s ^ "\"")
-  | ERegexp (_, re, _, _) -> pp_print_string fmt ("/" ^ re ^ "/")
-  | ENum (_, f) -> pp_print_float fmt f
-  | EInt (_, n) -> pp_print_int fmt n
-  | EBool (_, b) -> pp_print_bool fmt b
-  | ENull _ -> pp_print_string fmt "#null"
+    EConst (_, c) -> const c fmt
   | EArray (_, es) -> parens (map exp es) fmt
   | EObject (_, ps) -> brackets (map prop ps) fmt
   | EThis _ -> pp_print_string fmt "#this"
-  | EUndefined _ -> pp_print_string fmt "#undefined"
   | EId (_, x) -> text x fmt
   | EBracket (_, e1, e2) ->
       exp e1 fmt;

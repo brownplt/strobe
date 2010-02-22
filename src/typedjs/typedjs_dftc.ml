@@ -64,12 +64,7 @@ let annotate (env : Env.env) (exp : exp) : exp =
       (Env.id_env env) empty_env in
   let cast_env = Typedjs_df.local_type_analysis df_env anfexp in
   let rec cast (ids : IdSet.t) (exp : exp) : exp = match exp with
-      EString _ -> exp
-    | ERegexp _ -> exp
-    | ENum _ -> exp
-    | EInt _ -> exp
-    | EBool _ -> exp
-    | ENull _ -> exp
+      EConst _ -> exp
     | EArray (p, es) -> EArray (p, map (cast ids) es)
     | EObject (p, props) -> EObject (p, map (third3 (cast ids)) props)
     | EThis _ -> exp
@@ -86,7 +81,6 @@ let annotate (env : Env.env) (exp : exp) : exp =
     | EAssign (p, LVar (q, x), e) -> EAssign (p, LVar (q, x), cast ids e)
     | EApp (p, e, es) -> EApp (p, cast ids e, map (cast ids) es)
     | EFunc _ -> exp (* intraprocedural *)
-    | EUndefined _ -> exp
     | ELet (p, x, e1, e2) -> ELet (p, x, cast ids e1, cast (IdSet.add x ids) e2)
     | ERec (binds, body) -> 
         let removed_ids = IdSetExt.unions 
