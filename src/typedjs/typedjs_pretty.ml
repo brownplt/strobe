@@ -141,3 +141,4 @@ let pretty_typ fmt t = typ t fmt
 
 let pretty_def fmt d = def d fmt
 
+let p_const = const

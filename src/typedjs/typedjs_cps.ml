@@ -18,12 +18,13 @@ type cpsexp =
   | Let2 of node * id * JavaScript_syntax.infixOp * cpsval * cpsval * cpsexp
   | Assign of node * id * cpsval * cpsexp
   | SetProp of node * cpsval * cpsval * cpsval * cpsexp
+  | End of node * cpsval
 
 let new_name : unit -> id = 
   let next_name = ref 0 in
     fun () ->
       incr next_name;
-      "%anf" ^ string_of_int (!next_name - 1)
+      "%cps" ^ string_of_int (!next_name - 1)
 
 let new_node : unit -> node =
   let next_node = ref 0 in
@@ -112,8 +113,6 @@ let rec cps_exp (exp : exp) (k : cont) : cpsexp = match exp with
   | EThrow of pos * exp
   | ETypecast of pos * runtime_typs * exp *)
 
-
-
 and cps_bind ((name, typ, e) : id * typ * exp) = match e with
     EFunc (_, args, _, body) ->
       let k = new_name () in
@@ -130,3 +129,55 @@ and cps_exp_list (exps : exp list) (k : cpsval list -> cpsexp) = match exps with
            cps_exp_list rest
              (fun vs ->
                 k (v :: vs)))
+
+let cps (exp : exp) : cpsexp = cps_exp exp (fun v -> End (new_node (), v))
+
+
+(******************************************************************************)
+
+open Format
+open FormatExt
+
+let rec p_cpsval (cpsval : cpsval) : printer = match cpsval with
+    Const c -> Typedjs_pretty.p_const c
+  | Id x -> text x
+  | Array vs -> parens (text "array" :: (map p_cpsval vs))
+  | Object ps -> parens (text "object" :: (map p_prop ps))
+    
+and p_prop (x, v) : printer = brackets [ text x; p_cpsval v ]
+
+let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
+    Fix (_, binds, body) ->
+      parens [ text "fix"; parens (map p_bind binds); p_cpsexp body ]
+  | App (_, f, args ) ->
+      parens ( text "app" :: p_cpsval f :: (map p_cpsval args) )
+  | If (_, v1, e2, e3) -> 
+      parens [ text "if"; p_cpsval v1; p_cpsexp e2; p_cpsexp e3 ]
+  | Let0 (_, x, v, e) -> 
+      parens [ text "let"; parens [ text x; p_cpsval v ]; p_cpsexp e ]
+  | Let1 (_, x, op, v, e) -> 
+      parens [ text "let";
+               parens [ text x; 
+                        parens [ text (JavaScript_pretty.render_prefixOp op);
+                                 p_cpsval v ] ];
+               p_cpsexp e ]
+  | Let2 (_, x, op, v1, v2, e) -> 
+      parens [ text "let";
+               parens [ text x; 
+                        parens [ text (JavaScript_pretty.render_infixOp op);
+                                 p_cpsval v1;
+                                 p_cpsval v2 ] ];
+               p_cpsexp e ]
+  | Assign (_, x, v, e) -> 
+      parens [ text "seq";
+               parens [ text "set!"; text x; p_cpsval v ];
+               p_cpsexp e ]
+  | SetProp (_, v1, v2, v3, e) -> 
+      parens [ text "seq";
+               parens (text "set-field!" :: (map p_cpsval [ v1; v2; v3 ]));
+               p_cpsexp e ]
+  | End _ -> text "#end"
+
+and p_bind (f, args, typ, body) : printer =
+    brackets [ text f; 
+               parens [ text "lambda"; parens (map text args); p_cpsexp body ] ]

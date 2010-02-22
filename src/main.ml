@@ -68,6 +68,18 @@ let action_anf () : unit =
       | _ -> failwith "expected a single expression"
     end
 
+let action_cps () : unit =
+  let (js, comments) = parse_javascript !cin !cin_name in
+  let exprjs = from_javascript js in
+  let typedjs = Typedjs.from_exprjs exprjs comments !env in
+    begin match typedjs with
+        DExp (e, _) -> 
+          let cps = Typedjs_cps.cps e in
+            Typedjs_cps.p_cpsexp cps Format.std_formatter
+      | _ -> failwith "expected a single expression"
+    end
+
+
 let action_df () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
@@ -113,6 +125,8 @@ let main () : unit =
        "basic well-formedness checks before typing");
       ("-anf", Arg.Unit (set_action action_anf),
        "convert program to ANF");
+      ("-cps", Arg.Unit (set_action action_cps),
+       "convert program to CPS");
       ("-df", Arg.Unit (set_action action_df),
        "convert program to ANF, then apply dataflow analysis");
       ("-unittest", Arg.Unit (set_action action_test_tc),
