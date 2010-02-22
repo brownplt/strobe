@@ -39,6 +39,9 @@ type typ =
   | TBot
   | TDom
 
+type env_decl =
+    EnvConstr of constr * typ * typ * (id * typ) list
+  | EnvBind of id * typ
 
 type annotation =
     ATyp of typ
@@ -123,7 +126,7 @@ module type EnvType = sig
   val remove_assigned_ids : IdSet.t -> env -> env
   val id_env : env -> typ IdMap.t
   val clear_labels : env -> env
-
+  val dom : env -> IdSet.t
 end
 
 module Env : EnvType = struct
@@ -155,5 +158,7 @@ module Env : EnvType = struct
   let id_env env = env.id_typs
 
   let clear_labels env = { env with lbl_typs = IdMap.empty }
+
+  let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)
 
 end

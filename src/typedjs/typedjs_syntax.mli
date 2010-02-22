@@ -37,6 +37,10 @@ type typ =
   | TBot
   | TDom
 
+type env_decl =
+    EnvConstr of constr * typ * typ * (id * typ) list
+  | EnvBind of id * typ
+
 type annotation =
     ATyp of typ
   | AConstructor of typ 
@@ -147,6 +151,8 @@ module type EnvType = sig
 
   (** JavaScript cannot perform a labelled jump across a function. *)
   val clear_labels : env -> env
+
+  val dom : env -> IdSet.t
 
 end
 

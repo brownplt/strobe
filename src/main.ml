@@ -13,10 +13,13 @@ open Format
 open Typedjs_syntax
 open Typedjs_pretty
 open Typedjs_fromExpr
+open Typedjs_env
 
 let cin = ref stdin
 
 let cin_name = ref "stdin"
+
+let env = ref Env.empty_env
 
 let action_load_file path =
   cin := open_in path;
@@ -41,20 +44,20 @@ let action_expr () : unit =
 let action_pretypecheck () : unit = 
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
-  let typedjs = Typedjs.from_exprjs exprjs comments in
+  let typedjs = Typedjs.from_exprjs exprjs comments !env in
     Typedjs_pretty.pretty_def std_formatter typedjs
 
 let action_tc () : unit = 
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
-  let typedjs = Typedjs.from_exprjs exprjs comments in
-  let _ = Typedjs_tc.typecheck typedjs in
+  let typedjs = Typedjs.from_exprjs exprjs comments !env in
+  let _ = Typedjs_tc.typecheck !env typedjs in
     ()
 
 let action_anf () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
-  let typedjs = Typedjs.from_exprjs exprjs comments in
+  let typedjs = Typedjs.from_exprjs exprjs comments !env in
     begin match typedjs with
         DExp (e, _) -> 
           let anf = Typedjs_anf.from_typedjs e in
@@ -65,7 +68,7 @@ let action_anf () : unit =
 let action_df () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
-  let typedjs = Typedjs.from_exprjs exprjs comments in
+  let typedjs = Typedjs.from_exprjs exprjs comments !env in
     begin match typedjs with
         DExp (e, _) ->
           let anf = Typedjs_anf.from_typedjs e in
@@ -91,9 +94,13 @@ let set_action (thunk : unit -> unit) (() : unit) : unit =
   else 
     (is_action_set := true; action := thunk)
 
+let set_env (fname : string) : unit = 
+  env := mk_env (parse_env (open_in fname) fname)
+
 let main () : unit =
   Arg.parse
-    [ ("-pretty", Arg.Unit (set_action action_pretty),
+    [ ("-env", Arg.String set_env, "load the environment from a file");
+      ("-pretty", Arg.Unit (set_action action_pretty),
        "pretty-print JavaScript");
       ("-comments", Arg.Unit (set_action action_comments),
        "extract comments from JavaScript");

@@ -34,5 +34,6 @@ rule token = parse
    | "constructor" { CONSTRUCTOR }
    | "mutable" { MUTABLE }
    | "function" { FUNCTION }
+   | "prototype" { PROTOTYPE }
    | eof { EOF }
    | ident as x { ID x }

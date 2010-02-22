@@ -1,0 +1,4 @@
+document : Dom
+window : Dom
+setTimeout : Dom
+view : Dom

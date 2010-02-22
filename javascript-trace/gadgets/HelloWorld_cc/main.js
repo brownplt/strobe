@@ -1,5 +1,5 @@
 /*::
-  function onTextClick() : ( -> Int)
+  function onTextClick : ( -> Int)
 */
 /*
 Copyright (C) 2007 Google Inc.

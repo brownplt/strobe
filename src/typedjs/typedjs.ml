@@ -3,6 +3,6 @@ open Typedjs_parser
 open Typedjs_fromExpr
 open Typedjs_anf
 
-let from_exprjs exprjs comments = 
+let from_exprjs exprjs comments env = 
   init_types comments;
-  from_exprjs exprjs
+  from_exprjs env exprjs

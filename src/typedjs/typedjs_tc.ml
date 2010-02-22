@@ -4,7 +4,6 @@ open Typedjs_types
 open Typedjs_pretty
 open Typedjs_stxutil
 open Typedjs_dftc
-open Typedjs_env
 
 module JS = JavaScript_syntax (* needed for operators *)
 
@@ -312,6 +311,4 @@ let rec tc_def env def = match def with
         List.iter2 tc_bind binds bind_envs;
         tc_def body_env d
 
-let typecheck defs = 
-  let f env (x, t) = Env.bind_id x t env in
-    tc_def (fold_left f Env.empty_env (IdMapExt.to_list init_env)) defs
+let typecheck = tc_def

@@ -14,15 +14,19 @@ let parse_error s =
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA MUTABLE COLONCOLON FUNCTION DOM
+        PROTOTYPE
 
 %right UNION
 
 %start typ
 %start typ_ann
+%start env
 
 %type <Typedjs_syntax.typ> typ
 
 %type <Typedjs_syntax.annotation> typ_ann
+
+%type <Typedjs_syntax.env_decl list> env
 
 %%
 
@@ -60,13 +64,30 @@ typ_ann
   : COLON typ EOF { ATyp $2 }
   | COLON MUTABLE EOF { AMutable }
   | COLON CONSTRUCTOR typ EOF { AConstructor $3 }
-  | COLONCOLON inferred_anns { AInferred $2 }
+  | COLONCOLON inferred_anns EOF { AInferred $2 }
 
 inferred_anns 
   : { [] }
   | FUNCTION ID COLON typ inferred_anns { ATyp $4 :: $5 }
   | FUNCTION COLON typ inferred_anns { ATyp $3 :: $4 }
 
+
+env_decl
+  : CONSTRUCTOR args ARROW ID PROTOTYPE typ LBRACE fields RBRACE
+    { EnvConstr
+        ( $4 (* name *) , 
+          TArrow (TTop, $2, TApp ($4, [])) (* type *), 
+          $6 (* prototype type *),
+          $8 (* local fields *)) }
+  | ID COLON typ
+    { EnvBind ($1, $3) }
+
+env_decls
+  : { [] }
+  | env_decl env_decls { $1 :: $2 }
+
+env
+  : env_decls EOF { $1 }
 
 
 

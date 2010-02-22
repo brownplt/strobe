@@ -22,7 +22,8 @@ let num_failures = ref 0
 let test ((pos, js_expr, comments, expected) : test) : unit =
   try
     let expr_stx = Exprjs_syntax.from_javascript_expr js_expr in
-    let typed_stx = begin match Typedjs.from_exprjs expr_stx comments with
+    let typed_stx = begin match Typedjs.from_exprjs expr_stx comments
+      (Env.empty_env) with
          DExp (e, DEnd) -> e
       | _ -> 
           failwith (sprintf "@%s: expected a single expression; got other \

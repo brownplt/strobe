@@ -92,5 +92,5 @@ val init_types : (pos * string) list -> unit
 (** @raise Not_well_formed if any of the well-formed criteria are
    violated (see above).
 *)
-val from_exprjs : Exprjs_syntax.expr -> def
+val from_exprjs : Env.env -> Exprjs_syntax.expr -> def
 

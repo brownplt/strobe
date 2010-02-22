@@ -1,2 +1,2 @@
 #!/bin/bash
-../build/main.d.byte $@
+../build/main.d.byte -env ../data/env $@
