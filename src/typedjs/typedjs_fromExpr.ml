@@ -144,7 +144,7 @@ let rec exp (env : env) expr = match expr with
   | ThrowExpr (a, e) -> EThrow (a, exp env e)
   | WhileExpr (a, e1, e2) ->
       let loop_typ = TArrow (TTop, [], typ_undef) in
-        ERec ([("%while", loop_typ,
+        ERec ([("%loop", loop_typ,
                 EFunc (a, [], loop_typ,
                        EIf (a, exp env e1, 
                             ESeq (a, exp env e2, 
@@ -153,7 +153,7 @@ let rec exp (env : env) expr = match expr with
               EApp (a, EId (a, "%loop"), []))
   | DoWhileExpr (a, e1, e2) ->
       let loop_typ = TArrow (TTop, [], typ_undef) in
-        ERec ([("%while", loop_typ,
+        ERec ([("%loop", loop_typ,
                 EFunc (a, [], loop_typ,
                        ESeq (a, exp env e1, 
                              EIf (a, exp env e2, 
