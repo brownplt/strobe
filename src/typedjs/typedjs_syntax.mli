@@ -164,8 +164,6 @@ module type EnvType = sig
   (** Adds a method to a class. *)
   val add_method : id -> id -> typ -> env -> env
 
-
-
 end
 
 module Env : EnvType

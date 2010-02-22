@@ -15,6 +15,9 @@ open Typedjs_pretty
 open Typedjs_fromExpr
 open Typedjs_env
 
+module Z = Typedjs_cps
+
+
 let cin = ref stdin
 
 let cin_name = ref "stdin"
