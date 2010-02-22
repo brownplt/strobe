@@ -38,7 +38,7 @@ type typ =
   | TDom
 
 type env_decl =
-    EnvConstr of constr * typ * typ * (id * typ) list
+    EnvClass of constr * typ * (id * typ) list
   | EnvBind of id * typ
 
 type annotation =
@@ -153,6 +153,15 @@ module type EnvType = sig
   val clear_labels : env -> env
 
   val dom : env -> IdSet.t
+
+  (** A new class with no methods. *)
+  val new_class : id -> env -> env
+
+
+  (** Adds a method to a class. *)
+  val add_method : id -> id -> typ -> env -> env
+
+
 
 end
 

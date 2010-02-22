@@ -40,7 +40,7 @@ type typ =
   | TDom
 
 type env_decl =
-    EnvConstr of constr * typ * typ * (id * typ) list
+    EnvClass of constr * typ * (id * typ) list
   | EnvBind of id * typ
 
 type annotation =
@@ -127,18 +127,27 @@ module type EnvType = sig
   val id_env : env -> typ IdMap.t
   val clear_labels : env -> env
   val dom : env -> IdSet.t
+  val new_class : id -> env -> env
+  val add_method : id -> id -> typ -> env -> env
+
 end
 
 module Env : EnvType = struct
 
   type env = { id_typs : typ IdMap.t; 
                lbl_typs : typ IdMap.t;
-               asgn_ids : IdSet.t }
+               asgn_ids : IdSet.t;
+               (* maps class names to a structural object type *)
+               classes : typ IdMap.t 
+             }
 
 
-  let empty_env = { id_typs = IdMap.empty;
-                    lbl_typs = IdMap.empty;
-                    asgn_ids = IdSet.empty }
+  let empty_env = { 
+    id_typs = IdMap.empty;
+    lbl_typs = IdMap.empty;
+    asgn_ids = IdSet.empty;
+    classes = IdMap.empty
+  }
 
   let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
 
@@ -160,5 +169,29 @@ module Env : EnvType = struct
   let clear_labels env = { env with lbl_typs = IdMap.empty }
 
   let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)
+
+
+  let new_class class_name env = 
+    if IdMap.mem class_name env.classes then
+      raise (Invalid_argument ("cannot create class: " ^ class_name))
+    else 
+      { env with
+          classes = IdMap.add class_name (TObject []) env.classes
+      }
+
+
+  let add_method class_name method_name method_typ env =
+    let class_typ = IdMap.find class_name env.classes in
+      match class_typ with
+          TObject fields ->
+            if List.mem_assoc method_name fields then
+              raise (Invalid_argument ("method already exists: " ^ method_name))
+            else
+              let class_typ' = TObject ((method_name, method_typ) :: fields) in
+                { env with classes = IdMap.add class_name class_typ' 
+                    env.classes }
+        | _ ->
+            failwith ("class type is not an object: " ^ class_name)
+
 
 end

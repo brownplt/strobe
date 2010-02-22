@@ -14,7 +14,7 @@ let parse_error s =
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA MUTABLE COLONCOLON FUNCTION DOM
-        PROTOTYPE
+        PROTOTYPE CLASS
 
 %right UNION
 
@@ -73,12 +73,11 @@ inferred_anns
 
 
 env_decl
-  : CONSTRUCTOR args ARROW ID PROTOTYPE typ LBRACE fields RBRACE
-    { EnvConstr
-        ( $4 (* name *) , 
-          TArrow (TTop, $2, TApp ($4, [])) (* type *), 
-          $6 (* prototype type *),
-          $8 (* local fields *)) }
+  : CLASS ID PROTOTYPE typ LBRACE fields RBRACE
+    { EnvClass
+        ( $2 (* name *) , 
+          $4 (* prototype type *),
+          $6 (* local fields *)) }
   | ID COLON typ
     { EnvBind ($1, $3) }
 

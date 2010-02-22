@@ -1,3 +1,7 @@
+class HTMLWindow prototype {} {
+  document : Dom
+}
+
 document : Dom
 window : Dom
 setTimeout : Dom
