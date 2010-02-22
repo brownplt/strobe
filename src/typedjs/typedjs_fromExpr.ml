@@ -300,7 +300,8 @@ let rec defs env lst =
                   [], expr :: lst' -> begin match match_decl expr with
                       None -> DExp (exp env expr, defs env lst')
                     | Some (p, x, expr) -> 
-                        DLet (p, x, exp env expr, defs env lst')
+                        let env' = IdSet.add x env in
+                          DLet (p, x, exp env expr, defs env' lst')
                   end
                 | func_binds, lst' ->
                     let env' = IdSet.union 
