@@ -187,7 +187,7 @@ and stmt (s : S.stmt) = match s with
   | S.TryStmt (a, body, catches, finally) ->
       let f body (S.CatchClause (a, x, s)) = TryCatchExpr (a, body, x, stmt s)
       in TryFinallyExpr (a, fold_left f (stmt body) catches, stmt finally)
-  | S.ForStmt (a, init, incr, stop, body) ->
+  | S.ForStmt (a, init, stop, incr, body) ->
       seq a
         (forInit a init)
         (LabelledExpr 
