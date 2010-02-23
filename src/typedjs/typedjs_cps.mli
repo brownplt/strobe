@@ -18,7 +18,6 @@ type cpsexp =
   | Let2 of node * id * JavaScript_syntax.infixOp * cpsval * cpsval * cpsexp
   | Assign of node * id * cpsval * cpsexp
   | SetProp of node * cpsval * cpsval * cpsval * cpsexp
-  | End of node * cpsval
 
 val cps : exp -> cpsexp
 
