@@ -79,6 +79,18 @@ let action_cps () : unit =
       | _ -> failwith "expected a single expression"
     end
 
+let action_esc () : unit =
+  let (js, comments) = parse_javascript !cin !cin_name in
+  let exprjs = from_javascript js in
+  let typedjs = Typedjs.from_exprjs exprjs comments !env in
+    begin match typedjs with
+        DExp (e, _) -> 
+          let cps = Typedjs_cps.cps e in
+          let esc = Typedjs_cps.esc_cpsexp cps in
+            IdSetExt.pretty std_formatter Format.pp_print_string esc
+      | _ -> failwith "expected a single expression"
+    end
+
 
 let action_df () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
@@ -127,6 +139,8 @@ let main () : unit =
        "convert program to ANF");
       ("-cps", Arg.Unit (set_action action_cps),
        "convert program to CPS");
+      ("-esc", Arg.Unit (set_action action_esc),
+       "escape analysis of CPS");
       ("-df", Arg.Unit (set_action action_df),
        "convert program to ANF, then apply dataflow analysis");
       ("-unittest", Arg.Unit (set_action action_test_tc),

@@ -3,7 +3,7 @@ open Typedjs_syntax
 
 type cpsval =
     Const of const
-  | Id of id
+  | Id of id * id
 
 type node = int
 
@@ -35,10 +35,11 @@ let new_node : unit -> node =
       !next_node - 1
 
 type cont = cpsval -> cpsexp
+type env = id IdMap.t
 
-let rec cps_exp (exp : exp) (k : cont) : cpsexp = match exp with
+let rec cps_exp (env : env) (exp : exp) (k : cont) : cpsexp = match exp with
     EConst (_, c) -> k (Const c)
-  | EId (_, x) -> k (Id x)
+  | EId (_, x) -> k (Id (IdMap.find x env, x))
   | EArray (_, es) -> 
       cps_exp_list es 
         (fun vs ->
@@ -250,6 +251,44 @@ let node_of_cpsexp (cpsexp : cpsexp) : node = match cpsexp with
   | GetField (n, _, _, _, _) -> n
   | Object (n, _, _, _) -> n
   | Array (n, _, _, _) -> n
+
+(******************************************************************************)
+
+let fv_cpsval (cpsval : cpsval) : IdSet.t = match cpsval with
+    Const _ -> IdSet.empty
+  | Id x -> IdSet.singleton x
+
+let fv_prop (v1, v2) = IdSet.union (fv_cpsval v1) (fv_cpsval v2)
+
+
+
+let rec esc_cpsexp (cpsexp : cpsexp) : IdSet.t = match cpsexp with
+    Fix (_, binds, body) ->
+      IdSetExt.unions (esc_cpsexp body :: (map esc_bind binds))
+  | App (_, _, vs) ->
+      (* An identifier in function position does not "escape," even if it is
+         a call to a known function. *)
+      IdSetExt.unions (map fv_cpsval vs)
+  | If (_, _, e1, e2) -> IdSet.union (esc_cpsexp e1) (esc_cpsexp e2)
+  | Let0 (_, x, _, e) -> IdSet.remove x (esc_cpsexp e)
+  | Let1 (_, x, _, _, e) -> IdSet.remove x (esc_cpsexp e)
+  | Let2 (_, x, _, _, _, e) -> IdSet.remove x (esc_cpsexp e)
+  | Assign (_, _, _, e) -> esc_cpsexp e
+  | SetProp (_, _, _, _, e) -> esc_cpsexp e
+  | Array (_, x, vs, e) -> 
+      IdSet.union
+        (IdSetExt.unions (map fv_cpsval vs))
+        (IdSet.remove x (esc_cpsexp e))
+  | Object (_, x, props, e) -> 
+      IdSet.union
+        (IdSetExt.unions (map fv_prop props))
+        (IdSet.remove x (esc_cpsexp e))
+  | GetField (_, x, _, _, e) ->
+      IdSet.remove x (esc_cpsexp e)
+
+and esc_bind (_, args, _, e) = 
+  IdSet.diff (esc_cpsexp e) (IdSetExt.from_list args)
+
 
 
 (******************************************************************************)
