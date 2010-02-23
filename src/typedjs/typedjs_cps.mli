@@ -4,8 +4,6 @@ open Typedjs_syntax
 type cpsval =
     Const of const
   | Id of id
-  | Array of cpsval list
-  | Object of (id * cpsval) list
 
 type node = int
 
@@ -18,7 +16,12 @@ type cpsexp =
   | Let2 of node * id * JavaScript_syntax.infixOp * cpsval * cpsval * cpsexp
   | Assign of node * id * cpsval * cpsexp
   | SetProp of node * cpsval * cpsval * cpsval * cpsexp
+  | Array of node * id * cpsval list * cpsexp
+  | Object of node * id * (cpsval * cpsval) list * cpsexp
+  | GetField of node * id * cpsval * cpsval * cpsexp
 
 val cps : exp -> cpsexp
+
+val node_of_cpsexp : cpsexp -> node
 
 val p_cpsexp : cpsexp -> FormatExt.printer

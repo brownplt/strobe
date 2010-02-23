@@ -4,8 +4,6 @@ open Typedjs_syntax
 type cpsval =
     Const of const
   | Id of id
-  | Array of cpsval list (* array and obj should be named *)
-  | Object of (id * cpsval) list
 
 type node = int
 
@@ -18,12 +16,17 @@ type cpsexp =
   | Let2 of node * id * JavaScript_syntax.infixOp * cpsval * cpsval * cpsexp
   | Assign of node * id * cpsval * cpsexp
   | SetProp of node * cpsval * cpsval * cpsval * cpsexp
+  | Array of node * id * cpsval list * cpsexp
+  | Object of node * id * (cpsval * cpsval) list * cpsexp
+  | GetField of node * id * cpsval * cpsval * cpsexp
 
-let new_name : unit -> id = 
+let mk_name : string -> id = 
   let next_name = ref 0 in
-    fun () ->
+    fun str ->
       incr next_name;
-      "%cps" ^ string_of_int (!next_name - 1)
+      "%" ^ str ^ string_of_int (!next_name - 1)
+
+let new_name () = mk_name "cps"
 
 let new_node : unit -> node =
   let next_node = ref 0 in
@@ -35,11 +38,27 @@ type cont = cpsval -> cpsexp
 
 let rec cps_exp (exp : exp) (k : cont) : cpsexp = match exp with
     EConst (_, c) -> k (Const c)
-  | EArray (_, es) -> cps_exp_list es (fun vs -> k (Array vs))
   | EId (_, x) -> k (Id x)
+  | EArray (_, es) -> 
+      cps_exp_list es 
+        (fun vs ->
+           let x = new_name () in
+             Array (new_node (), x, vs, k (Id x)))
   | EObject (_, ps) ->
       cps_exp_list (map thd3 ps) 
-        (fun vs -> (k (Object (List.combine (map fst3 ps) vs))))
+        (fun vs -> 
+           let x = new_name () in
+             Object (new_node (), x,
+                     List.combine
+                       (map (fun (f, _, _) -> Const (CString f)) ps) vs,
+                     k (Id x)))
+  | EBracket (_, e1, e2) ->
+      cps_exp e1
+        (fun v1 ->
+           cps_exp e2
+             (fun v2 ->
+                let x = new_name () in
+                  GetField (new_node (), x, v1, v2, k (Id x))))
   | EPrefixOp (_, op, e) ->
       cps_exp e 
         (fun v -> 
@@ -55,7 +74,7 @@ let rec cps_exp (exp : exp) (k : cont) : cpsexp = match exp with
   | EIf (_, e1, e2, e3) -> 
       cps_exp e1
         (fun v1 ->
-           let k' = new_name ()
+           let k' = mk_name "if-cont"
            and r = new_name () in
              Fix (new_node (), 
                   [k', [r], TTop, k (Id r)],
@@ -74,7 +93,7 @@ let rec cps_exp (exp : exp) (k : cont) : cpsexp = match exp with
                   (fun v3 ->
                      SetProp (new_node (), v1, v2, v3, k v3))))
   | EApp (_, func, args) -> 
-      let k' = new_name ()
+      let k' = mk_name "app-cont"
       and r = new_name () in
         Fix (new_node (),
              [(k', [r], TTop, k (Id r))],
@@ -83,7 +102,7 @@ let rec cps_exp (exp : exp) (k : cont) : cpsexp = match exp with
                   cps_exp_list args 
                     (fun vs -> App (new_node (), f, (Id k') :: vs))))
   | EFunc (_, args, typ, body) -> 
-      let f = new_name ()
+      let f = mk_name "anon-func"
       and k' = new_name () in
         Fix (new_node (),
              [(f, k' :: args, typ, cps_exp body 
@@ -114,13 +133,28 @@ let rec cps_exp (exp : exp) (k : cont) : cpsexp = match exp with
 
 and cps_tailexp (exp : exp) (k : id) : cpsexp = match exp with
     EConst (_, c) -> App (new_node (), Id k, [ Const c ])
-  | EArray (_, es) ->
-      cps_exp_list es (fun vs -> App (new_node (), Id k, [ Array vs ]))
   | EId (_, x) -> App (new_node (), Id k, [ Id x ])
+  | EArray (_, es) -> 
+      cps_exp_list es 
+        (fun vs ->
+           let x = new_name () in
+             Array (new_node (), x, vs, App (new_node (), Id k, [ Id x ])))
   | EObject (_, ps) ->
       cps_exp_list (map thd3 ps) 
         (fun vs -> 
-           App (new_node (), Id k, [ Object (List.combine (map fst3 ps) vs) ]))
+           let x = new_name () in
+             Object (new_node (), x,
+                     List.combine
+                       (map (fun (f, _, _) -> Const (CString f)) ps) vs,
+                     App (new_node (), Id k, [ Id x ])))
+  | EBracket (_, e1, e2) ->
+      cps_exp e1
+        (fun v1 ->
+           cps_exp e2
+             (fun v2 ->
+                let x = new_name () in
+                  GetField (new_node (), x, v1, v2,
+                            App (new_node (), Id k, [ Id x ]))))
   | EPrefixOp (_, op, e) ->
       cps_exp e 
         (fun v -> 
@@ -202,6 +236,21 @@ and cps_exp_list (exps : exp list) (k : cpsval list -> cpsexp) = match exps with
 
 let cps (exp : exp) : cpsexp = cps_tailexp exp "%end"
 
+(******************************************************************************)
+
+let node_of_cpsexp (cpsexp : cpsexp) : node = match cpsexp with
+    Fix (n, _, _) -> n
+  | App (n, _, _) -> n
+  | If (n, _, _, _) -> n
+  | Let0 (n, _, _, _) -> n
+  | Let1 (n, _, _, _, _) -> n
+  | Let2 (n, _, _, _, _, _) -> n
+  | Assign (n, _, _, _) -> n
+  | SetProp (n, _, _, _, _) -> n
+  | GetField (n, _, _, _, _) -> n
+  | Object (n, _, _, _) -> n
+  | Array (n, _, _, _) -> n
+
 
 (******************************************************************************)
 
@@ -211,42 +260,60 @@ open FormatExt
 let rec p_cpsval (cpsval : cpsval) : printer = match cpsval with
     Const c -> Typedjs_pretty.p_const c
   | Id x -> text x
-  | Array vs -> parens (text "array" :: (map p_cpsval vs))
-  | Object ps -> parens (text "object" :: (map p_prop ps))
     
 and p_prop (x, v) : printer = brackets [ text x; p_cpsval v ]
 
 let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
     Fix (_, binds, body) ->
-      parens [ text "fix"; parens (map p_bind binds); p_cpsexp body ]
+      vert [ text "fix"; nest (vert (map p_bind binds)); p_cpsexp body ]
+
   | App (_, f, args ) ->
       parens ( text "app" :: p_cpsval f :: (map p_cpsval args) )
   | If (_, v1, e2, e3) -> 
       parens [ text "if"; p_cpsval v1; p_cpsexp e2; p_cpsexp e3 ]
   | Let0 (_, x, v, e) -> 
-      parens [ text "let"; parens [ text x; p_cpsval v ]; p_cpsexp e ]
+      vert [ horz [ text "let"; text x; text "="; p_cpsval v; text "in" ]; 
+             p_cpsexp e ]
   | Let1 (_, x, op, v, e) -> 
-      parens [ text "let";
-               parens [ text x; 
-                        parens [ text (JavaScript_pretty.render_prefixOp op);
-                                 p_cpsval v ] ];
-               p_cpsexp e ]
+      vert [ horz [ text "let"; text x;  text "="; 
+                    parens [ text (JavaScript_pretty.render_prefixOp op);
+                             p_cpsval v ];
+                  text "in" ];
+             p_cpsexp e ]
   | Let2 (_, x, op, v1, v2, e) -> 
-      parens [ text "let";
-               parens [ text x; 
-                        parens [ text (JavaScript_pretty.render_infixOp op);
-                                 p_cpsval v1;
-                                 p_cpsval v2 ] ];
-               p_cpsexp e ]
+      vert [ horz [ text "let"; text x; 
+                    parens [ text (JavaScript_pretty.render_infixOp op);
+                             p_cpsval v1;
+                             p_cpsval v2 ];
+                    text "in" ];
+             p_cpsexp e ]
   | Assign (_, x, v, e) -> 
-      parens [ text "seq";
-               parens [ text "set!"; text x; p_cpsval v ];
-               p_cpsexp e ]
+      vert [ horz [ text x; text ":="; p_cpsval v ];
+             p_cpsexp e ]
   | SetProp (_, v1, v2, v3, e) -> 
-      parens [ text "seq";
-               parens (text "set-field!" :: (map p_cpsval [ v1; v2; v3 ]));
-               p_cpsexp e ]
+      vert [ horz [ p_cpsval v1; text "."; p_cpsval v2; text "<-"; 
+                    p_cpsval v3 ];
+             p_cpsexp e ]
+  | Array (_, x, vs, e) ->
+      vert [ horz [ text "let"; text x; text "="; 
+                    parens (text "array" :: (map p_cpsval vs));
+                    text "in" ];
+             p_cpsexp e ]
+  | Object (_, x, ps, e) ->
+      vert [ horz [ text "let"; text x; text "=";
+                    parens [ text x; 
+                             parens (text "object" :: (map p_prop ps)) ];
+                    text "in" ];
+             p_cpsexp e ]
+  | GetField (_, x, v1, v2, e) ->
+      vert [ horz [ text "let"; text x; text "="; 
+                    parens [ text "get-field"; p_cpsval v1; p_cpsval v2 ];
+                    text "in" ];
+             p_cpsexp e ]
+
+and p_prop (x, v) : printer =
+  brackets [ p_cpsval x; p_cpsval v ]
 
 and p_bind (f, args, typ, body) : printer =
-    brackets [ text f; 
-               parens [ text "lambda"; parens (map text args); p_cpsexp body ] ]
+  vert  [ horz [ text f; text "=" ];
+          parens [ text "lambda"; parens (map text args); p_cpsexp body ] ]
