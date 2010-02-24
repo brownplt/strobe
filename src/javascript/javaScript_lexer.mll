@@ -2,6 +2,7 @@
 open Prelude
 open Lexing
 open JavaScript_parser
+open JavaScript_syntax
 
 module S = String
 
@@ -80,7 +81,11 @@ rule token = parse
    | blank + { token lexbuf }
    | '\n' { new_line lexbuf; token lexbuf }
    | "/*" { comment_start_p := lexeme_start_p lexbuf; block_comment lexbuf }
-   | "//" { comment_start_p := lexeme_start_p lexbuf; line_comment lexbuf }
+   | "//"([^ '\r' '\n']* as x) [ '\r' '\n' ]
+       { comment_start_p := lexeme_start_p lexbuf; 
+         new_comment (!comment_start_p, lexeme_end_p lexbuf) x; 
+         new_line lexbuf;
+         token lexbuf }
 
    (* ContinueId and BreakId are tokens for labelled break and continue.  They
     * include their target label.
@@ -90,8 +95,15 @@ rule token = parse
    | "break" [ ' ' '\t' ]+ ident as cont 
        { BreakId (drop_spaces cont 8) }
 
+   | '/' ([^ '*'] double_quoted_string_char* as x) "/gi"
+       { Regexp (x, true, true) }
+   | '/' ([^ '*'] double_quoted_string_char* as x) "/g"
+       { Regexp (x, true, false) }
+   | '/' ([^ '*'] double_quoted_string_char* as x) "/i"
+       { Regexp (x, false, true) }
+   | '/' ([^ '*'] double_quoted_string_char* as x) "/"
+       { Regexp (x, false, false) }
 
-   (* TODO: fixme; add regexps *)
    | '"' (double_quoted_string_char* as x) '"'
      { String (mk_loc lexbuf, x) }
    | ''' (single_quoted_string_char* as x) '''
@@ -102,17 +114,18 @@ rule token = parse
    | "}" { RBrace }
    | '(' { LParen }
    | ')' { RParen }
-   | "|=" { AssignBOr }
-   | "^=" { AssignBXor }
-   | "&=" { AssignBAnd }
-   | "<<=" { AssignLShift }
-   | ">>=" { AssignRShift }
-   | ">>>=" { AssignSpRShift }
-   | "+=" { AssignAdd }
-   | "-=" { AssignSub }
-   | "*=" { AssignMul }
-   | "/=" { AssignDiv }
-   | "%=" { AssignMod }
+   | "|=" { AssignOp OpAssignBOr }
+   | "^=" { AssignOp OpAssignBXor }
+   | "&=" { AssignOp OpAssignBAnd }
+   | "<<=" { AssignOp OpAssignLShift }
+   | ">>=" { AssignOp OpAssignZfRShift }
+   | ">>>=" { AssignOp OpAssignSpRShift }
+   | "+=" { AssignOp OpAssignAdd }
+   | "-=" { AssignOp OpAssignSub }
+   | "*=" { AssignOp OpAssignMul }
+   | "/=" { AssignOp OpAssignDiv }
+   | "%=" { AssignOp OpAssignMod }
+   | "%" { Mod }
    | "=" { Assign }
    | ";" { Semi }
    | "," { Comma }
@@ -148,7 +161,6 @@ rule token = parse
    | "]" { RBrack }
 
    | "if" { If  }
-   | "then" { Then  }
    | "else" { Else  }
    | "true" { True  }
    | "false" { False  }
@@ -199,7 +211,3 @@ and block_comment = parse
   | ([^ '\n' '\r' '*'])+ as txt
       { Buffer.add_string block_comment_buf txt;
         block_comment lexbuf }
-
-and line_comment = parse
-    ([^ '\n' '\r'])* as x
-      { new_comment (!comment_start_p, lexeme_end_p lexbuf) x; token lexbuf }

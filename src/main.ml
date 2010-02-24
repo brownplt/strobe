@@ -16,7 +16,7 @@ open Typedjs_fromExpr
 open Typedjs_env
 
 module Z = Typedjs_cps
-module ZZ = Lambdajs_syntax
+module ZZ = Lambdajs_cps
 
 let cin = ref stdin
 
