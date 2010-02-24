@@ -23,7 +23,7 @@ let rec expr_to_lvalue (e : expr) : lvalue =  match e with
 %token <Prelude.pos * int> Int
 %token <Prelude.pos * float> Float
 
-%token If Then Else True False New Instanceof This Null Function Typeof Void
+%token If Else True False New Instanceof This Null Function Typeof Void
  Delete Switch Default Case While Do Break Var In For Try Catch Finally Throw
  Return With Continue 
 
@@ -33,11 +33,13 @@ let rec expr_to_lvalue (e : expr) : lvalue =  match e with
  StrictNEq AbstractNEq LShift RShift SpRShift LEq LT GEq GT PlusPlus MinusMinus
  Plus Minus Times Div Mod Exclamation Tilde Period LBrack RBrack
 
-%token EOF OpenIf ClosedIf
+%token EOF
 
 
 /* http://stackoverflow.com/questions/1737460/
    how-to-find-shift-reduce-conflict-in-this-yacc-file */
+%nonassoc GreaterThanColon
+%nonassoc Colon
 %nonassoc LowerThanElse
 %nonassoc Else
 
@@ -85,13 +87,14 @@ ids
   | Id Comma ids { let _,x = $1 in x :: $3 }
 
 prop
-  : Id { let _,x = $1 in PropId x }
+  : Id { let _,x = $1 in PropId x }  %prec GreaterThanColon
   | String { let _,s = $1 in  PropString s }
 
 fields
   : { [] }
-  | prop Colon expr { [ (($startpos($1), $startpos($3)), $1, $3) ] }
-  | prop Colon expr Comma fields 
+  | prop Colon expr 
+    { [ (($startpos($1), $startpos($3)), $1, $3) ] }
+  | prop Colon expr Comma fields  
       { (($startpos($1), $startpos($3)), $1, $3) :: $5 }
 
 varDecls
@@ -132,7 +135,7 @@ primary_expr
   /* shift/reduce conflict with labelled statements when the next token
       is Colon. We favor shift: if we see a colon, we assume we're starting
       a labelled statement, not an object. */
-  | LBrace fields RBrace 
+  | LBrace fields RBrace
       { ObjectExpr (($startpos, $endpos),$2) }
   | String
       { let loc, s = $1 in StringExpr (loc, s) }
@@ -405,7 +408,7 @@ stmt
       { ContinueStmt (($startpos, $endpos)) }
   | ContinueId Semi 
       { ContinueToStmt (($startpos, $endpos),$1) }
-  | If LParen expr  RParen stmt   %prec LowerThanElse
+  | If LParen expr  RParen stmt  %prec LowerThanElse
     { IfSingleStmt (($startpos, $endpos), $3, $5) }
   | If LParen expr RParen stmt Else stmt
     { IfStmt (($startpos, $endpos), $3, $5, $7) }
@@ -439,7 +442,7 @@ stmt
       { VarDeclStmt (($startpos, $endpos),$2) }
 
 src_elt_block
-  : LBrace src_elts RBrace
+  : LBrace src_elts RBrace 
       { BlockStmt (($startpos, $endpos),$2) }
   
 src_elts

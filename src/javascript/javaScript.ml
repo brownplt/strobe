@@ -13,6 +13,12 @@ let parse_javascript cin name =
       let comments = !JavaScript_lexer.comments in
         JavaScript_lexer.comments := [];
         (prog, comments)
-    with Failure "lexing: empty token" ->
-      failwith (sprintf "lexical error at %s"
-                  (string_of_position (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+    with
+      |  Failure "lexing: empty token" ->
+           failwith (sprintf "lexical error at %s"
+                       (string_of_position 
+                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+      | JavaScript_parser.Error ->
+           failwith (sprintf "parse error at %s"
+                       (string_of_position 
+                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
