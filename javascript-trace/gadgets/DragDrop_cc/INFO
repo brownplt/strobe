@@ -1,0 +1,50 @@
+Few problems until we can do this gadget:
+* need arrays
+* it uses 'namespaces', e.g.:
+  var Utils = {};
+  Utils.x = soandso;
+  Utils.y = suchandsuch;
+  
+  We'd need it to look like this:
+  var Utils = {
+    x: soandso,
+    y: suchandsuch}
+  
+  probably. also the 'this' type of
+  soandso is [Utils], which ends up being infinitely
+  recursive, so I must fix that. (E.G.:
+  
+  /*::
+    function ViewHandlers.onOpen : (
+      [{onOpen : ([ERROR - RECURSIVE STRUCTURES ]  -> Void), 
+        onDragDrop : ([ERROR - RECURSIVE STRUCTURES ]  -> Void), 
+        onDragOver : ([ERROR - RECURSIVE STRUCTURES ]  -> Void), 
+        onDragOut : ([ERROR - RECURSIVE STRUCTURES ]  -> Void)}]  -> Void)
+    function ViewHandlers.onDragDrop : (
+      [{onOpen : ([ERROR - RECURSIVE STRUCTURES ]  -> Void), 
+        onDragDrop : ([ERROR - RECURSIVE STRUCTURES ]  -> Void), 
+        onDragOver : ([ERROR - RECURSIVE STRUCTURES ]  -> Void), 
+        onDragOut : ([ERROR - RECURSIVE STRUCTURES ]  -> Void)}]  -> Void)
+    function ViewHandlers.onDragOver : (
+      [{onOpen : ([ERROR - RECURSIVE STRUCTURES ]  -> Void), 
+        onDragDrop : ([ERROR - RECURSIVE STRUCTURES ]  -> Void), 
+        onDragOver : ([ERROR - RECURSIVE STRUCTURES ]  -> Void), 
+        onDragOut : ([ERROR - RECURSIVE STRUCTURES ]  -> Void)}]  -> Void)
+    function ViewHandlers.onDragOut : (
+      [{onOpen : ([ERROR - RECURSIVE STRUCTURES ]  -> Void), 
+        onDragDrop : ([ERROR - RECURSIVE STRUCTURES ]  -> Void), 
+        onDragOver : ([ERROR - RECURSIVE STRUCTURES ]  -> Void), 
+        onDragOut : ([ERROR - RECURSIVE STRUCTURES ]  -> Void)}]  -> Void)
+    function Utils.createDragFilesImagesList : (
+      [{createDragFilesImagesList : ([ERROR - RECURSIVE STRUCTURES ] Dom -> ({0 : String, 1 : String} + {0 : String})), 
+        extractExtension : ([ERROR - RECURSIVE STRUCTURES ] String -> String)}] 
+        
+        Dom -> ({0 : String, 1 : String} + {0 : String}))
+        
+    function Utils.extractExtension : (
+      [{createDragFilesImagesList : ([ERROR - RECURSIVE STRUCTURES ] Dom -> ({0 : String, 1 : String} + {0 : String})), 
+        extractExtension : ([ERROR - RECURSIVE STRUCTURES ] String -> String)}] 
+        
+        String -> String)
+  */
+  
