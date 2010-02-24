@@ -2,6 +2,7 @@
 open Prelude
 open Lexing
 open JavaScript_parser
+open JavaScript_syntax
 
 module S = String
 
@@ -109,17 +110,17 @@ rule token = parse
    | "}" { RBrace }
    | '(' { LParen }
    | ')' { RParen }
-   | "|=" { AssignBOr }
-   | "^=" { AssignBXor }
-   | "&=" { AssignBAnd }
-   | "<<=" { AssignLShift }
-   | ">>=" { AssignRShift }
-   | ">>>=" { AssignSpRShift }
-   | "+=" { AssignAdd }
-   | "-=" { AssignSub }
-   | "*=" { AssignMul }
-   | "/=" { AssignDiv }
-   | "%=" { AssignMod }
+   | "|=" { AssignOp OpAssignBOr }
+   | "^=" { AssignOp OpAssignBXor }
+   | "&=" { AssignOp OpAssignBAnd }
+   | "<<=" { AssignOp OpAssignLShift }
+   | ">>=" { AssignOp OpAssignZfRShift }
+   | ">>>=" { AssignOp OpAssignSpRShift }
+   | "+=" { AssignOp OpAssignAdd }
+   | "-=" { AssignOp OpAssignSub }
+   | "*=" { AssignOp OpAssignMul }
+   | "/=" { AssignOp OpAssignDiv }
+   | "%=" { AssignOp OpAssignMod }
    | "%" { Mod }
    | "=" { Assign }
    | ";" { Semi }
@@ -156,7 +157,6 @@ rule token = parse
    | "]" { RBrack }
 
    | "if" { If  }
-   | "then" { Then  }
    | "else" { Else  }
    | "true" { True  }
    | "false" { False  }

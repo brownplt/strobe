@@ -22,14 +22,14 @@ let rec expr_to_lvalue (e : expr) : lvalue =  match e with
 %token <string * bool * bool> Regexp
 %token <Prelude.pos * int> Int
 %token <Prelude.pos * float> Float
+%token <JavaScript_syntax.assignOp> AssignOp
 
 %token If Else True False New Instanceof This Null Function Typeof Void
  Delete Switch Default Case While Do Break Var In For Try Catch Finally Throw
  Return With Continue 
 
-%token LBrace RBrace LParen RParen AssignBOr AssignBXor AssignBAnd AssignLShift
- AssignRShift AssignSpRShift AssignAdd AssignSub AssignMul AssignDiv AssignMod
- Assign Semi Comma Ques Colon LOr LAnd BOr BXor BAnd StrictEq AbstractEq
+%token LBrace RBrace LParen RParen Assign
+ Semi Comma Ques Colon LOr LAnd BOr BXor BAnd StrictEq AbstractEq
  StrictNEq AbstractNEq LShift RShift SpRShift LEq LT GEq GT PlusPlus MinusMinus
  Plus Minus Times Div Mod Exclamation Tilde Period LBrack RBrack
 
@@ -285,12 +285,11 @@ cond_expr
 assign_expr
   : cond_expr
       { $1 }
+  /* we need the use Assign (token for =) in other productions. */
+  | lhs_expr AssignOp assign_expr 
+    { AssignExpr (($startpos, $endpos), $2, expr_to_lvalue $1, $3) }
   | lhs_expr Assign assign_expr 
-    { AssignExpr (($startpos, $endpos),OpAssign,expr_to_lvalue $1,$3) }
-  | lhs_expr AssignBOr assign_expr 
-    { AssignExpr (($startpos, $endpos),OpAssignBOr,expr_to_lvalue $1,$3) }
-  | lhs_expr AssignAdd assign_expr 
-    { AssignExpr (($startpos, $endpos),OpAssignAdd,expr_to_lvalue $1,$3) }
+    { AssignExpr (($startpos, $endpos), OpAssign, expr_to_lvalue $1, $3) }
 
 
 expr 
@@ -337,12 +336,13 @@ cond_noin_expr
     { IfExpr (($startpos, $endpos),$1,$3,$5) }
 
 
+
 assign_noin_expr
   : cond_noin_expr { $1 }
+  | lhs_expr AssignOp assign_noin_expr 
+    { AssignExpr (($startpos, $endpos), $2, expr_to_lvalue $1, $3) }
   | lhs_expr Assign assign_noin_expr 
-    { AssignExpr (($startpos, $endpos),OpAssign,expr_to_lvalue $1,$3) }
-  | lhs_expr AssignBOr assign_noin_expr 
-    { AssignExpr (($startpos, $endpos),OpAssignBOr,expr_to_lvalue $1,$3) }
+    { AssignExpr (($startpos, $endpos), OpAssign, expr_to_lvalue $1, $3) }
 
 expr_noin
   : assign_noin_expr { $1 }
