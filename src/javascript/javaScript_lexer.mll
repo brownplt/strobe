@@ -120,6 +120,7 @@ rule token = parse
    | "*=" { AssignMul }
    | "/=" { AssignDiv }
    | "%=" { AssignMod }
+   | "%" { Mod }
    | "=" { Assign }
    | ";" { Semi }
    | "," { Comma }
