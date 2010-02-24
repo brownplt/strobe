@@ -22,18 +22,10 @@ let rec typ t  = match t with
   | TRef s -> sep [ text "mutable"; parens [ typ s ] ]
   | TDom -> text "Dom"
 
-let const e = match e with
-    CString s -> text  ("\"" ^ s ^ "\"")
-  | CRegexp (re, _, _) -> text ("/" ^ re ^ "/")
-  | CNum f -> fun fmt -> pp_print_float fmt f
-  | CInt n -> int n
-  | CBool b -> fun fmt -> pp_print_bool fmt b
-  | CNull -> text "#null"
-  | CUndefined -> text "#undefined"
     
 
 let rec exp e fmt = match e with
-    EConst (_, c) -> const c fmt
+    EConst (_, c) -> Exprjs_pretty.p_const c fmt
   | EArray (_, es) -> parens (map exp es) fmt
   | EObject (_, ps) -> brackets (map prop ps) fmt
   | EThis _ -> pp_print_string fmt "#this"
@@ -140,5 +132,3 @@ let pretty_exp fmt e = exp e fmt
 let pretty_typ fmt t = typ t fmt
 
 let pretty_def fmt d = def d fmt
-
-let p_const = const

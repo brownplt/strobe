@@ -106,13 +106,7 @@ let is_empty lst = match lst with
 type env = IdSet.t
 
 let rec exp (env : env) expr = match expr with
-    StringExpr (a, s) -> EConst (a, CString s)
-  | RegexpExpr (a, re, g, i) -> EConst (a, CRegexp (re, g, i))
-  | NumExpr (a, f) -> EConst (a, CNum f)
-  | IntExpr (a, n) -> EConst (a, CInt n)
-  | BoolExpr (a, b) -> EConst (a, CBool b)
-  | NullExpr a -> EConst (a, CNull)
-  | UndefinedExpr a -> EConst (a, CUndefined)
+    ConstExpr (a, c) -> EConst (a, c)
   | ArrayExpr (a, es) -> EArray (a, map (exp env) es)
   | ObjectExpr (a, ps) -> 
       if List.length ps != List.length (nub (map (fun (_,p,_) -> p) ps)) then

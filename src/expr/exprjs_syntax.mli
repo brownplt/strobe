@@ -11,14 +11,18 @@
     and scope objects. *)
 
 open Prelude
+type const =
+    CString of string
+  | CRegexp of string * bool * bool
+  | CNum of float
+  | CInt of int
+  | CBool of bool
+  | CNull 
+  | CUndefined
+
 
 type expr
-  = StringExpr of pos * string
-  | RegexpExpr of pos * string * bool * bool
-  | NumExpr of pos * float
-  | IntExpr of pos * int
-  | BoolExpr of pos * bool
-  | NullExpr of pos
+  = ConstExpr of pos * const
   | ArrayExpr of pos * expr list
   | ObjectExpr of pos * (pos * string * expr) list
       (** Object properties are transformed into string literals *)
@@ -32,7 +36,6 @@ type expr
   | AssignExpr of pos * lvalue * expr
   | AppExpr of pos * expr * expr list
   | FuncExpr of pos * id list * expr
-  | UndefinedExpr of pos
   | LetExpr of pos * id * expr * expr
       (** We need let-expressions to simplify statements. *)
   | SeqExpr of pos * expr * expr

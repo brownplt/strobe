@@ -4,17 +4,20 @@ open JavaScript_pretty
 open Format
 open FormatExt
 
+let p_const e = match e with
+    CString s -> text  ("\"" ^ s ^ "\"")
+  | CRegexp (re, _, _) -> text ("/" ^ re ^ "/")
+  | CNum f -> fun fmt -> pp_print_float fmt f
+  | CInt n -> int n
+  | CBool b -> fun fmt -> pp_print_bool fmt b
+  | CNull -> text "#null"
+  | CUndefined -> text "#undefined"
+
 let rec expr e fmt = match e with
-    StringExpr (_, s) -> pp_print_string fmt ("\"" ^ s ^ "\"")
-  | RegexpExpr (_, re, _, _) -> pp_print_string fmt ("/" ^ re ^ "/")
-  | NumExpr (_, f) -> pp_print_float fmt f
-  | IntExpr (_, n) -> pp_print_int fmt n
-  | BoolExpr (_, b) -> pp_print_bool fmt b
-  | NullExpr _ -> pp_print_string fmt "#null"
+    ConstExpr (_, c) -> p_const c fmt
   | ArrayExpr (_, es) -> parens (map expr es) fmt
   | ObjectExpr (_, ps) -> brackets (map prop ps) fmt
   | ThisExpr _ -> pp_print_string fmt "#this"
-  | UndefinedExpr _ -> pp_print_string fmt "#undefined"
   | VarExpr (_, x) -> pp_print_string fmt x
   | BracketExpr (_, e1, e2) ->
       expr e1 fmt;

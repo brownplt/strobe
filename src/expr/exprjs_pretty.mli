@@ -1,3 +1,9 @@
-val pretty_expr : Format.formatter -> Exprjs_syntax.expr -> unit
+open FormatExt
+open Format
+open Exprjs_syntax
 
-val print_expr : Exprjs_syntax.expr -> unit
+val pretty_expr : formatter -> expr -> unit
+
+val print_expr : expr -> unit
+
+val p_const : const -> printer

@@ -2,8 +2,8 @@ open Prelude
 open Typedjs_syntax 
 
 type cpsval =
-    Const of const
-  | Id of id * id
+    Const of Exprjs_syntax.const
+  | Id of id
 
 type node = int
 
@@ -35,11 +35,10 @@ let new_node : unit -> node =
       !next_node - 1
 
 type cont = cpsval -> cpsexp
-type env = id IdMap.t
 
-let rec cps_exp (env : env) (exp : exp) (k : cont) : cpsexp = match exp with
+let rec cps_exp  (exp : exp) (k : cont) : cpsexp = match exp with
     EConst (_, c) -> k (Const c)
-  | EId (_, x) -> k (Id (IdMap.find x env, x))
+  | EId (_, x) -> k (Id x)
   | EArray (_, es) -> 
       cps_exp_list es 
         (fun vs ->
@@ -51,7 +50,8 @@ let rec cps_exp (env : env) (exp : exp) (k : cont) : cpsexp = match exp with
            let x = new_name () in
              Object (new_node (), x,
                      List.combine
-                       (map (fun (f, _, _) -> Const (CString f)) ps) vs,
+                       (map (fun (f, _, _) -> 
+                               Const (Exprjs_syntax.CString f)) ps) vs,
                      k (Id x)))
   | EBracket (_, e1, e2) ->
       cps_exp e1
@@ -146,7 +146,8 @@ and cps_tailexp (exp : exp) (k : id) : cpsexp = match exp with
            let x = new_name () in
              Object (new_node (), x,
                      List.combine
-                       (map (fun (f, _, _) -> Const (CString f)) ps) vs,
+                       (map (fun (f, _, _) ->
+                               Const (Exprjs_syntax.CString f)) ps) vs,
                      App (new_node (), Id k, [ Id x ])))
   | EBracket (_, e1, e2) ->
       cps_exp e1
@@ -297,7 +298,7 @@ open Format
 open FormatExt
 
 let rec p_cpsval (cpsval : cpsval) : printer = match cpsval with
-    Const c -> Typedjs_pretty.p_const c
+    Const c -> Exprjs_pretty.p_const c
   | Id x -> text x
     
 and p_prop (x, v) : printer = brackets [ text x; p_cpsval v ]

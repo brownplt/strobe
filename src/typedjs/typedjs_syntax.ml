@@ -49,19 +49,10 @@ type annotation =
   | AMutable
   | AInferred of annotation list
 
-type const =
-    CString of string
-  | CRegexp of string * bool * bool
-  | CNum of float
-  | CInt of int
-  | CBool of bool
-  | CNull 
-  | CUndefined
-
 (** Typed JavaScript expressions. Additional well-formedness criteria are
     inline. *)
 type exp
-  = EConst of pos * const
+  = EConst of pos * Exprjs_syntax.const
   | EArray of pos * exp list
   | EObject of pos * (string * bool * exp) list
       (* [Typedjs_fromExpr.from_exprjs] ensures that the field names are 

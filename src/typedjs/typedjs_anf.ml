@@ -84,13 +84,13 @@ let rec to_anf_exps exps (k : value list -> anfexp) = match exps with
 
 and to_anf exp (k : value -> anfexp) = match exp with
     EConst (_, c) -> begin match c with
-        CString s -> k (VString s)
-      | CRegexp (s, g, i) -> k (VRegexp (s, g, i))
-      | CNum x -> k (VNum x)
-      | CInt n -> k (VInt n)
-      | CBool b -> k (VBool b)
-      | CNull -> k VNull
-      | CUndefined -> k VUndefined
+        Exprjs_syntax.CString s -> k (VString s)
+      | Exprjs_syntax.CRegexp (s, g, i) -> k (VRegexp (s, g, i))
+      | Exprjs_syntax.CNum x -> k (VNum x)
+      | Exprjs_syntax.CInt n -> k (VInt n)
+      | Exprjs_syntax.CBool b -> k (VBool b)
+      | Exprjs_syntax.CNull -> k VNull
+      | Exprjs_syntax.CUndefined -> k VUndefined
     end
   | EArray (_, es) -> to_anf_exps es (fun vs -> k (VArray vs))
   | EObject (_, props) -> to_anf_exps (map thd3 props)

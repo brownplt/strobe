@@ -9,14 +9,14 @@ module JS = JavaScript_syntax (* needed for operators *)
 
 let string_of_typ = pretty_string pretty_typ
 
-let tc_const (const : const) = match const with
-    CString _ -> typ_str
-  | CRegexp _ -> typ_regexp
-  | CNum _ -> typ_num
-  | CInt _ -> typ_int
-  | CBool _ -> typ_bool
-  | CNull -> typ_bool
-  | CUndefined -> typ_undef
+let tc_const (const : Exprjs_syntax.const) = match const with
+    Exprjs_syntax.CString _ -> typ_str
+  | Exprjs_syntax.CRegexp _ -> typ_regexp
+  | Exprjs_syntax.CNum _ -> typ_num
+  | Exprjs_syntax.CInt _ -> typ_int
+  | Exprjs_syntax.CBool _ -> typ_bool
+  | Exprjs_syntax.CNull -> typ_bool
+  | Exprjs_syntax.CUndefined -> typ_undef
 
 let tc_arith (p : pos) (t1 : typ) (t2 : typ) (int_args : bool) 
     (num_result : bool) : typ =
@@ -116,13 +116,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
           (x, if is_mutable then TRef t else t) in
         typ_permute (TObject (map tc_field fields))
   | EBracket (p, obj, field) -> begin match tc_exp env obj, field with
-        TObject fs, EConst (_, CString x) -> 
+        TObject fs, EConst (_, Exprjs_syntax.CString x) -> 
           (try
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
       | TDom, _ -> TDom (* TODO: banned fields? *)
-      | t, EConst (_, CString _) ->
+      | t, EConst (_, Exprjs_syntax.CString _) ->
           raise (Typ_error
                    (p, "expected an object, received " ^ string_of_typ t))
       | _ -> 

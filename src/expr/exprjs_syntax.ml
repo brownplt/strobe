@@ -1,12 +1,15 @@
 open Prelude
+type const =
+    CString of string
+  | CRegexp of string * bool * bool
+  | CNum of float
+  | CInt of int
+  | CBool of bool
+  | CNull 
+  | CUndefined
 
 type expr
-  = StringExpr of pos * string
-  | RegexpExpr of pos * string * bool * bool
-  | NumExpr of pos * float
-  | IntExpr of pos * int
-  | BoolExpr of pos * bool
-  | NullExpr of pos
+  = ConstExpr of pos * const
   | ArrayExpr of pos * expr list
   | ObjectExpr of pos * (pos * string * expr) list
   | ThisExpr of pos
@@ -19,7 +22,6 @@ type expr
   | AssignExpr of pos * lvalue * expr
   | AppExpr of pos * expr * expr list
   | FuncExpr of pos * id list * expr
-  | UndefinedExpr of pos
   | LetExpr of pos * id * expr * expr
   | SeqExpr of pos * expr * expr
   | WhileExpr of pos * expr * expr
@@ -59,17 +61,18 @@ let infix_of_assignOp op = match op with
 let seq a e1 e2 = SeqExpr (a, e1, e2)
 
 let rec expr (e : S.expr) = match e with
-    S.StringExpr (a,s) -> StringExpr (a,s)
-  | S.RegexpExpr (a,re,g,i) -> RegexpExpr (a,re,g,i)
-  | S.NumExpr (a,f) -> NumExpr (a,f)
-  | S.IntExpr (a,n) -> IntExpr (a,n)
-  | S.BoolExpr (a,b) -> BoolExpr (a,b)
-  | S.NullExpr a -> NullExpr a
+    S.StringExpr (a,s) -> ConstExpr (a, CString s)
+  | S.RegexpExpr (a,re,g,i) -> ConstExpr (a, CRegexp (re, g, i))
+  | S.NumExpr (a,f) -> ConstExpr (a, CNum f)
+  | S.IntExpr (a,n) -> ConstExpr (a, CInt n)
+  | S.BoolExpr (a,b) -> ConstExpr (a, CBool b)
+  | S.NullExpr a -> ConstExpr (a, CNull)
+  | S.UndefinedExpr a -> ConstExpr (a, CUndefined)
   | S.ArrayExpr (a,es) -> ArrayExpr (a,map expr es)
   | S.ObjectExpr (a,ps) -> ObjectExpr (a,map prop ps)
   | S.ThisExpr a -> ThisExpr a
   | S.VarExpr (a,x) -> VarExpr (a,x)
-  | S.DotExpr (a,e,x) -> BracketExpr (a, expr e, StringExpr (a, x))
+  | S.DotExpr (a,e,x) -> BracketExpr (a, expr e, ConstExpr (a, CString x))
   | S.BracketExpr (a,e1,e2) -> BracketExpr (a,expr e1,expr e2)
   | S.NewExpr (a,e,es) -> NewExpr (a,expr e,map expr es)
   | S.PrefixExpr (a,op,e) -> PrefixExpr (a,op,expr e)
@@ -79,13 +82,13 @@ let rec expr (e : S.expr) = match e with
              S.PrefixInc ->
                seq a
                  (AssignExpr 
-                    (a, lv, InfixExpr (a, S.OpAdd, e, IntExpr (a, 1))))
+                    (a, lv, InfixExpr (a, S.OpAdd, e, ConstExpr (a, CInt 1))))
                  e
            | S.PrefixDec ->
                seq
                  a
                  (AssignExpr 
-                    (a, lv, InfixExpr (a, S.OpSub, e, IntExpr (a, 1))))
+                    (a, lv, InfixExpr (a, S.OpSub, e, ConstExpr (a, CInt 1))))
                   e
            | S.PostfixInc ->
                LetExpr
@@ -95,7 +98,7 @@ let rec expr (e : S.expr) = match e with
                        (a, lv, InfixExpr 
                           (* TODO: use numeric addition with casts. *)
                           (a, S.OpAdd, VarExpr (a, "%postfixinc"), 
-                           IntExpr (a, 1))))
+                           ConstExpr (a, CInt 1))))
                     (VarExpr (a, "%postfixinc")))
            | S.PostfixDec ->
                LetExpr
@@ -105,7 +108,7 @@ let rec expr (e : S.expr) = match e with
                        (a, lv, InfixExpr 
                           (* TODO use numeric subtraction with casts *)
                           (a, S.OpSub, VarExpr (a, "%prefixinc"), 
-                           IntExpr (a, 1))))
+                           ConstExpr (a, CInt 1))))
                        (VarExpr (a, "%prefixinc"))))
          in eval_lvalue lv func
   | S.InfixExpr (a,op,e1,e2) -> InfixExpr (a,op,expr e1,expr e2)
@@ -121,7 +124,6 @@ let rec expr (e : S.expr) = match e with
   | S.FuncExpr (a, args, body) ->
       FuncExpr (a, args,
                 LabelledExpr (stmt_annotation body, "%return", stmt body))
-  | S.UndefinedExpr a -> UndefinedExpr a
   | S.NamedFuncExpr (a, name, args, body) ->
       (* INFO: This translation is absurd and makes typing impossible.
          Introduce FIX and eliminate loops in the process. Note that the
@@ -129,7 +131,7 @@ let rec expr (e : S.expr) = match e with
          inconsequential. *)
       let anonymous_func = 
         FuncExpr (a,args,LabelledExpr (a,"%return",stmt body)) in
-      LetExpr (a,name,UndefinedExpr a,
+      LetExpr (a,name, ConstExpr (a, CUndefined),
                seq a
                  (AssignExpr (a,
                               VarLValue (a,name),anonymous_func))
@@ -137,18 +139,21 @@ let rec expr (e : S.expr) = match e with
                         
 and lvalue (lv : S.lvalue) = match lv with
     S.VarLValue (a,x) -> VarLValue (a,x)
-  | S.DotLValue (a,e,x) -> PropLValue (a,expr e,StringExpr (a,x))
+  | S.DotLValue (a,e,x) -> PropLValue (a, expr e, ConstExpr (a, CString x))
   | S.BracketLValue (a,e1,e2) -> PropLValue (a,expr e1,expr e2)
 
 and stmt (s : S.stmt) = match s with 
-    S.BlockStmt (a,[]) -> UndefinedExpr a
+    S.BlockStmt (a,[]) -> ConstExpr (a, CUndefined)
   | S.BlockStmt (a,s1::ss) -> seq a (stmt s1) (stmt (S.BlockStmt (a, ss)))
-  | S.EmptyStmt a -> UndefinedExpr a
+  | S.EmptyStmt a -> ConstExpr (a, CUndefined)
   | S.IfStmt (a,e,s1,s2) -> IfExpr (a,expr e,stmt s1,stmt s2)
-  | S.IfSingleStmt (a,e,s) -> IfExpr (a,expr e,stmt s,UndefinedExpr a)
+  | S.IfSingleStmt (a,e,s) -> 
+      IfExpr (a,expr e,stmt s, ConstExpr (a, CUndefined))
   | S.SwitchStmt (p,e,clauses) ->
-      LetExpr (p,"%v",expr e,
-               LetExpr (p,"%t",BoolExpr (p,false),caseClauses p clauses))
+      LetExpr (p, "%v", expr e,
+               LetExpr (p, "%t",
+                        ConstExpr (p, CBool false),
+                        caseClauses p clauses))
   | S.LabelledStmt (p1, lbl ,S.WhileStmt (p2, test, body)) -> LabelledExpr 
         (p1, "%break", LabelledExpr
            (p1,lbl,WhileExpr
@@ -172,10 +177,11 @@ and stmt (s : S.stmt) = match s with
       (p, "%break", WhileExpr 
            (p, LabelledExpr (p, "%continue", stmt body),
             expr test))
-  | S.BreakStmt a -> BreakExpr (a,"%break",UndefinedExpr a)
-  | S.BreakToStmt (a,lbl) -> BreakExpr (a,lbl,UndefinedExpr a)
-  | S.ContinueStmt a -> BreakExpr (a,"%continue",UndefinedExpr a)
-  | S.ContinueToStmt (a,lbl) -> BreakExpr (a,"%continue-"^lbl,UndefinedExpr a)
+  | S.BreakStmt a -> BreakExpr (a,"%break", ConstExpr (a, CUndefined))
+  | S.BreakToStmt (a,lbl) -> BreakExpr (a,lbl, ConstExpr (a, CUndefined))
+  | S.ContinueStmt a -> BreakExpr (a,"%continue", ConstExpr (a, CUndefined))
+  | S.ContinueToStmt (a,lbl) -> 
+      BreakExpr (a,"%continue-"^lbl, ConstExpr (a, CUndefined))
   | S.FuncStmt (a, f, args, s) -> 
       FuncStmtExpr 
         (a, f, args, LabelledExpr 
@@ -212,35 +218,35 @@ and stmt (s : S.stmt) = match s with
       LabelledExpr (p, lbl, stmt s)
 
 and forInit p (fi : S.forInit) = match fi with
-    S.NoForInit -> UndefinedExpr p
+    S.NoForInit -> ConstExpr (p, CUndefined)
   | S.ExprForInit e -> expr e
   | S.VarForInit decls -> varDeclList p decls
 
 and forInInit fii = match fii with
-    S.VarForInInit (p, x) -> (x, VarDeclExpr (p, x, UndefinedExpr p))
-  | S.NoVarForInInit (p, x) -> (x, UndefinedExpr p)
+    S.VarForInInit (p, x) -> (x, VarDeclExpr (p, x, ConstExpr (p, CUndefined)))
+  | S.NoVarForInInit (p, x) -> (x, ConstExpr (p, CUndefined))
 
 and varDeclList p decls = match decls with
-    [] -> UndefinedExpr p
+    [] -> ConstExpr (p, CUndefined)
   | [d] -> varDecl p d
   | d :: ds -> seq p (varDecl p d) (varDeclList p ds)
 
 and varDecl p (decl : S.varDecl) = match decl with
-    S.VarDeclNoInit (a, x) -> VarDeclExpr (a, x, UndefinedExpr p)
+    S.VarDeclNoInit (a, x) -> VarDeclExpr (a, x, ConstExpr (p, CUndefined))
   | S.VarDecl (a, x, e) -> VarDeclExpr (a, x, expr e)
 
 and caseClauses p (clauses : S.caseClause list) = match clauses with
-    [] -> UndefinedExpr p
+    [] -> ConstExpr (p, CUndefined)
   | (S.CaseDefault (a,s)::clauses) -> seq a (stmt s) (caseClauses p clauses)
   | (S.CaseClause (a,e,s)::clauses) ->
       LetExpr (a,"%t",
                IfExpr (a,VarExpr (a,"%t"), 
-                       (BoolExpr (a,true)),
+                       (ConstExpr (a, CBool true)),
                        (expr e)),
                SeqExpr (a,
                         IfExpr (a,VarExpr (a,"%t"),
                                 stmt s,
-                                UndefinedExpr a),
+                                ConstExpr (a, CUndefined)),
                         caseClauses p clauses))
 
 and prop pr =  match pr with
@@ -257,8 +263,8 @@ and eval_lvalue (lv :  S.lvalue) (body_fn : lvalue * expr -> expr) =
     S.VarLValue (a,x) -> body_fn (VarLValue (a,x),VarExpr (a,x))
   | S.DotLValue (a,e,x) -> 
       LetExpr (a,"%lhs",expr e,
-        body_fn (PropLValue (a,VarExpr (a,"%lhs"),StringExpr (a,x)),
-                 BracketExpr (a,VarExpr (a,"%lhs"),StringExpr (a,x))))
+        body_fn (PropLValue (a,VarExpr (a,"%lhs"), ConstExpr (a, CString x)),
+                 BracketExpr (a,VarExpr (a,"%lhs"), ConstExpr (a, CString x))))
   | S.BracketLValue (a,e1,e2) -> 
       LetExpr (a,"%lhs",expr e1,
       LetExpr (a,"%field",expr e2,
@@ -267,19 +273,14 @@ and eval_lvalue (lv :  S.lvalue) (body_fn : lvalue * expr -> expr) =
 
 let from_javascript (S.Prog (p, stmts)) = 
   let f s e = seq p (stmt s) e
-  in fold_right f stmts (UndefinedExpr p)
+  in fold_right f stmts (ConstExpr (p, CUndefined))
 
 let from_javascript_expr = expr
 
 (******************************************************************************)
 
 let rec locals expr = match expr with
-   StringExpr _ -> IdSet.empty
-  | RegexpExpr _ -> IdSet.empty
-  | NumExpr _ -> IdSet.empty
-  | IntExpr _ -> IdSet.empty
-  | BoolExpr _ -> IdSet.empty
-  | NullExpr _ -> IdSet.empty
+    ConstExpr _ -> IdSet.empty
   | ArrayExpr (_, es) -> IdSetExt.unions (map locals es)
   | ObjectExpr (_, ps) -> IdSetExt.unions (map (fun (_, _, e) -> locals e) ps)
   | ThisExpr _ -> IdSet.empty
@@ -292,7 +293,6 @@ let rec locals expr = match expr with
   | AssignExpr (_, l, e) -> IdSet.union (lv_locals l) (locals e)
   | AppExpr (_, f, args) -> IdSetExt.unions (map locals (f :: args))
   | FuncExpr _ -> IdSet.empty
-  | UndefinedExpr _ -> IdSet.empty
   | LetExpr (_, _, e1, e2) -> 
       (* We are computing properties of the local scope object, not identifers
          introduced by the expression transformation. *)
