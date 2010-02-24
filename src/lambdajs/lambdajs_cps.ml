@@ -27,7 +27,6 @@ type cpsexp =
 
 module Cps = struct
 
-
   type cont = cpsval -> cpsexp
 
   let next_node_int = ref 0
@@ -194,6 +193,56 @@ module Cps = struct
     | _ -> failwith "cps: ill-formed fix-binding"
 
 end (* struct Cps *)
+
+module Pretty = struct
+
+  open Format
+  open FormatExt
+
+  let rec p_cpsval (cpsval : cpsval) : printer = match cpsval with
+      Const c -> Exprjs_pretty.p_const c
+    | Array vs -> parens (text "array" :: (map p_cpsval vs))
+    | Object ps -> parens (text "object" :: (map p_prop ps))
+    | Id x -> text x
+    
+and p_prop (x, v) : printer = brackets [ text x; p_cpsval v ]
+
+let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
+    Fix (_, binds, body) ->
+      vert [ text "fix"; nest (vert (map p_bind binds)); p_cpsexp body ]
+  | App (_, f, args ) ->
+      parens ( text "app" :: p_cpsval f :: (map p_cpsval args) )
+  | If (_, v1, e2, e3) -> 
+      parens [ text "if"; p_cpsval v1; p_cpsexp e2; p_cpsexp e3 ]
+  | Let0 (_, x, v, e) -> 
+      vert [ horz [ text "let"; text x; text "="; p_cpsval v; text "in" ]; 
+             p_cpsexp e ]
+  | Let1 (_, x, op, v, e) -> 
+      vert [ horz [ text "let"; text x;  text "="; 
+                    parens [ text (JavaScript_pretty.render_prefixOp op);
+                             p_cpsval v ];
+                  text "in" ];
+             p_cpsexp e ]
+  | Let2 (_, x, op, v1, v2, e) -> 
+      vert [ horz [ text "let"; text x; 
+                    parens [ text (JavaScript_pretty.render_infixOp op);
+                             p_cpsval v1;
+                             p_cpsval v2 ];
+                    text "in" ];
+             p_cpsexp e ]
+  | GetField (_, x, v1, v2, e) ->
+      vert [ horz [ text "let"; text x; text "="; 
+                    parens [ text "get-field"; p_cpsval v1; p_cpsval v2 ];
+                    text "in" ];
+             p_cpsexp e ]
+
+and p_prop (x, v) : printer =
+  brackets [ p_cpsval x; p_cpsval v ]
+
+and p_bind (f, args, typ, body) : printer =
+  vert  [ horz [ text f; text "=" ];
+          parens [ text "lambda"; parens (map text args); p_cpsexp body ] ]
+
 
 let cps (exp : exp) : cpsexp = 
   Cps.tailcps exp "%uncaught-exception" "%return-value"
