@@ -194,6 +194,7 @@ module Cps = struct
 
 end (* struct Cps *)
 
+(*
 module Pretty = struct
 
   open Format
@@ -242,7 +243,7 @@ and p_prop (x, v) : printer =
 and p_bind (f, args, typ, body) : printer =
   vert  [ horz [ text f; text "=" ];
           parens [ text "lambda"; parens (map text args); p_cpsexp body ] ]
-
+  *)
 
 let cps (exp : exp) : cpsexp = 
   Cps.tailcps exp "%uncaught-exception" "%return-value"

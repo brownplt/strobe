@@ -90,8 +90,15 @@ rule token = parse
    | "break" [ ' ' '\t' ]+ ident as cont 
        { BreakId (drop_spaces cont 8) }
 
+   | '/' ([^ '*'] double_quoted_string_char* as x) "/gi"
+       { Regexp (x, true, true) }
+   | '/' ([^ '*'] double_quoted_string_char* as x) "/g"
+       { Regexp (x, true, false) }
+   | '/' ([^ '*'] double_quoted_string_char* as x) "/i"
+       { Regexp (x, false, true) }
+   | '/' ([^ '*'] double_quoted_string_char* as x) "/"
+       { Regexp (x, false, false) }
 
-   (* TODO: fixme; add regexps *)
    | '"' (double_quoted_string_char* as x) '"'
      { String (mk_loc lexbuf, x) }
    | ''' (single_quoted_string_char* as x) '''

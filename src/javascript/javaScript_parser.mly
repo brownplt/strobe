@@ -25,7 +25,7 @@ let parse_error s =
 %token <string> BreakId
 %token <Prelude.pos * string> Id
 %token <Prelude.pos * string> String
-%token <Prelude.pos * string * bool * bool> Regexp
+%token <string * bool * bool> Regexp
 %token <Prelude.pos * int> Int
 %token <Prelude.pos * float> Float
 
@@ -141,7 +141,9 @@ primary_expr
   | String
       { let loc, s = $1 in StringExpr (loc, s) }
   | Regexp
-      { let loc,re,g,ci = $1 in RegexpExpr (loc, re, g, ci) }
+      { let re,g,ci = $1 in 
+          RegexpExpr 
+            ((symbol_start_pos (), symbol_end_pos ()), re, g, ci) }
   | Int
       { let loc,n = $1 in IntExpr (loc,n) }
   | Float
@@ -288,6 +290,9 @@ assign_expr
     { AssignExpr ((symbol_start_pos (), symbol_end_pos ()),OpAssign,expr_to_lvalue $1,$3) }
   | lhs_expr AssignBOr assign_expr 
     { AssignExpr ((symbol_start_pos (), symbol_end_pos ()),OpAssignBOr,expr_to_lvalue $1,$3) }
+  | lhs_expr AssignAdd assign_expr 
+    { AssignExpr ((symbol_start_pos (), symbol_end_pos ()),OpAssignAdd,expr_to_lvalue $1,$3) }
+
 
 expr 
   : assign_expr 
@@ -395,7 +400,7 @@ paren_expr : LParen expr RParen
 
 stmt 
   : LBrace stmt stmts RBrace
-      { BlockStmt ((symbol_start_pos (), symbol_end_pos ()),$2::$3) }
+      { BlockStmt ((symbol_start_pos (), symbol_end_pos ()), $2 :: $3) }
   | Semi 
       { EmptyStmt ((symbol_start_pos (), symbol_end_pos ())) }
   | expr Semi 
