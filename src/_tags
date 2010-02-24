@@ -1,1 +1,2 @@
 <expr> or <javascript> or <typedjs> or <lambdajs> : include
+true : use_menhir

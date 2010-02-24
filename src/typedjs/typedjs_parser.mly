@@ -4,11 +4,6 @@ open Prelude
 open Typedjs_syntax
 open Typedjs_types
 
-let parse_error s =
-  eprintf "%s : %s\n" 
-    (string_of_position (symbol_start_pos (), symbol_end_pos ()))
-    s
-
 %}
 
 %token <string> ID
