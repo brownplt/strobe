@@ -163,10 +163,10 @@ var holder = (function() {  //lambda to hide all these local funcs
     if (res == "object") {
       if (!isGG) {
         if (rtval instanceof Node) {
-          return {kind: 'flat', type: 'DOM'};
+          return {kind: 'flat', type: 'Dom'};
         }
         if (rtval instanceof Event) {
-          return {kind: 'flat', type: 'DOM'};
+          return {kind: 'flat', type: 'Dom'};
         }
       }
       if (rtval instanceof String) {
@@ -224,7 +224,7 @@ var holder = (function() {  //lambda to hide all these local funcs
         //so just give it type DOM! =)
         //we can't return an object here, because the traceid might not
         //have stuck on the object (that might have thrown the exception)
-        return {kind: 'flat', type: "DOM"};
+        return {kind: 'flat', type: "Dom"};
       }
 
       var resRttype = {kind:'object', type:typeObj, seen: false,
@@ -254,7 +254,7 @@ var holder = (function() {  //lambda to hide all these local funcs
       return {kind:'flat', type:'Bool'};
     }
     else if (res == "undefined") {
-      return {kind:'flat', type:'Undefined'};
+      return {kind:'flat', type:'Void'};
     }
 
     return {kind:'flat', type:res};
@@ -505,7 +505,7 @@ var holder = (function() {  //lambda to hide all these local funcs
     }
 
     if (rt.kind === "function") {
-      line += rt.type.constrOrFunc + " " + n + "() : ";
+      line += rt.type.constrOrFunc + " " + n + " : ";
     }
     else if (n) {
       line += n + " : ";

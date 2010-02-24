@@ -3,22 +3,21 @@
   function simplefunc : (String * Int -> String)
   function nestedfunc : (Int -> Int)
     function increment : (Int -> Int)
- 
   function doublenest : (Int -> String)
-    function tostr : (Int -> String) 
+    function tostr : (Int -> String)
       function add1 : (Int -> Int)
       function addhi : (String -> String)
-    
-
-  function anonInner : ( -> Int) 
+  function anonInner : ( -> Int)
     function  : (Int -> Int)
-    function  : (Int -> Int)
-
+      function  : (Int -> Int)
   function useFunction : (Dom -> Void)
-  
-  function loader : ( -> Void)
+  function loader : ( Dom -> Void)
 */
 
+//type checks
+//changes must be made:
+//useFunction takes Dom, not Int
+//loader has no [Dom] this-type.
 
 var pln = function (s) {
    s = s || "";
@@ -67,8 +66,8 @@ var useFunction = function(_) {
   pln(anonInner());
 };
 
-var loader = function() {
-  setTimeout(useFunction, 600);
+var loader = function(_) {
+  window.setTimeout(useFunction, 600);
 };
 
 
