@@ -422,9 +422,9 @@ stmt
       { BreakToStmt (($startpos, $endpos),$1) }
   | Id Colon stmt
       { let _,x = $1 in LabelledStmt (($startpos, $endpos),x,$3) }
-  | For LParen forInInit In expr RParen block
+  | For LParen forInInit In expr RParen stmt
     { ForInStmt (($startpos, $endpos),$3,$5,$7) }
-  | For LParen forInit Semi expr Semi expr RParen block
+  | For LParen forInit Semi expr Semi expr RParen stmt
     { ForStmt (($startpos, $endpos),$3,$5,$7,$9) }
   | Try block catches
     { TryStmt (($startpos, $endpos),$2,$3,EmptyStmt (($startpos, $endpos))) }
