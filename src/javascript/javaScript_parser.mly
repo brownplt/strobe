@@ -132,9 +132,6 @@ primary_expr
       { let loc,x = $1 in VarExpr (loc,x) }
   | LBrack element_list RBrack
       { ArrayExpr (($startpos, $endpos),$2) }
-  /* shift/reduce conflict with labelled statements when the next token
-      is Colon. We favor shift: if we see a colon, we assume we're starting
-      a labelled statement, not an object. */
   | LBrace fields RBrace
       { ObjectExpr (($startpos, $endpos),$2) }
   | String
