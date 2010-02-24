@@ -1,3 +1,9 @@
+/*::
+  function update : (  -> Void)
+  function makeTomorrow : ( Date -> Date)
+  function getDateDiff : ( Date * Date -> {isPassed : Bool, msec : Int, seconds : Int, minutes : Int, hours : Int, days : Int})
+*/
+
 /*
 Copyright (C) 2007 Google Inc.
 
