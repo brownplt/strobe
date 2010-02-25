@@ -133,6 +133,20 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
 
 and ds_field env (p, x, e) = (p, x, ds_expr env e)
 
+let desugar (expr : expr) = 
+  ds_expr IdSet.empty expr
+
 (******************************************************************************)
+
+open Format
+open FormatExt
+
+let p_op1 op = match op with
+    Op1Prefix o -> text (JavaScript_pretty.render_prefixOp o)
+
+let p_op2 op = match op with
+    Op2Infix o -> text (JavaScript_pretty.render_infixOp o)
+
+
 
     

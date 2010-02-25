@@ -100,7 +100,7 @@ let rec nub (lst : 'a list) : 'a list = match lst with
 let pretty_string f a = f Format.str_formatter a; Format.flush_str_formatter ()
 
 let rec iota' m lst = 
-  if m < 0 then lst
+  if m <= 0 then lst
   else iota' (m - 1) (m :: lst)
 
 let iota n = iota' n []

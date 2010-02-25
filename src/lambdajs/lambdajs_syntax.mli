@@ -1,5 +1,5 @@
 open Prelude
-
+open FormatExt
 
 type op1 = Op1Prefix of JavaScript_syntax.prefixOp
 
@@ -34,3 +34,9 @@ type exp =
   | ETryFinally of pos * exp * exp
   | EThrow of pos * exp
   | ELambda of pos * id list * exp
+
+val desugar : Exprjs_syntax.expr -> exp
+
+val p_op1 : op1 -> printer
+
+val p_op2 : op2 -> printer

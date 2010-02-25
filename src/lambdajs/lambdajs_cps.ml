@@ -194,7 +194,7 @@ module Cps = struct
 
 end (* struct Cps *)
 
-(*
+
 module Pretty = struct
 
   open Format
@@ -206,44 +206,69 @@ module Pretty = struct
     | Object ps -> parens (text "object" :: (map p_prop ps))
     | Id x -> text x
     
-and p_prop (x, v) : printer = brackets [ text x; p_cpsval v ]
+  and p_prop (x, v) : printer = brackets [ text x; p_cpsval v ]
 
-let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
-    Fix (_, binds, body) ->
-      vert [ text "fix"; nest (vert (map p_bind binds)); p_cpsexp body ]
-  | App (_, f, args ) ->
-      parens ( text "app" :: p_cpsval f :: (map p_cpsval args) )
-  | If (_, v1, e2, e3) -> 
-      parens [ text "if"; p_cpsval v1; p_cpsexp e2; p_cpsexp e3 ]
-  | Let0 (_, x, v, e) -> 
-      vert [ horz [ text "let"; text x; text "="; p_cpsval v; text "in" ]; 
-             p_cpsexp e ]
-  | Let1 (_, x, op, v, e) -> 
-      vert [ horz [ text "let"; text x;  text "="; 
-                    parens [ text (JavaScript_pretty.render_prefixOp op);
-                             p_cpsval v ];
-                  text "in" ];
-             p_cpsexp e ]
-  | Let2 (_, x, op, v1, v2, e) -> 
-      vert [ horz [ text "let"; text x; 
-                    parens [ text (JavaScript_pretty.render_infixOp op);
-                             p_cpsval v1;
-                             p_cpsval v2 ];
-                    text "in" ];
-             p_cpsexp e ]
-  | GetField (_, x, v1, v2, e) ->
-      vert [ horz [ text "let"; text x; text "="; 
-                    parens [ text "get-field"; p_cpsval v1; p_cpsval v2 ];
-                    text "in" ];
-             p_cpsexp e ]
+  let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
+      Fix (_, binds, body) ->
+        vert [ text "fix"; nest (vert (map p_bind binds)); p_cpsexp body ]
+    | App (_, f, args ) ->
+        parens ( text "app" :: p_cpsval f :: (map p_cpsval args) )
+    | If (_, v1, e2, e3) -> 
+        parens [ text "if"; p_cpsval v1; p_cpsexp e2; p_cpsexp e3 ]
+    | Let0 (_, x, v, e) -> 
+        vert [ horz [ text "let"; text x; text "="; p_cpsval v; text "in" ]; 
+               p_cpsexp e ]
+    | Let1 (_, x, op, v, e) -> 
+        vert [ horz [ text "let"; text x;  text "="; 
+                      parens [ p_op1 op; p_cpsval v ];
+                      text "in" ];
+               p_cpsexp e ]
+    | Let2 (_, x, op, v1, v2, e) -> 
+        vert [ horz [ text "let"; text x; 
+                      parens [ p_op2 op; p_cpsval v1; p_cpsval v2 ];
+                      text "in" ];
+               p_cpsexp e ]
+    | GetField (_, x, v1, v2, e) ->
+        vert [ horz [ text "let"; text x; text "="; 
+                      parens [ text "get-field"; p_cpsval v1; p_cpsval v2 ];
+                      text "in" ];
+               p_cpsexp e ]
+    | DeleteField (_, x, v1, v2, e) ->
+        vert [ horz [ text "let"; text x; text "="; 
+                      parens [ text "delete-field"; p_cpsval v1; p_cpsval v2 ];
+                      text "in" ];
+               p_cpsexp e ]
+    | UpdateField (_, x, v1, v2, v3, e) ->
+        vert [ horz [ text "let"; text x; text "="; 
+                      parens [ text "update-field"; p_cpsval v1; p_cpsval v2;
+                               p_cpsval v3 ];
+                      text "in" ];
+               p_cpsexp e ]
+    | Ref (_, x, v, e) ->
+        vert [ horz [ text "let"; text x; text "="; 
+                      parens [ text "ref"; p_cpsval v ];
+                      text "in" ];
+               p_cpsexp e ]
+    | Deref (_, x, v, e) ->
+        vert [ horz [ text "let"; text x; text "="; 
+                      parens [ text "deref"; p_cpsval v ];
+                      text "in" ];
+               p_cpsexp e ]
+    | SetRef (_, v1, v2, e) ->
+        vert [ horz [ parens [ text "set-ref"; p_cpsval v1; p_cpsval v2 ];
+                      text ";" ];
+               p_cpsexp e ]
+          
+  and p_prop (x, v) : printer =
+    brackets [ p_cpsval x; p_cpsval v ]
+      
+  and p_bind (f, args, body) : printer =
+    vert  [ horz [ text f; text "=" ];
+            parens [ text "lambda"; parens (map text args); p_cpsexp body ] ]
 
-and p_prop (x, v) : printer =
-  brackets [ p_cpsval x; p_cpsval v ]
+end
 
-and p_bind (f, args, typ, body) : printer =
-  vert  [ horz [ text f; text "=" ];
-          parens [ text "lambda"; parens (map text args); p_cpsexp body ] ]
-  *)
+let p_cpsexp  = Pretty.p_cpsexp      
 
 let cps (exp : exp) : cpsexp = 
   Cps.tailcps exp "%uncaught-exception" "%return-value"

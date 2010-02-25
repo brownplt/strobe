@@ -71,13 +71,10 @@ let action_anf () : unit =
 let action_cps () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
-  let typedjs = Typedjs.from_exprjs exprjs comments !env in
-    begin match typedjs with
-        DExp (e, _) -> 
-          let cps = Typedjs_cps.cps e in
-            Typedjs_cps.p_cpsexp cps Format.std_formatter
-      | _ -> failwith "expected a single expression"
-    end
+  let lambdajs = Lambdajs_syntax.desugar exprjs in
+  let cpslambdajs = Lambdajs_cps.cps lambdajs in
+    Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
+
 
 let action_esc () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in

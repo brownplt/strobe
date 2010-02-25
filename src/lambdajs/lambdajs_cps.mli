@@ -40,3 +40,5 @@ type cpsexp =
   | Deref of node * id * cpsval * cpsexp
 
 val cps : exp -> cpsexp
+
+val p_cpsexp : cpsexp -> FormatExt.printer
