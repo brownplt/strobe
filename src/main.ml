@@ -16,7 +16,7 @@ open Typedjs_fromExpr
 open Typedjs_env
 
 module Z = Typedjs_cps
-module ZZ = Lambdajs_cps
+module ZZ = Lambdajs_cfa
 
 let cin = ref stdin
 
@@ -107,6 +107,31 @@ let action_df () : unit =
 
 let action_test_tc () : unit =
   Typedjs_testing.parse_and_test !cin !cin_name
+
+
+open Lambdajs_cfa
+open Lambdajs_cps
+open Exprjs_syntax
+open Format
+open FormatExt
+
+
+let action_custom () : unit = 
+  let p = Lexing.dummy_pos, Lexing.dummy_pos in
+  let cpsexp = 
+    Fix (mk_node p,
+         [ ("identity", ["arg"], App (mk_node p, Id "#end", [ Id "arg" ])) ],
+         App (mk_node p, Id "identity", [ Const (CString "WERWER") ]))
+  in let print_env node (env : AV.env)  = 
+      printf "Node: %d\n" node;
+      let lst = IdMapExt.to_list env in
+      let f (k, v) =
+        AVSetExt.pretty str_formatter print_av v;
+        printf "   %s : %s\n" k (flush_str_formatter ())
+      in List.iter f lst
+  in Lambdajs_cfa.cfa cpsexp;
+    Hashtbl.iter print_env envs
+
    
 let action = ref action_tc
 
@@ -142,6 +167,9 @@ let main () : unit =
        "convert program to ANF, then apply dataflow analysis");
       ("-unittest", Arg.Unit (set_action action_test_tc),
        "(undocumented)");
+      ("-custom", Arg.Unit (set_action action_custom),
+       "(undocumented)");
+
       ("-tc", Arg.Unit (set_action action_tc),
        "type-check (default action)") ]
     (fun s -> action_load_file s)

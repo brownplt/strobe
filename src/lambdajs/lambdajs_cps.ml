@@ -9,8 +9,9 @@ type cpsval =
 
 type node = int * pos
 
+
 type cpsexp =
-    Fix of node * (id * id list * cpsexp) list * cpsexp
+    Fix of node * lambda list * cpsexp
   | App of node * cpsval * cpsval list
   | If of node * cpsval * cpsexp * cpsexp
   | Let0 of node * id * cpsval * cpsexp (* load immediate / reg-reg move *)
@@ -22,6 +23,8 @@ type cpsexp =
   | Ref of node * id * cpsval * cpsexp
   | SetRef of node * cpsval * cpsval * cpsexp
   | Deref of node * id * cpsval * cpsexp
+
+and lambda = id * id list * cpsexp
 
 (*****************************************************************************)
 
@@ -268,7 +271,25 @@ module Pretty = struct
 
 end
 
+let cpsexp_idx (cpsexp : cpsexp) = match cpsexp with
+  | Fix ((n, _), _, _) -> n
+  | App ((n, _), _, _) -> n
+  | If ((n, _), _, _, _) -> n
+  | Let0 ((n, _), _, _, _) -> n
+  | Let1 ((n, _), _, _, _, _) -> n
+  | Let2 ((n, _), _, _, _, _, _) -> n
+  | GetField ((n, _), _, _, _, _) -> n
+  | DeleteField ((n, _), _, _, _, _) -> n
+  | UpdateField ((n, _), _, _, _, _, _) -> n
+  | Ref ((n, _), _, _, _) -> n
+  | SetRef ((n, _), _, _, _) -> n
+  | Deref ((n, _), _, _, _) -> n
+
+let lambda_name (f, _, _) = f
+
 let p_cpsexp  = Pretty.p_cpsexp      
 
 let cps (exp : exp) : cpsexp = 
   Cps.tailcps exp "%uncaught-exception" "%return-value"
+
+let mk_node = Cps.mk_node

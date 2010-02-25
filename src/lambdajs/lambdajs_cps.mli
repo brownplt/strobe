@@ -25,8 +25,9 @@ type cpsval =
 
 type node = int * pos
 
+
 type cpsexp =
-    Fix of node * (id * id list * cpsexp) list * cpsexp
+    Fix of node * lambda list * cpsexp
   | App of node * cpsval * cpsval list
   | If of node * cpsval * cpsexp * cpsexp
   | Let0 of node * id * cpsval * cpsexp (* load immediate / reg-reg move *)
@@ -39,6 +40,14 @@ type cpsexp =
   | SetRef of node * cpsval * cpsval * cpsexp
   | Deref of node * id * cpsval * cpsexp
 
+and lambda = id * id list * cpsexp
+
 val cps : exp -> cpsexp
 
 val p_cpsexp : cpsexp -> FormatExt.printer
+
+val cpsexp_idx : cpsexp -> int
+
+val lambda_name : lambda -> id
+
+val mk_node : pos -> node
