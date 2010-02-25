@@ -154,10 +154,13 @@ member_expr
     { FuncExpr (($startpos, $endpos), $3, 
                 BlockStmt (($startpos($5), $endpos($7)), $6)) }
 /* Reduce/reduce conflict with function statements.  Who here knew that
-   named function expressions existed?  
+   named function expressions existed?
   | Function Id LParen ids RParen LBrace src_elts RBrace
-    { let _,x = $2 in NamedFuncExpr ($1, x, $4, BlockStmt ($6, $7)) }
+    { let _,x = $2 in 
+        NamedFuncExpr (($startpos, $endpos), x, $4, 
+                       BlockStmt (($startpos($6), $startpos($8)), $7)) }
 */
+
   | member_expr Period Id 
       { let _,x = $3 in DotExpr (($startpos, $endpos),$1,x) } 
   | member_expr LBrack expr RBrack
