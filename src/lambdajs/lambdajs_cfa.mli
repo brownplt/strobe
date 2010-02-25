@@ -28,4 +28,4 @@ val envs : (int, AV.env) Hashtbl.t
 
 val cfa : cpsexp -> unit
 
-val print_av : Format.formatter -> AV.t -> unit
+val p_av :AV.t -> FormatExt.printer

@@ -1,3 +1,5 @@
+open FormatExt
+
 module type S = sig
   type key
   type +'a t
@@ -7,6 +9,8 @@ module type S = sig
   val keys : 'a t -> key list
   val union : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
   val join : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
+  val p_map : (key -> printer) -> ('a -> printer) -> 'a t -> printer
+
 end
 
 module Make (Ord: Map.OrderedType) (Map : Map.S with type key = Ord.t) = struct
@@ -37,6 +41,10 @@ module Make (Ord: Map.OrderedType) (Map : Map.S with type key = Ord.t) = struct
       else 
         Map.add k v acc
     in Map.fold mk m1 m2 (* m2 is the accumulator *)
+
+  let p_map p_key p_val t = 
+    parens (List.map (fun (k, v) -> brackets [ p_key k; p_val v ]) (to_list t))
+
      
 
 end

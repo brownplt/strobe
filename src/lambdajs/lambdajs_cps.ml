@@ -293,3 +293,42 @@ let cps (exp : exp) : cpsexp =
   Cps.tailcps exp "%uncaught-exception" "%return-value"
 
 let mk_node = Cps.mk_node
+
+
+let rec fv (cpsexp : cpsexp) : IdSet.t = match cpsexp with
+  |  Fix (_, binds, body) ->
+       let bound_ids = IdSetExt.from_list (map fst3 binds) in
+         IdSet.diff (IdSetExt.unions (fv body :: map fv_bind binds))
+         bound_ids
+  | App (_, v, vs) -> IdSetExt.unions (map fv_val (v :: vs))
+  | If (_, v1, e2, e3) ->
+      IdSetExt.unions [ fv_val v1; fv e2; fv e3 ]
+  | Let0 (_, x, v, e) -> 
+      IdSet.union (fv_val v)
+        (IdSet.remove x (fv e))
+  | Let1 (_, x, _, v, e) -> 
+      IdSet.union (fv_val v)
+        (IdSet.remove x (fv e))
+  | Let2 (_, x, _, v1, v2, e) ->
+      IdSetExt.unions [ fv_val v1; fv_val v2; IdSet.remove x (fv e) ]
+  | GetField (_, x, v1, v2, e) -> 
+      IdSetExt.unions [ fv_val v1; fv_val v2; IdSet.remove x (fv e) ]
+  | DeleteField (_, x, v1, v2, e) -> 
+      IdSetExt.unions [ fv_val v1; fv_val v2; IdSet.remove x (fv e) ]
+  | UpdateField(_, x, v1, v2, v3, e) -> 
+      IdSetExt.unions [ fv_val v1; fv_val v2; fv_val v3; IdSet.remove x (fv e) ]
+  | Ref (_, x, v, e) -> 
+      IdSetExt.unions [ fv_val v; IdSet.remove x (fv e) ]
+  | SetRef (_, v1, v2, e) ->
+      IdSetExt.unions [ fv_val v1; fv_val v2; fv e ]
+  | Deref (_, x, v, e) -> 
+      IdSetExt.unions [ fv_val v; IdSet.remove x (fv e) ]
+
+and fv_val (cpsval : cpsval) = match cpsval with
+  | Const _ -> IdSet.empty
+  | Array vs -> IdSetExt.unions (map fv_val vs)
+  | Object ps -> IdSetExt.unions (map (fun (_, v) -> fv_val v) ps)
+  | Id x -> IdSet.singleton x
+
+and fv_bind (_, args, body) =
+  IdSet.diff (fv body) (IdSetExt.from_list args)

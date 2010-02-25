@@ -119,16 +119,22 @@ open FormatExt
 let action_custom () : unit = 
   let p = Lexing.dummy_pos, Lexing.dummy_pos in
   let cpsexp = 
-    Fix (mk_node p,
-         [ ("identity", ["arg"], App (mk_node p, Id "#end", [ Id "arg" ])) ],
-         App (mk_node p, Id "identity", [ Const (CString "WERWER") ]))
+    Fix ((0,p),
+         [ ("identity", ["arg"; "cont-id"], 
+            App ((1,p), Id "cont-id", [ Id "arg" ])) ],
+         Fix ((2,p),
+              [ ("cont2", [ "x" ],
+                 App ((3,p), Id "#end", [Id "x"])) ],
+              Fix ((4,p),
+                   [ ("cont", [ "y" ],
+                      App ((5,p), Id "identity", 
+                           [ Const (CInt 400); Id "cont2" ])) ],
+                   App ((6,p), Id "identity",
+                        [ Const (CInt 300); Id "cont" ]))))
+
   in let print_env node (env : AV.env)  = 
-      printf "Node: %d\n" node;
-      let lst = IdMapExt.to_list env in
-      let f (k, v) =
-        AVSetExt.pretty str_formatter print_av v;
-        printf "   %s : %s\n" k (flush_str_formatter ())
-      in List.iter f lst
+      printf "Node: %d %s\n" node 
+        (to_string (IdMapExt.p_map text (AVSetExt.p_set p_av)) env)
   in Lambdajs_cfa.cfa cpsexp;
     Hashtbl.iter print_env envs
 

@@ -51,3 +51,5 @@ val cpsexp_idx : cpsexp -> int
 val lambda_name : lambda -> id
 
 val mk_node : pos -> node
+
+val fv : cpsexp -> IdSet.t

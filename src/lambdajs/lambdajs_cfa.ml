@@ -1,3 +1,4 @@
+open FormatExt
 open Prelude
 open Lambdajs_cps
 module H = Hashtbl
@@ -41,24 +42,19 @@ module AVSetExt = SetExt.Make (AVSet)
 open AV
 
 
-let rec  print_av fmt av = match av with
+let rec  p_av av fmt = match av with
   | AConst c -> Exprjs_pretty.p_const c fmt
   | ARef x -> Format.pp_print_string fmt x
   | AObj lst -> Format.pp_print_string fmt "obj"
   | AArr _ -> Format.pp_print_string fmt  "arr"
-  | AClosure _ -> Format.pp_print_string fmt  "closure"
+  | AClosure (n, args, _) -> 
+
+Format.pp_print_string fmt  ("closure" ^ string_of_int n)
       
 
 let union_env (env1 : AV.env) (env2 : AV.env) : AV.env = 
   IdMapExt.join AVSet.union  env1 env2
 
-let rec absval (env : AV.env) (cpsval : cpsval) : AV.avs = match cpsval with
-  | Const c -> AVSet.singleton (AV.AConst c)
-  | Array vs -> AVSet.singleton (AV.AArr (map (absval env) vs))
-  | Object ps -> 
-      AVSet.singleton (AV.AObj (map (fun (x, v) -> (x, absval env v)) ps))
-  | Id "#end" -> AVSet.empty
-  | Id x -> IdMap.find x env
 
 
 
@@ -70,19 +66,29 @@ let get_env (n : int) = Hashtbl.find envs n
 let set_env (n : int) (env : env) = Hashtbl.replace envs n env
 
 
+let rec absval (env : AV.env) (cpsval : cpsval) : AV.avs = match cpsval with
+  | Const c -> AVSet.singleton (AV.AConst c)
+  | Array vs -> AVSet.singleton (AV.AArr (map (absval env) vs))
+  | Object ps -> 
+      AVSet.singleton (AV.AObj (map (fun (x, v) -> (x, absval env v)) ps))
+  | Id "#end" -> AVSet.empty
+  | Id x -> 
+      try IdMap.find x env
+      with Not_found -> failwith ("unbound ads dentifier " ^ x)
+
 
 let rec calc (env : env) (cpsexp : cpsexp) : unit = match cpsexp with
   | Fix (node, binds, body) ->
       let env' = fold_left (bind_lambda (fst2 node)) env binds in
-        set_env (fst2 node) env';
+        List.iter (mk_closure  env') binds;
         flow env' body
   | App (_, f, args) ->
       let argvs = map (absval env) args in
       let do_app fv = match fv with 
         | AClosure (n, formals, body) -> (* TODO: arity *)
             let body_env =
-              List.fold_right2 IdMap.add formals argvs (get_env n) in
-              flow body_env body
+              List.fold_right2 IdMap.add formals argvs IdMap.empty in
+             flow (union_env body_env (get_env n)) body
         | _ -> ()
       in AVSet.iter do_app (absval env f)
 
@@ -96,12 +102,14 @@ let rec calc (env : env) (cpsexp : cpsexp) : unit = match cpsexp with
 and flow (env : env) (cpsexp : cpsexp) : unit = 
   try
     let old_env = get_env (cpsexp_idx cpsexp) in
-    if compare_env old_env env = 0 then
+    let new_env = union_env old_env env in
+    if compare_env old_env new_env = 0 then 
       ()
     else
-      let new_env = union_env old_env env in
+      begin
         set_env (cpsexp_idx cpsexp) new_env;
         calc new_env cpsexp
+      end
   with Not_found ->
     set_env (cpsexp_idx cpsexp) env;
     calc env cpsexp
@@ -109,8 +117,15 @@ and flow (env : env) (cpsexp : cpsexp) : unit =
 
 (* node is the Fix's node; new_env is the enclosing environment *)
 and bind_lambda (n : int) (env : env) ((f, args, body) : lambda) = 
-  IdMap.add f (AVSet.singleton (AClosure (n, args, body))) env
+  IdMap.add f (AVSet.singleton (AClosure (cpsexp_idx body, args, body))) env
 
-
+and mk_closure (env : env) ((f, args, body) : lambda) : unit = 
+  let n = cpsexp_idx body in
+    try
+      ignore (get_env n)
+    with
+      | Not_found ->
+          set_env n env
+    
 
 let cfa (cpsexp : cpsexp) : unit = flow IdMap.empty cpsexp

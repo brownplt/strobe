@@ -1,3 +1,5 @@
+open FormatExt
+
 (** Additional functions for working with maps. *)
 module type S = sig
   type key
@@ -17,6 +19,7 @@ module type S = sig
       [f]. *)
   val join : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
 
+  val p_map : (key -> printer) -> ('a -> printer) -> 'a t -> printer
 
 end
 

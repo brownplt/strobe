@@ -1,6 +1,7 @@
 (** Additional functions for working with sets. *)
 
 open Format
+open FormatExt
 
 module type S = sig
   type elt
@@ -10,6 +11,8 @@ module type S = sig
   val from_list : elt list -> t
   val to_list : t -> elt list
   val pretty : formatter -> (formatter -> elt -> unit) -> t -> unit
+  val p_set : (elt -> printer) -> t -> printer
+
 end
 
 module Make : functor (Set : Set.S) -> S 

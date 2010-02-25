@@ -1,4 +1,5 @@
 open Format
+open FormatExt
 
 module type S = sig
   type elt
@@ -8,6 +9,7 @@ module type S = sig
   val from_list : elt list -> t
   val to_list : t -> elt list
   val pretty : formatter -> (formatter -> elt -> unit) -> t -> unit
+  val p_set : (elt -> printer) -> t -> printer
 end
 
 module Make (Set : Set.S) = struct
@@ -23,6 +25,9 @@ module Make (Set : Set.S) = struct
 
   let to_list set =
     Set.fold (fun e lst -> e :: lst) set []    
+
+  let p_set p_elt set = 
+    braces (List.map p_elt (to_list set))
 
   let pretty formatter print_elt set =
     let is_first = ref true in
