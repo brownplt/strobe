@@ -396,6 +396,10 @@ block : LBrace stmts RBrace
 paren_expr : LParen expr RParen
       { ParenExpr (($startpos, $endpos),$2) }
 
+opt_expr :
+  | { UndefinedExpr (($startpos, $endpos)) }
+  | expr { $1 }
+
 
 stmt 
   : LBrace stmts RBrace
@@ -427,7 +431,7 @@ stmt
       { let _,x = $1 in LabelledStmt (($startpos, $endpos),x,$3) }
   | For LParen forInInit In expr RParen stmt
     { ForInStmt (($startpos, $endpos),$3,$5,$7) }
-  | For LParen forInit Semi expr Semi expr RParen stmt
+  | For LParen forInit Semi opt_expr Semi opt_expr RParen stmt
     { ForStmt (($startpos, $endpos),$3,$5,$7,$9) }
   | Try block catches
     { TryStmt (($startpos, $endpos),$2,$3,EmptyStmt (($startpos, $endpos))) }

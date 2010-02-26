@@ -2,15 +2,17 @@ open Prelude
 
 type op1 = Op1Prefix of JavaScript_syntax.prefixOp
 
-type op2 = Op2Infix of JavaScript_syntax.infixOp
+type op2 = 
+  | Op2Infix of JavaScript_syntax.infixOp
+  | GetField
+  | DeleteField
+  | SetRef
 
 type exp =
     EConst of pos * Exprjs_syntax.const
   | EId of pos * id
   | EArray of pos * exp list
   | EObject of pos * (pos * string * exp) list
-  | EGetField of pos * exp * exp
-  | EDeleteField of pos * exp * exp
   | EUpdateField of pos * exp * exp * exp
   | EOp1 of pos * op1 * exp
   | EOp2 of pos * op2 * exp * exp
@@ -18,7 +20,6 @@ type exp =
   | EApp of pos * exp * exp list
   | ERef of pos * exp
   | EDeref of pos * exp
-  | ESetRef of pos * exp * exp
   | ESeq of pos * exp * exp
   | ELet of pos * id * exp * exp
   | EFix of pos * (id * exp) list * exp 
@@ -52,9 +53,10 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
         (* var-lifting would have introduced a binding for x. *)
         EId (p, x)
       else
-        EGetField (p, EDeref (p, EId (p, "#global")), EConst (p, CString x))
+        EOp2 (p, GetField, EDeref (p, EId (p, "#global")),
+              EConst (p, CString x))
   | BracketExpr (p, e1, e2) ->
-      EGetField (p, EDeref (p, ds_expr env e1), ds_expr env e2)
+      EOp2 (p, GetField, EDeref (p, ds_expr env e1), ds_expr env e2)
 (*   | NewExpr of pos * expr * expr list *)
   | PrefixExpr (p, op, e) -> EOp1 (p, Op1Prefix op, ds_expr env e)
   | InfixExpr (p, op, e1, e2) -> EOp2 (p, Op2Infix op, ds_expr env e1, ds_expr env e2)
@@ -62,18 +64,18 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
       EIf (p, ds_expr env e1, ds_expr env e2, ds_expr env e3)
   | AssignExpr (p, VarLValue (p', x), e) -> 
       if IdSet.mem x env then
-        ESetRef (p, EDeref (p', EId (p, x)), ds_expr env e)
+        EOp2 (p, SetRef, EDeref (p', EId (p, x)), ds_expr env e)
       else
-        ESetRef (p, EId (p, "#global"),
-                 EUpdateField (p, (EDeref (p, EId (p, "#global"))),
-                               EConst (p, CString x),
-                               ds_expr env e))
+        EOp2 (p, SetRef, EId (p, "#global"),
+              EUpdateField (p, (EDeref (p, EId (p, "#global"))),
+                            EConst (p, CString x),
+                            ds_expr env e))
   | AssignExpr (p, PropLValue (p', e1, e2), e3) -> 
       ELet (p, "%obj", ds_expr env e1,
-            ESetRef (p, EId (p, "%obj"), 
-                     EUpdateField (p, EDeref (p, EId (p, "%obj")),
-                                   ds_expr env e1,
-                                   ds_expr env e2)))
+            EOp2 (p, SetRef, EId (p, "%obj"), 
+                  EUpdateField (p, EDeref (p, EId (p, "%obj")),
+                                ds_expr env e1,
+                                ds_expr env e2)))
   | LetExpr (p, x, e1, e2) ->
       ELet (p, x, ds_expr env e1, ds_expr (IdSet.add x env) e2)
   | SeqExpr (p, e1, e2) -> 
@@ -101,7 +103,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
   | BreakExpr (p, l, e) -> EBreak (p, l, ds_expr env e)
   | VarDeclExpr (p, x, e) -> 
       (* var-lifting would have introduced a binding for x. *)
-      ESetRef (p, EId (p, x), ds_expr env e)
+      EOp2 (p, SetRef, EId (p, x), ds_expr env e)
   | TryCatchExpr (p, body, x, catch) ->
       ETryCatch (p, ds_expr env body, ELambda (p, [x], ds_expr env catch))
   | TryFinallyExpr (p, e1, e2) -> 
@@ -109,7 +111,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
   | ThrowExpr (p, e) -> EThrow (p, ds_expr env e)
   | AppExpr (p, BracketExpr (p', obj, prop), args) ->
       ELet (p, "%obj", ds_expr env obj,
-            EApp (p, EGetField (p', EDeref (p', EId (p, "%obj")),
+            EApp (p, EOp2 (p', GetField, EDeref (p', EId (p, "%obj")),
                                 ds_expr env prop),
                   [ EId (p, "%obj"); 
                     EArray (p, map (ds_expr env) args) ]))
@@ -121,7 +123,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
       let init_var x exp =
         ELet (p, x, ERef (p, EConst (p, CUndefined)), exp)
       and get_arg x n exp =
-        ELet (p, x, EGetField (p, EDeref (p, EId (p, "arguments")),
+        ELet (p, x, EOp2 (p, GetField, EDeref (p, EId (p, "arguments")),
                                EConst (p, CString (string_of_int n))),
               exp) 
       and vars = Exprjs_syntax.locals body in
@@ -145,7 +147,10 @@ let p_op1 op = match op with
     Op1Prefix o -> text (JavaScript_pretty.render_prefixOp o)
 
 let p_op2 op = match op with
-    Op2Infix o -> text (JavaScript_pretty.render_infixOp o)
+  | Op2Infix o -> text (JavaScript_pretty.render_infixOp o)
+  | GetField -> text "get-field"
+  | DeleteField -> text "delete-field"
+  | SetRef -> text "set-ref"
 
 
 

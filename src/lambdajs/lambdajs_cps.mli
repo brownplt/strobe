@@ -27,17 +27,14 @@ type node = int * pos
 
 
 type cpsexp =
-    Fix of node * lambda list * cpsexp
+  | Fix of node * lambda list * cpsexp
   | App of node * cpsval * cpsval list
   | If of node * cpsval * cpsexp * cpsexp
   | Let0 of node * id * cpsval * cpsexp (* load immediate / reg-reg move *)
   | Let1 of node * id * op1 * cpsval * cpsexp
   | Let2 of node * id * op2 * cpsval * cpsval * cpsexp
-  | GetField of node * id * cpsval * cpsval * cpsexp
-  | DeleteField of node * id * cpsval * cpsval * cpsexp
   | UpdateField of node * id * cpsval * cpsval * cpsval * cpsexp
   | Ref of node * id * cpsval * cpsexp
-  | SetRef of node * cpsval * cpsval * cpsexp
   | Deref of node * id * cpsval * cpsexp
 
 and lambda = id * id list * cpsexp

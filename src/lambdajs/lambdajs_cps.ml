@@ -11,17 +11,14 @@ type node = int * pos
 
 
 type cpsexp =
-    Fix of node * lambda list * cpsexp
+  | Fix of node * lambda list * cpsexp
   | App of node * cpsval * cpsval list
   | If of node * cpsval * cpsexp * cpsexp
   | Let0 of node * id * cpsval * cpsexp (* load immediate / reg-reg move *)
   | Let1 of node * id * op1 * cpsval * cpsexp
   | Let2 of node * id * op2 * cpsval * cpsval * cpsexp
-  | GetField of node * id * cpsval * cpsval * cpsexp
-  | DeleteField of node * id * cpsval * cpsval * cpsexp
   | UpdateField of node * id * cpsval * cpsval * cpsval * cpsexp
   | Ref of node * id * cpsval * cpsexp
-  | SetRef of node * cpsval * cpsval * cpsexp
   | Deref of node * id * cpsval * cpsexp
 
 and lambda = id * id list * cpsexp
@@ -54,20 +51,6 @@ module Cps = struct
         cps_list (map thd3 ps) throw 
           (fun vs -> k (Object (List.combine (map snd3 ps) vs)))
     | ESeq (p, e1, e2) -> cps e1 throw (fun _ -> cps e2 throw k)
-    | EGetField (p, e1, e2) ->
-        cps e1 throw
-          (fun v1 ->
-             cps e2 throw
-               (fun v2 ->
-                  let x = mk_name () in
-                    GetField (mk_node p, x, v1, v2, k (Id x))))
-    | EDeleteField (p, e1, e2) ->
-        cps e1 throw
-          (fun v1 ->
-             cps e2 throw
-               (fun v2 ->
-                  let x = mk_name () in
-                    DeleteField (mk_node p, x, v1, v2, k (Id x))))
     | EUpdateField (p, e1, e2, e3) ->
         cps e1 throw
           (fun v1 ->
@@ -114,43 +97,37 @@ module Cps = struct
           (fun v -> 
              let r = mk_name () in
                Deref (mk_node p, r, v, k (Id r)))
-    | ESetRef (p, e1, e2) ->
-        cps e1 throw
-          (fun v1 ->
-             cps e2 throw
-               (fun v2 ->
-                  SetRef (mk_node p, v1, v2, k v1)))
     | EFix (p, binds, body) ->
         Fix (mk_node p,
              map cps_bind binds,
              cps body throw k)
-  | ELambda (p, args, body) -> 
+    | ELambda (p, args, body) -> 
       let f = mk_name ()
       and cont = mk_name ()
       and throw = mk_name () in
         Fix (mk_node p,
              [ (f, cont :: throw :: args, tailcps body throw cont) ],
              k (Id f))
-  | EApp (p, f, args) ->
-      let cont = mk_name () in
-        Fix (mk_node p, 
+    | EApp (p, f, args) ->
+        let cont = mk_name () in
+          Fix (mk_node p, 
              [ let r = mk_name () in (cont, [r], k (Id r)) ],
-             cps f throw
-               (fun fv ->
-                  cps_list args throw
-                    (fun argsv ->
+               cps f throw
+                 (fun fv ->
+                    cps_list args throw
+                      (fun argsv ->
                        App (mk_node p, fv, Id cont :: Id throw :: argsv))))
-  | ETryCatch (p, body, ELambda (p', [exn], catch_body)) -> 
-      let cont = mk_name ()  in
-        Fix (mk_node p,
-             [ let r = mk_name () in (cont, [r], k (Id r)) ],
+    | ETryCatch (p, body, ELambda (p', [exn], catch_body)) -> 
+        let cont = mk_name ()  in
+          Fix (mk_node p,
+               [ let r = mk_name () in (cont, [r], k (Id r)) ],
              let throw' = mk_name () in
                Fix (mk_node p, 
                     [ throw', [exn], tailcps catch_body throw cont ],
                     tailcps body throw' cont))
-  | ETryCatch _ -> failwith "cps : ill-formed catch block"
-  | EThrow (p, e) -> 
-      tailcps e throw throw (* that's right *)
+    | ETryCatch _ -> failwith "cps : ill-formed catch block"
+    | EThrow (p, e) -> 
+        tailcps e throw throw (* that's right *)
   | ETryFinally (p, body, finally) ->
       let cont = mk_name () in
         Fix (mk_node p,
@@ -231,16 +208,6 @@ module Pretty = struct
                       parens [ p_op2 op; p_cpsval v1; p_cpsval v2 ];
                       text "in" ];
                p_cpsexp e ]
-    | GetField (_, x, v1, v2, e) ->
-        vert [ horz [ text "let"; text x; text "="; 
-                      parens [ text "get-field"; p_cpsval v1; p_cpsval v2 ];
-                      text "in" ];
-               p_cpsexp e ]
-    | DeleteField (_, x, v1, v2, e) ->
-        vert [ horz [ text "let"; text x; text "="; 
-                      parens [ text "delete-field"; p_cpsval v1; p_cpsval v2 ];
-                      text "in" ];
-               p_cpsexp e ]
     | UpdateField (_, x, v1, v2, v3, e) ->
         vert [ horz [ text "let"; text x; text "="; 
                       parens [ text "update-field"; p_cpsval v1; p_cpsval v2;
@@ -256,10 +223,6 @@ module Pretty = struct
         vert [ horz [ text "let"; text x; text "="; 
                       parens [ text "deref"; p_cpsval v ];
                       text "in" ];
-               p_cpsexp e ]
-    | SetRef (_, v1, v2, e) ->
-        vert [ horz [ parens [ text "set-ref"; p_cpsval v1; p_cpsval v2 ];
-                      text ";" ];
                p_cpsexp e ]
           
   and p_prop (x, v) : printer =
@@ -278,11 +241,8 @@ let cpsexp_idx (cpsexp : cpsexp) = match cpsexp with
   | Let0 ((n, _), _, _, _) -> n
   | Let1 ((n, _), _, _, _, _) -> n
   | Let2 ((n, _), _, _, _, _, _) -> n
-  | GetField ((n, _), _, _, _, _) -> n
-  | DeleteField ((n, _), _, _, _, _) -> n
   | UpdateField ((n, _), _, _, _, _, _) -> n
   | Ref ((n, _), _, _, _) -> n
-  | SetRef ((n, _), _, _, _) -> n
   | Deref ((n, _), _, _, _) -> n
 
 let lambda_name (f, _, _) = f
@@ -311,16 +271,10 @@ let rec fv (cpsexp : cpsexp) : IdSet.t = match cpsexp with
         (IdSet.remove x (fv e))
   | Let2 (_, x, _, v1, v2, e) ->
       IdSetExt.unions [ fv_val v1; fv_val v2; IdSet.remove x (fv e) ]
-  | GetField (_, x, v1, v2, e) -> 
-      IdSetExt.unions [ fv_val v1; fv_val v2; IdSet.remove x (fv e) ]
-  | DeleteField (_, x, v1, v2, e) -> 
-      IdSetExt.unions [ fv_val v1; fv_val v2; IdSet.remove x (fv e) ]
   | UpdateField(_, x, v1, v2, v3, e) -> 
       IdSetExt.unions [ fv_val v1; fv_val v2; fv_val v3; IdSet.remove x (fv e) ]
   | Ref (_, x, v, e) -> 
       IdSetExt.unions [ fv_val v; IdSet.remove x (fv e) ]
-  | SetRef (_, v1, v2, e) ->
-      IdSetExt.unions [ fv_val v1; fv_val v2; fv e ]
   | Deref (_, x, v, e) -> 
       IdSetExt.unions [ fv_val v; IdSet.remove x (fv e) ]
 
