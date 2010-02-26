@@ -9,7 +9,7 @@ module rec AV
       | AString
       | AConst of Exprjs_syntax.const
       | ARef of int
-      | AObj of (string * avs) list
+      | AObj of avs IdMap.t
       | AArr of avs list
       | AClosure of int * id list * cpsexp
 

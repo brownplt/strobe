@@ -11,7 +11,7 @@ module rec AV
       | AString
       | AConst of Exprjs_syntax.const
       | ARef of int
-      | AObj of (string * avs) list
+      | AObj of avs IdMap.t
       | AArr of avs list
       | AClosure of int * id list * cpsexp
 
@@ -27,7 +27,7 @@ struct
     | AString
     | AConst of Exprjs_syntax.const
     | ARef of int
-    | AObj of (string * avs) list
+    | AObj of avs IdMap.t
     | AArr of avs list
     | AClosure of int * id list * cpsexp
   and avs = AVSet.t
@@ -54,8 +54,7 @@ let rec  p_av av fmt = match av with
   | AObj lst -> Format.pp_print_string fmt "obj"
   | AArr _ -> Format.pp_print_string fmt  "arr"
   | AClosure (n, args, _) -> 
-
-Format.pp_print_string fmt  ("closure" ^ string_of_int n)
+      Format.pp_print_string fmt  ("closure" ^ string_of_int n)
       
 
 let union_env (env1 : AV.env) (env2 : AV.env) : AV.env = 
@@ -85,8 +84,8 @@ let calc_op1 (op1 : op1) (avs : AV.avs) : avs = match op1 with
         AVSet.singleton (ARef loc)
   | Deref ->
       let fn v r = match v with
-        | ARef loc -> AVSet.union (H.find heap loc) r
-        | _ -> r in
+        | ARef loc -> printf "DEREF OK"; AVSet.union (H.find heap loc) r
+        | _ -> printf "Deref expects ARef\n"; r in
       AVSet.fold fn avs AVSet.empty
   | Op1Prefix jsOp -> match jsOp with
       | JavaScript_syntax.PrefixLNot -> AVSet.singleton ANumber
@@ -100,35 +99,47 @@ let calc_op1 (op1 : op1) (avs : AV.avs) : avs = match op1 with
 let rec get_fields obj_fields field_names : AVSet.t = match field_names with
   | [] -> AVSet.empty
   | field :: rest ->
+      printf "getting field %s\n" field;
         AVSet.union
           (try
-             List.assoc field obj_fields
-           with Not_found -> AVSet.singleton (AConst Exprjs_syntax.CUndefined))
+             IdMap.find field obj_fields
+           with Not_found ->
+             printf "field not found\n";
+             AVSet.singleton (AConst Exprjs_syntax.CUndefined))
           (get_fields obj_fields rest)
 
 let calc_op3 obj field_name field_value =
-  obj
+  if AVSet.mem AString field_name then
+    failwith "set all fields"
+  else 
+    let upd_dict namev dict : avs IdMap.t = match namev with
+      | AConst (Exprjs_syntax.CString s) -> IdMap.add s field_value dict
+      | _ -> dict in
+    let upd_obj objv result : avs  = match objv with
+        AObj dict -> 
+          AVSet.add (AObj (AVSet.fold upd_dict field_name dict)) result
+      | _ -> result in
+      AVSet.fold upd_obj obj AVSet.empty
 
 let calc_op2 (op2 : op2) (vs1 : AV.avs) (vs2 : AV.avs) : avs = match op2 with
   | GetField ->
       if AVSet.mem AString vs2 then
         AVSet.fold
           (fun v r -> match v with
-             | AObj props -> 
-                 AVSetExt.unions (r :: (map snd2 props))
+             | AObj props -> AVSetExt.unions (IdMapExt.values props)
              | _ -> r)
           vs1 AVSet.empty
       else 
         let fields_to_get = 
           AVSet.fold (fun v r -> match v with 
                         | AConst (Exprjs_syntax.CString s) -> IdSet.add s r
-                        | _ -> r) 
+                        | _ -> printf "expected string"; r) 
             vs2 IdSet.empty in
         let fields_to_get = IdSetExt.to_list fields_to_get in
           AVSet.fold (fun v r -> match v with
-                        | AObj props -> 
+                        | AObj props -> printf "OBJEWRWR";
                             AVSet.union (get_fields props fields_to_get) r
-                        | _ -> r)
+                        | _ -> printf "expected object"; r)
             vs1 AVSet.empty
   | SetRef -> 
       (* return previous value, vs2 *)
@@ -169,7 +180,9 @@ let rec absval (env : AV.env) (cpsval : cpsval) : AV.avs = match cpsval with
   | Const c -> AVSet.singleton (AV.AConst c)
   | Array vs -> AVSet.singleton (AV.AArr (map (absval env) vs))
   | Object ps -> 
-      AVSet.singleton (AV.AObj (map (fun (x, v) -> (x, absval env v)) ps))
+      AVSet.singleton 
+        (AV.AObj (fold_left (fun m (x, v) -> IdMap.add x (absval env v) m)
+                    IdMap.empty ps))
   | Id "#end" -> AVSet.empty
   | Id x -> 
       try IdMap.find x env
@@ -185,10 +198,11 @@ let rec calc (env : env) (cpsexp : cpsexp) : unit = match cpsexp with
       let argvs = map (absval env) args in
       let do_app fv = match fv with 
         | AClosure (n, formals, body) -> (* TODO: arity *)
+            printf "FUNCTION\n";
             let body_env =
               List.fold_right2 IdMap.add formals argvs IdMap.empty in
              flow (union_env body_env (get_env n)) body
-        | _ -> ()
+        | _ -> printf "NOT A FN"; ()
       in AVSet.iter do_app (absval env f)
 
   | If (_, v1, e2, e3) -> 
@@ -205,7 +219,7 @@ let rec calc (env : env) (cpsexp : cpsexp) : unit = match cpsexp with
       flow (IdMap.add x (calc_op2 op2 (absval env v1) (absval env v2)) env) e
   | UpdateField (_, x, v1, v2, v3, e) ->
       flow (IdMap.add x 
-              (calc_op3 (absval env v1) (absval env v2) (absval env v1)) env) e
+              (calc_op3 (absval env v1) (absval env v2) (absval env v3)) env) e
 
 
 

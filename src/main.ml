@@ -14,9 +14,12 @@ open Typedjs_syntax
 open Typedjs_pretty
 open Typedjs_fromExpr
 open Typedjs_env
+open Lambdajs_cfa
+open Lambdajs_cps
+open Exprjs_syntax
+open Format
+open FormatExt
 
-module Z = Typedjs_cps
-module ZZ = Lambdajs_cfa
 
 let cin = ref stdin
 
@@ -75,6 +78,16 @@ let action_cps () : unit =
   let cpslambdajs = Lambdajs_cps.cps lambdajs in
     Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
 
+let action_cfa () : unit =
+  let (js, comments) = parse_javascript !cin !cin_name in
+  let exprjs = from_javascript js in
+  let lambdajs = Lambdajs_syntax.desugar exprjs in
+  let cpsexp = Lambdajs_cps.cps lambdajs in
+  let print_env node (env : AV.env)  = 
+    printf "Node: %d %s\n" node 
+      (to_string (IdMapExt.p_map text (AVSetExt.p_set p_av)) env)
+  in Lambdajs_cfa.cfa cpsexp;
+    Hashtbl.iter print_env envs
 
 let action_esc () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
@@ -109,11 +122,6 @@ let action_test_tc () : unit =
   Typedjs_testing.parse_and_test !cin !cin_name
 
 
-open Lambdajs_cfa
-open Lambdajs_cps
-open Exprjs_syntax
-open Format
-open FormatExt
 
 
 let action_custom () : unit = 
@@ -174,6 +182,8 @@ let main () : unit =
       ("-unittest", Arg.Unit (set_action action_test_tc),
        "(undocumented)");
       ("-custom", Arg.Unit (set_action action_custom),
+       "(undocumented)");
+      ("-cfa", Arg.Unit (set_action action_cfa),
        "(undocumented)");
 
       ("-tc", Arg.Unit (set_action action_tc),

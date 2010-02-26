@@ -37,11 +37,15 @@ type exp =
 
 open Exprjs_syntax
 
-type env = IdSet.t
+type env = bool IdMap.t
+
+let rec mk_array (p, exps) = 
+  let mk_field n v = (p, string_of_int n, v) in
+    EObject (p, List.map2 mk_field (iota (List.length exps)) exps)
  
 let rec ds_expr (env : env) (expr : expr) : exp = match expr with
     ConstExpr (p, c) -> EConst (p, c)
-  | ArrayExpr (p, es) -> EArray (p, map (ds_expr env) es)
+  | ArrayExpr (p, es) -> mk_array (p, map (ds_expr env) es)
   | ObjectExpr (p, fields) -> 
       (* Imperative object *)
       EOp1 (p, Ref, EObject (p, map (ds_field env) fields))
@@ -49,13 +53,17 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
       (* In JavaScript, 'this' is a reserved word.  Hence, we are certain that
          the the bound identifier is not captured by existing bindings. *)
       EId (p, "this")
-  | VarExpr (p, x) -> 
-      if IdSet.mem x env then
-        (* var-lifting would have introduced a binding for x. *)
-        EId (p, x)
-      else
+  | VarExpr (p, x) -> begin
+      try 
+        if IdMap.find x env then
+          (* var-lifting would have introduced a binding for x. *)
+          EOp1 (p, Deref, EId (p, x))
+        else
+          EId (p, x)
+      with Not_found ->
         EOp2 (p, GetField, EOp1 (p, Deref, EId (p, "#global")),
               EConst (p, CString x))
+    end
   | BracketExpr (p, e1, e2) ->
       EOp2 (p, GetField, EOp1 (p, Deref, ds_expr env e1), ds_expr env e2)
   | PrefixExpr (p, op, e) -> EOp1 (p, Op1Prefix op, ds_expr env e)
@@ -63,7 +71,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
   | IfExpr (p, e1, e2, e3) -> 
       EIf (p, ds_expr env e1, ds_expr env e2, ds_expr env e3)
   | AssignExpr (p, VarLValue (p', x), e) -> 
-      if IdSet.mem x env then
+      if IdMap.mem x env then (* assume var-bound *)
         EOp2 (p, SetRef, EOp1 (p', Deref, EId (p, x)), ds_expr env e)
       else
         EOp2 (p, SetRef, EId (p, "#global"),
@@ -77,7 +85,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
                                 ds_expr env e1,
                                 ds_expr env e2)))
   | LetExpr (p, x, e1, e2) ->
-      ELet (p, x, ds_expr env e1, ds_expr (IdSet.add x env) e2)
+      ELet (p, x, ds_expr env e1, ds_expr (IdMap.add x false env) e2)
   | SeqExpr (p, e1, e2) -> 
       ESeq (p, ds_expr env e1, ds_expr env e2)
   | WhileExpr (p, test, body) -> 
@@ -102,8 +110,14 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
       ELabel (p, l, ds_expr env e)
   | BreakExpr (p, l, e) -> EBreak (p, l, ds_expr env e)
   | VarDeclExpr (p, x, e) -> 
-      (* var-lifting would have introduced a binding for x. *)
-      EOp2 (p, SetRef, EId (p, x), ds_expr env e)
+      if IdMap.mem x env then
+        (* var-lifting would have introduced a binding for x. *)
+        EOp2 (p, SetRef, EId (p, x), ds_expr env e)
+      else 
+        EOp2 (p, SetRef, EId (p, "#global"),
+              EUpdateField (p, EOp1 (p, Deref, EId (p, "#global")),
+                            EConst (p, CString x),
+                            ds_expr env e))
   | TryCatchExpr (p, body, x, catch) ->
       ETryCatch (p, ds_expr env body, ELambda (p, [x], ds_expr env catch))
   | TryFinallyExpr (p, e1, e2) -> 
@@ -114,11 +128,11 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
             EApp (p, EOp2 (p', GetField, EOp1 (p', Deref, EId (p, "%obj")),
                                 ds_expr env prop),
                   [ EId (p, "%obj"); 
-                    EArray (p, map (ds_expr env) args) ]))
+                    mk_array (p, map (ds_expr env) args) ]))
   | AppExpr (p, f, args) ->
       EApp (p, ds_expr env f,
             [ EId (p, "#global"); 
-              EArray (p, map (ds_expr env) args) ])
+              EOp1 (p, Ref, mk_array (p, map (ds_expr env) args)) ])
   | NewExpr (p, constr, args) -> (* TODO: FIX THIS AND APP *)
       ELet (p, "%constr", ds_expr env constr,
             EApp (p, EId (p, "%constr"),
@@ -126,29 +140,39 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
                                    EOp2 (p, GetField,
                                          EOp1 (p, Deref, EId (p, "%constr")),
                                          EConst (p, CString "prototype"))) ]);
-                    EArray (p, map (ds_expr env) args) ]))
+                    EOp1 (p, Ref, mk_array (p, map (ds_expr env) args)) ]))
 
   | FuncExpr (p, args, body) ->
       let init_var x exp =
         ELet (p, x, EOp1 (p, Ref, EConst (p, CUndefined)), exp)
       and get_arg x n exp =
-        ELet (p, x, EOp2 (p, GetField, EOp1 (p, Deref, EId (p, "arguments")),
-                               EConst (p, CString (string_of_int n))),
+        ELet (p, x, 
+              EOp1 (p, Ref,
+                    EOp2 (p, GetField, EOp1 (p, Deref, EId (p, "arguments")),
+                          EConst (p, CString (string_of_int n)))),
               exp) 
       and vars = Exprjs_syntax.locals body in
+      let env = IdSet.fold (fun x env -> IdMap.add x true env) vars env in
+      let env = fold_left (fun env x -> IdMap.add x true env) env args in
         ELambda 
           (p, [ "this"; "arguments"],
            List.fold_right2 get_arg args (iota (List.length args))
              (fold_right init_var (IdSetExt.to_list vars)
-                (ds_expr (IdSet.union vars env) body)))
+                (ds_expr env body)))
   | FuncStmtExpr (p, f, args, body) ->
       EOp2 (p, SetRef, EId (p, f), ds_expr env (FuncExpr (p, args, body)))
 
 
 and ds_field env (p, x, e) = (p, x, ds_expr env e)
 
+
+let p = (Lexing.dummy_pos, Lexing.dummy_pos)
+
 let desugar (expr : expr) = 
-  ds_expr IdSet.empty expr
+  ELet (p, "#global", EOp1 (p, Ref, EObject (p, [])),
+        ELet (p, "%uncaught-exception", EObject (p, []),
+              ELet (p, "%return-value", EObject (p, []),
+                    ds_expr IdMap.empty expr)))
 
 (******************************************************************************)
 
