@@ -9,7 +9,6 @@ type cpsval =
 
 type node = int * pos
 
-
 type cpsexp =
   | Fix of node * lambda list * cpsexp
   | App of node * cpsval * cpsval list
@@ -18,8 +17,6 @@ type cpsexp =
   | Let1 of node * id * op1 * cpsval * cpsexp
   | Let2 of node * id * op2 * cpsval * cpsval * cpsexp
   | UpdateField of node * id * cpsval * cpsval * cpsval * cpsexp
-  | Ref of node * id * cpsval * cpsexp
-  | Deref of node * id * cpsval * cpsexp
 
 and lambda = id * id list * cpsexp
 
@@ -87,16 +84,6 @@ module Cps = struct
                     If (mk_node p, v1, 
                         tailcps e2 throw cont,
                         tailcps e3 throw cont)))
-    | ERef (p, e) ->
-        cps e throw
-          (fun v -> 
-             let r = mk_name () in
-               Ref (mk_node p, r, v, k (Id r)))
-    | EDeref (p, e) ->
-        cps e throw
-          (fun v -> 
-             let r = mk_name () in
-               Deref (mk_node p, r, v, k (Id r)))
     | EFix (p, binds, body) ->
         Fix (mk_node p,
              map cps_bind binds,
@@ -214,16 +201,6 @@ module Pretty = struct
                                p_cpsval v3 ];
                       text "in" ];
                p_cpsexp e ]
-    | Ref (_, x, v, e) ->
-        vert [ horz [ text "let"; text x; text "="; 
-                      parens [ text "ref"; p_cpsval v ];
-                      text "in" ];
-               p_cpsexp e ]
-    | Deref (_, x, v, e) ->
-        vert [ horz [ text "let"; text x; text "="; 
-                      parens [ text "deref"; p_cpsval v ];
-                      text "in" ];
-               p_cpsexp e ]
           
   and p_prop (x, v) : printer =
     brackets [ p_cpsval x; p_cpsval v ]
@@ -242,8 +219,6 @@ let cpsexp_idx (cpsexp : cpsexp) = match cpsexp with
   | Let1 ((n, _), _, _, _, _) -> n
   | Let2 ((n, _), _, _, _, _, _) -> n
   | UpdateField ((n, _), _, _, _, _, _) -> n
-  | Ref ((n, _), _, _, _) -> n
-  | Deref ((n, _), _, _, _) -> n
 
 let lambda_name (f, _, _) = f
 
@@ -273,10 +248,6 @@ let rec fv (cpsexp : cpsexp) : IdSet.t = match cpsexp with
       IdSetExt.unions [ fv_val v1; fv_val v2; IdSet.remove x (fv e) ]
   | UpdateField(_, x, v1, v2, v3, e) -> 
       IdSetExt.unions [ fv_val v1; fv_val v2; fv_val v3; IdSet.remove x (fv e) ]
-  | Ref (_, x, v, e) -> 
-      IdSetExt.unions [ fv_val v; IdSet.remove x (fv e) ]
-  | Deref (_, x, v, e) -> 
-      IdSetExt.unions [ fv_val v; IdSet.remove x (fv e) ]
 
 and fv_val (cpsval : cpsval) = match cpsval with
   | Const _ -> IdSet.empty

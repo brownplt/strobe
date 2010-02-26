@@ -1,7 +1,10 @@
 open Prelude
 open FormatExt
 
-type op1 = Op1Prefix of JavaScript_syntax.prefixOp
+type op1 = 
+  | Op1Prefix of JavaScript_syntax.prefixOp
+  | Deref
+  | Ref
 
 (* TODO: unchecked operations should always use differnet syntax. add an
    uncheckedGetField, uncheckedSetField, updateField, App, and if, ? *)
@@ -21,8 +24,6 @@ type exp =
   | EOp2 of pos * op2 * exp * exp
   | EIf of pos * exp * exp * exp
   | EApp of pos * exp * exp list
-  | ERef of pos * exp
-  | EDeref of pos * exp
   | ESeq of pos * exp * exp
   | ELet of pos * id * exp * exp
   | EFix of pos * (id * exp) list * exp 
