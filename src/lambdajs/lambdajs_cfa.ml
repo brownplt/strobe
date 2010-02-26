@@ -48,13 +48,14 @@ module AVSetExt = SetExt.Make (AVSet)
 open AV
 
 
-let rec  p_av av fmt = match av with
-  | AConst c -> Exprjs_pretty.p_const c fmt
-  | ARef x -> Format.pp_print_int  fmt x
-  | AObj lst -> Format.pp_print_string fmt "obj"
-  | AArr _ -> Format.pp_print_string fmt  "arr"
+let rec  p_av av  = match av with
+  | AConst c -> Exprjs_pretty.p_const c
+  | ARef x -> int x
+  | AObj dict ->
+      IdMapExt.p_map text (AVSetExt.p_set p_av) dict
+  | AArr _ -> text "array"
   | AClosure (n, args, _) -> 
-      Format.pp_print_string fmt  ("closure" ^ string_of_int n)
+      text ("closure" ^ string_of_int n)
       
 
 let union_env (env1 : AV.env) (env2 : AV.env) : AV.env = 
@@ -76,17 +77,17 @@ let set_env (n : int) (env : env) = Hashtbl.replace envs n env
 
 open Lambdajs_syntax
 
-let calc_op1 (op1 : op1) (avs : AV.avs) : avs = match op1 with
+let calc_op1 (n : int) (op1 : op1) (avs : AV.avs) : avs = match op1 with
   | Ref -> 
-      let loc = !next_loc in
-        incr next_loc;
-        H.add heap loc avs;
-        AVSet.singleton (ARef loc)
+      H.add heap n avs;
+      AVSet.singleton (ARef n)
   | Deref ->
       let fn v r = match v with
-        | ARef loc -> printf "DEREF OK"; AVSet.union (H.find heap loc) r
+        | ARef loc -> AVSet.union (H.find heap loc) r
         | _ -> printf "Deref expects ARef\n"; r in
-      AVSet.fold fn avs AVSet.empty
+      let s = AVSet.fold fn avs AVSet.empty in
+        printf "derefed %s\n" (to_string (AVSetExt.p_set p_av) s);
+        s
   | Op1Prefix jsOp -> match jsOp with
       | JavaScript_syntax.PrefixLNot -> AVSet.singleton ANumber
       | JavaScript_syntax.PrefixBNot -> AVSet.singleton ABool
@@ -137,7 +138,7 @@ let calc_op2 (op2 : op2) (vs1 : AV.avs) (vs2 : AV.avs) : avs = match op2 with
             vs2 IdSet.empty in
         let fields_to_get = IdSetExt.to_list fields_to_get in
           AVSet.fold (fun v r -> match v with
-                        | AObj props -> printf "OBJEWRWR";
+                        | AObj props ->
                             AVSet.union (get_fields props fields_to_get) r
                         | _ -> printf "expected object"; r)
             vs1 AVSet.empty
@@ -213,8 +214,9 @@ let rec calc (env : env) (cpsexp : cpsexp) : unit = match cpsexp with
           flow env e3
   | Let0 (_, x, v, e) ->
       flow (IdMap.add x (absval env v) env) e
-  | Let1 (_, x, op1, v, e) ->
-      flow (IdMap.add x (calc_op1 op1 (absval env v)) env) e
+  | Let1 ((n, _), x, op1, v, e) ->
+      printf "%d\n " n;
+      flow (IdMap.add x (calc_op1 n op1 (absval env v)) env) e
   | Let2 (_, x, op2, v1, v2, e) ->
       flow (IdMap.add x (calc_op2 op2 (absval env v1) (absval env v2)) env) e
   | UpdateField (_, x, v1, v2, v3, e) ->
@@ -224,6 +226,7 @@ let rec calc (env : env) (cpsexp : cpsexp) : unit = match cpsexp with
 
 
 and flow (env : env) (cpsexp : cpsexp) : unit = 
+
   try
     let old_env = get_env (cpsexp_idx cpsexp) in
     let new_env = union_env old_env env in
