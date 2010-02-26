@@ -26,7 +26,7 @@ type cpsval =
 type node = int * pos
 
 type bindexp =
-  | Bind of cpsval
+  | Let of cpsval
   | Op1 of op1 * cpsval
   | Op2 of op2 * cpsval * cpsval
   | UpdateField of cpsval * cpsval * cpsval
@@ -35,10 +35,7 @@ type cpsexp =
   | Fix of node * lambda list * cpsexp
   | App of node * cpsval * cpsval list
   | If of node * cpsval * cpsexp * cpsexp
-  | Let0 of node * id * cpsval * cpsexp (* load immediate / reg-reg move *)
-  | Let1 of node * id * op1 * cpsval * cpsexp
-  | Let2 of node * id * op2 * cpsval * cpsval * cpsexp
-  | UpdateField of node * id * cpsval * cpsval * cpsval * cpsexp
+  | Bind of node * id * bindexp * cpsexp
 
 and lambda = id * id list * cpsexp
 

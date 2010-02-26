@@ -9,14 +9,17 @@ type cpsval =
 
 type node = int * pos
 
+type bindexp =
+  | Let of cpsval
+  | Op1 of op1 * cpsval
+  | Op2 of op2 * cpsval * cpsval
+  | UpdateField of cpsval * cpsval * cpsval
+
 type cpsexp =
   | Fix of node * lambda list * cpsexp
   | App of node * cpsval * cpsval list
   | If of node * cpsval * cpsexp * cpsexp
-  | Let0 of node * id * cpsval * cpsexp (* load immediate / reg-reg move *)
-  | Let1 of node * id * op1 * cpsval * cpsexp
-  | Let2 of node * id * op2 * cpsval * cpsval * cpsexp
-  | UpdateField of node * id * cpsval * cpsval * cpsval * cpsexp
+  | Bind of node * id * bindexp * cpsexp
 
 and lambda = id * id list * cpsexp
 
@@ -56,23 +59,24 @@ module Cps = struct
                   cps e3 throw
                     (fun v3 ->
                        let x = mk_name () in
-                         UpdateField (mk_node p, x, v1, v2, v3, k (Id x)))))
+                        Bind (mk_node p, x, UpdateField (v1, v2, v3),
+                              k (Id x)))))
     | EOp1 (p, op, e) ->
         cps e throw
           (fun v ->
              let r = mk_name () in
-               Let1 (mk_node p, r, op, v, k (Id r)))
+               Bind (mk_node p, r, Op1 (op, v), k (Id r)))
     | EOp2 (p, op, e1, e2) ->
         cps e1 throw
           (fun v1 ->
              cps e2 throw
                (fun v2 ->
                   let r = mk_name () in
-                    Let2 (mk_node p, r, op, v1, v2, k (Id r))))
+                    Bind (mk_node p, r, Op2 (op, v1, v2), k (Id r))))
     | ELet (p, x, e1, e2) ->
         cps e1 throw
           (fun v1 ->
-             Let0 (mk_node p, x, v1,
+             Bind (mk_node p, x, Let v1,
                    cps e2 throw k))
     | EIf (p, e1, e2, e3) ->
         let cont = mk_name () in
@@ -175,6 +179,13 @@ module Pretty = struct
     
   and p_prop (x, v) : printer = brackets [ text x; p_cpsval v ]
 
+  let p_bindexp (bindexp : bindexp) : printer = match bindexp with
+    | Let v -> p_cpsval v
+    | Op1 (op, v1) -> parens [ p_op1 op; p_cpsval v1 ]
+    | Op2 (op, v1, v2) -> parens [ p_op2 op; p_cpsval v1; p_cpsval v2 ]
+    | UpdateField (v1, v2, v3) -> 
+        parens [ p_cpsval v1; p_cpsval v2; p_cpsval v3 ]
+
   let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
       Fix (_, binds, body) ->
         vert [ text "fix"; nest (vert (map p_bind binds)); p_cpsexp body ]
@@ -182,25 +193,9 @@ module Pretty = struct
         parens ( text "app" :: p_cpsval f :: (map p_cpsval args) )
     | If (_, v1, e2, e3) -> 
         parens [ text "if"; p_cpsval v1; p_cpsexp e2; p_cpsexp e3 ]
-    | Let0 (_, x, v, e) -> 
-        vert [ horz [ text "let"; text x; text "="; p_cpsval v; text "in" ]; 
-               p_cpsexp e ]
-    | Let1 (_, x, op, v, e) -> 
-        vert [ horz [ text "let"; text x;  text "="; 
-                      parens [ p_op1 op; p_cpsval v ];
-                      text "in" ];
-               p_cpsexp e ]
-    | Let2 (_, x, op, v1, v2, e) -> 
-        vert [ horz [ text "let"; text x; 
-                      parens [ p_op2 op; p_cpsval v1; p_cpsval v2 ];
-                      text "in" ];
-               p_cpsexp e ]
-    | UpdateField (_, x, v1, v2, v3, e) ->
-        vert [ horz [ text "let"; text x; text "="; 
-                      parens [ text "update-field"; p_cpsval v1; p_cpsval v2;
-                               p_cpsval v3 ];
-                      text "in" ];
-               p_cpsexp e ]
+    | Bind (_, x, b, k) ->
+        vert [ horz [ text "let"; text x; text "="; p_bindexp b; text "in" ]; 
+               p_cpsexp k ]
           
   and p_prop (x, v) : printer =
     brackets [ p_cpsval x; p_cpsval v ]
@@ -215,10 +210,7 @@ let cpsexp_idx (cpsexp : cpsexp) = match cpsexp with
   | Fix ((n, _), _, _) -> n
   | App ((n, _), _, _) -> n
   | If ((n, _), _, _, _) -> n
-  | Let0 ((n, _), _, _, _) -> n
-  | Let1 ((n, _), _, _, _, _) -> n
-  | Let2 ((n, _), _, _, _, _, _) -> n
-  | UpdateField ((n, _), _, _, _, _, _) -> n
+  | Bind ((n, _), _, _, _) -> n
 
 let lambda_name (f, _, _) = f
 
@@ -229,7 +221,6 @@ let cps (exp : exp) : cpsexp =
 
 let mk_node = Cps.mk_node
 
-
 let rec fv (cpsexp : cpsexp) : IdSet.t = match cpsexp with
   |  Fix (_, binds, body) ->
        let bound_ids = IdSetExt.from_list (map fst3 binds) in
@@ -238,22 +229,22 @@ let rec fv (cpsexp : cpsexp) : IdSet.t = match cpsexp with
   | App (_, v, vs) -> IdSetExt.unions (map fv_val (v :: vs))
   | If (_, v1, e2, e3) ->
       IdSetExt.unions [ fv_val v1; fv e2; fv e3 ]
-  | Let0 (_, x, v, e) -> 
-      IdSet.union (fv_val v)
+  | Bind (_, x, b, e) -> 
+      IdSet.union (fv_bindexp b)
         (IdSet.remove x (fv e))
-  | Let1 (_, x, _, v, e) -> 
-      IdSet.union (fv_val v)
-        (IdSet.remove x (fv e))
-  | Let2 (_, x, _, v1, v2, e) ->
-      IdSetExt.unions [ fv_val v1; fv_val v2; IdSet.remove x (fv e) ]
-  | UpdateField(_, x, v1, v2, v3, e) -> 
-      IdSetExt.unions [ fv_val v1; fv_val v2; fv_val v3; IdSet.remove x (fv e) ]
 
 and fv_val (cpsval : cpsval) = match cpsval with
   | Const _ -> IdSet.empty
   | Array vs -> IdSetExt.unions (map fv_val vs)
   | Object ps -> IdSetExt.unions (map (fun (_, v) -> fv_val v) ps)
   | Id x -> IdSet.singleton x
+
+and fv_bindexp (bindexp : bindexp) = match bindexp with
+  | Let v -> fv_val v
+  | Op1 (_, v) -> fv_val v
+  | Op2 (_, v1, v2) -> IdSet.union (fv_val v1) (fv_val v2)
+  | UpdateField (v1, v2, v3) -> 
+      IdSet.union (fv_val v1) (IdSet.union (fv_val v2) (fv_val v3))
 
 and fv_bind (_, args, body) =
   IdSet.diff (fv body) (IdSetExt.from_list args)
@@ -262,8 +253,4 @@ let fv_immediate (cpsexp : cpsexp) : IdSet.t = match cpsexp with
   |  Fix (_, binds, body) -> IdSet.empty
   | App (_, v, vs) -> IdSetExt.unions (map fv_val (v :: vs))
   | If (_, v1, e2, e3) -> fv_val v1
-  | Let0 (_, x, v, e) -> (fv_val v)
-  | Let1 (_, x, _, v, e) ->  fv_val v
-  | Let2 (_, x, _, v1, v2, e) ->  IdSetExt.unions [ fv_val v1; fv_val v2 ]
-  | UpdateField(_, x, v1, v2, v3, e) -> 
-      IdSetExt.unions [ fv_val v1; fv_val v2; fv_val v3 ]
+  | Bind (_, x, b, e) -> fv_bindexp b

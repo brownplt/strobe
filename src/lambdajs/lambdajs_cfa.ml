@@ -156,18 +156,14 @@ let rec calc (env : env) (cpsexp : cpsexp) : unit = match cpsexp with
           flow env e2;
         if AVSet.mem (AConst (Exprjs_syntax.CBool false)) av1 then
           flow env e3
-  | Let0 (_, x, v, e) ->
-      flow (IdMap.add x (absval env v) env) e
-  | Let1 ((n, _), x, op1, v, e) ->
-      printf "%d\n " n;
-      flow (IdMap.add x (calc_op1 n op1 (absval env v)) env) e
-  | Let2 (_, x, op2, v1, v2, e) ->
-      flow (IdMap.add x (calc_op2 op2 (absval env v1) (absval env v2)) env) e
-  | UpdateField (_, x, v1, v2, v3, e) ->
-      flow (IdMap.add x 
-              (calc_op3 (absval env v1) (absval env v2) (absval env v3)) env) e
-
-
+  | Bind ((n, _), x, bindexp, cont) ->
+      let bindv = match bindexp with
+        | Let v -> absval env v
+        | Op1 (op1, v) -> calc_op1 n op1 (absval env v)
+        | Op2 (op2, v1, v2) -> calc_op2 op2 (absval env v1) (absval env v2)
+        | UpdateField (v1, v2, v3) ->
+            calc_op3 (absval env v1) (absval env v2) (absval env v3)
+      in flow (IdMap.add x bindv env) cont
 
 and flow (env : env) (cpsexp : cpsexp) : unit = 
   let idx = cpsexp_idx cpsexp in
