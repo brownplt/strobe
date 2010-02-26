@@ -13,7 +13,6 @@ let envs : (int, env) H.t = H.create 500
 
 let heap : (int, AVSet.t) H.t = H.create 500
 
-
 (* raises Not_found *)
 let get_env (n : int) = Hashtbl.find envs n
 

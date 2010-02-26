@@ -30,8 +30,5 @@ val angles : printer list -> printer
 val to_string : ('a -> printer) -> 'a -> string
 
 
-val use_std_formatter : unit -> unit
-val use_svg_formatter : unit -> unit
-
-val svg_line : int ref
-val svg_col : int ref
+val svg_formatter : formatter
+val flush_svg_formatter : unit -> string

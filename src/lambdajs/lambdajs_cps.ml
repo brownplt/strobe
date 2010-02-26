@@ -194,14 +194,18 @@ module Pretty = struct
         parens [ p_cpsval v1; p_cpsval v2; p_cpsval v3 ]
 
   let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
-      Fix (_, binds, body) ->
-        vert [ text "fix"; nest (vert (map p_bind binds)); p_cpsexp body ]
-    | App (_, f, args ) ->
-        parens ( text "app" :: p_cpsval f :: (map p_cpsval args) )
-    | If (_, v1, e2, e3) -> 
-        parens [ text "if"; p_cpsval v1; p_cpsexp e2; p_cpsexp e3 ]
-    | Bind (_, x, b, k) ->
-        vert [ horz [ text "let"; text x; text "="; p_bindexp b; text "in" ]; 
+      Fix ((n, _), binds, body) ->
+        vert [ text ("fix/" ^ string_of_int n);
+               nest (vert (map p_bind binds)); p_cpsexp body ]
+    | App ((n, _), f, args ) ->
+        parens ( text ("app/" ^ string_of_int n)
+                   :: p_cpsval f :: (map p_cpsval args) )
+    | If ((n, _), v1, e2, e3) -> 
+        parens [ text ("if/" ^ string_of_int n);
+                 p_cpsval v1; p_cpsexp e2; p_cpsexp e3 ]
+    | Bind ((n, _), x, b, k) ->
+        vert [ horz [ text ("let/" ^ string_of_int n); 
+                      text x; text "="; p_bindexp b; text "in" ]; 
                p_cpsexp k ]
       
   and p_bind (f, args, body) : printer =

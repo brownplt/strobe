@@ -71,30 +71,38 @@ let xml_escape (raw_str : string) : string =
     Buffer.contents buf
     
 
-let svg_line = ref 0
-let svg_col = ref 0
 
-let use_std_formatter : unit -> unit =
-  let (out, flush, newline, spaces) = get_all_formatter_output_functions () in
-    fun () ->
-      set_all_formatter_output_functions out flush newline spaces
 
-let use_svg_formatter () : unit =
-  ps "<svg xmlns=\"http://www.w3.org/2000/svg\" \
-           xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
-  let out src_str start_pos num_chars = 
-    let out_str = xml_escape (String.sub src_str start_pos num_chars) in
-      ps "<text style=\"font-family: courier\" x =\""; 
-      pi (!svg_col * 12);  ps "\" y = \""; 
-        pi (!svg_line * 20); ps "\">";
-      ps out_str;
-      ps "</text>";
-      pn ();
-      svg_col := !svg_col + num_chars
-  and flush () = () 
-  and newline () = 
+let (flush_svg_formatter, svg_formatter) = 
+  let buf = Buffer.create 5000 in
+  let formatter = formatter_of_buffer buf in
+  let (out, flush, newline, spaces) = 
+    pp_get_all_formatter_output_functions formatter () in
+  let svg_line = ref 0 in
+  let svg_col = ref 0 in
+  let tmp_buf = Buffer.create 100 in
+
+  let out' src_str start_pos num_chars = 
+    Buffer.add_string tmp_buf 
+      (sprintf "<text style=\"font-family: courier\" x =\"%d\" y=\"%d\">"
+         (!svg_col * 10)  (!svg_line * 20));
+    Buffer.add_string tmp_buf 
+      (xml_escape (String.sub src_str start_pos num_chars));
+    Buffer.add_string tmp_buf "</text>";
+    svg_col := !svg_col + num_chars;
+    out (Buffer.contents tmp_buf) 0 (Buffer.length tmp_buf);
+    Buffer.clear tmp_buf
+  and newline' () = 
     incr svg_line;
-    svg_col := 0 
-  and spaces n =
-    svg_col := !svg_col + n
-  in set_all_formatter_output_functions out flush newline spaces
+    svg_col := 0;
+    newline ()
+  and spaces' n =
+    svg_col := !svg_col + n;
+    spaces n in
+    Buffer.add_string buf 
+      "<svg xmlns=\"http://www.w3.org/2000/svg\" \
+            xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
+    pp_set_all_formatter_output_functions formatter out' flush newline' spaces';
+    (fun () -> flush (); 
+       Buffer.add_string buf "</svg>";
+       Buffer.contents buf), formatter
