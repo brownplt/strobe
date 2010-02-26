@@ -4,8 +4,11 @@ open Lambdajs_cps
 module rec AV 
   : sig
     type t = 
+      | ANumber
+      | ABool
+      | AString
       | AConst of Exprjs_syntax.const
-      | ARef of id
+      | ARef of int
       | AObj of (string * avs) list
       | AArr of avs list
       | AClosure of int * id list * cpsexp
