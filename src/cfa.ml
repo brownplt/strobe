@@ -64,9 +64,8 @@ let action_cfa () : unit =
   let cpsexp = Lambdajs_cps.cps lambdajs in
     Lambdajs_cfa.cfa cpsexp;
     use_svg_formatter ();
-    let coords = Lambdajs_cps.svg_cpsexp cpsexp std_formatter in
-      use_std_formatter ();
-      overlay_call_graph coords
+    Lambdajs_cps.p_cpsexp cpsexp std_formatter;
+    use_std_formatter ()
 
 
 

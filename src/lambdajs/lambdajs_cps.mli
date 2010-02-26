@@ -43,8 +43,6 @@ val cps : exp -> cpsexp
 
 val p_cpsexp : cpsexp -> FormatExt.printer
 
-val svg_cpsexp : cpsexp -> Format.formatter -> (int, int * int) Hashtbl.t
-
 val cpsexp_idx : cpsexp -> int
 
 val lambda_name : lambda -> id

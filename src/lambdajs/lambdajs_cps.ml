@@ -207,39 +207,10 @@ module Pretty = struct
   and p_bind (f, args, body) : printer =
     vert  [ horz [ text f; text "=" ];
             parens [ text "lambda"; parens (map text args); p_cpsexp body ] ]
-
-
-  let svg_cpsexp (e : cpsexp) (fmt : formatter) : (int, int * int) H.t =
-    let pos_tbl = H.create 100 in
-
-    let rec  cpsexp (e : cpsexp) : printer = 
-      printf "position of %d is %d, %d\n" (cpsexp_idx e) !svg_col !svg_line;
-      H.add pos_tbl (cpsexp_idx e) (!svg_col, !svg_line);
-      match e with
-        |  Fix (_, binds, body) ->
-             vert [ text "fix"; nest (vert (map bind binds)); cpsexp body ]
-        | App (_, f, args ) ->
-            parens ( text "app" :: p_cpsval f :: (map p_cpsval args) )
-        | If (_, v1, e2, e3) -> 
-            parens [ text "if"; p_cpsval v1; p_cpsexp e2; cpsexp e3 ]
-        | Bind (_, x, b, k) ->
-            vert [ horz [ text "let"; text x; text "="; p_bindexp b; 
-                          text "in" ]; 
-                   cpsexp k ]
-      
-    and bind (f, args, body) : printer =
-      vert  [ horz [ text f; text "=" ];
-              parens [ text "lambda"; parens (map text args); cpsexp body ] ]
-    in cpsexp e fmt;
-      pos_tbl
-
-
 end
 
 
 let lambda_name (f, _, _) = f
-
-let svg_cpsexp = Pretty.svg_cpsexp
 
 let p_cpsexp  = Pretty.p_cpsexp      
 
