@@ -57,7 +57,6 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
               EConst (p, CString x))
   | BracketExpr (p, e1, e2) ->
       EOp2 (p, GetField, EDeref (p, ds_expr env e1), ds_expr env e2)
-(*   | NewExpr of pos * expr * expr list *)
   | PrefixExpr (p, op, e) -> EOp1 (p, Op1Prefix op, ds_expr env e)
   | InfixExpr (p, op, e1, e2) -> EOp2 (p, Op2Infix op, ds_expr env e1, ds_expr env e2)
   | IfExpr (p, e1, e2, e3) -> 
@@ -119,6 +118,15 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
       EApp (p, ds_expr env f,
             [ EId (p, "#global"); 
               EArray (p, map (ds_expr env) args) ])
+  | NewExpr (p, constr, args) -> (* TODO: FIX THIS AND APP *)
+      ELet (p, "%constr", ds_expr env constr,
+            EApp (p, EId (p, "%constr"),
+                  [ EObject (p, [ (p, "__proto__", 
+                                   EOp2 (p, GetField,
+                                         EDeref (p, EId (p, "%constr")),
+                                         EConst (p, CString "prototype"))) ]);
+                    EArray (p, map (ds_expr env) args) ]))
+
   | FuncExpr (p, args, body) ->
       let init_var x exp =
         ELet (p, x, ERef (p, EConst (p, CUndefined)), exp)
@@ -132,6 +140,9 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
            List.fold_right2 get_arg args (iota (List.length args))
              (fold_right init_var (IdSetExt.to_list vars)
                 (ds_expr (IdSet.union vars env) body)))
+  | FuncStmtExpr (p, f, args, body) ->
+      EOp2 (p, SetRef, EId (p, f), ds_expr env (FuncExpr (p, args, body)))
+
 
 and ds_field env (p, x, e) = (p, x, ds_expr env e)
 
