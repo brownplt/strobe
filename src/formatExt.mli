@@ -28,3 +28,10 @@ val angles : printer list -> printer
 (** [to_string f x] uses [Format.str_formatter] as the buffer for printing [x]
     with [f]. *)
 val to_string : ('a -> printer) -> 'a -> string
+
+
+val use_std_formatter : unit -> unit
+val use_svg_formatter : unit -> unit
+
+val svg_line : int ref
+val svg_col : int ref

@@ -18,6 +18,14 @@ module PosOrderedType = struct
    
 end
 
+module Int = struct
+  type t = int
+  let compare = Pervasives.compare
+end
+
+module IntSet = Set.Make (Int)
+module IntSetExt = SetExt.Make (IntSet)
+
 module IdSet = Set.Make (IdOrderedType)
 
 module IdSetExt = SetExt.Make (IdSet)

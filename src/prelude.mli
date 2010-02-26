@@ -2,6 +2,13 @@ type id = string
 
 type pos = Lexing.position * Lexing.position
 
+module IntSet : Set.S
+  with type elt = int
+
+module IntSetExt : SetExt.S
+  with type elt = int
+  and type t = IntSet.t
+
 module IdSet : Set.S 
   with type elt = id
 

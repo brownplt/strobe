@@ -7,17 +7,27 @@ module H = Hashtbl
 
 let reachable = H.create 100
 
+let call_graph = H.create 500
 
 let envs : (int, env) H.t = H.create 500
 
-let next_loc = ref 0
-
 let heap : (int, AVSet.t) H.t = H.create 500
+
 
 (* raises Not_found *)
 let get_env (n : int) = Hashtbl.find envs n
 
 let set_env (n : int) (env : env) = Hashtbl.replace envs n env
+
+let call_from_to (m : int) (n : int) : unit = 
+  if H.mem call_graph m then
+    begin
+      let set = H.find call_graph m in
+        if not (IntSet.mem n set) then
+          H.replace call_graph m (IntSet.add n set)
+    end
+  else
+    H.add call_graph m (IntSet.singleton n)
 
 open Lambdajs_syntax
 
@@ -28,9 +38,8 @@ let calc_op1 (n : int) (op1 : op1) (avs : AV.avs) : avs = match op1 with
   | Deref ->
       let fn v r = match v with
         | ARef loc -> AVSet.union (H.find heap loc) r
-        | _ -> printf "Deref expects ARef\n"; r in
+        | _ -> r in
       let s = AVSet.fold fn avs AVSet.empty in
-        printf "derefed %s\n" (to_string (AVSetExt.p_set p_av) s);
         s
   | Op1Prefix jsOp -> match jsOp with
       | JavaScript_syntax.PrefixLNot -> AVSet.singleton ANumber
@@ -44,12 +53,10 @@ let calc_op1 (n : int) (op1 : op1) (avs : AV.avs) : avs = match op1 with
 let rec get_fields obj_fields field_names : AVSet.t = match field_names with
   | [] -> AVSet.empty
   | field :: rest ->
-      printf "getting field %s\n" field;
         AVSet.union
           (try
              IdMap.find field obj_fields
            with Not_found ->
-             printf "field not found\n";
              AVSet.singleton (AConst Exprjs_syntax.CUndefined))
           (get_fields obj_fields rest)
 
@@ -78,13 +85,13 @@ let calc_op2 (op2 : op2) (vs1 : AV.avs) (vs2 : AV.avs) : avs = match op2 with
         let fields_to_get = 
           AVSet.fold (fun v r -> match v with 
                         | AConst (Exprjs_syntax.CString s) -> IdSet.add s r
-                        | _ -> printf "expected string"; r) 
+                        | _ ->  r) 
             vs2 IdSet.empty in
         let fields_to_get = IdSetExt.to_list fields_to_get in
           AVSet.fold (fun v r -> match v with
                         | AObj props ->
                             AVSet.union (get_fields props fields_to_get) r
-                        | _ -> printf "expected object"; r)
+                        | _ ->  r)
             vs1 AVSet.empty
   | SetRef -> 
       (* return previous value, vs2 *)
@@ -139,15 +146,15 @@ let rec calc (env : env) (cpsexp : cpsexp) : unit = match cpsexp with
       let env' = fold_left (bind_lambda (fst2 node)) env binds in
         List.iter (mk_closure  env') binds;
         flow env' body
-  | App (_, f, args) ->
+  | App ((app_n, _), f, args) ->
       let argvs = map (absval env) args in
       let do_app fv = match fv with 
         | AClosure (n, formals, body) -> (* TODO: arity *)
-            printf "FUNCTION\n";
+            call_from_to app_n (cpsexp_idx body);
             let body_env =
               List.fold_right2 IdMap.add formals argvs IdMap.empty in
              flow (union_env body_env (get_env n)) body
-        | _ -> printf "NOT A FN"; ()
+        | _ -> ()
       in AVSet.iter do_app (absval env f)
 
   | If (_, v1, e2, e3) -> 

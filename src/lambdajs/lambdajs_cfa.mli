@@ -9,6 +9,9 @@ open Lambdajs_lattice
     non-empty. *)    
 val reachable : (int, cpsexp) Hashtbl.t
 
+(** [call_graph] maps nodes for application sites to sets of function names. *)
+val call_graph : (int, IntSet.t) Hashtbl.t
+
 
 val envs : (int, AV.env) Hashtbl.t
 

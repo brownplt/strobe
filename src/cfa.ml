@@ -26,6 +26,18 @@ let empty_vars () =
   Hashtbl.iter empty_vars_at reachable
 
 
+let overlay_call_graph coords : unit =
+  let arrow (from_node : int) (to_node : int) : unit = 
+    let (x1, y1) = H.find coords from_node in
+    let (x2, y2) = H.find coords to_node in
+      fprintf std_formatter "<path d=\"M %d %d L %d %d\">\n"
+        (x1 * 12) (y1 * 20) (x2 * 12) (y2 * 20) in
+  let arrows_from (from_node : int) (to_set : IntSet.t) : unit  = 
+    IntSet.iter (arrow from_node) to_set in
+
+    H.iter arrows_from call_graph
+    
+
 
 let cin = ref stdin
 
@@ -40,19 +52,22 @@ let action_cps () : unit =
   let exprjs = from_javascript js in
   let lambdajs = Lambdajs_syntax.desugar exprjs in
   let cpslambdajs = Lambdajs_cps.cps lambdajs in
-    Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
+    use_svg_formatter ();
+    Lambdajs_cps.p_cpsexp cpslambdajs std_formatter;
+    Format.pp_print_flush std_formatter ()
+      
 
 let action_cfa () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let lambdajs = Lambdajs_syntax.desugar exprjs in
   let cpsexp = Lambdajs_cps.cps lambdajs in
-  let print_env node (env : AV.env)  = 
-    printf "Node: %d %s\n" node 
-      (to_string (IdMapExt.p_map text (AVSetExt.p_set p_av)) env)
-  in Lambdajs_cfa.cfa cpsexp;
-    Hashtbl.iter print_env envs;
-    empty_vars ()
+    Lambdajs_cfa.cfa cpsexp;
+    use_svg_formatter ();
+    let coords = Lambdajs_cps.svg_cpsexp cpsexp std_formatter in
+      use_std_formatter ();
+      overlay_call_graph coords
+
 
 
 let action = ref action_cps
