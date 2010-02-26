@@ -84,7 +84,7 @@ let (flush_svg_formatter, svg_formatter) =
 
   let out' src_str start_pos num_chars = 
     Buffer.add_string tmp_buf 
-      (sprintf "<text style=\"font-family: courier\" x =\"%d\" y=\"%d\">"
+      (sprintf "<text style=\"font-family: courier\" x=\"%d\" y=\"%d\">"
          (!svg_col * 10)  (!svg_line * 20));
     Buffer.add_string tmp_buf 
       (xml_escape (String.sub src_str start_pos num_chars));
@@ -101,8 +101,24 @@ let (flush_svg_formatter, svg_formatter) =
     spaces n in
     Buffer.add_string buf 
       "<svg xmlns=\"http://www.w3.org/2000/svg\" \
+            xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" \
             xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
+    Buffer.add_string buf
+      "<defs><marker \
+       inkscape:stockid=\"Arrow2Lend\" \
+       orient=\"auto\" \
+       refY=\"0.0\" \
+       refX=\"0.0\" \
+       id=\"Arrow2Lend\" \
+       style=\"overflow:visible;\"> \
+       <path
+         style=\"font-size:12.0;fill-rule:evenodd;stroke-width:0.62500000; \
+                 stroke-linejoin:round;\" \
+         d=\"M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884, \
+            -4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 \
+             8.7185878,4.0337352 z \" \
+         transform=\"scale(1.1) rotate(180) translate(1,0)\" /> \
+      </marker></defs>";
     pp_set_all_formatter_output_functions formatter out' flush newline' spaces';
-    (fun () -> flush (); 
-       Buffer.add_string buf "</svg>";
+    (fun () -> pp_print_flush formatter ();
        Buffer.contents buf), formatter

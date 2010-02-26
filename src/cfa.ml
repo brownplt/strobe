@@ -13,6 +13,30 @@ open Lambdajs_lattice
 
 module H = Hashtbl
 
+
+(* [find_coords svg_str] determines the coordinates of nodes in an SVG
+   document. *)
+let find_coords (svg_str : string) : (int, int * int) H.t =
+  let re = Str.regexp "x=\"\\([0-9]+\\)\" y=\"\\([0-9]+\\)\">\
+                       \\(app\\|let\\|fix\\|if\\)/\\([0-9]+\\)"
+  in 
+
+  let matches = H.create 100 in
+  let rec find start_pos = begin
+    try 
+      let next_pos = Str.search_forward  re svg_str start_pos in
+      let x = int_of_string (Str.matched_group 1 svg_str) in
+      let y = int_of_string (Str.matched_group 2 svg_str) in
+      let node = int_of_string (Str.matched_group 4 svg_str) in
+        eprintf "Node %d is at (%d, %d)\n" node x y;
+        H.add matches node (x,y);
+        find (Str.match_end ())
+    with Not_found -> () 
+  end in
+    find 0;
+    matches
+    
+
 let empty_vars_at node cpsexp = 
   let vars = fv_immediate cpsexp in
   let env = H.find envs node in
@@ -28,10 +52,16 @@ let empty_vars () =
 
 let overlay_call_graph coords : unit =
   let arrow (from_node : int) (to_node : int) : unit = 
-    let (x1, y1) = H.find coords from_node in
-    let (x2, y2) = H.find coords to_node in
-      fprintf std_formatter "<path d=\"M %d %d L %d %d\">\n"
-        (x1 * 12) (y1 * 20) (x2 * 12) (y2 * 20) in
+    eprintf "Drawing edge from %d to %d\n" from_node to_node;
+    try 
+      let (x1, y1) = H.find coords from_node in
+      let (x2, y2) = H.find coords to_node in
+        fprintf std_formatter 
+          "<path d=\"M %d %d L %d %d\" 
+                 style=\"stroke-width:1px; stroke:#0000ff; \
+                        marker-end:url(#Arrow2Lend)\"></path>\n"
+          x1 y1 x2 y2
+    with Not_found -> () in
   let arrows_from (from_node : int) (to_set : IntSet.t) : unit  = 
     IntSet.iter (arrow from_node) to_set in
 
@@ -64,7 +94,10 @@ let action_cfa () : unit =
     Lambdajs_cfa.cfa cpsexp;
     Lambdajs_cps.p_cpsexp cpsexp svg_formatter;
     let src = flush_svg_formatter () in
-      print_string src
+      print_string src;
+      let coords = find_coords src in
+        overlay_call_graph coords;
+        print_string "</svg>"
         
 
 
