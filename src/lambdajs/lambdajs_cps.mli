@@ -18,13 +18,18 @@ open Prelude
 open Lambdajs_syntax
 
 type cpsval =
-    Const of Exprjs_syntax.const
+  | Const of Exprjs_syntax.const
   | Array of cpsval list
   | Object of (string * cpsval) list
   | Id of id
 
 type node = int * pos
 
+type bindexp =
+  | Bind of cpsval
+  | Op1 of op1 * cpsval
+  | Op2 of op2 * cpsval * cpsval
+  | UpdateField of cpsval * cpsval * cpsval
 
 type cpsexp =
   | Fix of node * lambda list * cpsexp
@@ -48,3 +53,5 @@ val lambda_name : lambda -> id
 val mk_node : pos -> node
 
 val fv : cpsexp -> IdSet.t
+
+val fv_immediate : cpsexp -> IdSet.t

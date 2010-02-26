@@ -2,7 +2,7 @@
 
 OCAMLBUILD = ocamlbuild -build-dir ../build -quiet
 
-all: debug
+all: debug cfa
 
 clean:
 	rm -rf ../build
@@ -12,6 +12,9 @@ builddir:
 
 debug: builddir
 	$(OCAMLBUILD) main.d.byte
+
+cfa: builddir
+	$(OCAMLBUILD) cfa.d.byte
 
 doc: builddir
 	$(OCAMLBUILD) doc.docdir/index.html

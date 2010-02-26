@@ -1,65 +1,11 @@
 open FormatExt
 open Prelude
 open Lambdajs_cps
+open Lambdajs_lattice
+open AV
 module H = Hashtbl
 
-module rec AV 
-  : sig
-    type t = 
-      | ANumber
-      | ABool
-      | AString
-      | AConst of Exprjs_syntax.const
-      | ARef of int
-      | AObj of avs IdMap.t
-      | AArr of avs list
-      | AClosure of int * id list * cpsexp
-
-    and avs = AVSet.t
-    and env = avs IdMap.t
-    val compare : t -> t -> int
-    val compare_env : env -> env -> int
-  end = 
-struct
-  type t = 
-    | ANumber
-    | ABool
-    | AString
-    | AConst of Exprjs_syntax.const
-    | ARef of int
-    | AObj of avs IdMap.t
-    | AArr of avs list
-    | AClosure of int * id list * cpsexp
-  and avs = AVSet.t
-  and env = avs IdMap.t
-      
-  let compare = Pervasives.compare 
-
-  let compare_env env1 env2 = 
-    IdMap.compare AVSet.compare env1 env2
-end
-  
-and AVSet 
-  : Set.S with type elt = AV.t 
-  = Set.Make (AV)
-
-module AVSetExt = SetExt.Make (AVSet)
-
-open AV
-
-
-let rec  p_av av  = match av with
-  | AConst c -> Exprjs_pretty.p_const c
-  | ARef x -> int x
-  | AObj dict ->
-      IdMapExt.p_map text (AVSetExt.p_set p_av) dict
-  | AArr _ -> text "array"
-  | AClosure (n, args, _) -> 
-      text ("closure" ^ string_of_int n)
-      
-
-let union_env (env1 : AV.env) (env2 : AV.env) : AV.env = 
-  IdMapExt.join AVSet.union  env1 env2
+let reachable = H.create 100
 
 
 let envs : (int, env) H.t = H.create 500
@@ -67,8 +13,6 @@ let envs : (int, env) H.t = H.create 500
 let next_loc = ref 0
 
 let heap : (int, AVSet.t) H.t = H.create 500
-
-
 
 (* raises Not_found *)
 let get_env (n : int) = Hashtbl.find envs n
@@ -226,20 +170,22 @@ let rec calc (env : env) (cpsexp : cpsexp) : unit = match cpsexp with
 
 
 and flow (env : env) (cpsexp : cpsexp) : unit = 
-
-  try
-    let old_env = get_env (cpsexp_idx cpsexp) in
-    let new_env = union_env old_env env in
-    if compare_env old_env new_env = 0 then 
-      ()
-    else
-      begin
-        set_env (cpsexp_idx cpsexp) new_env;
-        calc new_env cpsexp
-      end
-  with Not_found ->
-    set_env (cpsexp_idx cpsexp) env;
-    calc env cpsexp
+  let idx = cpsexp_idx cpsexp in
+    if not (H.mem reachable idx) then
+      H.add reachable idx cpsexp;
+    try
+      let old_env = get_env idx in
+      let new_env = union_env old_env env in
+        if compare_env old_env new_env = 0 then 
+          ()
+        else
+          begin
+            set_env idx new_env;
+            calc new_env cpsexp
+          end
+    with Not_found ->
+      set_env idx env;
+      calc env cpsexp
       
 
 (* node is the Fix's node; new_env is the enclosing environment *)

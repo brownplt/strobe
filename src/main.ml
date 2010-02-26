@@ -19,7 +19,7 @@ open Lambdajs_cps
 open Exprjs_syntax
 open Format
 open FormatExt
-
+open Lambdajs_lattice
 
 let cin = ref stdin
 

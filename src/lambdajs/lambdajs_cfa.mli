@@ -1,34 +1,15 @@
 open Prelude
 open Lambdajs_cps
+open Lambdajs_lattice
 
-module rec AV 
-  : sig
-    type t = 
-      | ANumber
-      | ABool
-      | AString
-      | AConst of Exprjs_syntax.const
-      | ARef of int
-      | AObj of avs IdMap.t
-      | AArr of avs list
-      | AClosure of int * id list * cpsexp
 
-    and avs = AVSet.t
-    and env = avs IdMap.t
-    val compare : t -> t -> int
-    val compare_env : env -> env -> int
-  end
-  
-and AVSet 
-  : Set.S with type elt = AV.t 
+(** [reachable] maps all nodes that are statically reachable.
 
-module AVSetExt : SetExt.S 
-  with type elt = AV.t
-  and type t = AVSet.t
+    We can debug the analysis by ensuring that all the variable-sets are 
+    non-empty. *)    
+val reachable : (int, cpsexp) Hashtbl.t
 
 
 val envs : (int, AV.env) Hashtbl.t
 
 val cfa : cpsexp -> unit
-
-val p_av :AV.t -> FormatExt.printer

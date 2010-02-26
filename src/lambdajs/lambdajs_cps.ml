@@ -257,3 +257,13 @@ and fv_val (cpsval : cpsval) = match cpsval with
 
 and fv_bind (_, args, body) =
   IdSet.diff (fv body) (IdSetExt.from_list args)
+
+let fv_immediate (cpsexp : cpsexp) : IdSet.t = match cpsexp with
+  |  Fix (_, binds, body) -> IdSet.empty
+  | App (_, v, vs) -> IdSetExt.unions (map fv_val (v :: vs))
+  | If (_, v1, e2, e3) -> fv_val v1
+  | Let0 (_, x, v, e) -> (fv_val v)
+  | Let1 (_, x, _, v, e) ->  fv_val v
+  | Let2 (_, x, _, v1, v2, e) ->  IdSetExt.unions [ fv_val v1; fv_val v2 ]
+  | UpdateField(_, x, v1, v2, v3, e) -> 
+      IdSetExt.unions [ fv_val v1; fv_val v2; fv_val v3 ]
