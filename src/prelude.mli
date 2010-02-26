@@ -9,6 +9,13 @@ module IntSetExt : SetExt.S
   with type elt = int
   and type t = IntSet.t
 
+module IntMap : Map.S
+  with type key = int
+
+module IntMapExt : MapExt.S
+  with type key = int
+  with type +'a t = 'a IntMap.t
+
 module IdSet : Set.S 
   with type elt = id
 

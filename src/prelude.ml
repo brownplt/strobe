@@ -26,6 +26,9 @@ end
 module IntSet = Set.Make (Int)
 module IntSetExt = SetExt.Make (IntSet)
 
+module IntMap = Map.Make (Int)
+module IntMapExt = MapExt.Make (Int) (IntMap)
+
 module IdSet = Set.Make (IdOrderedType)
 
 module IdSetExt = SetExt.Make (IdSet)
