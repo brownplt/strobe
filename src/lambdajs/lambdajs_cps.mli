@@ -19,7 +19,6 @@ open Lambdajs_syntax
 
 type cpsval =
   | Const of Exprjs_syntax.const
-  | Array of cpsval list
   | Object of (string * cpsval) list
   | Id of id
 

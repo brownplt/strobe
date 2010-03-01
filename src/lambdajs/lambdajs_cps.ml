@@ -3,7 +3,6 @@ open Lambdajs_syntax
 
 type cpsval =
     Const of Exprjs_syntax.const
-  | Array of cpsval list
   | Object of (string * cpsval) list
   | Id of id
 
@@ -46,7 +45,6 @@ module Cps = struct
   let rec cps (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       EConst (p, c) -> k (Const c)
     | EId (p, x) -> k (Id x)
-    | EArray (p, es) -> cps_list es throw (fun vs -> k (Array vs))
     | EObject (_, ps) ->
         cps_list (map thd3 ps) throw 
           (fun vs -> k (Object (List.combine (map snd3 ps) vs)))
@@ -180,7 +178,6 @@ module Pretty = struct
 
   let rec p_cpsval (cpsval : cpsval) : printer = match cpsval with
       Const c -> Exprjs_pretty.p_const c
-    | Array vs -> parens (text "array" :: (map p_cpsval vs))
     | Object ps -> parens (text "object" :: (map p_prop ps))
     | Id x -> text x
     
@@ -237,7 +234,6 @@ let rec fv (cpsexp : cpsexp) : IdSet.t = match cpsexp with
 
 and fv_val (cpsval : cpsval) = match cpsval with
   | Const _ -> IdSet.empty
-  | Array vs -> IdSetExt.unions (map fv_val vs)
   | Object ps -> IdSetExt.unions (map (fun (_, v) -> fv_val v) ps)
   | Id x -> IdSet.singleton x
 

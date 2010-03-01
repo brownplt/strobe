@@ -14,7 +14,6 @@ type op2 =
 type exp =
     EConst of pos * Exprjs_syntax.const
   | EId of pos * id
-  | EArray of pos * exp list
   | EObject of pos * (pos * string * exp) list
   | EUpdateField of pos * exp * exp * exp
   | EOp1 of pos * op1 * exp
@@ -67,7 +66,8 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
   | BracketExpr (p, e1, e2) ->
       EOp2 (p, GetField, EOp1 (p, Deref, ds_expr env e1), ds_expr env e2)
   | PrefixExpr (p, op, e) -> EOp1 (p, Op1Prefix op, ds_expr env e)
-  | InfixExpr (p, op, e1, e2) -> EOp2 (p, Op2Infix op, ds_expr env e1, ds_expr env e2)
+  | InfixExpr (p, op, e1, e2) ->
+      EOp2 (p, Op2Infix op, ds_expr env e1, ds_expr env e2)
   | IfExpr (p, e1, e2, e3) -> 
       EIf (p, ds_expr env e1, ds_expr env e2, ds_expr env e3)
   | AssignExpr (p, VarLValue (p', x), e) -> 
