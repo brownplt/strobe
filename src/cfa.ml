@@ -24,7 +24,7 @@ let find_coords (svg_str : string) : (int, int * int) H.t =
   let matches = H.create 100 in
   let rec find start_pos = begin
     try 
-      let _ = Str.search_forward  re svg_str start_pos in
+      let next_pos = Str.search_forward  re svg_str start_pos in
       let x = int_of_string (Str.matched_group 1 svg_str) in
       let y = int_of_string (Str.matched_group 2 svg_str) in
       let node = int_of_string (Str.matched_group 4 svg_str) in
@@ -36,7 +36,7 @@ let find_coords (svg_str : string) : (int, int * int) H.t =
     find 0;
     matches
     
-(*
+
 let empty_vars_at node cpsexp = 
   let vars = fv_immediate cpsexp in
   let env = H.find envs node in
@@ -46,10 +46,9 @@ let empty_vars_at node cpsexp =
     with Not_found -> printf "No values for %s at %d.\n" x node in
    IdSet.iter find_var vars
 
-
 let empty_vars () = 
   Hashtbl.iter empty_vars_at reachable
-*)
+
 
 let overlay_call_graph coords : unit =
   let arrow (from_node : int) (to_node : int) : unit = 

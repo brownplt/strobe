@@ -13,19 +13,13 @@
 open Prelude
 
 type const =
-    | CString of string
-    | CRegexp of string * bool * bool
-    | CNum of float
-    | CInt of int
-    | CBool of bool
-    | CNull 
-    | CUndefined
-
-module Const : sig
-  type t = const
-  val compare : t -> t -> int
-end
-
+    CString of string
+  | CRegexp of string * bool * bool
+  | CNum of float
+  | CInt of int
+  | CBool of bool
+  | CNull 
+  | CUndefined
 
 
 type expr
