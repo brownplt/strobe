@@ -88,7 +88,7 @@ let (flush_svg_formatter, svg_formatter) =
          (!svg_col * 10)  (!svg_line * 20));
     Buffer.add_string tmp_buf 
       (xml_escape (String.sub src_str start_pos num_chars));
-    Buffer.add_string tmp_buf "</text>";
+    Buffer.add_string tmp_buf "</text>\n";
     svg_col := !svg_col + num_chars;
     out (Buffer.contents tmp_buf) 0 (Buffer.length tmp_buf);
     Buffer.clear tmp_buf

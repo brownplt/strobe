@@ -82,8 +82,7 @@ let action_cps () : unit =
   let exprjs = from_javascript js in
   let lambdajs = Lambdajs_syntax.desugar exprjs in
   let cpslambdajs = Lambdajs_cps.cps lambdajs in
-    Lambdajs_cps.p_cpsexp cpslambdajs svg_formatter;
-    print_string (flush_svg_formatter ())
+    Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
       
 
 let action_cfa () : unit =

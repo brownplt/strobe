@@ -13,6 +13,10 @@ val reachable : (int, cpsexp) Hashtbl.t
 val call_graph : (int, IntSet.t) Hashtbl.t
 
 
-val envs : (int, AV.env) Hashtbl.t
+val envs : (int, env) Hashtbl.t
 
 val cfa : cpsexp -> unit
+
+type context = int
+
+val heaps : (context, heap) Hashtbl.t

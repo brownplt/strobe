@@ -78,17 +78,6 @@ let action_cps () : unit =
   let cpslambdajs = Lambdajs_cps.cps lambdajs in
     Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
 
-let action_cfa () : unit =
-  let (js, comments) = parse_javascript !cin !cin_name in
-  let exprjs = from_javascript js in
-  let lambdajs = Lambdajs_syntax.desugar exprjs in
-  let cpsexp = Lambdajs_cps.cps lambdajs in
-  let print_env node (env : AV.env)  = 
-    printf "Node: %d %s\n" node 
-      (to_string (IdMapExt.p_map text (AVSetExt.p_set p_av)) env)
-  in Lambdajs_cfa.cfa cpsexp;
-    Hashtbl.iter print_env envs
-
 let action_esc () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
@@ -120,32 +109,6 @@ let action_df () : unit =
 
 let action_test_tc () : unit =
   Typedjs_testing.parse_and_test !cin !cin_name
-
-
-
-
-let action_custom () : unit = 
-  let p = Lexing.dummy_pos, Lexing.dummy_pos in
-  let cpsexp = 
-    Fix ((0,p),
-         [ ("identity", ["arg"; "cont-id"], 
-            App ((1,p), Id "cont-id", [ Id "arg" ])) ],
-         Fix ((2,p),
-              [ ("cont2", [ "x" ],
-                 App ((3,p), Id "#end", [Id "x"])) ],
-              Fix ((4,p),
-                   [ ("cont", [ "y" ],
-                      App ((5,p), Id "identity", 
-                           [ Const (CInt 400); Id "cont2" ])) ],
-                   App ((6,p), Id "identity",
-                        [ Const (CInt 300); Id "cont" ]))))
-
-  in let print_env node (env : AV.env)  = 
-      printf "Node: %d %s\n" node 
-        (to_string (IdMapExt.p_map text (AVSetExt.p_set p_av)) env)
-  in Lambdajs_cfa.cfa cpsexp;
-    Hashtbl.iter print_env envs
-
    
 let action = ref action_tc
 
@@ -181,11 +144,6 @@ let main () : unit =
        "convert program to ANF, then apply dataflow analysis");
       ("-unittest", Arg.Unit (set_action action_test_tc),
        "(undocumented)");
-      ("-custom", Arg.Unit (set_action action_custom),
-       "(undocumented)");
-      ("-cfa", Arg.Unit (set_action action_cfa),
-       "(undocumented)");
-
       ("-tc", Arg.Unit (set_action action_tc),
        "type-check (default action)") ]
     (fun s -> action_load_file s)

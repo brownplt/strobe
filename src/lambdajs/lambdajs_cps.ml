@@ -3,8 +3,6 @@ open Lambdajs_syntax
 
 type cpsval =
     Const of Exprjs_syntax.const
-  | Array of cpsval list
-  | Object of (string * cpsval) list
   | Id of id
 
 type node = int * pos
@@ -13,6 +11,7 @@ type bindexp =
   | Let of cpsval
   | Op1 of op1 * cpsval
   | Op2 of op2 * cpsval * cpsval
+  | Object of (string * cpsval) list
   | UpdateField of cpsval * cpsval * cpsval
 
 type cpsexp =
@@ -46,10 +45,12 @@ module Cps = struct
   let rec cps (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       EConst (p, c) -> k (Const c)
     | EId (p, x) -> k (Id x)
-    | EArray (p, es) -> cps_list es throw (fun vs -> k (Array vs))
-    | EObject (_, ps) ->
+    | EObject (p, ps) ->
         cps_list (map thd3 ps) throw 
-          (fun vs -> k (Object (List.combine (map snd3 ps) vs)))
+          (fun vs ->
+             let x = mk_name () in
+               Bind (mk_node p, x, Object (List.combine (map snd3 ps) vs),
+                     k (Id x)))
     | ESeq (p, e1, e2) -> cps e1 throw (fun _ -> cps e2 throw k)
     | EUpdateField (p, e1, e2, e3) ->
         cps e1 throw
@@ -180,8 +181,6 @@ module Pretty = struct
 
   let rec p_cpsval (cpsval : cpsval) : printer = match cpsval with
       Const c -> Exprjs_pretty.p_const c
-    | Array vs -> parens (text "array" :: (map p_cpsval vs))
-    | Object ps -> parens (text "object" :: (map p_prop ps))
     | Id x -> text x
     
   and p_prop (x, v) : printer = brackets [ text x; p_cpsval v ]
@@ -191,7 +190,9 @@ module Pretty = struct
     | Op1 (op, v1) -> parens [ p_op1 op; p_cpsval v1 ]
     | Op2 (op, v1, v2) -> parens [ p_op2 op; p_cpsval v1; p_cpsval v2 ]
     | UpdateField (v1, v2, v3) -> 
-        parens [ p_cpsval v1; p_cpsval v2; p_cpsval v3 ]
+        parens [ text "update-field"; p_cpsval v1; p_cpsval v2; p_cpsval v3 ]
+    | Object ps -> parens (text "object" :: (map p_prop ps))
+
 
   let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
       Fix ((n, _), binds, body) ->
@@ -237,14 +238,13 @@ let rec fv (cpsexp : cpsexp) : IdSet.t = match cpsexp with
 
 and fv_val (cpsval : cpsval) = match cpsval with
   | Const _ -> IdSet.empty
-  | Array vs -> IdSetExt.unions (map fv_val vs)
-  | Object ps -> IdSetExt.unions (map (fun (_, v) -> fv_val v) ps)
   | Id x -> IdSet.singleton x
 
 and fv_bindexp (bindexp : bindexp) = match bindexp with
   | Let v -> fv_val v
   | Op1 (_, v) -> fv_val v
   | Op2 (_, v1, v2) -> IdSet.union (fv_val v1) (fv_val v2)
+  | Object ps -> IdSetExt.unions (map (fun (_, v) -> fv_val v) ps)
   | UpdateField (v1, v2, v3) -> 
       IdSet.union (fv_val v1) (IdSet.union (fv_val v2) (fv_val v3))
 

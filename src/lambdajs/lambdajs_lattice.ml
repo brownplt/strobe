@@ -1,63 +1,59 @@
 open Prelude
 open Lambdajs_cps
 
+type loc = 
+  | Loc of int
+  | LocField of int * string
     
-module rec AV : sig
-
+module AV = struct
   type t = 
     | ANumber
     | ABool
     | AString
     | AConst of Exprjs_syntax.const
-    | ARef of int
-    | AObj of avs IdMap.t
-    | AArr of avs list
+    | ARef of loc
+    | AObj of loc IdMap.t
     | AClosure of int * id list * cpsexp
-  and avs = AVSet.t
-  and env = avs IdMap.t
-  
-  val compare : t -> t -> int
-
-  val compare_env : env -> env -> int 
-end 
-= struct
-  type t = 
-    | ANumber
-    | ABool
-    | AString
-    | AConst of Exprjs_syntax.const
-    | ARef of int
-    | AObj of avs IdMap.t
-    | AArr of avs list
-    | AClosure of int * id list * cpsexp
-  and avs = AVSet.t
-  and env = avs IdMap.t
       
   let compare = Pervasives.compare 
-
-  let compare_env env1 env2 = 
-    IdMap.compare AVSet.compare env1 env2
 end
+
+module Loc = struct
+
+  type t = loc
+
+  let compare = Pervasives.compare
+
+end
+
   
-and AVSet 
-  : Set.S with type elt = AV.t 
-  = Set.Make (AV)
+module AVSet = Set.Make (AV)
 
 module AVSetExt = SetExt.Make (AVSet)
+
+type env = AVSet.t IdMap.t
+
+module Heap = Map.Make (Loc)
+module HeapExt = MapExt.Make (Loc) (Heap)
 
 open AV
 
 open FormatExt
 
-let rec  p_av av  = match av with
+let p_loc loc = match loc with
+  | Loc n -> int n
+  | LocField (n, f) -> sep [ int n; text f ]
+
+let rec p_av av  = match av with
   | AConst c -> Exprjs_pretty.p_const c
-  | ARef x -> int x
+  | ARef l -> p_loc l
   | AObj dict ->
-      IdMapExt.p_map text (AVSetExt.p_set p_av) dict
-  | AArr _ -> text "array"
+      IdMapExt.p_map text p_loc dict
   | AClosure (n, args, _) -> 
       text ("closure" ^ string_of_int n)
       
 
-let union_env (env1 : AV.env) (env2 : AV.env) : AV.env = 
+let union_env (env1 : env) (env2 : env) : env = 
   IdMapExt.join AVSet.union  env1 env2
+
+type heap = AVSet.t Heap.t
