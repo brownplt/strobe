@@ -17,6 +17,7 @@ type op2 =
 type exp =
     EConst of pos * Exprjs_syntax.const
   | EId of pos * id
+  | EArray of pos * exp list
   | EObject of pos * (pos * string * exp) list
   | EUpdateField of pos * exp * exp * exp
   | EOp1 of pos * op1 * exp
