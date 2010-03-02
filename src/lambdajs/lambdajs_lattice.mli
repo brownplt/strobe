@@ -22,6 +22,21 @@ module AV : sig
   
   val compare : t -> t -> int
 end
+
+module RT : sig
+  type t =
+    | Number
+    | String
+    | Boolean
+    | Function
+    | Object
+    | Undefined
+
+  val compare : t -> t -> int
+end
+
+module RTSet : Set.S with type elt = RT.t
+module RTSetExt : SetExt.S with type elt = RT.t with type t = RTSet.t
   
 module AVSet : Set.S with type elt = AV.t
 
@@ -38,6 +53,9 @@ module HeapExt : MapExt.S
 
 type av =
   | ASet of AVSet.t
+  | ATypeof of id
+  | ATypeIs of id * RTSet.t
+
 
 type env = av IdMap.t
 
@@ -53,3 +71,6 @@ val av_union : av -> av -> av
 
 val union_env : env -> env -> env
 
+val lookup : id -> env -> av
+
+val bind : id -> av -> env -> env

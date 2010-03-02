@@ -30,6 +30,34 @@ let call_from_to (m : int) (n : int) : unit =
   else
     H.add call_graph m (IntSet.singleton n)
 
+let make_ATypeIs x s = match s with
+    "string" -> ATypeIs (x, RTSet.singleton RT.String)
+  | "number" -> ATypeIs (x, RTSet.singleton RT.Number)
+  | "boolean" -> ATypeIs (x, RTSet.singleton RT.Boolean)
+  | "function" -> ATypeIs (x, RTSet.singleton RT.Function)
+  | "object" -> ATypeIs (x, RTSet.singleton RT.Object)
+  | "undefined" -> ATypeIs (x, RTSet.singleton RT.Undefined)
+  | _ -> singleton ABool
+
+let is_string v = match v with
+  | AString -> true
+  | AConst (Exprjs_syntax.CString _) -> true
+  | _ -> false
+
+let is_number v = match v with
+  | ANumber -> true
+  | AConst (Exprjs_syntax.CInt _) -> true
+  | AConst (Exprjs_syntax.CNum _) -> true
+  | _ -> false
+
+let rec restrict (env : env) (x : id) (r : RTSet.t) = match lookup x env with
+  | ASet set -> 
+      let f typ set' = match typ with
+        | RT.Number -> AVSet.union set' (AVSet.filter is_number set)
+        | _ -> set in
+        bind x (ASet (RTSet.fold f r AVSet.empty)) env
+  | _ -> env
+
 open Lambdajs_syntax
 
 let calc_op1 h (n : int) (op1 : op1) (avs : av) = match op1 with
@@ -90,6 +118,18 @@ let calc_op2 h op2 (v1 : av) (v2 : av) = match op2 with
             | _ -> h in
             v2, AVSet.fold fn vs1 h
     end
+  | Op2Infix JavaScript_syntax.OpStrictEq ->
+      begin match v1, v2 with
+        | ATypeof x, ASet set ->
+            if AVSet.cardinal set = 1 then
+              match AVSet.choose set with
+                | AConst (Exprjs_syntax.CString s) -> make_ATypeIs x s
+                | _ -> singleton ABool
+            else
+              singleton ABool
+        | _ -> singleton ABool
+      end, h
+            
   | Op2Infix infixOp -> 
       (match infixOp with
       | JavaScript_syntax.OpLT -> singleton ANumber
@@ -179,10 +219,16 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
               flow env heap e2;
             if AVSet.mem (AConst (Exprjs_syntax.CBool false)) set then
               flow env heap e3
+        | ATypeIs (x, rt) ->
+            flow (restrict env x rt) heap e2;
+            flow env heap e3
+
       end
   | Bind ((n, _), x, bindexp, cont) ->
       let bindv, heap'  = match bindexp with
         | Let v -> absval env v, heap
+        | Op1 (Op1Prefix JavaScript_syntax.PrefixTypeof, Id x) ->
+            (ATypeof x, heap)
         | Op1 (op1, v) -> calc_op1 heap n op1 (absval env v)
         | Op2 (op2, v1, v2) -> calc_op2 heap op2 (absval env v1) (absval env v2)
         | Object fields ->

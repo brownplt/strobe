@@ -2,6 +2,13 @@ open Prelude
 open Lambdajs_cps
 open Lambdajs_lattice
 
+(** This is a 1-CFA *)
+type context = int
+
+val envs : (context, env) Hashtbl.t
+val heaps : (context, heap) Hashtbl.t
+
+
 
 (** [reachable] maps all nodes that are statically reachable.
 
@@ -13,10 +20,7 @@ val reachable : (int, cpsexp) Hashtbl.t
 val call_graph : (int, IntSet.t) Hashtbl.t
 
 
-val envs : (int, env) Hashtbl.t
 
 val cfa : cpsexp -> unit
 
-type context = int
 
-val heaps : (context, heap) Hashtbl.t
