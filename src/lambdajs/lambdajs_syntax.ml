@@ -154,6 +154,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
       and vars = Exprjs_syntax.locals body in
       let env = IdSet.fold (fun x env -> IdMap.add x true env) vars env in
       let env = fold_left (fun env x -> IdMap.add x true env) env args in
+      let env = IdMap.add "arguments" false (IdMap.add "this" false env) in
         ELambda 
           (p, [ "this"; "arguments"],
            List.fold_right2 get_arg args (iota (List.length args))
