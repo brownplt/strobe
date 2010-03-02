@@ -140,7 +140,7 @@ module Cps = struct
                  (lbl, [r], k (Id r)) ],
              tailcps e throw lbl)
     | EBreak (p, lbl, e) ->
-        cps e throw (fun v -> App (mk_node p, Id lbl, [v]))
+        tailcps e throw lbl
 
   and cps_list (exps : exp list) (throw : id) (k : cpsval list -> cpsexp) =
     match exps with
@@ -152,10 +152,94 @@ module Cps = struct
                  (fun vs ->
                     k (v :: vs)))
 
-  and tailcps (exp : exp) (throw : id) (return : id) : cpsexp = 
-    cps exp throw 
-      (fun v -> App (mk_node (Lexing.dummy_pos, Lexing.dummy_pos),
-                     Id return, [ v ]))
+  and tailcps (exp : exp) (throw : id) (return : id) =  match exp with
+      EConst (p, c) -> App (mk_node p, Id return, [ Const c ])
+    | EId (p, x) -> App (mk_node p, Id return, [ Id x ])
+    | EObject (p, ps) ->
+        cps_list (map thd3 ps) throw 
+          (fun vs ->
+             let x = mk_name () in
+               Bind (mk_node p, x, Object (List.combine (map snd3 ps) vs),
+                     App (mk_node p, Id return, [ Id x ])))
+    | ESeq (p, e1, e2) -> cps e1 throw (fun _ -> tailcps e2 throw return)
+    | EUpdateField (p, e1, e2, e3) ->
+        cps e1 throw
+          (fun v1 ->
+             cps e2 throw
+               (fun v2 ->
+                  cps e3 throw
+                    (fun v3 ->
+                       let x = mk_name () in
+                        Bind (mk_node p, x, UpdateField (v1, v2, v3),
+                              App (mk_node p, Id return, [ Id x ])))))
+    | EOp1 (p, op, e) ->
+        cps e throw
+          (fun v ->
+             let r = mk_name () in
+               Bind (mk_node p, r, Op1 (op, v), 
+                     App (mk_node p, Id return, [ Id r ])))
+    | EOp2 (p, op, e1, e2) ->
+        cps e1 throw
+          (fun v1 ->
+             cps e2 throw
+               (fun v2 ->
+                  let r = mk_name () in
+                    Bind (mk_node p, r, Op2 (op, v1, v2),
+                          App (mk_node p, Id return, [ Id r ]))))
+    | ELet (p, x, e1, e2) ->
+        cps e1 throw
+          (fun v1 ->
+             Bind (mk_node p, x, Let v1,
+                   tailcps e2 throw return))
+    | EIf (p, e1, e2, e3) ->
+        cps e1 throw
+          (fun v1 ->
+             If (mk_node p, v1, 
+                 tailcps e2 throw return,
+                 tailcps e3 throw return))
+    | EFix (p, binds, body) ->
+        Fix (mk_node p,
+             map cps_bind binds,
+             tailcps body throw return)
+    | ELambda (p, args, body) -> 
+      let f = mk_name ()
+      and cont = mk_name ()
+      and throw = mk_name () in
+        Fix (mk_node p,
+             [ (f, cont :: throw :: args, tailcps body throw cont) ],
+             App (mk_node p, Id return, [ Id f ]))
+    | EApp (p, f, args) ->
+        cps f throw
+          (fun fv ->
+             cps_list args throw
+               (fun argsv ->
+                  App (mk_node p, fv, Id return :: Id throw :: argsv)))
+    | ETryCatch (p, body, ELambda (p', [exn], catch_body)) -> 
+        let throw' = mk_name () in
+          Fix (mk_node p, 
+               [ throw', [exn], tailcps catch_body throw return ],
+               tailcps body throw' return)
+    | ETryCatch _ -> failwith "cps : ill-formed catch block"
+    | EThrow (p, e) -> 
+        tailcps e throw throw (* that's right *)
+    | ETryFinally (p, body, finally) ->
+        let normal_exit = mk_name () 
+        and throw_exit = mk_name () in
+          (* TODO: account for breaks *)
+          Fix (mk_node p,
+               [ (normal_exit, [mk_name ()], tailcps finally throw return);
+                 let exn = mk_name () in
+                   (throw_exit, [exn],
+                    cps finally throw 
+                      (fun _ -> App (mk_node p, Id throw, [Id exn]))) ],
+               tailcps body throw_exit normal_exit)
+    | ELabel (p, lbl, e) ->
+        Fix (mk_node p,
+             [ let r = mk_name () in
+                 (lbl, [r], App (mk_node p, Id return, [ Id r ])) ],
+             tailcps e throw lbl)
+    | EBreak (p, lbl, e) ->
+        tailcps e throw lbl
 
   and cps_bind ((f, exp) : id * exp) = match exp with
       ELambda (p, args, body) ->
