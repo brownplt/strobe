@@ -15,14 +15,6 @@ type context = int
 
 let heaps = H.create 500
 
-let heap_upd (heap : heap) (loc : loc) (v : AVSet.t) : heap = 
-  try 
-    let current_v = Heap.find loc heap in
-      Heap.add loc (AVSet.union current_v v) heap
-  with 
-      Not_found -> Heap.add loc v heap
-
-
 (* raises Not_found *)
 let get_env (n : int) = Hashtbl.find envs n
 
@@ -40,84 +32,89 @@ let call_from_to (m : int) (n : int) : unit =
 
 open Lambdajs_syntax
 
-let calc_op1 h (n : int) (op1 : op1) (avs : AVSet.t) = match op1 with
+let calc_op1 h (n : int) (op1 : op1) (avs : av) = match op1 with
   | Ref -> 
       let loc = Loc n in
-      AVSet.singleton (ARef loc), Heap.add loc avs h
-  | Deref ->
-      let fn v r = match v with
-        | ARef loc -> AVSet.union (Heap.find loc h) r
-        | _ -> r in
-        AVSet.fold fn avs AVSet.empty, h
+      singleton (ARef loc), Heap.add loc avs h
+  | Deref -> begin match avs with
+        ASet avs ->
+          let fn v r = match v with
+            | ARef loc -> av_union (Heap.find loc h) r
+            | _ -> r in
+            AVSet.fold fn avs empty, h
+    end
   | Op1Prefix jsOp -> 
-      (match jsOp with
-         | JavaScript_syntax.PrefixLNot -> AVSet.singleton ANumber
-         | JavaScript_syntax.PrefixBNot -> AVSet.singleton ABool
-         | JavaScript_syntax.PrefixPlus -> AVSet.singleton ANumber
-         | JavaScript_syntax.PrefixMinus -> AVSet.singleton ANumber
-         | JavaScript_syntax.PrefixTypeof  -> AVSet.singleton AString
-         | JavaScript_syntax.PrefixVoid ->
-             AVSet.singleton (AConst Exprjs_syntax.CUndefined)),
-             h
+      let r = match jsOp with
+        | JavaScript_syntax.PrefixLNot -> singleton ANumber
+        | JavaScript_syntax.PrefixBNot -> singleton ABool
+        | JavaScript_syntax.PrefixPlus -> singleton ANumber
+        | JavaScript_syntax.PrefixMinus -> singleton ANumber
+        | JavaScript_syntax.PrefixTypeof  -> singleton AString
+        | JavaScript_syntax.PrefixVoid ->
+            singleton (AConst Exprjs_syntax.CUndefined) in
+        r, h
 
-let rec get_fields h obj_fields field_names : AVSet.t = match field_names with
-  | [] -> AVSet.empty
+let rec get_fields h obj_fields field_names : av = match field_names with
+  | [] -> empty
   | field :: rest ->
       if not (IdMap.mem field obj_fields) then
-        AVSet.add (AConst Exprjs_syntax.CUndefined) 
+        av_union (singleton (AConst Exprjs_syntax.CUndefined))
           (get_fields h obj_fields rest)
       else 
         let field_loc = IdMap.find field obj_fields in
         let field_val = Heap.find field_loc h in
-          AVSet.union field_val  (get_fields h obj_fields rest)
+          av_union field_val  (get_fields h obj_fields rest)
 
-let calc_op2 h op2 (vs1 : AVSet.t) (vs2 : AVSet.t) = match op2 with
-  | GetField ->
-      if AVSet.mem AString vs2 then
-        failwith "get all fields"
-      else 
-        let fields_to_get = 
-          AVSet.fold (fun v r -> match v with 
-                        | AConst (Exprjs_syntax.CString s) -> IdSet.add s r
-                        | _ ->  r) 
-            vs2 IdSet.empty in
-        let fields_to_get = IdSetExt.to_list fields_to_get in
-          AVSet.fold (fun v r -> match v with
-                        | AObj props ->
-                            AVSet.union (get_fields h props fields_to_get) r
-                        | _ ->  r)
-            vs1 AVSet.empty, h
-  | SetRef -> 
-      (* return previous value, vs2 *)
-      let fn v h = match v with
-        | ARef loc -> Heap.add loc vs2 h
-        | _ -> h in
-      vs2, AVSet.fold fn vs1 h
+let calc_op2 h op2 (v1 : av) (v2 : av) = match op2 with
+  | GetField -> begin match v1, v2 with
+      | ASet vs1, ASet vs2 ->
+          if AVSet.mem AString vs2 then
+            failwith "get all fields"
+          else 
+            let fields_to_get = 
+              AVSet.fold (fun v r -> match v with 
+                            | AConst (Exprjs_syntax.CString s) -> IdSet.add s r
+                            | _ ->  r) 
+                vs2 IdSet.empty in
+            let fields_to_get = IdSetExt.to_list fields_to_get in
+              AVSet.fold (fun v r -> match v with
+                            | AObj props ->
+                                av_union (get_fields h props fields_to_get) r
+                            | _ ->  r)
+                vs1 empty, h
+    end
+  | SetRef -> begin match v1 with
+      | ASet vs1 ->
+          let fn v h = match v with
+            | ARef loc -> Heap.add loc v2 h
+            | _ -> h in
+            v2, AVSet.fold fn vs1 h
+    end
   | Op2Infix infixOp -> 
       (match infixOp with
-      | JavaScript_syntax.OpLT -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpLEq  -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpGT  -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpGEq   -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpIn -> AVSet.singleton ABool
-      | JavaScript_syntax.OpInstanceof -> AVSet.singleton ABool
-      | JavaScript_syntax.OpEq -> AVSet.singleton ABool
-      | JavaScript_syntax.OpNEq -> AVSet.singleton ABool
-      | JavaScript_syntax.OpStrictEq -> AVSet.singleton ABool
-      | JavaScript_syntax.OpStrictNEq -> AVSet.singleton ABool
-      | JavaScript_syntax.OpLAnd -> AVSet.singleton ABool
-      | JavaScript_syntax.OpLOr -> AVSet.singleton ABool
-      | JavaScript_syntax.OpMul -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpDiv -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpMod -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpSub -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpLShift -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpSpRShift -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpZfRShift -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpBAnd -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpBXor -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpBOr -> AVSet.singleton ANumber
-      | JavaScript_syntax.OpAdd -> AVSet.singleton ANumber), h
+      | JavaScript_syntax.OpLT -> singleton ANumber
+      | JavaScript_syntax.OpLEq  -> singleton ANumber
+      | JavaScript_syntax.OpGT  -> singleton ANumber
+      | JavaScript_syntax.OpGEq   -> singleton ANumber
+      | JavaScript_syntax.OpIn -> singleton ABool
+      | JavaScript_syntax.OpInstanceof -> singleton ABool
+      | JavaScript_syntax.OpEq -> singleton ABool
+      | JavaScript_syntax.OpNEq -> singleton ABool
+      | JavaScript_syntax.OpStrictEq -> singleton ABool
+      | JavaScript_syntax.OpStrictNEq -> singleton ABool
+      | JavaScript_syntax.OpLAnd -> singleton ABool
+      | JavaScript_syntax.OpLOr -> singleton ABool
+      | JavaScript_syntax.OpMul -> singleton ANumber
+      | JavaScript_syntax.OpDiv -> singleton ANumber
+      | JavaScript_syntax.OpMod -> singleton ANumber
+      | JavaScript_syntax.OpSub -> singleton ANumber
+      | JavaScript_syntax.OpLShift -> singleton ANumber
+      | JavaScript_syntax.OpSpRShift -> singleton ANumber
+      | JavaScript_syntax.OpZfRShift -> singleton ANumber
+      | JavaScript_syntax.OpBAnd -> singleton ANumber
+      | JavaScript_syntax.OpBXor -> singleton ANumber
+      | JavaScript_syntax.OpBOr -> singleton ANumber
+      | JavaScript_syntax.OpAdd -> singleton ANumber), h
 
 let obj_values h obj = match obj with
   | AObj locs -> 
@@ -126,30 +123,32 @@ let obj_values h obj = match obj with
         locs IdMap.empty
   | _ -> IdMap.empty
 
-let calc_op3 h n obj field_name field_value =
-  if AVSet.mem AString field_name then
-    failwith "set all fields"
-  else 
-    (* Map from field name to value-sets. This maps the fields of all objects
-       to all their values. *)
-    let dict = AVSet.fold 
-      (fun obj dict -> IdMapExt.join AVSet.union (obj_values h obj) dict)
-      obj IdMap.empty in
-    let dict = AVSet.fold
-      (fun fname dict -> match fname with
-         | AConst (Exprjs_syntax.CString s) ->
+let calc_op3 h n obj field_name field_value = match obj, field_name with
+  | ASet obj, ASet field_name ->
+      if AVSet.mem AString field_name then
+        failwith "set all fields"
+      else 
+        (* Map from field name to value-sets. This maps the fields of all
+           objects to all their values. *)
+        let dict = AVSet.fold 
+          (fun obj dict -> IdMapExt.join av_union (obj_values h obj) dict)
+          obj IdMap.empty in
+        let dict = AVSet.fold
+          (fun fname dict -> match fname with
+             | AConst (Exprjs_syntax.CString s) ->
              IdMap.add s field_value dict
-         | _ -> dict )
-      field_name dict in
+             | _ -> dict )
+          field_name dict in
     let alloc_field fname fval (absfields, h) = 
       let loc = LocField (n, fname) in
         (IdMap.add fname loc absfields, Heap.add loc fval h) in
     let absfields, h = IdMap.fold alloc_field dict (IdMap.empty, h) in
-      (AVSet.singleton (AObj absfields), h)
+      (singleton (AObj absfields), h)
 
-let rec absval (env : env) (cpsval : cpsval) : AVSet.t = match cpsval with
-  | Const c -> AVSet.singleton (AV.AConst c)
-  | Id "#end" -> AVSet.empty
+
+let rec absval (env : env) (cpsval : cpsval) : av = match cpsval with
+  | Const c -> singleton (AV.AConst c)
+  | Id "#end" -> empty
   | Id x -> 
       try IdMap.find x env
       with Not_found -> failwith ("unbound ads dentifier " ^ x)
@@ -167,16 +166,20 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
             call_from_to app_n (cpsexp_idx body);
             let body_env =
               List.fold_right2 IdMap.add formals argvs IdMap.empty in
-             flow (union_env body_env (get_env n)) heap body
-        | _ -> ()
-      in AVSet.iter do_app (absval env f)
+              flow (union_env body_env (get_env n)) heap body
+        | _ -> () in
+        begin match absval env f with
+          | ASet fset -> AVSet.iter do_app fset
+        end
 
   | If (_, v1, e2, e3) -> 
-      let av1 = absval env v1 in
-        if AVSet.mem (AConst (Exprjs_syntax.CBool true)) av1 then
-          flow env heap e2;
-        if AVSet.mem (AConst (Exprjs_syntax.CBool false)) av1 then
-          flow env heap e3
+      begin match absval env v1 with
+        | ASet set ->
+            if AVSet.mem (AConst (Exprjs_syntax.CBool true)) set then
+              flow env heap e2;
+            if AVSet.mem (AConst (Exprjs_syntax.CBool false)) set then
+              flow env heap e3
+      end
   | Bind ((n, _), x, bindexp, cont) ->
       let bindv, heap'  = match bindexp with
         | Let v -> absval env v, heap
@@ -189,7 +192,7 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
                Heap.add loc (absval env fval) h) in
             let absfields, h = fold_right alloc_field fields
               (IdMap.empty, heap) in
-              (AVSet.singleton (AObj absfields), h)
+              (singleton (AObj absfields), h)
               
         | UpdateField (obj, fname, fval) ->
             calc_op3 heap n (absval env obj) (absval env fname) 
@@ -218,7 +221,7 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) : unit =
     let flow_heap, heap_updated = try 
       begin
         let old_heap = H.find heaps idx in
-        let new_heap = HeapExt.join AVSet.union old_heap heap in
+        let new_heap = HeapExt.join av_union old_heap heap in
           if Pervasives.compare old_heap new_heap = 0 then
             (old_heap, false)
           else
@@ -236,7 +239,7 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) : unit =
 
 (* node is the Fix's node; new_env is the enclosing environment *)
 and bind_lambda (n : int) (env : env) ((f, args, body) : lambda) = 
-  IdMap.add f (AVSet.singleton (AClosure (cpsexp_idx body, args, body))) env
+  IdMap.add f (singleton (AClosure (cpsexp_idx body, args, body))) env
 
 and mk_closure (env : env) ((f, args, body) : lambda) : unit = 
   let n = cpsexp_idx body in
