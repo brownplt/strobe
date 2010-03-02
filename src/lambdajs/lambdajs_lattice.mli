@@ -53,11 +53,12 @@ module HeapExt : MapExt.S
 
 type av =
   | ASet of AVSet.t
-  | ATypeof of id
-  | ATypeIs of id * RTSet.t
+  | ALocTypeof of Loc.t
+  | ALocTypeIs of Loc.t * RTSet.t
+  | ADeref of Loc.t
 
 
-type env = av IdMap.t
+type env
 
 type heap = av Heap.t
 
@@ -76,3 +77,9 @@ val lookup : id -> env -> av
 val bind : id -> av -> env -> env
 
 val p_env : env -> FormatExt.printer
+
+val empty_env : env
+
+val deref : Loc.t -> heap -> av
+
+val set_ref : Loc.t -> av -> heap -> heap

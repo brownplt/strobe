@@ -72,12 +72,11 @@ module RTSetExt = SetExt.Make (RTSet)
 module Heap = Map.Make (Loc)
 module HeapExt = MapExt.Make (Loc) (Heap)
 
-
-
 type av =
   | ASet of AVSet.t
-  | ATypeof of id
-  | ATypeIs of id * RTSet.t
+  | ALocTypeof of Loc.t
+  | ALocTypeIs of Loc.t * RTSet.t
+  | ADeref of Loc.t
 
 type env = av IdMap.t
 
@@ -90,21 +89,34 @@ open FormatExt
 
 let rec p_av av = match av with
   | ASet s -> AVSetExt.p_set AV.pp s
-  | ATypeof x -> sep [ text "typeof"; text x ]
-  | ATypeIs (x, t) -> sep [ text "typeis";  RTSetExt.p_set RT.pp t ]
+  | ALocTypeof x -> sep [ text "typeof"; Loc.pp x ]
+  | ALocTypeIs (x, t) -> sep [ text "typeis";  Loc.pp x; 
+                               RTSetExt.p_set RT.pp t ]
+  | ADeref l -> sep [ text "deref"; Loc.pp l ]
 
 let singleton t = ASet (AVSet.singleton t)
 
 let empty = ASet AVSet.empty
 
+let deref loc heap : av =
+  try 
+    Heap.find loc heap
+  with Not_found ->
+    eprintf "%s is not a location in the heap " (to_string Loc.pp loc);
+    raise Not_found
+
+
 let rec av_union av1 av2 = match av1, av2 with
   | ASet s1, ASet s2 -> ASet (AVSet.union s1 s2)
-  | ATypeof x, ATypeof y when x = y -> ATypeof x
-  | ATypeIs (x, s), ATypeIs (y, t) when x = y -> ATypeIs (x, RTSet.union s t)
-  | ATypeof _, _ -> av_union (singleton AString) av2
-  | ATypeIs _, _ -> av_union (singleton ABool) av2
-  | _, ATypeof _ -> av_union av1 (singleton AString)
-  | _, ATypeIs _ -> av_union av1 (singleton ABool)
+  | ALocTypeof x, ALocTypeof y when x = y -> ALocTypeof x
+  | ALocTypeIs (x, s), ALocTypeIs (y, t) when x = y ->
+      ALocTypeIs (x, RTSet.union s t)
+  | ADeref x, ADeref y when x = y -> ADeref x
+  | ALocTypeof _, _ -> av_union (singleton AString) av2
+  | ALocTypeIs _, _ -> av_union (singleton ABool) av2
+  | _, ALocTypeof _ -> av_union av1 (singleton AString)
+  | _, ALocTypeIs _ -> av_union av1 (singleton ABool)
+
 
 let union_env (env1 : env) (env2 : env) : env = 
   IdMapExt.join av_union  env1 env2
@@ -116,7 +128,14 @@ let lookup (x : id) (env : env) : av=
   try
     IdMap.find x env
   with Not_found ->
-    eprintf "%s is unbound in the abstract environment " (to_string p_env env);
+    eprintf "%s is unbound in the abstract environment" x;
     raise Not_found
 
 let bind (x : id) (v : av) (env : env) : env = IdMap.add x v env
+
+let empty_env = IdMap.empty
+
+
+
+let set_ref loc value heap =
+  Heap.add loc value heap

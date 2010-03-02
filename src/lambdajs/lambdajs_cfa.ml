@@ -5,6 +5,13 @@ open Lambdajs_lattice
 open AV
 module H = Hashtbl
 
+let rec to_set heap v = match v with
+  | ASet set -> set
+  | ALocTypeof _ -> AVSet.singleton AString
+  | ALocTypeIs _ ->  AVSet.singleton AString
+  | ADeref l -> to_set heap (deref l heap)
+
+
 let reachable = H.create 100
 
 let call_graph = H.create 500
@@ -31,12 +38,12 @@ let call_from_to (m : int) (n : int) : unit =
     H.add call_graph m (IntSet.singleton n)
 
 let make_ATypeIs x s = match s with
-    "string" -> ATypeIs (x, RTSet.singleton RT.String)
-  | "number" -> ATypeIs (x, RTSet.singleton RT.Number)
-  | "boolean" -> ATypeIs (x, RTSet.singleton RT.Boolean)
-  | "function" -> ATypeIs (x, RTSet.singleton RT.Function)
-  | "object" -> ATypeIs (x, RTSet.singleton RT.Object)
-  | "undefined" -> ATypeIs (x, RTSet.singleton RT.Undefined)
+    "string" -> ALocTypeIs (x, RTSet.singleton RT.String)
+  | "number" -> ALocTypeIs (x, RTSet.singleton RT.Number)
+  | "boolean" -> ALocTypeIs (x, RTSet.singleton RT.Boolean)
+  | "function" -> ALocTypeIs (x, RTSet.singleton RT.Function)
+  | "object" -> ALocTypeIs (x, RTSet.singleton RT.Object)
+  | "undefined" -> ALocTypeIs (x, RTSet.singleton RT.Undefined)
   | _ -> singleton ABool
 
 let is_string v = match v with
@@ -50,13 +57,16 @@ let is_number v = match v with
   | AConst (Exprjs_syntax.CNum _) -> true
   | _ -> false
 
-let rec restrict (env : env) (x : id) (r : RTSet.t) = match lookup x env with
-  | ASet set -> 
-      let f typ set' = match typ with
-        | RT.Number -> AVSet.union set' (AVSet.filter is_number set)
-        | _ -> set in
-        bind x (ASet (RTSet.fold f r AVSet.empty)) env
-  | _ -> env
+let rec restrict_loc env heap (loc : loc) (r : RTSet.t) = 
+  let env' = env in
+  let heap' = match deref loc heap with
+    | ASet set -> 
+        let f typ set' = match typ with
+          | RT.Number -> AVSet.union set' (AVSet.filter is_number set)
+          | _ -> set in
+          set_ref loc (ASet (RTSet.fold f r AVSet.empty)) heap
+    | _ -> heap in
+    (env', heap')
 
 open Lambdajs_syntax
 
@@ -65,7 +75,12 @@ let calc_op1 h (n : int) (op1 : op1) (avs : av) = match op1 with
       let loc = Loc n in
       singleton (ARef loc), Heap.add loc avs h
   | Deref -> begin match avs with
-        ASet avs ->
+      | ASet set when AVSet.cardinal set = 1 ->
+          begin match AVSet.choose set with
+            | ARef l -> ADeref l, h
+            | _ -> empty, h (* type error *)
+          end
+      | ASet avs ->
           let fn v r = match v with
             | ARef loc -> av_union (Heap.find loc h) r
             | _ -> r in
@@ -77,7 +92,10 @@ let calc_op1 h (n : int) (op1 : op1) (avs : av) = match op1 with
         | JavaScript_syntax.PrefixBNot -> singleton ABool
         | JavaScript_syntax.PrefixPlus -> singleton ANumber
         | JavaScript_syntax.PrefixMinus -> singleton ANumber
-        | JavaScript_syntax.PrefixTypeof  -> singleton AString
+        | JavaScript_syntax.PrefixTypeof -> begin match avs with
+            | ADeref l -> ALocTypeof l
+            | _ -> singleton AString
+          end
         | JavaScript_syntax.PrefixVoid ->
             singleton (AConst Exprjs_syntax.CUndefined) in
         r, h
@@ -93,9 +111,10 @@ let rec get_fields h obj_fields field_names : av = match field_names with
         let field_val = Heap.find field_loc h in
           av_union field_val  (get_fields h obj_fields rest)
 
+
 let calc_op2 h op2 (v1 : av) (v2 : av) = match op2 with
-  | GetField -> begin match v1, v2 with
-      | ASet vs1, ASet vs2 ->
+  | GetField -> begin match (to_set h v1), (to_set h v2) with
+      | vs1, vs2 ->
           if AVSet.mem AString vs2 then
             failwith "get all fields"
           else 
@@ -120,7 +139,7 @@ let calc_op2 h op2 (v1 : av) (v2 : av) = match op2 with
     end
   | Op2Infix JavaScript_syntax.OpStrictEq ->
       begin match v1, v2 with
-        | ATypeof x, ASet set ->
+        | ALocTypeof x, ASet set ->
             if AVSet.cardinal set = 1 then
               match AVSet.choose set with
                 | AConst (Exprjs_syntax.CString s) -> make_ATypeIs x s
@@ -163,7 +182,9 @@ let obj_values h obj = match obj with
         locs IdMap.empty
   | _ -> IdMap.empty
 
-let calc_op3 h n obj field_name field_value = match obj, field_name with
+let rec calc_op3 h n obj field_name field_value = match obj, field_name with
+  | ADeref l, _ -> calc_op3 h n (deref l h) field_name field_value
+  | _, ADeref l -> calc_op3 h n obj (deref l h) field_value
   | ASet obj, ASet field_name ->
       if AVSet.mem AString field_name then
         failwith "set all fields"
@@ -189,9 +210,7 @@ let calc_op3 h n obj field_name field_value = match obj, field_name with
 let rec absval (env : env) (cpsval : cpsval) : av = match cpsval with
   | Const c -> singleton (AV.AConst c)
   | Id "#end" -> empty
-  | Id x -> 
-      try IdMap.find x env
-      with Not_found -> failwith ("unbound ads dentifier " ^ x)
+  | Id x -> lookup x env
 
 
 let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
@@ -205,7 +224,7 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
         | AClosure (n, formals, body) -> (* TODO: arity *)
             call_from_to app_n (cpsexp_idx body);
             let body_env =
-              List.fold_right2 IdMap.add formals argvs IdMap.empty in
+              List.fold_right2 bind formals argvs empty_env in
               flow (union_env body_env (get_env n)) heap body
         | _ -> () in
         begin match absval env f with
@@ -219,17 +238,15 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
               flow env heap e2;
             if AVSet.mem (AConst (Exprjs_syntax.CBool false)) set then
               flow env heap e3
-        | ATypeIs (x, rt) ->
+        | ALocTypeIs (l, rt) ->
             eprintf "IF SPLIT\n";
-            flow (restrict env x rt) heap e2;
+            let env, heap = restrict_loc env heap l rt in
             flow env heap e3
 
       end
   | Bind ((n, _), x, bindexp, cont) ->
       let bindv, heap'  = match bindexp with
         | Let v -> absval env v, heap
-        | Op1 (Op1Prefix JavaScript_syntax.PrefixTypeof, Id x) ->
-            (ATypeof x, heap)
         | Op1 (op1, v) -> calc_op1 heap n op1 (absval env v)
         | Op2 (op2, v1, v2) -> calc_op2 heap op2 (absval env v1) (absval env v2)
         | Object fields ->
@@ -244,7 +261,7 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
         | UpdateField (obj, fname, fval) ->
             calc_op3 heap n (absval env obj) (absval env fname) 
               (absval env fval)
-      in flow (IdMap.add x bindv env) heap' cont
+      in flow (bind x bindv env) heap' cont
 
 and flow (env : env) (heap : heap) (cpsexp : cpsexp) : unit = 
   let idx = cpsexp_idx cpsexp in
@@ -286,7 +303,7 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) : unit =
 
 (* node is the Fix's node; new_env is the enclosing environment *)
 and bind_lambda (n : int) (env : env) ((f, args, body) : lambda) = 
-  IdMap.add f (singleton (AClosure (cpsexp_idx body, args, body))) env
+  bind f (singleton (AClosure (cpsexp_idx body, args, body))) env
 
 and mk_closure (env : env) ((f, args, body) : lambda) : unit = 
   let n = cpsexp_idx body in
@@ -297,4 +314,4 @@ and mk_closure (env : env) ((f, args, body) : lambda) : unit =
           set_env n env
     
 
-let cfa (cpsexp : cpsexp) : unit = flow IdMap.empty Heap.empty cpsexp
+let cfa (cpsexp : cpsexp) : unit = flow empty_env Heap.empty cpsexp
