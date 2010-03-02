@@ -120,27 +120,27 @@ module Cps = struct
     | ETryCatch _ -> failwith "cps : ill-formed catch block"
     | EThrow (p, e) -> 
         tailcps e throw throw (* that's right *)
-  | ETryFinally (p, body, finally) ->
-      let cont = mk_name () in
+    | ETryFinally (p, body, finally) ->
+        let cont = mk_name () in
+          Fix (mk_node p,
+               [ let r = mk_name () in (cont, [r], k (Id r)) ],
+               let normal_exit = mk_name () 
+               and throw_exit = mk_name () in
+                 (* TODO: account for breaks *)
+                 Fix (mk_node p,
+                      [ (normal_exit, [mk_name ()], tailcps finally throw cont);
+                        let exn = mk_name () in
+                          (throw_exit, [exn],
+                           cps finally throw 
+                             (fun _ -> App (mk_node p, Id throw, [Id exn]))) ],
+                      tailcps body throw_exit normal_exit))
+    | ELabel (p, lbl, e) ->
         Fix (mk_node p,
-             [ let r = mk_name () in (cont, [r], k (Id r)) ],
-             let normal_exit = mk_name () 
-             and throw_exit = mk_name () in
-               (* TODO: account for breaks *)
-               Fix (mk_node p,
-                    [ (normal_exit, [mk_name ()], tailcps finally throw cont);
-                      let exn = mk_name () in
-                        (throw_exit, [exn],
-                         cps finally throw 
-                           (fun _ -> App (mk_node p, Id throw, [Id exn]))) ],
-                    tailcps body throw_exit normal_exit))
-  | ELabel (p, lbl, e) ->
-      Fix (mk_node p,
-           [ let r = mk_name () in
-               (lbl, [r], k (Id r)) ],
-           tailcps e throw lbl)
-  | EBreak (p, lbl, e) ->
-      cps e throw (fun v -> App (mk_node p, Id lbl, [v]))
+             [ let r = mk_name () in
+                 (lbl, [r], k (Id r)) ],
+             tailcps e throw lbl)
+    | EBreak (p, lbl, e) ->
+        cps e throw (fun v -> App (mk_node p, Id lbl, [v]))
 
   and cps_list (exps : exp list) (throw : id) (k : cpsval list -> cpsexp) =
     match exps with

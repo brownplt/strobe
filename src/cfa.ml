@@ -64,7 +64,6 @@ let overlay_call_graph coords : unit =
     with Not_found -> () in
   let arrows_from (from_node : int) (to_set : IntSet.t) : unit  = 
     IntSet.iter (arrow from_node) to_set in
-
     H.iter arrows_from call_graph
     
 
@@ -94,9 +93,12 @@ let action_cfa () : unit =
     Lambdajs_cps.p_cpsexp cpsexp svg_formatter;
     let src = flush_svg_formatter () in
       print_string src;
-      let coords = find_coords src in
-        overlay_call_graph coords;
-        print_string "</svg>"
+      overlay_call_graph (find_coords src);
+      print_string "</svg>";
+      let pr_env node env =
+        eprintf "\nEnv at node %d is\n %s\n" node (to_string p_env env) in
+        Hashtbl.iter pr_env envs
+        
         
 
 

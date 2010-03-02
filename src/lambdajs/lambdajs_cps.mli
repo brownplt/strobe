@@ -8,9 +8,8 @@
     operators almost never signal exceptions. If a LambdaJS operator signals
     an exception, it indicates a bug in desugaring.
 
-    - LambdaJS has try-finally and break expressions that do not correspond to
-    anything in the lambda language of CWC.
-
+    - We transform all of LambdaJS's control operators to CPS. This requires a
+    little more work than CPSing MiniML.
 
 *)
 

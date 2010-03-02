@@ -220,6 +220,7 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
             if AVSet.mem (AConst (Exprjs_syntax.CBool false)) set then
               flow env heap e3
         | ATypeIs (x, rt) ->
+            eprintf "IF SPLIT\n";
             flow (restrict env x rt) heap e2;
             flow env heap e3
 

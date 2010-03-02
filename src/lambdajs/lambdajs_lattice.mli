@@ -74,3 +74,5 @@ val union_env : env -> env -> env
 val lookup : id -> env -> av
 
 val bind : id -> av -> env -> env
+
+val p_env : env -> FormatExt.printer
