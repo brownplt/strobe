@@ -234,9 +234,11 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
   | If (_, v1, e2, e3) -> 
       begin match absval env v1 with
         | ASet set ->
-            if AVSet.mem (AConst (Exprjs_syntax.CBool true)) set then
+            if AVSet.mem (AConst (Exprjs_syntax.CBool true)) set 
+              || AVSet.mem ABool set then
               flow env heap e2;
-            if AVSet.mem (AConst (Exprjs_syntax.CBool false)) set then
+            if AVSet.mem (AConst (Exprjs_syntax.CBool false)) set 
+              || AVSet.mem ABool set then
               flow env heap e3
         | ALocTypeIs (l, rt) ->
             eprintf "IF SPLIT\n";

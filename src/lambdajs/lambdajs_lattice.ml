@@ -39,6 +39,8 @@ module AV = struct
   | ARef l -> Loc.pp l
   | AObj dict -> IdMapExt.p_map text Loc.pp dict
   | AClosure (n, args, _) -> text ("closure" ^ string_of_int n)
+  | ABool -> text "boolean"
+  | AString -> text "string"
 
 end
 
