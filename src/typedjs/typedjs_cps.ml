@@ -36,42 +36,42 @@ let new_node : unit -> node =
 
 type cont = cpsval -> cpsexp
 
-let rec cps_exp  (exp : exp) (k : cont) : cpsexp = match exp with
+let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
     EConst (_, c) -> k (Const c)
   | EId (_, x) -> k (Id x)
   | EArray (_, es) -> 
-      cps_exp_list es 
+      cps_exp_list es throw
         (fun vs ->
            let x = new_name () in
              Array (new_node (), x, vs, k (Id x)))
   | EObject (_, ps) ->
-      cps_exp_list (map thd3 ps) 
+      cps_exp_list (map thd3 ps) throw
         (fun vs -> 
            let x = new_name () in
              Object (new_node (), x,
                      List.combine (map (fun (f, _, _) -> f) ps) vs,
                      k (Id x)))
   | EBracket (_, e1, e2) ->
-      cps_exp e1
+      cps_exp e1 throw
         (fun v1 ->
-           cps_exp e2
+           cps_exp e2 throw
              (fun v2 ->
                 let x = new_name () in
                   GetField (new_node (), x, v1, v2, k (Id x))))
   | EPrefixOp (_, op, e) ->
-      cps_exp e 
+      cps_exp e throw
         (fun v -> 
            let x = new_name () in
              Let1 (new_node (), x, op, v, k (Id x)))
   | EInfixOp (_, op, e1, e2) -> 
-      cps_exp e1 
+      cps_exp e1 throw
         (fun v1 ->
-           cps_exp e2 
+           cps_exp e2 throw
              (fun v2 ->
                 let x = new_name () in
                   Let2 (new_node (), x, op, v1, v2, k (Id x))))
   | EIf (_, e1, e2, e3) -> 
-      cps_exp e1
+      cps_exp e1 throw
         (fun v1 ->
            let k' = mk_name "if-cont"
            and r = new_name () in
@@ -79,16 +79,18 @@ let rec cps_exp  (exp : exp) (k : cont) : cpsexp = match exp with
                   [k', [r], TTop, k (Id r)],
                   If (new_node (),
                       v1, 
-                      cps_exp e2 (fun v -> App (new_node (), Id k', [v])),
-                      cps_exp e3 (fun v -> App (new_node (), Id k', [v])))))
+                      cps_exp e2 throw 
+                        (fun v -> App (new_node (), Id k', [v])),
+                      cps_exp e3 throw
+                        (fun v -> App (new_node (), Id k', [v])))))
   | EAssign (_, LVar (_, x), e) -> 
-      cps_exp e (fun v -> Assign (new_node (), x, v, k v))
+      cps_exp e throw (fun v -> Assign (new_node (), x, v, k v))
   | EAssign (_, LProp (_, e1, e2), e3) ->
-      cps_exp e1
+      cps_exp e1 throw
         (fun v1 ->
-           cps_exp e2
+           cps_exp e2 throw
              (fun v2 ->
-                cps_exp e3
+                cps_exp e3 throw
                   (fun v3 ->
                      SetProp (new_node (), v1, v2, v3, k v3))))
   | EApp (_, func, args) -> 
@@ -96,50 +98,52 @@ let rec cps_exp  (exp : exp) (k : cont) : cpsexp = match exp with
       and r = new_name () in
         Fix (new_node (),
              [(k', [r], TTop, k (Id r))],
-             cps_exp func
+             cps_exp func throw
                (fun f ->
-                  cps_exp_list args 
-                    (fun vs -> App (new_node (), f, (Id k') :: vs))))
+                  cps_exp_list args throw
+                    (fun vs ->
+                       App (new_node (), f, (Id k') :: (Id throw) :: vs))))
   | EFunc (_, args, typ, body) -> 
       let f = mk_name "anon-func"
-      and k' = new_name () in
+      and k' = new_name () 
+      and throw' = new_name () in
         Fix (new_node (),
-             [(f, k' :: args, typ, cps_exp body 
-                 (fun v -> App (new_node (), Id k', [v])))],
+             [(f, k' :: throw' :: args, typ, cps_tailexp body throw' k')],
              k (Id f))
   | ELet (_, x, e1, e2) ->
-      cps_exp e1
+      cps_exp e1 throw
         (fun v1 ->
-           Let0 (new_node (), x, v1, cps_exp e2 k))
+           Let0 (new_node (), x, v1, cps_exp e2 throw k))
   | ERec (binds, body) ->
-      Fix (new_node (), map cps_bind binds, cps_exp body k)
+      Fix (new_node (), map cps_bind binds, cps_exp body throw k)
   | ESeq (_, e1, e2) ->
-      cps_exp e1
-        (fun v -> Let0 (new_node (), new_name (), v, cps_exp e2 k))
+      cps_exp e1 throw
+        (fun _ -> cps_exp e2 throw k)
   | ELabel (_, l, _, e) ->
       let r = new_name () in
         Fix (new_node (),
              [(l, [r], TTop, k (Id r))],
-             cps_tailexp e l)
+             cps_tailexp e throw l)
   | EBreak (_, l, e) -> (* drops its own continuation *)
-      cps_tailexp e l
+      cps_tailexp e throw l
+  | EThrow (_, e) ->
+      cps_tailexp e throw throw
 
 (*
   | ETryCatch of pos * exp * id * exp
   | ETryFinally of pos * exp * exp
-  | EThrow of pos * exp
   | ETypecast of pos * runtime_typs * exp *)
 
-and cps_tailexp (exp : exp) (k : id) : cpsexp = match exp with
+and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
     EConst (_, c) -> App (new_node (), Id k, [ Const c ])
   | EId (_, x) -> App (new_node (), Id k, [ Id x ])
   | EArray (_, es) -> 
-      cps_exp_list es 
+      cps_exp_list es throw
         (fun vs ->
            let x = new_name () in
              Array (new_node (), x, vs, App (new_node (), Id k, [ Id x ])))
   | EObject (_, ps) ->
-      cps_exp_list (map thd3 ps) 
+      cps_exp_list (map thd3 ps) throw
         (fun vs -> 
            let x = new_name () in
              Object (new_node (), x,
@@ -147,93 +151,100 @@ and cps_tailexp (exp : exp) (k : id) : cpsexp = match exp with
                        (map (fun (f, _, _) -> f) ps) vs,
                      App (new_node (), Id k, [ Id x ])))
   | EBracket (_, e1, e2) ->
-      cps_exp e1
+      cps_exp e1 throw
         (fun v1 ->
-           cps_exp e2
+           cps_exp e2 throw
              (fun v2 ->
                 let x = new_name () in
                   GetField (new_node (), x, v1, v2,
                             App (new_node (), Id k, [ Id x ]))))
   | EPrefixOp (_, op, e) ->
-      cps_exp e 
+      cps_exp e throw
         (fun v -> 
            let x = new_name () in
              Let1 (new_node (), x, op, v, 
                    App (new_node (), Id k, [ Id x ])))
   | EInfixOp (_, op, e1, e2) -> 
-      cps_exp e1 
+      cps_exp e1 throw
         (fun v1 ->
-           cps_exp e2 
+           cps_exp e2 throw
              (fun v2 ->
                 let x = new_name () in
                   Let2 (new_node (), x, op, v1, v2, 
                         App (new_node (), Id k, [ Id x ]))))
   | EIf (_, e1, e2, e3) -> 
-      cps_exp e1
+      cps_exp e1 throw
         (fun v1 ->
            If (new_node (),
                v1, 
-               cps_tailexp e2 k, 
-               cps_tailexp e3 k))
+               cps_tailexp e2 throw k, 
+               cps_tailexp e3 throw k))
   | EAssign (_, LVar (_, x), e) -> 
-      cps_exp e (fun v -> 
-                   Assign (new_node (), x, v,
-                           App (new_node (), Id k, [ v ])))
+      cps_exp e throw
+        (fun v -> 
+           Assign (new_node (), x, v,
+                   App (new_node (), Id k, [ v ])))
   | EAssign (_, LProp (_, e1, e2), e3) ->
-      cps_exp e1
+      cps_exp e1 throw
         (fun v1 ->
-           cps_exp e2
+           cps_exp e2 throw
              (fun v2 ->
-                cps_exp e3
+                cps_exp e3 throw
                   (fun v3 ->
                      SetProp (new_node (), v1, v2, v3,
                               App (new_node (), Id k, [ v3 ])))))
   | EApp (_, func, args) -> 
-      cps_exp func
+      cps_exp func throw
         (fun f ->
-           cps_exp_list args 
-             (fun vs -> App (new_node (), f, Id k :: vs)))
+           cps_exp_list args throw
+             (fun vs -> App (new_node (), f, Id k :: Id throw :: vs)))
   | EFunc (_, args, typ, body) -> 
       let f = new_name ()
-      and k' = new_name () in
+      and k' = new_name ()
+      and throw' = new_name () in
         Fix (new_node (),
-             [(f, k' :: args, typ, cps_tailexp body k')],
+             [(f, k' :: throw' :: args, typ, cps_tailexp body throw' k')],
              App (new_node (), Id k, [ Id f ]))
   | ELet (_, x, e1, e2) ->
-      cps_exp e1
+      cps_exp e1 throw
         (fun v1 ->
-           Let0 (new_node (), x, v1, cps_tailexp e2 k))
+           Let0 (new_node (), x, v1, cps_tailexp e2 throw k))
   | ERec (binds, body) ->
-      Fix (new_node (), map cps_bind binds, cps_tailexp body k)
+      Fix (new_node (), map cps_bind binds, cps_tailexp body throw k)
   | ESeq (_, e1, e2) ->
-      cps_exp e1
-        (fun v -> Let0 (new_node (), new_name (), v, cps_tailexp e2 k))
+      cps_exp e1 throw
+        (fun _ -> 
+           cps_tailexp e2 throw k)
   | ELabel (_, l, _, e) ->
       let r = new_name () in
         Fix (new_node (),
              [(l, [r], TTop, App (new_node (), Id k, [Id r]))],
-             cps_tailexp e k)
+             cps_tailexp e throw k)
   | EBreak (_, l, e) -> (* drops its own continuation *)
-      cps_tailexp e l
+      cps_tailexp e throw l
+  | EThrow (_, e) ->
+      cps_tailexp e throw throw
+
 
 
 and cps_bind ((name, typ, e) : id * typ * exp) = match e with
     EFunc (_, args, _, body) ->
-      let k = new_name () in
-        (name, k :: args, typ, cps_tailexp body k)
+      let k = new_name () 
+      and throw = new_name () in
+        (name, k :: throw :: args, typ, cps_tailexp body throw k)
   | _ -> failwith "cps_bind : expected a function"
   
 
-and cps_exp_list (exps : exp list) (k : cpsval list -> cpsexp) = match exps with
+and cps_exp_list exps throw (k : cpsval list -> cpsexp) = match exps with
     [] -> k []
   | e :: rest ->
-      cps_exp e 
+      cps_exp e throw
         (fun v ->
-           cps_exp_list rest
+           cps_exp_list rest throw
              (fun vs ->
                 k (v :: vs)))
 
-let cps (exp : exp) : cpsexp = cps_tailexp exp "%end"
+let cps (exp : exp) : cpsexp = cps_tailexp exp "%uncaught-exception" "%end"
 
 (******************************************************************************)
 
