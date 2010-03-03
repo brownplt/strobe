@@ -408,7 +408,7 @@ var holder = (function() {  //lambda to hide all these local funcs
 
     if (t.kind == "function") {
       var res = "(";
-      if (t.type.thist) {
+      if (t.type.thist && t.type.refsthis) {
         if (dbg) debug("function this type...");
         var innard = strUnion(t.type.thist, dbg);
         var strthist = innard.answer;
@@ -656,6 +656,11 @@ var holder = (function() {  //lambda to hide all these local funcs
   //position is what position it occupies in the nester, e.g.
   //0 if the first position, 1 if the 2nd, etc.
   var tracefunction = function(fn, nester, name, position, dbg) {
+    if (arguments.length >= 5) {
+      alert("Please re-compile this code!");
+      return;
+    }
+    
     var traceid = gensym("func" + (name ? ("_" + (name.substring(name.lastIndexOf(".")+1))) : ""));
     var func_rttype = {
       kind: "function",
@@ -665,7 +670,8 @@ var holder = (function() {  //lambda to hide all these local funcs
         thist: undefined,
         nested: [],
         constrOrFunc: "unknown",
-        namehint: name},
+        namehint: name,
+        refsthis: false}, //true if "this" is ever referenced inside this function
       seen: false};
     var tjstype = func_rttype.type;
     var ref = {
@@ -784,9 +790,22 @@ var holder = (function() {  //lambda to hide all these local funcs
     return res;
   }
   
+  //wrap ever ref to "this"
+  //it will alert func that its "this" type matters
+  //this could be done statically but it'd involve
+  //50 lines of boring case breakdowns 
+  var thisref = function (t, func) {
+    if (func.$jstraceid !== undefined) {
+      var t = __typedJsTypes[func.$jstraceid];
+      t.type.refsthis = true;
+    }
+    return t;
+  };
+  
   return {
     __typedjs: tracefunction,
     __new: newwrapper,
+    __thisref: thisref,
     showTypes: function () { return showwin(__tracewin); }
   };
 })();
@@ -794,4 +813,4 @@ var holder = (function() {  //lambda to hide all these local funcs
 var __typedjs = holder.__typedjs;
 var __new = holder.__new;
 var showTypes = holder.showTypes;
-
+var __thisref = holder.__thisref;

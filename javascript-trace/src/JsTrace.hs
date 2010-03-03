@@ -16,7 +16,7 @@ type CounterM a = State (Int, Bool, String) a
 
 funcWrapperName = "__typedjs"
 newWrapperName = "__new"
-
+thisWrapperName = "__thisref"
 
 prop :: (Prop SourcePos, Expression SourcePos) 
      -> CounterM (Prop SourcePos, Expression SourcePos) 
@@ -92,7 +92,11 @@ expr e = case e of
   ObjectLit p props -> do
     props' <- mapM prop props
     return $ ObjectLit p props'
-  ThisRef{} -> noop
+  ThisRef p -> 
+    return $ CallExpr p (VarRef p (Id p thisWrapperName))
+               [ThisRef p,
+                DotRef p (VarRef p (Id p "arguments"))
+                         (Id p "callee")]
   VarRef{} -> noop
   DotRef p e i -> do
     e' <- expr e

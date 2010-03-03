@@ -1,3 +1,14 @@
+/*::
+  function Utils : ( -> {createDragFilesImagesList : (Dom -> {0 : String}), extractExtension : (String -> String)})
+    function createDragFilesImagesList : (Dom -> {0 : String})
+    function extractExtension : (String -> String)
+  function ViewHandlers : ( -> {onOpen : ( -> Void), onDragDrop : ( -> Void), onDragOver : ( -> Void), onDragOut : ( -> Void)})
+    function onOpen : ( -> Void)
+    function onDragDrop : ( -> Void)
+    function onDragOver : ( -> Void)
+    function onDragOut : ( -> Void)
+*/
+
 /*
 Copyright (C) 2007 Google Inc.
 
@@ -13,6 +24,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+//REFACTORED TO WORK WITH TJS
+//it's just a bunch of mututally recursive functions which
+//happen to be put into structs instead of vars..
 
 /**
  * @fileoverview Drag and Drop Sample Gadget
@@ -36,20 +51,74 @@ limitations under the License.
  * 'event.dragFiles' is a collection object containing the paths of the file(s)
  * in the drag operation.
  */
- 
+
+/**
+ * Utils namespace
+ */
+var Utils = (function(){
+
+/**
+ * Convert event.dragfiles object to an array of strings
+ * @param {Object} obj collection of drag files
+ * @return {Array} Array of filepaths
+ */
+var createDragFilesImagesList = function(obj) {
+  var files = [];
+
+  if (!obj) {
+    return files;
+  }
+
+  var e = new Enumerator(obj);
+
+  var validExtensions = {
+    png: true,
+    gif: true,
+    jpg: true,
+    jpeg: true };
+    
+  while (!e.atEnd()) {
+    var path = e.item();
+    var extension = extractExtension(path).toLowerCase();
+    
+    if (validExtensions[extension] === true) {
+      files.push(path + '');
+    }
+    e.moveNext();
+  }
+    
+  return files;
+};
+
+/**
+ * Extract the extension from a path
+ * @param {String} The path
+ * @return {String} The extension
+ */
+var extractExtension = function(s) {
+  return s.substring(s.lastIndexOf('.') + 1); 
+};
+
+return {
+  createDragFilesImagesList: createDragFilesImagesList,
+  extractExtension: extractExtension
+};
+
+})();
+
 /**
  * ViewHandlers namespace
  */
-var ViewHandlers = {};
+var ViewHandlers = (function(){
 
-ViewHandlers.onOpen = function() {
+var onOpen = function() {
   label.innerText = strings.DRAG_IMAGES_HERE;
 };
 
 /**
  * Executed when the user drops an object
  */  
-ViewHandlers.onDragDrop = function() {
+var onDragDrop = function() {
   var images = Utils.createDragFilesImagesList(event.dragFiles);
   
   var MAX_DISPLAY = 4;
@@ -93,7 +162,7 @@ ViewHandlers.onDragDrop = function() {
 /**
  * Executed when the user drags an object over
  */  
-ViewHandlers.onDragOver = function() {
+var onDragOver = function() {
   var images = Utils.createDragFilesImagesList(event.dragFiles);
   var numImages = images.length;
   
@@ -109,53 +178,16 @@ ViewHandlers.onDragOver = function() {
 /**
  * Executed when the user drags out
  */  
-ViewHandlers.onDragOut = function() {
+var onDragOut = function() {
   label.innerText = strings.DRAG_IMAGES_HERE;
 };
 
-/**
- * Utils namespace
- */
-var Utils = {};
 
-/**
- * Convert event.dragfiles object to an array of strings
- * @param {Object} obj collection of drag files
- * @return {Array} Array of filepaths
- */
-Utils.createDragFilesImagesList = function(obj) {
-  var files = [];
-
-  if (!obj) {
-    return files;
-  }
-
-  var e = new Enumerator(obj);
-
-  var validExtensions = {
-    png: true,
-    gif: true,
-    jpg: true,
-    jpeg: true };
-    
-  while (!e.atEnd()) {
-    var path = e.item();
-    var extension = Utils.extractExtension(path).toLowerCase();
-    
-    if (validExtensions[extension] === true) {
-      files.push(path + '');
-    }
-    e.moveNext();
-  }
-    
-  return files;
+return {
+  onOpen: onOpen,
+  onDragDrop: onDragDrop,
+  onDragOver: onDragOver,
+  onDragOut: onDragOut,
 };
 
-/**
- * Extract the extension from a path
- * @param {String} The path
- * @return {String} The extension
- */
-Utils.extractExtension = function(s) {
-  return s.substring(s.lastIndexOf('.') + 1); 
-};
+})();
