@@ -12,6 +12,10 @@ let envs : (node, env) H.t = H.create 200
 
 let bound_id_map : (pos * id, node) H.t = H.create 200
 
+let subflows : (node, (bool ref * node * env * cpsexp)) H.t = H.create 200
+
+let queue : (node * id list * typ * cpsexp) list ref = ref [] 
+
 let mk_type_is x s = match s with
   | "string" -> ATypeIs (x, RTSet.singleton RT.String)
   | "number" -> ATypeIs (x, RTSet.singleton RT.Number)
@@ -71,7 +75,7 @@ let rec calc (env : env) (cpsexp : cpsexp) = match cpsexp with
       let env' = fold_left bind_esc_lambda env' esc_binds in
         List.iter (mk_closure env') nonesc_binds;
         flow env' cont; 
-        List.iter (sub_flow env') esc_binds
+        List.iter (sub_flow (node_of_cpsexp cont)) esc_binds
   | App (n, f, args) ->
       begin match abs_of_cpsval n env f, map (abs_of_cpsval n env) args with
         | AClosure (_, formals, body), argvs -> 
@@ -91,12 +95,16 @@ and mk_closure (env : env) (f, args, typ, body_exp) =
     try ignore (H.find envs node)
     with Not_found -> H.replace envs node env
 
-and sub_flow (env : env) (f, args, typ, body_exp) =  match typ with
+and sub_flow (env_node : node) (f, args, typ, body_exp) =  match typ with
     Typedjs_syntax.TArrow (_, arg_typs, _) -> 
-      eprintf "sub_flow into %s\n" f;
-      let arg_avs = map runtime arg_typs in
-      let flow_env = List.fold_right2 bind args arg_avs env in
-        flow flow_env body_exp
+      try
+        ignore (H.find subflows (node_of_cpsexp body_exp))
+      with Not_found ->
+        H.add subflows (node_of_cpsexp body_exp)
+          (ref false, 
+           env_node, 
+           List.fold_right2 bind args (map runtime arg_typs) empty_env,
+           body_exp)
   | _ -> failwith "expected TArrow in sub_flow"
 
 and flow (env : env) (cpsexp : cpsexp) = 
@@ -115,4 +123,13 @@ and flow (env : env) (cpsexp : cpsexp) =
     else eprintf "not flowing\n"
               
 let typed_cfa (env : env) (cpsexp : cpsexp) : unit =
-  flow env cpsexp
+  flow env cpsexp;
+  let sub node (is_done, env_node, arg_env, exp) =
+    if not !is_done then 
+      begin
+        eprintf "Subflow...\n";
+        is_done := true;
+        flow (union_env arg_env (H.find envs env_node)) exp
+      end
+  in H.iter sub subflows
+        

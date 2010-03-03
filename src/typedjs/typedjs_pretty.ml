@@ -67,7 +67,7 @@ let rec exp e fmt = match e with
   | EAssign (_, lv, e) ->
       parens [text "set!"; lvalue lv; exp e] fmt
   | ETypecast (_, t, e) ->
-      parens [ text "cast"; exp e ] fmt
+      parens [ text "cast"; RTSetExt.p_set RT.pp t; exp e ] fmt
 
 and lvalue lv fmt = match lv with
     LVar (_, x) -> text x fmt

@@ -107,7 +107,9 @@ let action_df () : unit =
             Lat.bind "%end" (Lat.singleton RT.Function)
               (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
                  Typedjs_lattice.empty_env) in
-            typed_cfa env cpsexp
+            typed_cfa env cpsexp;
+            let annotated_exp = insert_typecasts typedjs in
+              Typedjs_pretty.pretty_def std_formatter annotated_exp
       | _ -> failwith "expected a single expression"
     end
 
