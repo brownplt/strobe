@@ -17,7 +17,7 @@ type cpsexp =
   | Assign of node * id * cpsval * cpsexp
   | SetProp of node * cpsval * cpsval * cpsval * cpsexp
   | Array of node * id * cpsval list * cpsexp
-  | Object of node * id * (cpsval * cpsval) list * cpsexp
+  | Object of node * id * (string * cpsval) list * cpsexp
   | GetField of node * id * cpsval * cpsval * cpsexp
 
 val cps : exp -> cpsexp

@@ -17,7 +17,7 @@ type cpsexp =
   | Assign of node * id * cpsval * cpsexp
   | SetProp of node * cpsval * cpsval * cpsval * cpsexp
   | Array of node * id * cpsval list * cpsexp
-  | Object of node * id * (cpsval * cpsval) list * cpsexp
+  | Object of node * id * (string * cpsval) list * cpsexp
   | GetField of node * id * cpsval * cpsval * cpsexp
 
 let mk_name : string -> id = 
@@ -49,9 +49,7 @@ let rec cps_exp  (exp : exp) (k : cont) : cpsexp = match exp with
         (fun vs -> 
            let x = new_name () in
              Object (new_node (), x,
-                     List.combine
-                       (map (fun (f, _, _) -> 
-                               Const (Exprjs_syntax.CString f)) ps) vs,
+                     List.combine (map (fun (f, _, _) -> f) ps) vs,
                      k (Id x)))
   | EBracket (_, e1, e2) ->
       cps_exp e1
@@ -146,8 +144,7 @@ and cps_tailexp (exp : exp) (k : id) : cpsexp = match exp with
            let x = new_name () in
              Object (new_node (), x,
                      List.combine
-                       (map (fun (f, _, _) ->
-                               Const (Exprjs_syntax.CString f)) ps) vs,
+                       (map (fun (f, _, _) -> f) ps) vs,
                      App (new_node (), Id k, [ Id x ])))
   | EBracket (_, e1, e2) ->
       cps_exp e1
@@ -259,9 +256,7 @@ let fv_cpsval (cpsval : cpsval) : IdSet.t = match cpsval with
     Const _ -> IdSet.empty
   | Id x -> IdSet.singleton x
 
-let fv_prop (v1, v2) = IdSet.union (fv_cpsval v1) (fv_cpsval v2)
-
-
+let fv_prop (_, v) = fv_cpsval v
 
 let rec esc_cpsexp (cpsexp : cpsexp) : IdSet.t = match cpsexp with
     Fix (_, binds, body) ->
@@ -352,7 +347,7 @@ let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
              p_cpsexp e ]
 
 and p_prop (x, v) : printer =
-  brackets [ p_cpsval x; p_cpsval v ]
+  brackets [ text x; p_cpsval v ]
 
 and p_bind (f, args, typ, body) : printer =
   vert  [ horz [ text f; text "=" ];
