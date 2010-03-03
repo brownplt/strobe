@@ -1,6 +1,7 @@
 open Prelude
 open Typedjs_cps
 open Typedjs_lattice
+open Typedjs_syntax
 
 module H = Hashtbl
 module J = JavaScript_syntax

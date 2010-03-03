@@ -104,8 +104,8 @@ let action_df () : unit =
         DExp (e, _) ->
           let cpsexp = Typedjs_cps.cps e in
           let env =
-            Lat.bind "%end" (Lat.singleton Lat.RT.Function)
-              (Lat.bind "%uncaught-exception" (Lat.singleton Lat.RT.Function)
+            Lat.bind "%end" (Lat.singleton RT.Function)
+              (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
                  Typedjs_lattice.empty_env) in
             typed_cfa env cpsexp
       | _ -> failwith "expected a single expression"

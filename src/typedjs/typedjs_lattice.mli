@@ -1,5 +1,6 @@
 open Prelude
 open Typedjs_cps
+open Typedjs_syntax
 
 type loc = 
   | Loc of int
@@ -10,20 +11,6 @@ module Loc : sig
   val compare : t -> t -> int
 end
 
-module RT : sig
-  type t =
-    | Number
-    | String
-    | Boolean
-    | Function
-    | Object
-    | Undefined
-
-  val compare : t -> t -> int
-end
-
-module RTSet : Set.S with type elt = RT.t
-module RTSetExt : SetExt.S with type elt = RT.t with type t = RTSet.t
 
 module Heap : Map.S
   with type key = Loc.t

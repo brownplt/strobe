@@ -1,5 +1,6 @@
 open Prelude
 open Typedjs_cps
+open Typedjs_syntax
 
 type loc = 
   | Loc of int
@@ -20,31 +21,6 @@ module Loc = struct
 
 end
 
-module RT = struct
-  type t =
-    | Number
-    | String
-    | Boolean
-    | Function
-    | Object
-    | Undefined
-
-  let compare = Pervasives.compare
-
-  open FormatExt
-
-  let pp v = match v with
-    | Number -> text "number"
-    | String -> text "string"
-    | Boolean -> text "boolean"
-    | Function -> text "function"
-    | Object -> text "object"
-    | Undefined -> text "undefined"
-
-end
-
-module RTSet = Set.Make (RT)
-module RTSetExt = SetExt.Make (RTSet)
 module Heap = Map.Make (Loc)
 module HeapExt = MapExt.Make (Loc) (Heap)
 

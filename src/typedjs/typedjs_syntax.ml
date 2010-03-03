@@ -2,30 +2,31 @@ open Prelude
 
 exception Typ_error of pos * string
 
-type runtime_typ =
-    RTNumber
-  | RTString
-  | RTBoolean
-  | RTFunction
-  | RTObject
-  | RTUndefined
+module RT = struct
+  type t =
+    | Number
+    | String
+    | Boolean
+    | Function
+    | Object
+    | Undefined
 
-module RTOrdered = struct
-  type t = runtime_typ
   let compare = Pervasives.compare
+
+  open FormatExt
+
+  let pp v = match v with
+    | Number -> text "number"
+    | String -> text "string"
+    | Boolean -> text "boolean"
+    | Function -> text "function"
+    | Object -> text "object"
+    | Undefined -> text "undefined"
+
 end
- 
-module RTSet = Set.Make (RTOrdered)
- 
+
+module RTSet = Set.Make (RT)
 module RTSetExt = SetExt.Make (RTSet)
-
-type abs_value =
-    AVType of RTSet.t
-  | AVTypeof of id
-  | AVString of string
-  | AVTypeIs of id * RTSet.t
-
-type runtime_typs = RTSet.t
 
 type constr = string
 
@@ -80,7 +81,7 @@ type exp
   | ETryCatch of pos * exp * id * exp
   | ETryFinally of pos * exp * exp
   | EThrow of pos * exp
-  | ETypecast of pos * Typedjs_lattice.RTSet.t * exp
+  | ETypecast of pos * RTSet.t * exp
 
 and lvalue =
     LVar of pos * id

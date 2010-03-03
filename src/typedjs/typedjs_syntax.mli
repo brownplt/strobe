@@ -2,28 +2,27 @@ open Prelude
 
 exception Typ_error of pos * string
 
-type runtime_typ =
-    RTNumber
-  | RTString
-  | RTBoolean
-  | RTFunction
-  | RTObject
-  | RTUndefined
+module RT : sig
+  type t =
+    | Number
+    | String
+    | Boolean
+    | Function
+    | Object
+    | Undefined
+
+  val compare : t -> t -> int
+
+  val pp : t -> FormatExt.printer
+
+end
 
 module RTSet : Set.S
-  with type elt = runtime_typ
+  with type elt = RT.t
 
 module RTSetExt : SetExt.S
-  with type elt = runtime_typ
+  with type elt = RT.t
   and type t = RTSet.t
-
-type abs_value =
-    AVType of RTSet.t
-  | AVTypeof of id
-  | AVString of string
-  | AVTypeIs of id * RTSet.t
-
-type runtime_typs = RTSet.t
 
 type constr = string
 
@@ -78,7 +77,7 @@ type exp
   | ETryCatch of pos * exp * id * exp
   | ETryFinally of pos * exp * exp
   | EThrow of pos * exp
-  | ETypecast of pos * Typedjs_lattice.RTSet.t * exp
+  | ETypecast of pos * RTSet.t * exp
 
 and lvalue =
     LVar of pos * id

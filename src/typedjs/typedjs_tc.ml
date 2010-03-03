@@ -3,7 +3,6 @@ open Typedjs_syntax
 open Typedjs_types 
 open Typedjs_pretty
 open Typedjs_stxutil
-open Typedjs_dftc
 
 module JS = JavaScript_syntax (* needed for operators *)
 
@@ -257,7 +256,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
             (* all arguments are available for dataflow in the body *)
             Env.new_assignable_id x (Env.bind_id x t env) in
           let env' = fold_left bind_arg env (List.combine args arg_typs) in
-          let body' = annotate env' body in
+          let body' = (* annotate env' *) body in
             (* The env. in which we type the annotated body specifies the
                env. in which we do dataflow for nested functions. Remove the
                locally assigned identifiers from this env. (accounts for

@@ -111,22 +111,6 @@ let rec def (d : def) = match d with
         sep [ text (sprintf "%s.prototype.%s" c_name f_name); text "="; exp e ]
       in vert (map f methods) *)
 
-let pretty_runtime_typ (fmt : formatter) (rt : runtime_typ) = match rt with
-    RTNumber -> pp_print_string fmt "number"
-  | RTString -> pp_print_string fmt "string"
-  | RTBoolean -> pp_print_string fmt "boolean"
-  | RTObject -> pp_print_string fmt "object"
-  | RTUndefined -> pp_print_string fmt "undefined"
-  | RTFunction -> pp_print_string fmt "function"
-
-let pretty_abs_value (fmt : formatter) (v : abs_value) = match v with
-    AVType s -> RTSetExt.pretty fmt pretty_runtime_typ s
-  | AVTypeof x -> fprintf fmt "typeof %s" x
-  | AVString s -> pp_print_string fmt ("\"" ^ s ^ "\"")
-  | AVTypeIs (x, s) -> 
-      fprintf fmt "typeof %s === " x;
-      RTSetExt.pretty fmt pretty_runtime_typ s
-
 let pretty_exp fmt e = exp e fmt
 
 let pretty_typ fmt t = typ t fmt
