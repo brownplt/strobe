@@ -1,0 +1,12 @@
+﻿<strings>
+<GADGET_NAME>Metrónomo</GADGET_NAME>
+<GADGET_DESCRIPTION>Una práctica herramienta que produce un sonido en intervalos regulares (o latido) que ayuda a los músicos a reproducir ritmos de forma precisa.</GADGET_DESCRIPTION>
+<GADGET_COPYRIGHT>Desarrollado por Bijoy Thangaraj</GADGET_COPYRIGHT>
+<GADGET_WEBSITE>http://gadgets.jsplash.com/</GADGET_WEBSITE>
+<GADGET_ABOUT>Metrónomo desarrollado por Bijoy Thangaraj
+
+Un metrónomo es una práctica herramienta que produce un sonido en intervalos regulares (o latido) que ayuda a los músicos a reproducir ritmos de forma precisa. Los usos habituales del metrónomo te ayudan a mantener un tempo establecido a la vez que practicas y aprendes fragmentos complicados. Utiliza las teclas (+) y (-) para aumentar o reducir el tempo.
+
+Si deseas conocer otros gadgets de Google Desktop, visita http://gadgets.jsplash.com</GADGET_ABOUT>
+<bpm>BPM</bpm>
+</strings>

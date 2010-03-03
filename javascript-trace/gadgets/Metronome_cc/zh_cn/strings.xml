@@ -1,0 +1,12 @@
+﻿<strings>
+<GADGET_NAME>节拍器</GADGET_NAME>
+<GADGET_DESCRIPTION>一项练习工具，能够产生律动（或击打），协助音乐家准确演奏出旋律。</GADGET_DESCRIPTION>
+<GADGET_COPYRIGHT>由 Bijoy Thangaraj 开发</GADGET_COPYRIGHT>
+<GADGET_WEBSITE>http://gadgets.jsplash.com/</GADGET_WEBSITE>
+<GADGET_ABOUT>Metronome 由 Bijoy Thangaraj 开发
+
+节拍器  (metronome) 是一项练习工具，能够产生律动（或击打），协助音乐家准确演奏出旋律。节拍器可在您练习以及学习比较难的乐段时，协助您保持既定的拍子。使用 (+) 和 (-) 等按键可以加快或放慢拍子。
+
+如需其他 Google 桌面小工具，请访问 http://gadgets.jsplash.com</GADGET_ABOUT>
+<bpm>BPM</bpm>
+</strings>

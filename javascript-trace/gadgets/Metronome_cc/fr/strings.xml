@@ -1,0 +1,12 @@
+﻿<strings>
+<GADGET_NAME>Métronome</GADGET_NAME>
+<GADGET_DESCRIPTION>Un outil d'entraînement qui produit une pulsation régulière (le beat) pour aider les musiciens à jouer en rythme.</GADGET_DESCRIPTION>
+<GADGET_COPYRIGHT>Développé par Bijoy Thangaraj</GADGET_COPYRIGHT>
+<GADGET_WEBSITE>http://gadgets.jsplash.com/</GADGET_WEBSITE>
+<GADGET_ABOUT>Métronome développé par Bijoy Thangaraj
+
+Un métronome est un outil pratique qui produit une pulsation régulière (le beat) pour aider les musiciens à jouer en rythme. Le métronome permet généralement de conserver un tempo constant au cours des exercices et de l'apprentissage de morceaux difficiles. Utilisez les boutons (+) et (-) pour accélérer ou ralentir le tempo.
+
+Découvrez d'autres gadgets Google Desktop sur http://gadgets.jsplash.com .</GADGET_ABOUT>
+<bpm>BPM</bpm>
+</strings>
