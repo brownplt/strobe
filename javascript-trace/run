@@ -1,0 +1,9 @@
+#!/usr/bin/python
+import os, sys
+
+base,_ = os.path.splitext(sys.argv[1])
+outf = "%s_cc.js" % base
+
+cmd = "./dist/build/jstrace/jstrace %s > %s" % (sys.argv[1], outf)
+print cmd
+os.system(cmd)

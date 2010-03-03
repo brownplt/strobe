@@ -132,7 +132,7 @@ var holder = (function() {  //lambda to hide all these local funcs
   //-------------------
   //important variables:
   var __typedJsTypes = {$global: {kind: 'object', type: {}}}; //map type aliases to their rttypes
-  var __orderedVars = []; //map order of appearance to named rttypes
+  var __orderedVars = {}; //map file names to a mapping of order of appearance to named rttypes
 
   //-------------------
   //helper functions
@@ -591,26 +591,34 @@ var holder = (function() {  //lambda to hide all these local funcs
   var update_tracewin = function() {
     clearwin(__dbgwin);
     clearwin(__tracewin);
-    if (__orderedVars.length == 0) {
-      println(__tracewin, "No tracing info yet...");
-      return;
-    }
-
-    println(__tracewin, "/*::");
+    var sawSomething = false;
 
     var typesSeen = {};
-
-    for (var i=0; i < __orderedVars.length; i++) {
-      println(__dbgwin, "stringing var #" + i);
-      var res = strNestedNamedRttype(__orderedVars[i], true);
-      println(__dbgwin, "done with var #" + i);
-      var strs = res.answer;
-      copyFrom(res.typesSeen, typesSeen);
-      for (var j = 0; j < strs.length; j++) {
-        println(__tracewin, "  " + strs[j]);
+    
+    for (var fn in __orderedVars) {
+      sawSomething = true;
+      
+      println(__tracewin, "// *** TYPES FOR " + fn + " *** ");
+      println(__tracewin, "/*::");
+      var ovs = __orderedVars[fn];
+      
+      if (ovs.length == 0) {
+        println(__tracewin, "No tracing info yet...");
+        continue;
       }
+
+      for (var i=0; i < ovs.length; i++) {
+        println(__dbgwin, "stringing var #" + i);
+        var res = strNestedNamedRttype(ovs[i], true);
+        println(__dbgwin, "done with var #" + i);
+        var strs = res.answer;
+        copyFrom(res.typesSeen, typesSeen);
+        for (var j = 0; j < strs.length; j++) {
+          println(__tracewin, "  " + strs[j]);
+        }
+      }
+      println(__tracewin, "*/");
     }
-    println(__tracewin, "*/");
 
     /*println(__tracewin, "/*:::");
     var typesPrinted = {};
@@ -635,6 +643,11 @@ var holder = (function() {  //lambda to hide all these local funcs
     }
     println(__tracewin, "*-/"); */
     
+    if (!sawSomething) {
+      println(__tracewin, "No tracing info at all...");      
+      return;
+    }
+
     //if we're not in google gadgets, show results right away:
     if (!isGG) {
       showwin(__tracewin);
@@ -655,8 +668,10 @@ var holder = (function() {  //lambda to hide all these local funcs
   //name is the name, if any
   //position is what position it occupies in the nester, e.g.
   //0 if the first position, 1 if the 2nd, etc.
-  var tracefunction = function(fn, nester, name, position, dbg) {
-    if (arguments.length >= 5) {
+  var tracefunction = function(fn, nester, name, filename, position) {
+    var dbg = false;
+    
+    if (arguments.length != 5) {
       alert("Please re-compile this code!");
       return;
     }
@@ -688,7 +703,9 @@ var holder = (function() {  //lambda to hide all these local funcs
     }
     else {
       //insert it in the right place in the global
-      __orderedVars[position] = {name: name, rttype: ref};
+      if (!(filename in __orderedVars))
+        __orderedVars[filename] = [];
+      __orderedVars[filename][position] = {name: name, rttype: ref};
     }
 
     var res = function() {

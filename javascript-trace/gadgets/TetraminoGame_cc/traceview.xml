@@ -1,0 +1,7 @@
+<view width="640" height="480">
+  <script src="traceview.js"></script>
+  <edit name="display" width="100%" height="100%"
+        multiline="true" readonly="true" value="Types coming soon..."
+        font="Courier New" size="10">
+  </edit>
+</view>

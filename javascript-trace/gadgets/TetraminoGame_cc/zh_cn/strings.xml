@@ -1,0 +1,32 @@
+﻿<strings>
+<GADGET_NAME>Tetramino Game</GADGET_NAME>
+<GADGET_DESCRIPTION>在补充工具栏或桌面上玩Tetramino Game</GADGET_DESCRIPTION>
+<GADGET_ABOUT_TEXT>Tetramino Game游戏 版权所有 2007 Benjamin Schirmer 在补充工具栏或桌面上玩Tetramino Game
+
+http://www.desktop-gadgets.net/tetris/
+
+说明：
+向左移动：向左光标
+向右移动：向右光标
+旋转：向上光标
+快速落下：向下光标
+
+游戏代码以 Alexei Kourbatov 提供的“JavaScript Tetris”为基础。http://www.javascripter.net/games/tetris/game.htm
+
+积木图形由 Bijoy Thangaraj 提供。在此鸣谢！
+
+Tetramino Game的音乐由 Nikolai Alekseevich Nekrasov 提供。从维基百科获取：http://upload.wikimedia.org/wikipedia/en/f/fe/Korobeiniki.mid</GADGET_ABOUT_TEXT>
+<strOptionControls>游戏控制：</strOptionControls>
+<strOptionLeft>左</strOptionLeft>
+<strOptionRight>右</strOptionRight>
+<strOptionRotate>旋转</strOptionRotate>
+<strOptionDown>落败</strOptionDown>
+<strOptionFall>落下</strOptionFall>
+<strOptionMusic>播放Tetramino Game的音乐</strOptionMusic>
+<strGameOver>游戏结束</strGameOver>
+<strMenuNew>新游戏</strMenuNew>
+<strStart>开始</strStart>
+<strPaused>已暂停</strPaused>
+<strLevel>等级</strLevel>
+<strLines>线条</strLines>
+</strings>

@@ -10,8 +10,9 @@ import Control.Monad.State
 
 
 --state is: (current position, whether we're in a function,
---           a hint for the name of a function)        
-type CounterM a = State (Int, Bool, String) a
+--           a hint for the name of a function,
+--           filename of the code we're compiling)        
+type CounterM a = State (Int, Bool, String, String) a
 
 
 funcWrapperName = "__typedjs"
@@ -55,11 +56,11 @@ caseClause (CaseDefault p ss) = do
 varDecl :: VarDecl SourcePos -> CounterM (VarDecl SourcePos)
 varDecl v@(VarDecl p name mEx) = case mEx of
   Just e -> do
-    (a, b, nameHint) <- get
-    put (a, b, unId name)
+    (a, b, nameHint, fn) <- get
+    put (a, b, unId name, fn)
     e' <- expr e
-    (a', b', _) <- get
-    put (a', b', nameHint)
+    (a', b', _, fn) <- get
+    put (a', b', nameHint, fn)
     return $ VarDecl p name (Just e')
   Nothing -> return v
   
@@ -129,11 +130,11 @@ expr e = case e of
     return $ CondExpr p c' t' f'
   AssignExpr p op lval e -> do
     lval' <- lvalue lval
-    (a,b,nameHint) <- get
-    put (a,b,lvalue2str lval)
+    (a,b,nameHint, fn) <- get
+    put (a,b,lvalue2str lval, fn)
     e' <- expr e
-    (a',b',_) <- get
-    put (a',b',nameHint)
+    (a',b',_, fn) <- get
+    put (a',b',nameHint, fn)
     return $ AssignExpr p op lval' e'
   ParenExpr a e -> do
     e' <- expr e
@@ -146,15 +147,16 @@ expr e = case e of
     es' <- mapM expr es
     return $ CallExpr a func' es'
   FuncExpr p mname argNames body -> do
-    (n, isNested, nameHint) <- get
-    put (n + 1, isNested, nameHint)
+    (n, isNested, nameHint, fn) <- get
+    put (n + 1, isNested, nameHint, fn)
     return $ CallExpr p (VarRef p (Id p funcWrapperName))
-               [FuncExpr p mname argNames (evalState (stmt body) (0, True, "")),
+               [FuncExpr p mname argNames (evalState (stmt body) (0, True, "", fn)),
                 if isNested
                   then DotRef p (VarRef p (Id p "arguments"))  
                                 (Id p "callee")
                   else VarRef p (Id p "undefined"),
                 StringLit p $ maybe nameHint unId mname, 
+                StringLit p $ fn,
                 IntLit p n]
  where 
   noop = return e
@@ -250,5 +252,5 @@ main :: IO ()
 main = do
   args <- getArgs
   script <- parseJavaScriptFromFile (head args)
-  let script' = evalState (mapM stmt script) (0, False, "")
+  let script' = evalState (mapM stmt script) (0, False, "", head args)
   putStrLn (renderStatements script')

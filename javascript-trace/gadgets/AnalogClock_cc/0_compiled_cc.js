@@ -7,6 +7,7 @@ var _view_onopen = __typedjs(function  ()
                              },
                              undefined,
                              "_view_onopen",
+                             "gadgets/AnalogClock_cc/0_compiled.js",
                              0);
 var _view_onminimize = __typedjs(function  ()
                                  {
@@ -20,6 +21,7 @@ var _view_onminimize = __typedjs(function  ()
                                  },
                                  undefined,
                                  "_view_onminimize",
+                                 "gadgets/AnalogClock_cc/0_compiled.js",
                                  1);
 var _view_onrestore = __typedjs(function  ()
                                 {
@@ -30,6 +32,7 @@ var _view_onrestore = __typedjs(function  ()
                                 },
                                 undefined,
                                 "_view_onrestore",
+                                "gadgets/AnalogClock_cc/0_compiled.js",
                                 2);
 var _view_onpopout = __typedjs(function  ()
                                {
@@ -41,6 +44,7 @@ var _view_onpopout = __typedjs(function  ()
                                },
                                undefined,
                                "_view_onpopout",
+                               "gadgets/AnalogClock_cc/0_compiled.js",
                                3);
 var d = __typedjs(function  ()
                   {
@@ -66,6 +70,7 @@ var d = __typedjs(function  ()
                   },
                   undefined,
                   "d",
+                  "gadgets/AnalogClock_cc/0_compiled.js",
                   4);
 var e = __typedjs(function  ()
                   {
@@ -75,6 +80,7 @@ var e = __typedjs(function  ()
                   },
                   undefined,
                   "e",
+                  "gadgets/AnalogClock_cc/0_compiled.js",
                   5);
 var k = __typedjs(function  (a)
                   {
@@ -86,6 +92,7 @@ var k = __typedjs(function  (a)
                   },
                   undefined,
                   "k",
+                  "gadgets/AnalogClock_cc/0_compiled.js",
                   6);
 var h = __typedjs(function  (a)
                   {
@@ -94,6 +101,7 @@ var h = __typedjs(function  (a)
                   },
                   undefined,
                   "h",
+                  "gadgets/AnalogClock_cc/0_compiled.js",
                   7);
 var _UpdateSecondHandInterval = 0,
     _BounceRotationIncrement = 1.8,
@@ -106,12 +114,13 @@ var l = __typedjs(function  (a)
                       _UpdateSecondHandInterval = 0;
                     };
                     var b = a.getMilliseconds() + a.getSeconds() * 1000;
-                    _NewRotation = b * 0.006;
+                    _NewRotation = b * 0.6;
                     SecondHand.rotation = _NewRotation + _BounceRotationIncrement;
                     _UpdateSecondHandInterval = SetInterval(m,50);
                   },
                   undefined,
                   "l",
+                  "gadgets/AnalogClock_cc/0_compiled.js",
                   8);
 var m = __typedjs(function  ()
                   {
@@ -119,6 +128,7 @@ var m = __typedjs(function  ()
                   },
                   undefined,
                   "m",
+                  "gadgets/AnalogClock_cc/0_compiled.js",
                   9);
 var f = __typedjs(function  ()
                   {
@@ -147,6 +157,7 @@ var f = __typedjs(function  ()
                   },
                   undefined,
                   "f",
+                  "gadgets/AnalogClock_cc/0_compiled.js",
                   10);
 var _SecondHandFade = 0;
 var g = __typedjs(function  (a)
@@ -166,6 +177,7 @@ var g = __typedjs(function  (a)
                   },
                   undefined,
                   "g",
+                  "gadgets/AnalogClock_cc/0_compiled.js",
                   11);
 var j = __typedjs(function  ()
                   {
@@ -173,5 +185,6 @@ var j = __typedjs(function  ()
                   },
                   undefined,
                   "j",
+                  "gadgets/AnalogClock_cc/0_compiled.js",
                   12);
 ;;

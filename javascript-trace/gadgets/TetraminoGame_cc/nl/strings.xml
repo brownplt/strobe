@@ -1,0 +1,32 @@
+﻿<strings>
+<GADGET_NAME>Tetramino Game</GADGET_NAME>
+<GADGET_DESCRIPTION>Speel Tetramino Game in uw zijbalk of op uw bureaublad</GADGET_DESCRIPTION>
+<GADGET_ABOUT_TEXT>Copyright 2007 Tetramino Game Benjamin Schirmer Speel Tetramino Game in uw zijbalk of op uw bureaublad.
+
+http://www.desktop-gadgets.net/tetris/
+
+Instructies:
+Naar links: cursor links
+Naar rechts: cursor rechts
+Roteren: cursor omhoog
+Snel laten vallen: cursor omlaag
+
+Spelcode gebaseerd op "JavaScript Tetris" van Alexei Kourbatov. http://www.javascripter.net/games/tetris/game.htm
+
+Blokken door Bijoy Thangaraj. Hartelijk bedankt!
+
+Tetris-muziek van Nikolai Alekseevich Nekrasov. Verkregen van wikipedia op http://upload.wikimedia.org/wikipedia/en/f/fe/Korobeiniki.mid</GADGET_ABOUT_TEXT>
+<strOptionControls>Spelbesturing:</strOptionControls>
+<strOptionLeft>Links</strOptionLeft>
+<strOptionRight>Rechts</strOptionRight>
+<strOptionRotate>Roteren</strOptionRotate>
+<strOptionDown>Omlaag</strOptionDown>
+<strOptionFall>Herfst</strOptionFall>
+<strOptionMusic>Tetris-muziek afspelen</strOptionMusic>
+<strGameOver>Spel voorbij</strGameOver>
+<strMenuNew>Nieuw spel</strMenuNew>
+<strStart>Start</strStart>
+<strPaused>Onderbroken</strPaused>
+<strLevel>Niveau</strLevel>
+<strLines>Lijnen</strLines>
+</strings>

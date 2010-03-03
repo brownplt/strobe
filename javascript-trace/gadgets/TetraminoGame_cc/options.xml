@@ -1,0 +1,37 @@
+<view height="160" width="160" onok="optionsSave()" onopen="view_onOpen()"
+ >
+  <label height="16" name="labelControls" width="108" x="5" y="5">&strOptionControls;
+  </label>
+  <label height="16" name="labelLeft" width="50" x="30" y="25" align="right"
+   >&strOptionLeft;:
+  </label>
+  <label height="16" name="labelRight" width="50" x="30" y="45" align="right"
+   >&strOptionRight;:
+  </label>
+  <label height="16" name="labelRotate" width="50" x="30" y="65" align="right"
+   >&strOptionRotate;:
+  </label>
+  <label height="16" name="labelDown" width="50" x="30" y="85" align="right"
+   >&strOptionDown;:
+  </label>
+  <label height="16" name="labelFall" width="50" x="30" y="105" align="right"
+   >&strOptionFall;:
+  </label>
+  <edit height="16" name="keyLeft" width="64" x="90" y="25" onkeyup="keyLeftCode()"
+   />
+  <edit height="16" name="keyRight" width="64" x="90" y="45" onkeyup="keyRightCode()"
+   />
+  <edit height="16" name="keyRotate" width="64" x="90" y="65" onkeyup="keyRotateCode()"
+   />
+  <edit height="16" name="keyDown" width="64" x="90" y="85" onkeyup="keyDownCode()"
+   />
+  <edit height="16" name="keyFall" width="64" x="90" y="105" onkeyup="keyFallCode()"
+   />
+  <checkbox height="16" name="optMusic" width="145" x="6" y="132" downImage="stock_images\checkbox_down.png"
+    image="stock_images\checkbox_up.png" overImage="stock_images\checkbox_over.png"
+    caption="&strOptionMusic;" checkedDownImage="stock_images\checkbox_checked_down.png"
+    checkedImage="stock_images\checkbox_checked_up.png" checkedOverImage="stock_images\checkbox_checked_over.png"
+   />
+  <script src="options.js" />
+  <script src="keyCodes.js" />
+</view>

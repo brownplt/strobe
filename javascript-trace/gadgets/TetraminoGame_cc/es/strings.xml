@@ -1,0 +1,32 @@
+﻿<strings>
+<GADGET_NAME>Tetramino Game</GADGET_NAME>
+<GADGET_DESCRIPTION>Juega al Tetramino Game en la barra lateral o en tu escritorio</GADGET_DESCRIPTION>
+<GADGET_ABOUT_TEXT>Tetramino Game Copyright 2007 Benjamin Schirmer. Juega al tetris en la barra lateral o en tu escritorio.
+
+http://www.desktop-gadgets.net/tetris/
+
+Instrucciones:
+Mover a la izquierda: cursor a la izquierda
+Mover a la derecha: cursor a la derecha
+Rotar: cursor arriba
+Descenso rápido: cursor abajo
+
+Código del juego basado en el "Tetris de JavaScript" de Alexei Kourbatov. http://www.javascripter.net/games/tetris/game.htm
+
+Gráficos de los bloques de Bijoy Thangaraj. Muchas gracias.
+
+Música del tetris de Nikolai Alekseevich Nekrasov. Obtenida de la siguiente página de la wikipedia http://upload.wikimedia.org/wikipedia/en/f/fe/Korobeiniki.mid</GADGET_ABOUT_TEXT>
+<strOptionControls>Mandos para juegos:</strOptionControls>
+<strOptionLeft>Izquierda</strOptionLeft>
+<strOptionRight>Derecha</strOptionRight>
+<strOptionRotate>Rotar</strOptionRotate>
+<strOptionDown>Abajo</strOptionDown>
+<strOptionFall>Otoño</strOptionFall>
+<strOptionMusic>Reproducir música del tetris</strOptionMusic>
+<strGameOver>Fin del juego</strGameOver>
+<strMenuNew>Juego nuevo</strMenuNew>
+<strStart>Inicio</strStart>
+<strPaused>En pausa</strPaused>
+<strLevel>Nivel</strLevel>
+<strLines>Líneas</strLines>
+</strings>
