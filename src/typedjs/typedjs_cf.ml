@@ -9,6 +9,8 @@ module J = JavaScript_syntax
    of bound identifiers and perform abstract operations. *)
 let envs : (node, env) H.t = H.create 200
 
+let bound_id_map : (pos * id, node) H.t = H.create 200
+
 let mk_type_is x s = match s with
   | "string" -> ATypeIs (x, RTSet.singleton RT.String)
   | "number" -> ATypeIs (x, RTSet.singleton RT.Number)
@@ -18,7 +20,7 @@ let mk_type_is x s = match s with
   | "undefined" -> ATypeIs (x, RTSet.singleton RT.Undefined)
   | _ -> singleton RT.Boolean
 
-let abs_of_cpsval env (cpsval : cpsval) = match cpsval with
+let abs_of_cpsval node env (cpsval : cpsval) = match cpsval with
   | Const c -> begin match c with
       | Exprjs_syntax.CString s -> AString s
       | Exprjs_syntax.CRegexp _ -> singleton RT.Object
@@ -28,38 +30,39 @@ let abs_of_cpsval env (cpsval : cpsval) = match cpsval with
       | Exprjs_syntax.CNull -> singleton RT.Object
       | Exprjs_syntax.CUndefined -> singleton RT.Undefined
     end
-  | Id x -> 
+  | Id (p, x) -> 
+      H.replace bound_id_map (p, x) node;
       let rt = lookup x env in
         eprintf "Runtime type of %s is %s\n" x (FormatExt.to_string p_av rt);
         rt
 
 let rec calc (env : env) (cpsexp : cpsexp) = match cpsexp with
   | Let0 (n, x, v, cont) -> 
-      let r = abs_of_cpsval env v in
+      let r = abs_of_cpsval n env v in
         flow (bind x r env) cont
-  | Let1 (_, x, op, v, e) -> 
-      let v' = abs_of_cpsval env v in
+  | Let1 (n, x, op, v, e) -> 
+      let v' = abs_of_cpsval n env v in
       let r = match op, v with
-        | J.PrefixTypeof, Id x -> ATypeof x
+        | J.PrefixTypeof, Id (_, x) -> ATypeof x
         | _ -> any in
         flow (bind x r env) e
-  | Let2 (_, x, op, v1, v2, e) ->
+  | Let2 (n, x, op, v1, v2, e) ->
       let r = 
-        match op, abs_of_cpsval env v1, abs_of_cpsval env v2 with
+        match op, abs_of_cpsval n env v1, abs_of_cpsval n env v2 with
             J.OpStrictEq, ATypeof x, AString s -> mk_type_is x s
         | J.OpStrictEq, AString s,  ATypeof x  -> mk_type_is x s
         | J.OpStrictEq, _, _ -> singleton RT.Boolean
         | _ -> any in
         flow (bind x r env) e
-  | If (_, v1, e2, e3) ->
-      let env2, env3 = match abs_of_cpsval env v1 with
+  | If (n, v1, e2, e3) ->
+      let env2, env3 = match abs_of_cpsval n env v1 with
         | ATypeIs (x, x_true) -> 
             let x_false = RTSet.diff (to_set (lookup x env)) x_true in 
               bind x (ASet x_true) env, bind x (ASet x_false) env
         | _ -> env, env in
         flow env2 e2;
         flow env3 e3
-  | Fix (_, binds, cont) ->
+  | Fix (n, binds, cont) ->
       let esc_set = esc_cpsexp cpsexp in
       let is_escaping (f, _, _, _) = IdSet.mem f esc_set in
       let (esc_binds, nonesc_binds) = List.partition is_escaping binds in
@@ -68,8 +71,8 @@ let rec calc (env : env) (cpsexp : cpsexp) = match cpsexp with
         List.iter (mk_closure env') nonesc_binds;
         flow env' cont; 
         List.iter (sub_flow env') esc_binds
-  | App (_, f, args) ->
-      begin match abs_of_cpsval env f, map (abs_of_cpsval env) args with
+  | App (n, f, args) ->
+      begin match abs_of_cpsval n env f, map (abs_of_cpsval n env) args with
         | AClosure (_, formals, body), argvs -> 
             let flow_env = List.fold_right2 bind formals argvs empty_env in
               flow flow_env body

@@ -10,7 +10,7 @@ module IdOrderedType = struct
   let compare = Pervasives.compare
 end
 
-module PosOrderedType = struct
+module Pos = struct
 
   type t = pos
 
@@ -30,13 +30,13 @@ module IdSet = Set.Make (IdOrderedType)
 
 module IdSetExt = SetExt.Make (IdSet)
 
-module PosSet = Set.Make (PosOrderedType)
+module PosSet = Set.Make (Pos)
 
 module PosSetExt = SetExt.Make (PosSet)
 
-module PosMap = Map.Make (PosOrderedType)
+module PosMap = Map.Make (Pos)
 
-module PosMapExt = MapExt.Make (PosOrderedType)(PosMap)
+module PosMapExt = MapExt.Make (Pos) (PosMap)
 
 module IdMap = Map.Make (IdOrderedType)
 

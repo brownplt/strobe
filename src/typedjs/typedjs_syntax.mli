@@ -78,7 +78,7 @@ type exp
   | ETryCatch of pos * exp * id * exp
   | ETryFinally of pos * exp * exp
   | EThrow of pos * exp
-  | ETypecast of pos * runtime_typs * exp
+  | ETypecast of pos * Typedjs_lattice.RTSet.t * exp
 
 and lvalue =
     LVar of pos * id

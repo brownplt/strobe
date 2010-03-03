@@ -3,7 +3,7 @@ open Typedjs_syntax
 
 type cpsval =
     Const of Exprjs_syntax.const
-  | Id of id
+  | Id of pos * id
 
 type node = int
 

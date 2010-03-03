@@ -19,6 +19,7 @@ open Exprjs_syntax
 open Format
 open FormatExt
 open Typedjs_cf
+open Typedjs_cftc
 
 module Lat = Typedjs_lattice
 

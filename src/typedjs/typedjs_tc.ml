@@ -98,8 +98,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EThrow (_, e) -> 
       let _ = tc_exp env e in
         TBot
-  | ETypecast (p, rt, e) ->
-      static rt (tc_exp env e)
+(*  | ETypecast (p, rt, e) ->
+      static rt (tc_exp env e) *)
   | EArray (p, []) -> 
       raise (Typ_error (p, "an empty array literal requires a type annotation"))
   | EArray (_, e :: es) -> 

@@ -3,7 +3,7 @@ open Typedjs_syntax
 
 type cpsval =
     Const of Exprjs_syntax.const
-  | Id of id
+  | Id of pos * id
 
 type node = int
 
@@ -36,53 +36,58 @@ let new_node : unit -> node =
 
 type cont = cpsval -> cpsexp
 
+let p = (Lexing.dummy_pos, Lexing.dummy_pos)
+
+let mk_id x = Id (p, x)
+
+
 let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
     EConst (_, c) -> k (Const c)
-  | EId (_, x) -> k (Id x)
+  | EId (p, x) -> k (Id (p, x))
   | EArray (_, es) -> 
       cps_exp_list es throw
         (fun vs ->
            let x = new_name () in
-             Array (new_node (), x, vs, k (Id x)))
+             Array (new_node (), x, vs, k (mk_id x)))
   | EObject (_, ps) ->
       cps_exp_list (map thd3 ps) throw
         (fun vs -> 
            let x = new_name () in
              Object (new_node (), x,
                      List.combine (map (fun (f, _, _) -> f) ps) vs,
-                     k (Id x)))
+                     k (mk_id x)))
   | EBracket (_, e1, e2) ->
       cps_exp e1 throw
         (fun v1 ->
            cps_exp e2 throw
              (fun v2 ->
                 let x = new_name () in
-                  GetField (new_node (), x, v1, v2, k (Id x))))
+                  GetField (new_node (), x, v1, v2, k (mk_id x))))
   | EPrefixOp (_, op, e) ->
       cps_exp e throw
         (fun v -> 
            let x = new_name () in
-             Let1 (new_node (), x, op, v, k (Id x)))
+             Let1 (new_node (), x, op, v, k (mk_id x)))
   | EInfixOp (_, op, e1, e2) -> 
       cps_exp e1 throw
         (fun v1 ->
            cps_exp e2 throw
              (fun v2 ->
                 let x = new_name () in
-                  Let2 (new_node (), x, op, v1, v2, k (Id x))))
+                  Let2 (new_node (), x, op, v1, v2, k (mk_id x))))
   | EIf (_, e1, e2, e3) -> 
       cps_exp e1 throw
         (fun v1 ->
            let k' = mk_name "if-cont"
            and r = new_name () in
              Fix (new_node (), 
-                  [k', [r], TArrow (TTop, [TTop], TTop), k (Id r)],
+                  [k', [r], TArrow (TTop, [TTop], TTop), k (mk_id r)],
                   If (new_node (),
                       v1, 
                       cps_exp e2 throw 
-                        (fun v -> App (new_node (), Id k', [v])),
+                        (fun v -> App (new_node (), mk_id k', [v])),
                       cps_exp e3 throw
-                        (fun v -> App (new_node (), Id k', [v])))))
+                        (fun v -> App (new_node (), mk_id k', [v])))))
   | EAssign (_, LVar (_, x), e) -> 
       cps_exp e throw (fun v -> Assign (new_node (), x, v, k v))
   | EAssign (_, LProp (_, e1, e2), e3) ->
@@ -97,19 +102,19 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       let k' = mk_name "app-cont"
       and r = new_name () in
         Fix (new_node (),
-             [(k', [r], TArrow (TTop, [TTop], TTop), k (Id r))],
+             [(k', [r], TArrow (TTop, [TTop], TTop), k (mk_id r))],
              cps_exp func throw
                (fun f ->
                   cps_exp_list args throw
                     (fun vs ->
-                       App (new_node (), f, (Id k') :: (Id throw) :: vs))))
+                       App (new_node (), f, (mk_id k') :: (mk_id throw) :: vs))))
   | EFunc (_, args, typ, body) -> 
       let f = mk_name "anon-func"
       and k' = new_name () 
       and throw' = new_name () in
         Fix (new_node (),
              [(f, k' :: throw' :: args, typ, cps_tailexp body throw' k')],
-             k (Id f))
+             k (mk_id f))
   | ELet (_, x, e1, e2) ->
       cps_exp e1 throw
         (fun v1 ->
@@ -122,7 +127,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
   | ELabel (_, l, _, e) ->
       let r = new_name () in
         Fix (new_node (),
-             [(l, [r], TArrow (TTop, [TTop], TTop), k (Id r))],
+             [(l, [r], TArrow (TTop, [TTop], TTop), k (mk_id r))],
              cps_tailexp e throw l)
   | EBreak (_, l, e) -> (* drops its own continuation *)
       cps_tailexp e throw l
@@ -135,13 +140,13 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
   | ETypecast of pos * runtime_typs * exp *)
 
 and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
-    EConst (_, c) -> App (new_node (), Id k, [ Const c ])
-  | EId (_, x) -> App (new_node (), Id k, [ Id x ])
+    EConst (_, c) -> App (new_node (), mk_id k, [ Const c ])
+  | EId (p, x) -> App (new_node (), mk_id k, [ Id (p, x) ])
   | EArray (_, es) -> 
       cps_exp_list es throw
         (fun vs ->
            let x = new_name () in
-             Array (new_node (), x, vs, App (new_node (), Id k, [ Id x ])))
+             Array (new_node (), x, vs, App (new_node (), mk_id k, [ mk_id x ])))
   | EObject (_, ps) ->
       cps_exp_list (map thd3 ps) throw
         (fun vs -> 
@@ -149,7 +154,7 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
              Object (new_node (), x,
                      List.combine
                        (map (fun (f, _, _) -> f) ps) vs,
-                     App (new_node (), Id k, [ Id x ])))
+                     App (new_node (), mk_id k, [ mk_id x ])))
   | EBracket (_, e1, e2) ->
       cps_exp e1 throw
         (fun v1 ->
@@ -157,13 +162,13 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
              (fun v2 ->
                 let x = new_name () in
                   GetField (new_node (), x, v1, v2,
-                            App (new_node (), Id k, [ Id x ]))))
+                            App (new_node (), mk_id k, [ mk_id x ]))))
   | EPrefixOp (_, op, e) ->
       cps_exp e throw
         (fun v -> 
            let x = new_name () in
              Let1 (new_node (), x, op, v, 
-                   App (new_node (), Id k, [ Id x ])))
+                   App (new_node (), mk_id k, [ mk_id x ])))
   | EInfixOp (_, op, e1, e2) -> 
       cps_exp e1 throw
         (fun v1 ->
@@ -171,7 +176,7 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
              (fun v2 ->
                 let x = new_name () in
                   Let2 (new_node (), x, op, v1, v2, 
-                        App (new_node (), Id k, [ Id x ]))))
+                        App (new_node (), mk_id k, [ mk_id x ]))))
   | EIf (_, e1, e2, e3) -> 
       cps_exp e1 throw
         (fun v1 ->
@@ -183,7 +188,7 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
       cps_exp e throw
         (fun v -> 
            Assign (new_node (), x, v,
-                   App (new_node (), Id k, [ v ])))
+                   App (new_node (), mk_id k, [ v ])))
   | EAssign (_, LProp (_, e1, e2), e3) ->
       cps_exp e1 throw
         (fun v1 ->
@@ -192,19 +197,19 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
                 cps_exp e3 throw
                   (fun v3 ->
                      SetProp (new_node (), v1, v2, v3,
-                              App (new_node (), Id k, [ v3 ])))))
+                              App (new_node (), mk_id k, [ v3 ])))))
   | EApp (_, func, args) -> 
       cps_exp func throw
         (fun f ->
            cps_exp_list args throw
-             (fun vs -> App (new_node (), f, Id k :: Id throw :: vs)))
+             (fun vs -> App (new_node (), f, mk_id k :: mk_id throw :: vs)))
   | EFunc (_, args, typ, body) -> 
       let f = new_name ()
       and k' = new_name ()
       and throw' = new_name () in
         Fix (new_node (),
              [(f, k' :: throw' :: args, typ, cps_tailexp body throw' k')],
-             App (new_node (), Id k, [ Id f ]))
+             App (new_node (), mk_id k, [ mk_id f ]))
   | ELet (_, x, e1, e2) ->
       cps_exp e1 throw
         (fun v1 ->
@@ -219,7 +224,7 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
       let r = new_name () in
         Fix (new_node (),
              [(l, [r], TArrow (TTop, [TTop], TTop), 
-               App (new_node (), Id k, [Id r]))],
+               App (new_node (), mk_id k, [mk_id r]))],
              cps_tailexp e throw k)
   | EBreak (_, l, e) -> (* drops its own continuation *)
       cps_tailexp e throw l
@@ -266,7 +271,7 @@ let node_of_cpsexp (cpsexp : cpsexp) : node = match cpsexp with
 
 let fv_cpsval (cpsval : cpsval) : IdSet.t = match cpsval with
     Const _ -> IdSet.empty
-  | Id x -> IdSet.singleton x
+  | Id (_, x) -> IdSet.singleton x
 
 let fv_prop (_, v) = fv_cpsval v
 
@@ -306,7 +311,7 @@ open FormatExt
 
 let rec p_cpsval (cpsval : cpsval) : printer = match cpsval with
     Const c -> Exprjs_pretty.p_const c
-  | Id x -> text x
+  | Id (_, x) -> text x
     
 and p_prop (x, v) : printer = brackets [ text x; p_cpsval v ]
 
