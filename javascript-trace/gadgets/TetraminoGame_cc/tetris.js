@@ -25,33 +25,34 @@
 //note: took out "getLevel" since it was never used.
 
 // PARAMETERS
-nSquares = 4;
-nTypes = 7;
-boardHeight = 16;
-boardWidth = 10;
-Level = 1;
-speed0 = 700;
-speedK = 60;
-speed = speed0 - speedK * Level;
-nLines = 0;
+var nSquares = 4;
+var nTypes = 7;
+var boardHeight = 16;
+var boardWidth = 10;
+var Level = 1;
+var speed0 = 700;
+var speedK = 60;
+var speed = speed0 - speedK * Level;
+var nLines = 0;
+
 
 // GLOBAL VARIABLES
-curX = 1;
-curY = 1;
-skyline = boardHeight - 1;
-serialN = 0;
+var curX = 1;
+var curY = 1;
+var skyline = boardHeight - 1;
+var serialN = 0;
 
-boardLoaded = 1;
-gamePaused = 0;
-gameStarted = 0;
-sayingBye = 0;
-timerID = null;
+var boardLoaded = 1;
+var gamePaused = 0;
+var gameStarted = 0;
+var sayingBye = 0;
+var timerID = null;
 
-tetrisMusic = null;
-tetrisMusicSrc = storage.extract("music/Korobeiniki.mid");
+var tetrisMusic = null;
+var tetrisMusicSrc = storage.extract("music/Korobeiniki.mid");
 
 // ARRAYS
-f = new Array();
+var f = new Array();
 for (i = 0; i < 20; i++) {
     f[i] = new Array();
     for (j = 0; j < 20; j++) {
@@ -59,14 +60,14 @@ for (i = 0; i < 20; i++) {
     }
 }
 
-xToErase = new Array(0, 0, 0, 0);
-yToErase = new Array(0, 0, 0, 0);
-dx = new Array(0, 0, 0, 0);
-dy = new Array(0, 0, 0, 0);
-dx_ = new Array(0, 0, 0, 0);
-dy_ = new Array(0, 0, 0, 0);
-dxBank = new Array();
-dyBank = new Array();
+var xToErase = new Array(0, 0, 0, 0);
+var yToErase = new Array(0, 0, 0, 0);
+var dx = new Array(0, 0, 0, 0);
+var dy = new Array(0, 0, 0, 0);
+var dx_ = new Array(0, 0, 0, 0);
+var dy_ = new Array(0, 0, 0, 0);
+var dxBank = new Array();
+var dyBank = new Array();
 dxBank[1] = new Array(0, 1, - 1, 0);
 dyBank[1] = new Array(0, 0, 0, 1);
 dxBank[2] = new Array(0, 1, - 1, - 1);

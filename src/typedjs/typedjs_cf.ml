@@ -1,97 +1,114 @@
 open Prelude
 open Typedjs_cps
-open Typedjs_dfLattice
+open Typedjs_lattice
 
 module H = Hashtbl
 module J = JavaScript_syntax
-
-let single t = AVType (RTSet.singleton t)
-
-let any_val = AVType any_runtime_typ
-
 
 (* The abstract environment at each node lets us lookup the abstract value
    of bound identifiers and perform abstract operations. *)
 let envs : (node, env) H.t = H.create 200
 
-(* We map names of lexically-known functions to their formal arguments and
-   function bodies. The analysis is interprocedural when applying known
-   functions. *)
-type known = (id list * cpsexp) IdMap.t
-
-let set_env (n : node)
-
-
 let mk_type_is x s = match s with
-    "string" -> AVTypeIs (x, RTSet.singleton RTString)
-  | "number" -> AVTypeIs (x, RTSet.singleton RTNumber)
-  | "boolean" -> AVTypeIs (x, RTSet.singleton RTBoolean)
-  | "function" -> AVTypeIs (x, RTSet.singleton RTFunction)
-  | "object" -> AVTypeIs (x, RTSet.singleton RTObject)
-  | "undefined" -> AVTypeIs (x, RTSet.singleton RTUndefined)
-  | _ -> single_value RTBoolean
+  | "string" -> ATypeIs (x, RTSet.singleton RT.String)
+  | "number" -> ATypeIs (x, RTSet.singleton RT.Number)
+  | "boolean" -> ATypeIs (x, RTSet.singleton RT.Boolean)
+  | "function" -> ATypeIs (x, RTSet.singleton RT.Function)
+  | "object" -> ATypeIs (x, RTSet.singleton RT.Object)
+  | "undefined" -> ATypeIs (x, RTSet.singleton RT.Undefined)
+  | _ -> singleton RT.Boolean
 
-let abs_of_cpsval (env : env) (cpsval : cpsval) : abs_value = 
-  match cpsval with
-      Const (_, c) -> begin match c with
-          CString s -> AVString s
-        | CRegexp _ -> single RTObject
-        | CNum _ -> single RTNumber
-        | CInt _ -> single RTNumber
-        | CBool _ -> single RTBoolean
-        | CNull -> single RTObject
-        | CUndefined -> single RTUndefined
-      end
-    | Array _ -> single RTObject
-    | Object _ -> single RTObject
-    | Id x -> lookup_env x env
+let abs_of_cpsval env (cpsval : cpsval) = match cpsval with
+  | Const c -> begin match c with
+      | Exprjs_syntax.CString s -> AString s
+      | Exprjs_syntax.CRegexp _ -> singleton RT.Object
+      | Exprjs_syntax.CNum _ -> singleton RT.Number
+      | Exprjs_syntax.CInt _ -> singleton RT.Number
+      | Exprjs_syntax.CBool _ -> singleton RT.Boolean
+      | Exprjs_syntax.CNull -> singleton RT.Object
+      | Exprjs_syntax.CUndefined -> singleton RT.Undefined
+    end
+  | Id x -> 
+      let rt = lookup x env in
+        eprintf "Runtime type of %s is %s\n" x (FormatExt.to_string p_av rt);
+        rt
 
 let rec calc (env : env) (cpsexp : cpsexp) = match cpsexp with
-    Let0 (n, x, v, e) -> 
+  | Let0 (n, x, v, cont) -> 
       let r = abs_of_cpsval env v in
-        flow (bind_env x r env) e
-  | Let1 (, x, op, v, e) -> 
-      let r = match op, abs_of_cpsval env v with
-          J.PrefixTypeof, Id x -> AVTypeof x
-        | _ -> any_val in
-        flow (bind_env x r env) e
+        flow (bind x r env) cont
+  | Let1 (_, x, op, v, e) -> 
+      let v' = abs_of_cpsval env v in
+      let r = match op, v with
+        | J.PrefixTypeof, Id x -> ATypeof x
+        | _ -> any in
+        flow (bind x r env) e
   | Let2 (_, x, op, v1, v2, e) ->
       let r = 
-        match op, abs_of_cpsval env v1, abs_of_cpsval env env v2 with
-            J.OpStrictEq, AVTypeof x, AVString s -> mk_type_is x s
-        | J.OpStrictEq, AVString s,  AVTypeof x  -> mk_type_is x s
-        | J.OpStrictEq, _, _ -> single RTBoolean
-        | _ -> any_val in
-        flow (bind_env x r env) e
-  | Array (_, x, elts, k) ->
-      let elts' = map (abs_of_cpsval env) elts in
-      let env' = bind x  [[ array of elts' ]] env in
-        flow env' k
-  | Assign (_, x, v, e) ->
-      let r = abs_of_cpsval env v in
-        flow (bind_env x r env) e (* TODO: certainly wrong *)
+        match op, abs_of_cpsval env v1, abs_of_cpsval env v2 with
+            J.OpStrictEq, ATypeof x, AString s -> mk_type_is x s
+        | J.OpStrictEq, AString s,  ATypeof x  -> mk_type_is x s
+        | J.OpStrictEq, _, _ -> singleton RT.Boolean
+        | _ -> any in
+        flow (bind x r env) e
   | If (_, v1, e2, e3) ->
-      let env2, env3 = match v1 with
-          AVTypeIs (x, rt) -> 
-            let x_rt = abs_value_to_runtime_typs (lookup_env x env) in
-            let x_false = RTSet.diff x_rt rt in 
-              bind_env x (AVType rt) env, bind_env x (AVType x_false) env
+      let env2, env3 = match abs_of_cpsval env v1 with
+        | ATypeIs (x, x_true) -> 
+            let x_false = RTSet.diff (to_set (lookup x env)) x_true in 
+              bind x (ASet x_true) env, bind x (ASet x_false) env
         | _ -> env, env in
         flow env2 e2;
         flow env3 e3
-  | Fix (_, binds, body) ->
-      let esc = esc_cpsexp exp in
-      let is_escaping (x, _, _, _) = IdSet.mem x esc in
-      let esc_binds, nonesc_binds = List.partition is_escaping binds in
-        (* TODO: we assume that non-escaping binds are actually applied. *)
-
-      let close (f, formals, _, body) = ... CONTINUE HERE ... 
-          
-
+  | Fix (_, binds, cont) ->
+      let esc_set = esc_cpsexp cpsexp in
+      let is_escaping (f, _, _, _) = IdSet.mem f esc_set in
+      let (esc_binds, nonesc_binds) = List.partition is_escaping binds in
+      let env' = fold_left bind_lambda env nonesc_binds in
+      let env' = fold_left bind_esc_lambda env' esc_binds in
+        List.iter (mk_closure env') nonesc_binds;
+        flow env' cont; 
+        List.iter (sub_flow env') esc_binds
   | App (_, f, args) ->
       begin match abs_of_cpsval env f, map (abs_of_cpsval env) args with
-          Id f', args' when IdMap.mem f' known ->
-            flow 
+        | AClosure (_, formals, body), argvs -> 
+            let flow_env = List.fold_right2 bind formals argvs empty_env in
+              flow flow_env body
+        | _ -> eprintf "applying an escaped function\n"
+      end
 
+and bind_lambda env (f, args, typ, body_exp) =
+  bind f (AClosure (node_of_cpsexp body_exp, args, body_exp)) env
 
-and flow (env : env) (cpsexp : cpsexp) = ...
+and bind_esc_lambda env (f, _,_, _) =
+  bind f (singleton RT.Function) env
+
+and mk_closure (env : env) (f, args, typ, body_exp) =
+  let node = node_of_cpsexp body_exp in
+    try ignore (H.find envs node)
+    with Not_found -> H.replace envs node env
+
+and sub_flow (env : env) (f, args, typ, body_exp) =  match typ with
+    Typedjs_syntax.TArrow (_, arg_typs, _) -> 
+      eprintf "sub_flow into %s\n" f;
+      let arg_avs = map runtime arg_typs in
+      let flow_env = List.fold_right2 bind args arg_avs env in
+        flow flow_env body_exp
+  | _ -> failwith "expected TArrow in sub_flow"
+
+and flow (env : env) (cpsexp : cpsexp) = 
+  let node = node_of_cpsexp cpsexp in
+    eprintf "Flowing to %d... " node;
+  let old_env, reflow  = 
+    try H.find envs node, false
+    with Not_found -> empty_env, true in
+  let new_env = union_env old_env env in
+    if Pervasives.compare old_env new_env != 0 || reflow then
+      begin
+        eprintf "calc\n";
+        H.replace envs node new_env;
+        calc new_env cpsexp
+      end
+    else eprintf "not flowing\n"
+              
+let typed_cfa (env : env) (cpsexp : cpsexp) : unit =
+  flow env cpsexp

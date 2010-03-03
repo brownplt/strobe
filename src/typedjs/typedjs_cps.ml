@@ -76,7 +76,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
            let k' = mk_name "if-cont"
            and r = new_name () in
              Fix (new_node (), 
-                  [k', [r], TTop, k (Id r)],
+                  [k', [r], TArrow (TTop, [TTop], TTop), k (Id r)],
                   If (new_node (),
                       v1, 
                       cps_exp e2 throw 
@@ -97,7 +97,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       let k' = mk_name "app-cont"
       and r = new_name () in
         Fix (new_node (),
-             [(k', [r], TTop, k (Id r))],
+             [(k', [r], TArrow (TTop, [TTop], TTop), k (Id r))],
              cps_exp func throw
                (fun f ->
                   cps_exp_list args throw
@@ -122,7 +122,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
   | ELabel (_, l, _, e) ->
       let r = new_name () in
         Fix (new_node (),
-             [(l, [r], TTop, k (Id r))],
+             [(l, [r], TArrow (TTop, [TTop], TTop), k (Id r))],
              cps_tailexp e throw l)
   | EBreak (_, l, e) -> (* drops its own continuation *)
       cps_tailexp e throw l
@@ -218,7 +218,8 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
   | ELabel (_, l, _, e) ->
       let r = new_name () in
         Fix (new_node (),
-             [(l, [r], TTop, App (new_node (), Id k, [Id r]))],
+             [(l, [r], TArrow (TTop, [TTop], TTop), 
+               App (new_node (), Id k, [Id r]))],
              cps_tailexp e throw k)
   | EBreak (_, l, e) -> (* drops its own continuation *)
       cps_tailexp e throw l
@@ -309,50 +310,55 @@ let rec p_cpsval (cpsval : cpsval) : printer = match cpsval with
     
 and p_prop (x, v) : printer = brackets [ text x; p_cpsval v ]
 
-let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
-    Fix (_, binds, body) ->
-      vert [ text "fix"; nest (vert (map p_bind binds)); p_cpsexp body ]
+let numstr i s : printer = text (string_of_int i ^ ":" ^ s)
 
-  | App (_, f, args ) ->
-      parens ( text "app" :: p_cpsval f :: (map p_cpsval args) )
-  | If (_, v1, e2, e3) -> 
-      parens [ text "if"; p_cpsval v1; p_cpsexp e2; p_cpsexp e3 ]
-  | Let0 (_, x, v, e) -> 
-      vert [ horz [ text "let"; text x; text "="; p_cpsval v; text "in" ]; 
+let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
+    Fix (i, binds, body) ->
+      parens [ 
+        vert [ numstr i "fix"; nest (vert (map p_bind binds)); 
+               p_cpsexp body ] ]
+
+  | App (i, f, args ) ->
+      parens ( numstr i "app" :: p_cpsval f :: (map p_cpsval args) )
+  | If (i, v1, e2, e3) -> 
+      parens [ numstr i"if"; p_cpsval v1; p_cpsexp e2; p_cpsexp e3 ]
+  | Let0 (i, x, v, e) -> 
+      vert [ horz [ numstr i"let"; text x; text "="; p_cpsval v; text "in" ]; 
              p_cpsexp e ]
-  | Let1 (_, x, op, v, e) -> 
-      vert [ horz [ text "let"; text x;  text "="; 
+  | Let1 (i, x, op, v, e) -> 
+      vert [ horz [ numstr i"let"; text x;  text "="; 
                     parens [ text (JavaScript_pretty.render_prefixOp op);
                              p_cpsval v ];
                   text "in" ];
              p_cpsexp e ]
-  | Let2 (_, x, op, v1, v2, e) -> 
-      vert [ horz [ text "let"; text x; 
+  | Let2 (i, x, op, v1, v2, e) -> 
+      vert [ horz [ numstr i"let"; text x; 
                     parens [ text (JavaScript_pretty.render_infixOp op);
                              p_cpsval v1;
                              p_cpsval v2 ];
                     text "in" ];
              p_cpsexp e ]
-  | Assign (_, x, v, e) -> 
-      vert [ horz [ text x; text ":="; p_cpsval v ];
+  | Assign (i, x, v, e) -> 
+      vert [ horz [ numstr i ("asgn:"^x); text ":="; p_cpsval v ];
              p_cpsexp e ]
-  | SetProp (_, v1, v2, v3, e) -> 
-      vert [ horz [ p_cpsval v1; text "."; p_cpsval v2; text "<-"; 
+  | SetProp (i, v1, v2, v3, e) -> 
+      vert [ horz [ numstr i "prop"; p_cpsval v1; text "."; 
+                    p_cpsval v2; text "<-"; 
                     p_cpsval v3 ];
              p_cpsexp e ]
-  | Array (_, x, vs, e) ->
-      vert [ horz [ text "let"; text x; text "="; 
+  | Array (i, x, vs, e) ->
+      vert [ horz [ numstr i"let"; text x; text "="; 
                     parens (text "array" :: (map p_cpsval vs));
                     text "in" ];
              p_cpsexp e ]
-  | Object (_, x, ps, e) ->
-      vert [ horz [ text "let"; text x; text "=";
+  | Object (i, x, ps, e) ->
+      vert [ horz [ numstr i"let"; text x; text "=";
                     parens [ text x; 
                              parens (text "object" :: (map p_prop ps)) ];
                     text "in" ];
              p_cpsexp e ]
-  | GetField (_, x, v1, v2, e) ->
-      vert [ horz [ text "let"; text x; text "="; 
+  | GetField (i, x, v1, v2, e) ->
+      vert [ horz [ numstr i"let"; text x; text "="; 
                     parens [ text "get-field"; p_cpsval v1; p_cpsval v2 ];
                     text "in" ];
              p_cpsexp e ]
@@ -361,5 +367,9 @@ and p_prop (x, v) : printer =
   brackets [ text x; p_cpsval v ]
 
 and p_bind (f, args, typ, body) : printer =
-  vert  [ horz [ text f; text "=" ];
-          parens [ text "lambda"; parens (map text args); p_cpsexp body ] ]
+  parens [ vert 
+             [ text f;
+               parens [ text "lambda"; parens (map text args);
+                        (fun fmt -> Typedjs_pretty.pretty_typ fmt typ);
+                        p_cpsexp body ] ]
+         ]

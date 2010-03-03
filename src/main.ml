@@ -3,7 +3,6 @@ open Exprjs
 open Typedjs
 open Prelude
 open Printf
-open Typedjs_df
 open Typedjs_stxutil
 open Typedjs_anf
 open Typedjs_types
@@ -19,7 +18,9 @@ open Lambdajs_cps
 open Exprjs_syntax
 open Format
 open FormatExt
-open Lambdajs_lattice
+open Typedjs_cf
+
+module Lat = Typedjs_lattice
 
 let cin = ref stdin
 
@@ -74,9 +75,12 @@ let action_anf () : unit =
 let action_cps () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
-  let lambdajs = Lambdajs_syntax.desugar exprjs in
-  let cpslambdajs = Lambdajs_cps.cps lambdajs in
-    Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
+  let typedjs = Typedjs.from_exprjs exprjs comments !env in
+    begin match typedjs with
+        DExp (e, _) ->
+          let cpstypedjs = Typedjs_cps.cps e in
+            Typedjs_cps.p_cpsexp cpstypedjs std_formatter
+    end
 
 let action_esc () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
@@ -97,13 +101,12 @@ let action_df () : unit =
   let typedjs = Typedjs.from_exprjs exprjs comments !env in
     begin match typedjs with
         DExp (e, _) ->
-          let anf = Typedjs_anf.from_typedjs e in
-          let ids = Typedjs_df.local_type_analysis 
-            Typedjs_dfLattice.empty_env anf in
-          let pr (x, p) av =
-            printf "%s (%s): %s\n" x (string_of_position p)
-              (pretty_string pretty_abs_value av)
-          in BoundIdMap.iter pr ids
+          let cpsexp = Typedjs_cps.cps e in
+          let env =
+            Lat.bind "%end" (Lat.singleton Lat.RT.Function)
+              (Lat.bind "%uncaught-exception" (Lat.singleton Lat.RT.Function)
+                 Typedjs_lattice.empty_env) in
+            typed_cfa env cpsexp
       | _ -> failwith "expected a single expression"
     end
 

@@ -9,7 +9,17 @@ let type_from_comment ((pos, end_p), str) =
   let lexbuf = Lexing.from_string str in
     lexbuf.Lexing.lex_start_p <- pos;
     lexbuf.Lexing.lex_curr_p <- pos;
-    Typedjs_parser.typ_ann Typedjs_lexer.token lexbuf
+    try
+      Typedjs_parser.typ_ann Typedjs_lexer.token lexbuf
+    with
+      |  Failure "lexing: empty token" ->
+           failwith (sprintf "lexical error parsing type at %s"
+                       (string_of_position
+                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
+      |  Typedjs_parser.Error ->
+           failwith (sprintf "parse error parsing type at %s"
+                       (string_of_position
+                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
 
 let func_index = ref 0
 
