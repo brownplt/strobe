@@ -103,22 +103,6 @@ var holder = (function() {  //lambda to hide all these local funcs
     }
   };
   
-  if (isGG) {
-    //HOOK INTO IT MAN!!! HOOK INTO IT!
-    //easy way to display windows - add it to menu item
-    function onAddCustomMenuItems(menu) {
-      for (var i = 0; i < __windows.length; i++) {
-        menu.addItem(
-          __windows[i].title, 0, 
-          (function (w) { return function(){showwin(w);} })(__windows[i]));
-      }
-    }
-    
-    pluginHelper.onAddCustomMenuItems = onAddCustomMenuItems;
-  }
-
-  
-    
   var __tracewin = mkwin(" traced types");
 
   var __dbgwin = mkwin(" DEBUG INFO");
@@ -819,11 +803,23 @@ var holder = (function() {  //lambda to hide all these local funcs
     return t;
   };
   
+  //this function will add our menu items to GG:
+  //it must be called after the compiled code runs, in case they
+  //add their own menu items.
+  var addMenuItems = function (menu) {
+      for (var i = 0; i < __windows.length; i++) {
+        menu.addItem(
+          __windows[i].title, 0, 
+          (function (w) { return function(){showwin(w);} })(__windows[i]));
+      }
+    };
+  
   return {
     __typedjs: tracefunction,
     __new: newwrapper,
     __thisref: thisref,
-    showTypes: function () { return showwin(__tracewin); }
+    showTypes: function () { return showwin(__tracewin); },
+    addMenuItems: addMenuItems
   };
 })();
 
@@ -831,3 +827,4 @@ var __typedjs = holder.__typedjs;
 var __new = holder.__new;
 var showTypes = holder.showTypes;
 var __thisref = holder.__thisref;
+var __ADDMENUITEMS = holder.addMenuItems;

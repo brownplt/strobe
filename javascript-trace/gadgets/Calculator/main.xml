@@ -1,0 +1,192 @@
+<view name="main_view" width="396" height="299" onopen="viewOpen();" onkeypress="keyTrap();">
+
+
+	<div name="face" background="#CECEC2" x="13" y="12" width="366" height="33">
+  		<label name="displayPanel" x="5" y="3" width="357" height="13" align="right" font="tahoma" size="8" color="#333333">1234567890</label> 
+          <label name="expressionPanel" x="5" y="16" width="357" height="13" align="right" font="tahoma" size="8" color="#333333">+</label> 
+	</div>
+
+<img name="dframe" src="frame_sci.png"/>
+<script src="scientific.js"/> 
+<!--- hex, dec, oct, bin -->
+  <div name="basePanel" x="0" y="0" width="396" height="299" visible="false">
+	<img src="box_left.png" x="10" y="55"/>
+	<checkbox name="hexPanel" x="16" y="59" image="b_radio_unchecked_u.png" overImage="b_radio_unchecked_h.png" downImage="b_radio_unchecked_d.png"
+			  checkedimage="b_radio_checked_u.png" checkedOverImage="b_radio_checked_h.png" checkedDownImage="b_radio_checked_d.png" 
+        onchange="changeBase(16);"/>
+    <img src="hex.png" x="31" y="61"/>
+	<checkbox name="decPanel" x="56" y="59" image="b_radio_unchecked_u.png" overImage="b_radio_unchecked_h.png" downImage="b_radio_unchecked_d.png"
+			  checkedimage="b_radio_checked_u.png" checkedOverImage="b_radio_checked_h.png" checkedDownImage="b_radio_checked_d.png"
+        onchange="changeBase(10);"/>
+    <img src="dec.png" x="71" y="61"/>			  
+	<checkbox name="octPanel" x="96" y="59" image="b_radio_unchecked_u.png" overImage="b_radio_unchecked_h.png" downImage="b_radio_unchecked_d.png"
+			  checkedimage="b_radio_checked_u.png" checkedOverImage="b_radio_checked_h.png" checkedDownImage="b_radio_checked_d.png"
+			  onchange="changeBase(8);"/>
+	<img src="oct.png" x="111" y="61"/>		
+	<checkbox name="binPanel" x="136" y="59" image="b_radio_unchecked_u.png" overImage="b_radio_unchecked_h.png" downImage="b_radio_unchecked_d.png"
+			  checkedimage="b_radio_checked_u.png" checkedOverImage="b_radio_checked_h.png" checkedDownImage="b_radio_checked_d.png"
+			  onchange="changeBase(2);"/>
+	<img src="bin.png" x="151" y="61"/>	
+  </div>
+
+<!-- degress, radians, grads -->
+	<div name="degdispPanel" x="176" y="55" width="206" height="20" visible="false">
+	<img src="box_right.png"/>
+	<checkbox name="degPanel" x="5" y="4" image="b_radio_unchecked_u.png" overImage="b_radio_unchecked_h.png" downImage="b_radio_unchecked_d.png"
+			  checkedimage="b_radio_checked_u.png" checkedOverImage="b_radio_checked_h.png" checkedDownImage="b_radio_checked_d.png"
+        onchange="changeAngleRef(0);" />
+	<img src="degrees.png" x="20" y="6"/>	
+	<checkbox name="radPanel" x="74" y="4" image="b_radio_unchecked_u.png" overImage="b_radio_unchecked_h.png" downImage="b_radio_unchecked_d.png"
+			  checkedimage="b_radio_checked_u.png" checkedOverImage="b_radio_checked_h.png" checkedDownImage="b_radio_checked_d.png"
+        onchange="changeAngleRef(1);" />
+	<img src="radians.png" x="89" y="6"/>	
+	<checkbox name="gradPanel" x="144" y="4" image="b_radio_unchecked_u.png" overImage="b_radio_unchecked_h.png" downImage="b_radio_unchecked_d.png"
+			  checkedimage="b_radio_checked_u.png" checkedOverImage="b_radio_checked_h.png" checkedDownImage="b_radio_checked_d.png"
+        onchange="changeAngleRef(2);" />
+	<img src="grads.png" x="159" y="6"/>	
+	</div>
+
+
+<!-- Inv, hyp -->	
+  <div name="flagPanel" width="396" height="299" visible="false">
+	<img src="box_checkbox.png" x="10" y="79"/>
+	<checkbox name="invFlag" x="16" y="83" image="b_check_unchecked_u.png" overImage="b_check_unchecked_h.png" downImage="b_check_unchecked_d.png"
+	  checkedimage="b_check_checked_u.png" checkedOverImage="b_check_checked_h.png" checkedDownImage="b_check_checked_d.png"/>
+	<img src="inv.png" x="34" y="85"/>	
+	<checkbox name="hypFlag" x="70" y="83" image="b_check_unchecked_u.png" overImage="b_check_unchecked_h.png" downImage="b_check_unchecked_d.png"
+	  checkedimage="b_check_checked_u.png" checkedOverImage="b_check_checked_h.png" checkedDownImage="b_check_checked_d.png"/>
+	<img src="hyp.png" x="88" y="85"/>	
+
+
+	<button image="b_sta_u.png" overImage="b_sta_h.png" downImage="b_sta_d.png" x="9" y="102" visible="false"/>	
+	<button image="b_ave_u.png" overImage="b_ave_h.png" downImage="b_ave_d.png" x="9" y="126" visible="false"/>
+	<button image="b_sum_u.png" overImage="b_sum_h.png" downImage="b_sum_d.png" x="9" y="150" visible="false"/>	
+	<button image="b_s_u.png" overImage="b_s_h.png" downImage="b_s_d.png" x="9" y="174" visible="false"/>	
+	<button image="b_dat_u.png" overImage="b_dat_h.png" downImage="b_dat_d.png" x="9" y="198" visible="false"/>	
+</div>
+
+<!--			-->
+<div name="advPanel" width="396" height="299" visible="false">
+	<button image="b_fe_u.png" overImage="b_fe_h.png" downImage="b_fe_d.png" x="50" y="102"
+   onclick="feFlag=!feFlag;iRefresh();" tooltip="&TT_FE;" />	
+	<button image="b_(_u.png" overImage="b_(_h.png" downImage="b_(_d.png" x="78" y="102"
+   onclick="braces(0);" />		
+	<button image="b_)_u.png" overImage="b_)_h.png" downImage="b_)_d.png" x="106" y="102"
+	  onclick="braces(1);" />		
+	<button name="b_dms" image="b_dms_u.png" overImage="b_dms_h.png" downImage="b_dms_d.png" x="106" y="126"
+   onclick="dmsFunction();iRefresh();" tooltip="&TT_DMS;" />
+	<button name="b_exp" image="b_exp_u.png" overImage="b_exp_h.png" downImage="b_exp_d.png" x="22" y="102"
+   onclick="addE();iRefresh();" tooltip="&TT_EXPONENT;" />
+	<button image="b_ln_u.png" overImage="b_ln_h.png" downImage="b_ln_d.png" x="22" y="126"
+   onclick="invFlag.value=!invFlag.value;unaryExp();iRefresh();iFlags();" tooltip="&TT_LN;" />
+	<button image="b_sin_u.png" overImage="b_sin_h.png" downImage="b_sin_d.png" x="50" y="126"
+   onclick="unarySin();iRefresh();" />	
+	<button image="b_xy_u.png" overImage="b_xy_h.png" downImage="b_xy_d.png" x="78" y="126"
+    onclick="handleOperator('^');" />		
+	<button image="b_log_u.png" overImage="b_log_h.png" downImage="b_log_d.png" x="22" y="150"
+    onclick="unaryLog();iRefresh();" tooltip="&TT_LOG;" />		
+	<button image="b_cos_u.png" overImage="b_cos_h.png" downImage="b_cos_d.png" x="50" y="150"
+    onclick="unaryCos();iRefresh();" />	
+	<button image="b_x3_u.png" overImage="b_x3_h.png" downImage="b_x3_d.png" x="78" y="150"
+    onclick="unaryCube();iRefresh();" />		
+	<button image="b_n!_u.png" overImage="b_n!_h.png" downImage="b_n!_d.png" x="106" y="150"
+    onclick="unaryFact();iRefresh();" />	
+	<button image="b_tan_u.png" overImage="b_tan_h.png" downImage="b_tan_d.png" x="50" y="174"
+    onclick="unaryTan();iRefresh();" />	
+	<button image="b_x2_u.png" overImage="b_x2_h.png" downImage="b_x2_d.png" x="78" y="174"
+    onclick="unarySquare();iRefresh();" />		
+	<button name="sciX" image="b_1x_u.png" overImage="b_1x_h.png" downImage="b_1x_d.png" x="106" y="174"
+    onclick="unaryInverse();iRefresh();" />	
+</div>
+<!-- stadard mode 			  	   -->
+<div name="stdPanel" width="200" height="200">
+	<button image="b_ce_u.png" overImage="b_ce_h.png" downImage="b_ce_d.png" x="0" y="0"
+   onclick="iClear();iRefresh();" tooltip="&TT_CE;" />	
+	<button image="b_c_u.png" overImage="b_c_h.png" downImage="b_c_d.png" x="28" y="0"
+   onclick="iClear();memory=0;iRefresh();" tooltip="&TT_C;" />				
+	<button image="b_divide_u.png" overImage="b_divide_h.png" downImage="b_divide_d.png" x="56" y="0"
+   onclick="handleOperator('/');" />	
+	<button image="b_multi_u.png" overImage="b_multi_h.png" downImage="b_multi_d.png" x="84" y="0"
+   onclick="handleOperator('*');" />			
+	<button image="b_minus_u.png" overImage="b_minus_h.png" downImage="b_minus_d.png" x="112" y="0"
+   onclick="handleOperator('-');" />		
+	<button image="b_del_u.png" overImage="b_del_h.png" downImage="b_del_d.png" x="140" y="0"
+   onclick="backSpace();" tooltip="&TT_DEL;" />		
+	<button image="b_mc_u.png" overImage="b_mc_h.png" downImage="b_mc_d.png" x="0" y="24"
+   onclick="memory=0;" tooltip="&TT_MC;"/>		
+	<button name="b_7" image="b_7_u.png" overImage="b_7_h.png" downImage="b_7_d.png" x="28" y="24"
+   onclick="handleDigit('7');" ondblclick="handleDigit('7');" />		
+	<button name="b_8" image="b_8_u.png" overImage="b_8_h.png" downImage="b_8_d.png" x="56" y="24"
+   onclick="handleDigit('8');" ondblclick="handleDigit('8');" />	
+	<button name="b_9" image="b_9_u.png" overImage="b_9_h.png" downImage="b_9_d.png" x="84" y="24"
+   onclick="handleDigit('9');" ondblclick="handleDigit('9');"/>	
+	<button image="b_plus_u.png" overImage="b_plus_h.png" downImage="b_plus_d.png" x="112" y="24"
+   onclick="handleOperator('+');"/>		
+	<button image="b_plusminus_u.png" overImage="b_plusminus_h.png" downImage="b_plusminus_d.png" x="140" y="24"
+   onclick="changeSign();" tooltip="&TT_PLUSMINUS;" />			
+	<button image="b_mr_u.png" overImage="b_mr_h.png" downImage="b_mr_d.png" x="0" y="48"
+   onclick="dExists=1;dEditable=0;dValue=1;display=memory;iRefresh();" tooltip="&TT_MR;" />		
+	<button name="b_4" image="b_4_u.png" overImage="b_4_h.png" downImage="b_4_d.png" x="28" y="48"
+   onclick="handleDigit('4');" ondblclick="handleDigit('4');"/>		
+	<button name="b_5" image="b_5_u.png" overImage="b_5_h.png" downImage="b_5_d.png" x="56" y="48"
+  onclick="handleDigit('5');" ondblclick="handleDigit('5');"/>		
+	<button name="b_6" image="b_6_u.png" overImage="b_6_h.png" downImage="b_6_d.png" x="84" y="48"
+	  onclick="handleDigit('6');" ondblclick="handleDigit('6');"/>		
+	<button image="b_sqrt_u.png" overImage="b_sqrt_h.png" downImage="b_sqrt_d.png" x="140" y="48"
+   onclick="invFlag.value=1;unarySquare();iRefresh();iFlags();" />	
+	<button image="b_ms_u.png" overImage="b_ms_h.png" downImage="b_ms_d.png" x="0" y="72"
+   onclick="dEditable=0;if(!dValue) display=getValue(display);dValue=1;memory=display;" tooltip="&TT_MS;"/>		
+	<button name="b_1" image="b_1_u.png" overImage="b_1_h.png" downImage="b_1_d.png" x="28" y="72"
+   onclick="handleDigit('1');" ondblclick="handleDigit('1');"/>				
+	<button name="b_2" image="b_2_u.png" overImage="b_2_h.png" downImage="b_2_d.png" x="56" y="72"
+	  onclick="handleDigit('2');" ondblclick="handleDigit('2');"/>		
+	<button name="b_3" image="b_3_u.png" overImage="b_3_h.png" downImage="b_3_d.png" x="84" y="72"
+	  onclick="handleDigit('3');" ondblclick="handleDigit('3');"/>		
+	<button image="b_equal_u.png" overImage="b_equal_h.png" downImage="b_equal_d.png" x="112" y="72"
+	  onclick="handleOperator('=');" ondblclick="handleOperator('=');"/>		
+	<button image="b_percent_u.png" overImage="b_percent_h.png" downImage="b_percent_d.png" x="140" y="72"
+   onclick="percentOf();" tooltip="&TT_PERCENT;"/>	
+	<button image="b_mplus_u.png" overImage="b_mplus_h.png" downImage="b_mplus_d.png" x="0" y="96"
+   onclick="if(!dValue) display=getValue(display);dValue=1;memory+=display;dEditable=0;" tooltip="&TT_MPLUS;" />		
+	<button name="b_0" image="b_0_u.png" overImage="b_0_h.png" downImage="b_0_d.png" x="28" y="96"
+  onclick="handleDigit('0');" ondblclick="handleDigit('0');"/>		
+	<button name="b_point" image="b_point_u.png" overImage="b_point_h.png" downImage="b_point_d.png" x="84" y="96"
+  onclick="handleDigit('.');"/>	
+	<button name="simX" image="b_1x_u.png" overImage="b_1x_h.png" downImage="b_1x_d.png" x="140" y="96" visible="false"
+  onclick="unaryInverse();iRefresh();" />			
+</div>
+<!-- a,b,c,d,e,f -->
+<div name="atofPanel" width="396" height="299" visible="false">
+	<button name="b_10" image="b_a_u.png" overImage="b_a_h.png" downImage="b_a_d.png" x="147" y="198"
+   onclick="handleDigit('a');" ondblclick="handleDigit('a');" />	
+	<button name="b_11" image="b_b_u.png" overImage="b_b_h.png" downImage="b_b_d.png" x="175" y="198"
+   onclick="handleDigit('b');" ondblclick="handleDigit('b');" />		
+	<button name="b_12" image="b_c_u.png" overImage="b_c_h.png" downImage="b_c_d.png" x="203" y="198"
+   onclick="handleDigit('c');" ondblclick="handleDigit('c');" />	
+	<button name="b_13" image="b_d_u.png" overImage="b_d_h.png" downImage="b_d_d.png" x="231" y="198"
+   onclick="handleDigit('d');" ondblclick="handleDigit('d');" />		
+	<button name="b_14" image="b_e_u.png" overImage="b_e_h.png" downImage="b_e_d.png" x="259" y="198"
+   onclick="handleDigit('e');" ondblclick="handleDigit('e');" />		
+	<button name="b_15" image="b_f_u.png" overImage="b_f_h.png" downImage="b_f_d.png" x="287" y="198"
+   onclick="handleDigit('f');" ondblclick="handleDigit('f');" />						
+	<button image="b_mod_u.png" overImage="b_mod_h.png" downImage="b_mod_d.png" x="328" y="102"
+   onclick="handleOperator('%');" tooltip="&TT_MOD;" />	
+
+	<button image="b_and_u.png" overImage="b_and_h.png" downImage="b_and_d.png" x="356" y="102"
+  	onclick="handleOperator('N');" tooltip="&TT_AND;" />	
+
+	<button image="b_or_u.png" overImage="b_or_h.png" downImage="b_or_d.png" x="328" y="126"
+   onclick="handleOperator('|');" tooltip="&TT_OR;" />  
+
+	<button image="b_xor_u.png" overImage="b_xor_h.png" downImage="b_xor_d.png" x="356" y="126"
+   onclick="handleOperator('X');" tooltip="&TT_XOR;" />		
+	<button image="b_lsh_u.png" overImage="b_lsh_h.png" downImage="b_lsh_d.png" x="328" y="150"
+   onclick="handleOperator('L');" tooltip="&TT_LSH;" />	
+	<button image="b_not_u.png" overImage="b_not_h.png" downImage="b_not_d.png" x="356" y="150"
+   onclick="unaryNot();" tooltip="&TT_NOT;" />		
+	<button image="b_pi_u.png" overImage="b_pi_h.png" downImage="b_pi_d.png" x="328" y="174"
+   onclick="insertPi();iRefresh();" tooltip="&TT_PI;" />	
+	<button image="b_int_u.png" overImage="b_int_h.png" downImage="b_int_d.png" x="356" y="174"
+   onclick="convertInt();iRefresh();" tooltip="&TT_INT;" />						 
+</div>
+</view>

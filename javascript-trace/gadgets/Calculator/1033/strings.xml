@@ -1,0 +1,52 @@
+<strings>
+<PLUGIN_ABOUT>Calculator gadget
+Copyright 2007 Google Inc. All Rights Reserved.
+A nice new calculator never far from your desktop. Use it with a standard keyboard layout.
+</PLUGIN_ABOUT>
+<PLUGIN_DESCRIPTION>Our calculator is never too far from your desktop</PLUGIN_DESCRIPTION>
+<PLUGIN_NAME>Calculator gadget</PLUGIN_NAME>
+<SQRT_ERROR>SQRT cannot run for negative numbers</SQRT_ERROR>
+<E_DZERO>Cannot divide by Zero</E_DZERO>
+<E_RLARGE>Result too large.</E_RLARGE>
+<E_DOMAIN>Invalid domain for function</E_DOMAIN>
+
+<E_EXP_DOMAIN>Cannot take the log of a negative or zero value.</E_EXP_DOMAIN>
+<E_SINCOS_DOMAIN>Sin/Cos inverse requires the value to be between -1 and +1</E_SINCOS_DOMAIN>
+<E_FACT_DOMAIN>Cannot find factorial of a negative number.</E_FACT_DOMAIN>
+<E_SQRT_DOMAIN>Cannot find square root of a negative number.</E_SQRT_DOMAIN>
+<E_INV_DOMAIN>Cannot find 1/0.</E_INV_DOMAIN>
+
+
+<E_SYSTEM>Internal System Error has occurred</E_SYSTEM>
+<E_NLARGE>Number too large. Changing base and display to scientific notation.</E_NLARGE>
+<E_RORANGE>Result out of range</E_RORANGE>
+
+
+<TT_CE>Clears current calculations</TT_CE>
+<TT_C>Clears current calculations and clears the memory</TT_C>
+<TT_DEL>Removes the last inserted digit</TT_DEL>
+<TT_MC>Clears the memory</TT_MC>
+<TT_PLUSMINUS>Changes the sign of the displayed value</TT_PLUSMINUS>
+<TT_MR>Read from memory into display</TT_MR>
+<TT_MS>Stores the display into memory</TT_MS>
+<TT_PERCENT>Calculates the percent of the previous value. eg: 5+20% prints 1.</TT_PERCENT>
+<TT_MPLUS>Adds the displayed value to memory</TT_MPLUS>
+<TT_DMS>Converts the given number into deg-min-secs format. If the inverse flag is set, it assumes the input to be in that format and converts it into decimal.</TT_DMS>
+<TT_EXPONENT>Lets you specify the exponent part of the number. eg: 3E2 will be 300.</TT_EXPONENT>
+<TT_FE>Toggles the display system to/from scientific mode. eg: 300 is displayed as 3E2.</TT_FE>
+<TT_LN>Finds the natural logarithm (euler's base) of the given number(x). If the inverse flag is set, finds e^x.</TT_LN>
+<TT_LOG>Finds the base-10 logarithm of the given number(x). If the inverse flag is set, finds 10^x.</TT_LOG>
+
+<TT_AND>Finds the bitwise AND of two given numbers. Does rounding off before the operation.</TT_AND>
+<TT_OR>Finds the bitwise OR of two given numbers. Does rounding off before the operation.</TT_OR>
+<TT_XOR>Finds the bitwise XOR of two given numbers. Does rounding off before the operation.</TT_XOR>
+<TT_LSH>Shifts the former number to the latter number bits left.</TT_LSH>
+<TT_NOT>Finds the bitwise complement of the given number. Before the operation rounds the number and chooses minimal number of bits to represent it.</TT_NOT>
+<TT_PI>Inserts the value of PI into the display.</TT_PI>
+<TT_INT>Truncates the given number.</TT_INT>
+<TT_MOD>Takes the remainder of the division operation.</TT_MOD>
+
+<EXPR_RULES>Type in  the expression and press enter. You can store variable values from A to Z. 
+In addition u can use math function like sin, cos etc.</EXPR_RULES>
+</strings>
+
