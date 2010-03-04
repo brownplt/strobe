@@ -4,7 +4,6 @@ open Typedjs
 open Prelude
 open Printf
 open Typedjs_stxutil
-open Typedjs_anf
 open Typedjs_types
 open Typedjs_tc
 open Typedjs_testing
@@ -61,17 +60,6 @@ let action_tc () : unit =
   let typedjs = Typedjs.from_exprjs exprjs comments !env in
   let _ = Typedjs_tc.typecheck !env typedjs in
     ()
-
-let action_anf () : unit =
-  let (js, comments) = parse_javascript !cin !cin_name in
-  let exprjs = from_javascript js in
-  let typedjs = Typedjs.from_exprjs exprjs comments !env in
-    begin match typedjs with
-        DExp (e, _) -> 
-          let anf = Typedjs_anf.from_typedjs e in
-            Typedjs_anf.print_anfexp anf
-      | _ -> failwith "expected a single expression"
-    end
 
 let action_cps () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
@@ -140,8 +128,6 @@ let main () : unit =
        "simplify JavaScript to exprjs");
       ("-pretc", Arg.Unit (set_action action_pretypecheck),
        "basic well-formedness checks before typing");
-      ("-anf", Arg.Unit (set_action action_anf),
-       "convert program to ANF");
       ("-cps", Arg.Unit (set_action action_cps),
        "convert program to CPS");
       ("-esc", Arg.Unit (set_action action_esc),
