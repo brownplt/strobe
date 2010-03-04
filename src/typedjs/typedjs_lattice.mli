@@ -12,14 +12,6 @@ module Loc : sig
   val pp : t -> FormatExt.printer
 end
 
-
-module Heap : Map.S
-  with type key = Loc.t
-
-module HeapExt : MapExt.S 
-  with type key = Loc.t
-  with type +'a t = 'a Heap.t
-
 type av =
   | ASet of RTSet.t
   | ADeref of Loc.t
@@ -55,9 +47,9 @@ val p_env : env -> FormatExt.printer
 
 val empty_env : env
 
-val deref : Loc.t -> heap -> av
+val deref : Loc.t -> heap -> RTSet.t
 
-val set_ref : Loc.t -> av -> heap -> heap
+val set_ref : Loc.t -> RTSet.t -> heap -> heap
 
 val to_set : heap -> av -> RTSet.t
 

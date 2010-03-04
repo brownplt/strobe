@@ -15,7 +15,7 @@ let rec a_exp (exp : exp) : exp = match exp with
       let env = H.find envs node in
       let heap = H.find heaps node in
         match lookup x env with
-          | ARef loc -> ETypecast (p, to_set heap (deref loc heap), exp)
+          | ARef loc -> ETypecast (p, deref loc heap, exp)
           | _ -> exp
     with Not_found -> exp 
     end

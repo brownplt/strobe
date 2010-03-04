@@ -35,7 +35,7 @@ type av =
 
 type env = av IdMap.t
 
-type heap = av Heap.t
+type heap = RTSet.t Heap.t
 
 open FormatExt
 
@@ -48,6 +48,7 @@ let rec p_av av = match av with
   | ALocTypeIs (x, t) -> 
       horz [ text "typeis"; Loc.pp x; RTSetExt.p_set RT.pp t ]
   | AClosure _ -> text "#closure"
+  | AString s -> text ("\"" ^ s ^ "\"")
 
 let singleton t = ASet (RTSet.singleton t)
 
@@ -66,9 +67,9 @@ let rec to_set heap v = match v with
   | AString _ -> RTSet.singleton RT.String
   | AClosure _ -> RTSet.singleton RT.Function
   | ARef _ -> rtany
-  | ADeref loc -> to_set heap (Heap.find loc heap)
+  | ADeref loc -> Heap.find loc heap
 
-let deref loc heap : av =
+let deref loc heap  =
   try 
     Heap.find loc heap
   with Not_found ->
@@ -85,13 +86,11 @@ let rec av_union h av1 av2 = match av1, av2 with
   | ALocTypeof x, ALocTypeof y when x = y -> ALocTypeof x
   | ALocTypeIs (x, s), ALocTypeIs (y, t) when x = y -> 
       ALocTypeIs (x, RTSet.union s t)
-  | ALocTypeof _, _ -> av_union h (singleton RT.String) av2
-  | ALocTypeIs _, _ -> av_union h (singleton RT.Boolean) av2
-  | _, ALocTypeof _ -> av_union h av1 (singleton RT.String)
-  | _, ALocTypeIs _ -> av_union h av1 (singleton RT.Boolean)
-  | ADeref _, _ -> av_union h (ASet (to_set h av1)) av2
-  | _, ADeref _ -> av_union h av1 (ASet (to_set h av2))
-  | AClosure (m, _, _), AClosure (n, _, _) when m = n -> av1
+  | AString str1, AString str2 when str1 = str2 -> AString str1
+  | AClosure (m, _, _), AClosure (n, _, _) -> 
+      if m = n then av1
+      else failwith "av_union on distinct closures"
+  | _ -> av_union h (ASet (to_set h av1)) (ASet (to_set h av2))
 
 let union_env h (env1 : env) (env2 : env) : env = 
   IdMapExt.join (av_union h) env1 env2
@@ -136,7 +135,6 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
 let runtime t : av = ASet (rt_of_typ t)
 
 let union_heap h1 h2 =
-  (* TODO: heap should just have RTSet.t *)
-  HeapExt.join (av_union h1) h1 h2
+  HeapExt.join RTSet.union h1 h2
 
 let empty_heap = Heap.empty

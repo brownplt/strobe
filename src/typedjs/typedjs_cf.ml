@@ -46,11 +46,8 @@ let abs_of_cpsval node env (cpsval : cpsval) = match cpsval with
 let calc_op1 node env heap (op : op1)  v = match op, v with
   | Ref, v -> 
       let loc = Loc node in
-        ARef loc, set_ref loc v heap
+        ARef loc, set_ref loc (to_set heap v) heap
   | Deref, ARef loc ->
-      eprintf "At node %d, location %s contains %s\n" node
-        (FormatExt.to_string Loc.pp loc)
-        (FormatExt.to_string p_av (deref loc heap));
       ADeref loc, heap
   | Op1Prefix J.PrefixTypeof, ADeref loc -> 
       ALocTypeof loc, heap
@@ -78,10 +75,9 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
   | If (node, v1, true_cont, false_cont) ->
       let heap2, heap3 = match abs_of_cpsval node env v1 with
         | ALocTypeIs (loc, true_set) ->
-            (set_ref loc (ASet true_set) heap,
-             let false_set = 
-               RTSet.diff (to_set heap (deref loc heap)) true_set in
-               set_ref loc (ASet false_set) heap)
+            (set_ref loc true_set heap,
+             let false_set = RTSet.diff (deref loc heap) true_set in
+               set_ref loc false_set heap)
         | _ -> heap, heap in
         flow env heap2 true_cont;
         flow env heap3 false_cont
