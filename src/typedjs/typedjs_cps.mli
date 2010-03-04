@@ -32,7 +32,7 @@ type cpsexp =
   | If of node * cpsval * cpsexp * cpsexp
   | Bind of node * id * bindexp * cpsexp
 
-val cps : exp -> cpsexp
+val cps : def -> cpsexp
 
 val node_of_cpsexp : cpsexp -> node
 

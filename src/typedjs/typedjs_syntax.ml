@@ -104,31 +104,10 @@ type def =
 
 (******************************************************************************)
 
-module type EnvType = sig
-  
-  type env
-
-  val empty_env : env
-  val bind_id : id -> typ -> env -> env
-  val bind_lbl : id -> typ -> env -> env
-  val lookup_id : id -> env -> typ
-  val lookup_lbl : id -> env -> typ
-  val assignable_ids : env -> IdSet.t
-  val new_assignable_id : id -> env -> env
-  val remove_assigned_ids : IdSet.t -> env -> env
-  val id_env : env -> typ IdMap.t
-  val clear_labels : env -> env
-  val dom : env -> IdSet.t
-  val new_class : id -> env -> env
-  val add_method : id -> id -> typ -> env -> env
-
-end
-
-module Env : EnvType = struct
+module Env = struct
 
   type env = { id_typs : typ IdMap.t; 
                lbl_typs : typ IdMap.t;
-               asgn_ids : IdSet.t;
                (* maps class names to a structural object type *)
                classes : typ IdMap.t 
              }
@@ -137,7 +116,6 @@ module Env : EnvType = struct
   let empty_env = { 
     id_typs = IdMap.empty;
     lbl_typs = IdMap.empty;
-    asgn_ids = IdSet.empty;
     classes = IdMap.empty
   }
 
@@ -149,19 +127,11 @@ module Env : EnvType = struct
 
   let lookup_lbl x env = IdMap.find x env.lbl_typs
 
-  let assignable_ids env = env.asgn_ids
-
-  let new_assignable_id x env = { env with asgn_ids = IdSet.add x env.asgn_ids }
-
-  let remove_assigned_ids assigned_ids env =
-    { env with asgn_ids = IdSet.diff env.asgn_ids assigned_ids }
-
   let id_env env = env.id_typs
 
   let clear_labels env = { env with lbl_typs = IdMap.empty }
 
   let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)
-
 
   let new_class class_name env = 
     if IdMap.mem class_name env.classes then

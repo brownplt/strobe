@@ -138,3 +138,30 @@ let union_heap h1 h2 =
   HeapExt.join RTSet.union h1 h2
 
 let empty_heap = Heap.empty
+
+open Typedjs_syntax
+open Typedjs_types
+
+let rec simple_static lst  : typ = match lst with
+  | [] -> TBot
+  | RT.Number :: lst' ->typ_union typ_num (simple_static lst')
+  | RT.String :: lst' ->typ_union typ_str (simple_static lst')
+  | RT.Boolean :: lst' -> typ_union typ_bool (simple_static lst')
+  | _ -> TDom
+
+let rec static (rt : RTSet.t) (typ : typ) : typ = match typ with
+  | TTop -> TTop
+  | TBot -> TBot (* might change if we allow arbitrary casts *)
+  | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
+  | TApp ("String", []) -> if RTSet.mem RT.String rt then typ else TBot
+  | TApp ("RegExp", []) -> if RTSet.mem RT.Object rt then typ else TBot
+  | TApp ("Number", []) -> if RTSet.mem RT.Number rt then typ else TBot
+  | TApp ("Int", []) -> if RTSet.mem RT.Number rt then typ else TBot
+  | TApp ("Boolean", []) -> if RTSet.mem RT.Boolean rt then typ else TBot
+  | TApp ("Undefined", []) -> if RTSet.mem RT.Undefined rt then typ else TBot
+  | TApp _ -> failwith (sprintf "unknown type in static: %s"
+                          (pretty_string Typedjs_pretty.pretty_typ typ))
+  | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
+  | TRef t -> TRef t
+  | TDom -> simple_static (RTSetExt.to_list rt)
+  | TUnion (s, t) -> typ_union (static rt s) (static rt t)

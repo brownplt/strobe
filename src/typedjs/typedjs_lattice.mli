@@ -31,6 +31,8 @@ val any : av
 
 val runtime : Typedjs_syntax.typ -> av
 
+val static : RTSet.t -> Typedjs_syntax.typ -> Typedjs_syntax.typ
+
 val empty : av
 
 val p_av : av -> FormatExt.printer

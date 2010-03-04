@@ -3,7 +3,6 @@ open Exprjs
 open Typedjs
 open Prelude
 open Printf
-open Typedjs_stxutil
 open Typedjs_types
 open Typedjs_tc
 open Typedjs_testing
@@ -58,48 +57,45 @@ let action_tc () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments !env in
-  let _ = Typedjs_tc.typecheck !env typedjs in
+  let cpstypedjs = Typedjs_cps.cps typedjs in
+  let cf_env =
+    Lat.bind "%end" (Lat.singleton RT.Function)
+      (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
+         Typedjs_lattice.empty_env) in
+    typed_cfa cf_env cpstypedjs;
+    let annotated_typedjs = insert_typecasts typedjs in
+    let _ = Typedjs_tc.typecheck !env annotated_typedjs in
     ()
 
 let action_cps () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments !env in
-    begin match typedjs with
-        DExp (e, _) ->
-          let cpstypedjs = Typedjs_cps.cps e in
-            Typedjs_cps.p_cpsexp cpstypedjs std_formatter
-    end
+  let cps = Typedjs_cps.cps typedjs in
+    Typedjs_cps.p_cpsexp cps std_formatter
+
 
 let action_esc () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments !env in
-    begin match typedjs with
-        DExp (e, _) -> 
-          let cps = Typedjs_cps.cps e in
-          let esc = Typedjs_cps.esc_cpsexp cps in
-            IdSetExt.pretty std_formatter Format.pp_print_string esc
-      | _ -> failwith "expected a single expression"
-    end
+  let cpstypedjs = Typedjs_cps.cps typedjs in
+  let esc = Typedjs_cps.esc_cpsexp cpstypedjs in
+    IdSetExt.pretty std_formatter Format.pp_print_string esc
 
 
 let action_df () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments !env in
-    begin match typedjs with
-        DExp (e, _) ->
-          let cpsexp = Typedjs_cps.cps e in
-          let env =
-            Lat.bind "%end" (Lat.singleton RT.Function)
-              (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
-                 Typedjs_lattice.empty_env) in
-            typed_cfa env cpsexp;
-            let annotated_exp = insert_typecasts typedjs in
-              Typedjs_pretty.pretty_def std_formatter annotated_exp
-      | _ -> failwith "expected a single expression"
-    end
+  let cpstypedjs = Typedjs_cps.cps typedjs in
+  let env =
+    Lat.bind "%end" (Lat.singleton RT.Function)
+      (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
+         Typedjs_lattice.empty_env) in
+    typed_cfa env cpstypedjs;
+    let annotated_exp = insert_typecasts typedjs in
+      Typedjs_pretty.pretty_def std_formatter annotated_exp
 
 let action_test_tc () : unit =
   Typedjs_testing.parse_and_test !cin !cin_name

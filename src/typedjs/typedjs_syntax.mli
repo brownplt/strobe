@@ -118,7 +118,7 @@ type def =
           methods definitions. *)
 *)          
 
-module type EnvType = sig
+module Env : sig
   
   type env
 
@@ -131,14 +131,6 @@ module type EnvType = sig
   val lookup_id : id -> env -> typ
 
   val lookup_lbl : id -> env -> typ
-
-  val assignable_ids : env -> IdSet.t
-
-  val new_assignable_id : id -> env -> env
-
-  val remove_assigned_ids : IdSet.t -> env -> env
-
-  val id_env : env -> typ IdMap.t
 
   (** JavaScript cannot perform a labelled jump across a function. *)
   val clear_labels : env -> env
@@ -153,5 +145,3 @@ module type EnvType = sig
   val add_method : id -> id -> typ -> env -> env
 
 end
-
-module Env : EnvType

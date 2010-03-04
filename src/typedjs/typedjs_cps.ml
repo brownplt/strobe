@@ -281,7 +281,18 @@ and cps_exp_list exps throw (k : cpsval list -> cpsexp) = match exps with
              (fun vs ->
                 k (v :: vs)))
 
-let cps (exp : exp) : cpsexp = cps_tailexp exp "%uncaught-exception" "%end"
+
+let rec cps (def : def) : cpsexp = match def with
+  | DEnd -> App (new_node (), Id (p, "%end"), [])
+  | DExp (e, d) ->
+      cps_exp e "%uncaught-exception" (fun _ -> cps d)
+  | DLet (_, x, e, d) ->
+      cps_exp e "%uncaught-exception"
+        (fun v ->
+           Bind (new_node (), x, Let v,
+                 cps_exp e "%uncaught-exception" (fun _ -> cps d)))
+  | DRec (binds, d) ->
+      Fix (new_node (), map cps_bind binds, cps d)
 
 (******************************************************************************)
 
