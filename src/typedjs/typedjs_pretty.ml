@@ -7,19 +7,19 @@ open FormatExt
 let rec typ t  = match t with
     TTop -> text "Any"
   | TBot -> text "DoesNotReturn"
-  | TUnion (t1, t2) -> sep [typ t1; text "+"; typ t2]
+  | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
   | TArrow (_, arg_typs, r_typ) ->
-      sep [ sep (intersperse (text "*") (map typ arg_typs));
+      horz[ horz (intersperse (text "*") (map typ arg_typs));
             text "->";
             typ r_typ ]
   | TApp (s, []) -> text s
   | TApp (s, ts) ->
-      sep [ text s; 
-            angles [sep (intersperse (text ",") (map typ ts))] ]
+      horz [ text s; 
+            angles [ horz (intersperse (text ",") (map typ ts))] ]
   | TObject fs ->
-      let f (k, t) = sep [ text k; text ":"; typ t ] in
+      let f (k, t) = horz [ text k; text ":"; typ t ] in
         braces (intersperse (text ",") (map f fs))
-  | TRef s -> sep [ text "mutable"; parens [ typ s ] ]
+  | TRef s -> horz [ text "mutable"; parens [ typ s ] ]
   | TDom -> text "Dom"
 
     
@@ -114,3 +114,5 @@ let pretty_exp fmt e = exp e fmt
 let pretty_typ fmt t = typ t fmt
 
 let pretty_def fmt d = def d fmt
+
+let p_typ = typ

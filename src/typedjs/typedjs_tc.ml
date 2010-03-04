@@ -2,6 +2,7 @@ open Prelude
 open Typedjs_syntax
 open Typedjs_types 
 open Typedjs_pretty
+open FormatExt
 
 module JS = JavaScript_syntax (* needed for operators *)
 
@@ -30,13 +31,15 @@ let tc_arith (p : pos) (t1 : typ) (t2 : typ) (int_args : bool)
         (Typ_error 
            (p, match int_args with
                 true -> 
-                  sprintf "operator expects arguments of type Int, but \
-                    arguments have type %s and %s" (string_of_typ t1) 
-                    (string_of_typ t2)
+                  sep [ text "operator expects arguments of type Int,";
+                        text "but arguments have type"; p_typ t1; text "and";
+                        p_typ t2 ] Format.str_formatter;
+                  Format.flush_str_formatter ()
               | false -> 
-                  sprintf "operator expects Int or Double arguments, but \
-                    arguments have type %s and %s" (string_of_typ t1)
-                    (string_of_typ t2)))
+                  sep [ text "operator expects Int or Double arguments,";
+                        text "but arguments have type"; p_typ t1; text "and";
+                        p_typ t2 ] Format.str_formatter;
+                  Format.flush_str_formatter ()))
 
 let tc_cmp (p : pos) (lhs : typ) (rhs : typ) : typ = 
   if (subtype lhs typ_str && subtype rhs typ_str) || 
