@@ -135,6 +135,8 @@ module Env : sig
   (** JavaScript cannot perform a labelled jump across a function. *)
   val clear_labels : env -> env
 
+  val id_env : env -> typ IdMap.t
+
   val dom : env -> IdSet.t
 
   (** A new class with no methods. *)

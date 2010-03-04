@@ -61,7 +61,7 @@ let action_tc () : unit =
   let cf_env =
     Lat.bind "%end" (Lat.singleton RT.Function)
       (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
-         Typedjs_lattice.empty_env) in
+         (cf_env_of_tc_env !env)) in
     typed_cfa cf_env cpstypedjs;
     let annotated_typedjs = insert_typecasts typedjs in
     let _ = Typedjs_tc.typecheck !env annotated_typedjs in
@@ -92,7 +92,7 @@ let action_df () : unit =
   let env =
     Lat.bind "%end" (Lat.singleton RT.Function)
       (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
-         Typedjs_lattice.empty_env) in
+         (cf_env_of_tc_env !env)) in
     typed_cfa env cpstypedjs;
     let annotated_exp = insert_typecasts typedjs in
       Typedjs_pretty.pretty_def std_formatter annotated_exp

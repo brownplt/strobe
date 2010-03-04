@@ -29,3 +29,9 @@ let rec mk_env' (lst : env_decl list) (env : Env.env) : Env.env =
           mk_env' rest env
 
 let mk_env (lst : env_decl list) : Env.env = mk_env' lst Env.empty_env
+
+module L = Typedjs_lattice
+
+let cf_env_of_tc_env tc_env = 
+  let fn x typ cf_env = L.bind x (L.runtime typ) cf_env in
+    IdMap.fold fn (Env.id_env tc_env) L.empty_env
