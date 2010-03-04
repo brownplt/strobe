@@ -62,8 +62,10 @@ let ext_typ typ = match typ with
       (* Note that all return types are TBot. (i.e. does not return) *)
       let cont_typ = TArrow (TTop, [result_typ], TBot)
         (* We can throw anything. *)
-      and throw_typ = TArrow (TTop, [TTop], TBot) in 
-      TArrow (this_typ, cont_typ :: throw_typ :: arg_typs, TBot)
+      and throw_typ = TArrow (TTop, [TTop], TBot) 
+      and this_typ = TObject [] in
+      TArrow (this_typ, cont_typ :: throw_typ :: this_typ :: arg_typs, TBot)
+  | _ -> failwith "ext_typ expected an arrow type"
 
 
 
@@ -113,10 +115,26 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                   [k', [r], TArrow (TTop, [TTop], TTop), k (mk_id r)],
                   If (new_node (),
                       v1, 
-                      cps_exp e2 throw 
-                        (fun v -> App (new_node (), mk_id k', [v])),
-                      cps_exp e3 throw
-                        (fun v -> App (new_node (), mk_id k', [v])))))
+                      cps_tailexp e2 throw k',
+                      cps_tailexp e3 throw k')))
+  | EApp (_, EBracket (_, obj, prop), args) ->
+      let k' = mk_name "app-cont"
+      and r = new_name () in
+        Fix (new_node (),
+             [(k', [r], TArrow (TTop, [TTop], TTop), k (mk_id r))],
+             cps_exp obj throw
+               (fun objv ->
+                  cps_exp prop throw
+                    (fun propv ->
+                       cps_exp_list args throw
+                         (fun argvs ->
+                            let meth = mk_name "%method" in
+                              Bind (new_node (), meth, 
+                                    Op2 (GetField, objv, propv),
+                                    App (new_node (), mk_id meth,
+                                         mk_id k' :: mk_id throw :: objv 
+                                         :: argvs))))))
+
   | EApp (_, func, args) -> 
       let k' = mk_name "app-cont"
       and r = new_name () in
@@ -126,7 +144,9 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                (fun f ->
                   cps_exp_list args throw
                     (fun vs ->
-                       App (new_node (), f, (mk_id k') :: (mk_id throw) :: vs))))
+                       App (new_node (), f,
+                            (mk_id k') :: (mk_id throw) :: 
+                              (mk_id "%global") :: vs))))
   | EFunc (_, args, typ, body) -> 
       let f = mk_name "anon-func"
       and k' = new_name () 
@@ -170,6 +190,22 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       cps_tailexp e throw l
   | EThrow (_, e) ->
       cps_tailexp e throw throw
+  | EThis _ -> k (Id (p, "%this"))
+  | ENew (_, constr, args) ->
+      let k' = mk_name "app-cont"
+      and obj = new_name () in
+        Bind (new_node (), obj, Object [],
+              Fix (new_node (),
+                   [(k', [new_name ()], TArrow (TTop, [TTop], TTop), 
+                     k (mk_id obj))],
+                   cps_exp constr throw
+                     (fun constrv ->
+                        cps_exp_list args throw
+                          (fun argvs ->
+                             App (new_node (), constrv,
+                                  mk_id k' :: mk_id throw :: mk_id obj ::
+                                    argvs)))))
+                             
 
 (*
   | ETryCatch of pos * exp * id * exp
@@ -221,17 +257,32 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
                v1, 
                cps_tailexp e2 throw k, 
                cps_tailexp e3 throw k))
+  | EApp (_, EBracket (_, obj, prop), args) ->
+      cps_exp obj throw
+        (fun objv ->
+           cps_exp prop throw
+             (fun propv ->
+                cps_exp_list args throw
+                  (fun argvs ->
+                     let meth = mk_name "%method" in
+                       Bind (new_node (), meth, 
+                             Op2 (GetField, objv, propv),
+                             App (new_node (), mk_id meth,
+                                  mk_id k :: mk_id throw :: objv :: argvs)))))
   | EApp (_, func, args) -> 
       cps_exp func throw
         (fun f ->
            cps_exp_list args throw
-             (fun vs -> App (new_node (), f, mk_id k :: mk_id throw :: vs)))
+             (fun vs -> 
+                App (new_node (), f, mk_id k :: mk_id throw 
+                       :: mk_id "%global" :: vs)))
   | EFunc (_, args, typ, body) -> 
       let f = new_name ()
       and k' = new_name ()
       and throw' = new_name () in
         Fix (new_node (),
-             [(f, k' :: throw' :: args, typ, cps_tailexp body throw' k')],
+             [(f, k' :: throw' :: "%this" :: args, typ, 
+               cps_tailexp body throw' k')],
              App (new_node (), mk_id k, [ mk_id f ]))
   | ELet (_, x, e1, e2) ->
       cps_exp e1 throw
@@ -274,6 +325,21 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
       cps_tailexp e throw l
   | EThrow (_, e) ->
       cps_tailexp e throw throw
+  | ENew (_, constr, args) ->
+      let k' = mk_name "app-cont"
+      and obj = new_name () in
+        Bind (new_node (), obj, Object [],
+              Fix (new_node (),
+                   [(k', [new_name ()], TArrow (TTop, [TTop], TTop), 
+                     App (new_node (), mk_id k, [ mk_id obj ]))],
+                   cps_exp constr throw
+                     (fun constrv ->
+                        cps_exp_list args throw
+                          (fun argvs ->
+                             App (new_node (), constrv,
+                                  mk_id k' :: mk_id throw :: mk_id obj ::
+                                    argvs)))))
+
 
 
 
@@ -281,7 +347,8 @@ and cps_bind ((name, typ, e) : id * typ * exp) = match e with
     EFunc (_, args, _, body) ->
       let k = new_name () 
       and throw = new_name () in
-        (name, k :: throw :: args, ext_typ typ, cps_tailexp body throw k)
+        (name, k :: throw :: "%this" :: args,
+         ext_typ typ, cps_tailexp body throw k)
   | _ -> failwith "cps_bind : expected a function"
   
 
@@ -302,8 +369,7 @@ let rec cps (def : def) : cpsexp = match def with
   | DLet (_, x, e, d) ->
       cps_exp e "%uncaught-exception"
         (fun v ->
-           Bind (new_node (), x, Let v,
-                 cps_exp e "%uncaught-exception" (fun _ -> cps d)))
+           Bind (new_node (), x, Let v, cps d))
   | DRec (binds, d) ->
       Fix (new_node (), map cps_bind binds, cps d)
 
