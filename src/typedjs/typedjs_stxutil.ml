@@ -17,9 +17,6 @@ let rec local_av_exp (exp : exp) : IdSet.t = match exp with
   | EPrefixOp (_, _, e) -> local_av_exp e
   | EInfixOp (_, _, e1, e2) -> IdSet.union (local_av_exp e1) (local_av_exp e2)
   | EIf (_, e1, e2, e3) -> IdSetExt.unions (map local_av_exp [e1; e2; e3])
-  | EAssign (_, LVar (_, x), e) -> IdSet.add x (local_av_exp e)
-  | EAssign (_, LProp (_, e1, e2), e3) -> 
-      IdSetExt.unions (map local_av_exp [e1; e2; e3])
   | EApp (_, f, args) -> IdSetExt.unions (map local_av_exp (f :: args))
   | EFunc (_, args, _, e) -> IdSet.empty (* do not recur into functions *)
   | ELet (_, x, e1, e2) ->
@@ -58,9 +55,6 @@ let rec av_exp (exp : exp) : IdSet.t = match exp with
   | EPrefixOp (_, _, e) -> av_exp e
   | EInfixOp (_, _, e1, e2) -> IdSet.union (av_exp e1) (av_exp e2)
   | EIf (_, e1, e2, e3) -> IdSetExt.unions (map av_exp [e1; e2; e3])
-  | EAssign (_, LVar (_, x), e) -> IdSet.add x (av_exp e)
-  | EAssign (_, LProp (_, e1, e2), e3) -> 
-      IdSetExt.unions (map av_exp [e1; e2; e3])
   | EApp (_, f, args) -> IdSetExt.unions (map av_exp (f :: args))
   | EFunc (_, args, _, e) -> IdSet.diff (av_exp e) (IdSetExt.from_list args)
   | ELet (_, x, e1, e2) -> IdSet.union (av_exp e1) (IdSet.remove x (av_exp e2))
@@ -89,8 +83,6 @@ let rec nested_funcs (exp : exp) : exp list = match exp with
   | EPrefixOp (_, _, e) -> nested_funcs e
   | EInfixOp (_, _, e1, e2) -> nested_funcs e1 @ nested_funcs e2
   | EIf (_, e1, e2, e3) -> concat (map nested_funcs [e1; e2; e3])
-  | EAssign (_, LVar _, e) -> nested_funcs e
-  | EAssign (_, LProp (_, e1, e2), e3) -> concat (map nested_funcs [e1; e2; e3])
   | EApp (_, f, args) -> concat (map nested_funcs (f :: args))
   | EFunc _ -> [exp]
   | ELet (_, x, e1, e2) -> nested_funcs e1 @ nested_funcs e2

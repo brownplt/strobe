@@ -22,6 +22,8 @@ module type S = sig
 
   val p_map : (key -> printer) -> ('a -> printer) -> 'a t -> printer
 
+  val diff : 'a t -> 'a t -> 'a t
+
 end
 
 module Make : functor (Ord : Map.OrderedType) -> 

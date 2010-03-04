@@ -11,7 +11,7 @@ module type S = sig
   val union : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
   val join : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
   val p_map : (key -> printer) -> ('a -> printer) -> 'a t -> printer
-
+  val diff : 'a t -> 'a t -> 'a t
 end
 
 module Make (Ord: Map.OrderedType) (Map : Map.S with type key = Ord.t) = struct
@@ -49,6 +49,10 @@ module Make (Ord: Map.OrderedType) (Map : Map.S with type key = Ord.t) = struct
   let p_map p_key p_val t = 
     parens (List.map (fun (k, v) -> brackets [ p_key k; p_val v ]) (to_list t))
 
+  let diff m1 m2 = 
+    let fn key v acc =
+      if Map.mem key m2 then acc else Map.add key v acc in
+      Map.fold fn m1 Map.empty
      
 
 end

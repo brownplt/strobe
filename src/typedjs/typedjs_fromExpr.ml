@@ -113,7 +113,7 @@ let is_empty lst = match lst with
     [] -> true
   | _ -> false
 
-type env = IdSet.t
+type env = bool IdMap.t
 
 let rec exp (env : env) expr = match expr with
     ConstExpr (a, c) -> EConst (a, c)
@@ -121,26 +121,34 @@ let rec exp (env : env) expr = match expr with
   | ObjectExpr (a, ps) -> 
       if List.length ps != List.length (nub (map (fun (_,p,_) -> p) ps)) then
         raise (Not_well_formed (a, "repeated field names"));
-      let prop ((start_p, end_p), x, e) = 
-        (x, is_mutable_between start_p end_p, exp env e) in
+      let prop (p, x, e) = 
+        let start_p, end_p = p in
+        let is_mutable = is_mutable_between start_p end_p in
+          (x, is_mutable, 
+           if is_mutable then ERef (p, exp env e) else exp env e) in
         EObject (a, map prop ps)
   | ThisExpr a -> EThis a
-  | VarExpr (a, x) ->
-      if IdSet.mem x env then EId (a, x)
-      else (raise (Not_well_formed (a, x ^ " is not defined")))
+  | VarExpr (a, x) -> begin
+      try
+        if IdMap.find x env then
+          EDeref (a, EId (a, x))
+        else
+          EId (a, x)
+      with Not_found -> raise (Not_well_formed (a, x ^ " is not defined"))
+    end
   | BracketExpr (a, e1, e2) -> EBracket (a, exp env e1, exp env e2)
   | NewExpr (a, c, args) -> ENew (a, exp env c, map (exp env) args)
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
   | InfixExpr (a, op, e1, e2) -> EInfixOp (a, op, exp env e1, exp env e2)
   | IfExpr (a, e1, e2, e3) -> EIf (a, exp env e1, exp env e2, exp env e3)
-  | AssignExpr (a, lv, e) -> EAssign (a, lvalue env lv, exp env e)
+  | AssignExpr (a, lv, e) -> ESetRef (a, lvalue env lv, exp env e)
   | AppExpr (a, f, args) -> EApp (a, exp env f, map (exp env) args)
   | FuncExpr _ -> 
       (match match_func env expr with
            Some (_, e) -> e
          | None -> failwith "match_func returned None on a FuncExpr (1)")
   | LetExpr (a, x, e1, e2) ->
-      ELet (a, x, exp env e1, exp (IdSet.add x env) e2)
+      ELet (a, x, exp env e1, exp (IdMap.add x true env) e2)
   | TryCatchExpr (a, body, x, catch) ->
       ETryCatch (a, exp env body, x, exp env catch)
   | TryFinallyExpr (a, body, finally) -> 
@@ -175,10 +183,11 @@ let rec exp (env : env) expr = match expr with
       (* peculiar code: body or block ends with var *)
       ELet (a, x, exp env e, EConst (a, CUndefined))
   | FuncStmtExpr (a, f, args, body) ->
-      begin match match_func (IdSet.add f env) (FuncExpr (a, args, body)) with
-          Some (t, e) ->
-            ERec ([ (f,  t, e) ], EConst (a, CUndefined))
-        | None -> failwith "match_func returned None on a FuncExpr (2)"
+      begin match match_func (IdMap.add f false env) 
+        (FuncExpr (a, args, body)) with
+            Some (t, e) ->
+              ERec ([ (f,  t, e) ], EConst (a, CUndefined))
+          | None -> failwith "match_func returned None on a FuncExpr (2)"
       end
 
 and match_func env expr = match expr with
@@ -189,11 +198,12 @@ and match_func env expr = match expr with
         (* Within [body], a free variable, [x] cannot be referenced, if there
            is any local variable with the name [x]. *)
       let locally_defined_vars = locals body in
-      let visible_free_vars = IdSet.diff env locally_defined_vars in
+      let visible_free_vars = 
+        IdSet.diff (IdSetExt.from_list (IdMapExt.keys env))
+          locally_defined_vars in
       let lambda_bound_vars = IdSetExt.from_list args in
       let locally_shadowed_args = 
         IdSet.inter lambda_bound_vars locally_defined_vars in
-      let env' = IdSet.union visible_free_vars lambda_bound_vars in
         if not (IdSet.is_empty locally_shadowed_args) then
           begin
             IdSetExt.pretty Format.str_formatter Format.pp_print_string 
@@ -202,11 +212,24 @@ and match_func env expr = match expr with
                      (a, "the following arguments are redefined as local \
                           variables: " ^ Format.flush_str_formatter ()))
           end;
+        let env' = 
+          IdMap.fold (fun key v acc ->
+                        if IdSet.mem key visible_free_vars then
+                          IdMap.add key v acc
+                        else 
+                          acc)
+            env IdMap.empty in
+        let env' = 
+          fold_left (fun acc x -> IdMap.add x true acc) env' args in
+        let mutable_arg exp id =
+          ELet (a, id, ERef (a, EId (a, id)), exp) in
         begin match typ with
             TArrow (_, _, r) ->
               incr func_index;
               Some (typ, EFunc (a, args, typ, 
-                                ELabel (a', "%return", r, exp env' body)))
+                                fold_left mutable_arg
+                                  (ELabel (a', "%return", r, exp env' body))
+                                  args))
           | _ ->
               raise (Not_well_formed (a, "expected a function type"))
         end
@@ -222,11 +245,11 @@ and exp_seq env e = match e with
 and block_intro env (decls, body) = match take_while is_func_decl decls with
     [], [] -> exp_seq env body
   | [], (a, x, e) :: rest ->
-      ELet (a, x, exp env e,
-            block_intro (IdSet.add x env) (rest, body))
+      ELet (a, x, ERef (a, exp env e),
+            block_intro (IdMap.add x true env) (rest, body))
   | funcs, rest ->
       let new_ids = map snd3 funcs in
-      let env' = IdSet.union env (IdSetExt.from_list new_ids) in
+      let env' = fold_left (fun acc f -> IdMap.add f false acc)  env new_ids in
       let mk_bind (_, x, expr) = 
         let e = exp env' expr in
           (match e with
@@ -236,8 +259,8 @@ and block_intro env (decls, body) = match take_while is_func_decl decls with
               block_intro env' (rest, body))
 
 and lvalue env lv = match lv with
-    VarLValue (a, x) -> LVar (a, x)
-  | PropLValue (a, e1, e2) -> LProp (a, exp env e1, exp env e2)
+    VarLValue (a, x) -> EId (a, x)
+  | PropLValue (a, e1, e2) -> EBracket (a, exp env e1, exp env e2)
 
 (* assumes [SeqExpr]s are nested to the right. *)
 let rec flatten_seq (expr : expr) : expr list = match expr with
@@ -252,11 +275,12 @@ let match_constr_body env expr = match expr with
           None -> None
         | Some typ -> 
             let locally_defined_vars = locals body in
-            let visible_free_vars = IdSet.diff env locally_defined_vars in
+            let visible_free_vars = 
+              IdSet.diff (IdSetExt.from_list (IdMapExt.keys env))
+                locally_defined_vars in
             let lambda_bound_vars = IdSetExt.from_list args in
             let locally_shadowed_args = 
               IdSet.inter lambda_bound_vars locally_defined_vars in
-            let env' = IdSet.union visible_free_vars lambda_bound_vars in
               if not (IdSet.is_empty locally_shadowed_args) then
                 begin
                   IdSetExt.pretty Format.str_formatter Format.pp_print_string 
@@ -265,15 +289,24 @@ let match_constr_body env expr = match expr with
                            (p, "the following arguments are redefined as local \
                           variables: " ^ Format.flush_str_formatter ()))
                 end;
-              Some 
-                { constr_pos = p;
-                  constr_name = f;
-                  constr_typ = typ;
-                  constr_args = args;
-                  constr_inits = [];
-                  constr_exp = exp env' body;
-                  constr_prototype = EObject (p, []) (* may be updated later *)
-                }
+              let env' = 
+                IdMap.fold (fun key v acc ->
+                              if IdSet.mem key visible_free_vars then
+                                IdMap.add key v acc
+                              else 
+                                acc)
+                  env IdMap.empty in
+              let env' = 
+                fold_left (fun acc x -> IdMap.add x true acc) env' args in
+                Some 
+                  { constr_pos = p;
+                    constr_name = f;
+                    constr_typ = typ;
+                    constr_args = args;
+                    constr_inits = [];
+                    constr_exp = exp env' body;
+                    constr_prototype = EObject (p, []) (* maybe updated later *)
+                  }
       end
   | _ -> None
 
@@ -298,18 +331,19 @@ let rec defs env lst =
       [] -> DEnd
     | expr :: lst' ->
         begin match match_constr_body env expr with
-            Some c -> DConstructor (c, defs (IdSet.add c.constr_name env) lst')
+          | Some c -> 
+              DConstructor (c, defs (IdMap.add c.constr_name false env) lst')
           | None ->
               begin match match_while match_func_decl (expr :: lst') with
                   [], expr :: lst' -> begin match match_decl expr with
                       None -> DExp (exp env expr, defs env lst')
                     | Some (p, x, expr) -> 
-                        let env' = IdSet.add x env in
+                        let env' = IdMap.add x false env in
                           DLet (p, x, exp env expr, defs env' lst')
                   end
                 | func_binds, lst' ->
-                    let env' = IdSet.union 
-                      (IdSetExt.from_list (map snd3 func_binds)) env in
+                    let mk acc (_, f, _) = IdMap.add f false acc in
+                    let env' = fold_left mk env func_binds in
                     let mk_bind (_, x, expr) = match match_func env' expr with
                         Some (t, e) -> (x, t, e)
                       | None -> failwith "match_func returned None (defs)" in
@@ -320,7 +354,9 @@ let rec defs env lst =
 
 
 let from_exprjs env expr = 
-  defs (Env.dom env) (flatten_seq expr)
+  defs 
+    (IdSet.fold (fun x env -> IdMap.add x false env) (Env.dom env) IdMap.empty)
+    (flatten_seq expr)
 
 (*
 

@@ -181,20 +181,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
              | _ -> tc_arith p t1 t2 false false
            end
        end
-   | EAssign (p, LVar (_, x), e) -> 
-       let s = 
-         try 
-           Env.lookup_id x env 
-         with Not_found ->
-           raise (Typ_error (p, x ^ " is not defined"))
-       and t = tc_exp env e in
-         if subtype t s then t
-         else raise
-           (Typ_error 
-              (p, 
-               sprintf "%s has type %s, but the right-hand side of this \
-                 assignment has type %s" x (string_of_typ s) (string_of_typ t)))
-(*   | EAssign of 'a * 'a lvalue * 'a exp  *)
   | EApp (p, f, args) -> begin match tc_exp env f with
         TArrow (_, expected_typs, result_typ) ->
           let arg_typs = tc_exps env args in

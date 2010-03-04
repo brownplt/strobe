@@ -61,7 +61,6 @@ type exp
   | EPrefixOp of pos * JavaScript_syntax.prefixOp * exp
   | EInfixOp of pos * JavaScript_syntax.infixOp * exp * exp
   | EIf of pos * exp * exp * exp
-  | EAssign of pos * lvalue * exp
   | EApp of pos * exp * exp list
   | EFunc of pos * id list * typ * exp
       (* [Typedjs_fromExpr.from_exprjs] ensures that the argument names are
@@ -78,10 +77,9 @@ type exp
   | ETryFinally of pos * exp * exp
   | EThrow of pos * exp
   | ETypecast of pos * RTSet.t * exp
-
-and lvalue =
-    LVar of pos * id
-  | LProp of pos * exp * exp
+  | ERef of pos * exp
+  | EDeref of pos * exp
+  | ESetRef of pos * exp * exp
 
 type constr_exp = { 
   constr_pos : pos;

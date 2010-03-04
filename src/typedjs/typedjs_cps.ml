@@ -88,16 +88,6 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                         (fun v -> App (new_node (), mk_id k', [v])),
                       cps_exp e3 throw
                         (fun v -> App (new_node (), mk_id k', [v])))))
-  | EAssign (_, LVar (_, x), e) -> 
-      cps_exp e throw (fun v -> Assign (new_node (), x, v, k v))
-  | EAssign (_, LProp (_, e1, e2), e3) ->
-      cps_exp e1 throw
-        (fun v1 ->
-           cps_exp e2 throw
-             (fun v2 ->
-                cps_exp e3 throw
-                  (fun v3 ->
-                     SetProp (new_node (), v1, v2, v3, k v3))))
   | EApp (_, func, args) -> 
       let k' = mk_name "app-cont"
       and r = new_name () in
@@ -184,20 +174,6 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
                v1, 
                cps_tailexp e2 throw k, 
                cps_tailexp e3 throw k))
-  | EAssign (_, LVar (_, x), e) -> 
-      cps_exp e throw
-        (fun v -> 
-           Assign (new_node (), x, v,
-                   App (new_node (), mk_id k, [ v ])))
-  | EAssign (_, LProp (_, e1, e2), e3) ->
-      cps_exp e1 throw
-        (fun v1 ->
-           cps_exp e2 throw
-             (fun v2 ->
-                cps_exp e3 throw
-                  (fun v3 ->
-                     SetProp (new_node (), v1, v2, v3,
-                              App (new_node (), mk_id k, [ v3 ])))))
   | EApp (_, func, args) -> 
       cps_exp func throw
         (fun f ->

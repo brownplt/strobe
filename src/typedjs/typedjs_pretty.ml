@@ -64,16 +64,14 @@ let rec exp e fmt = match e with
       parens [ text (render_prefixOp op); exp e] fmt
   | EInfixOp (_, op, e1, e2) ->
       parens [ text (render_infixOp op); exp e1; exp e2] fmt
-  | EAssign (_, lv, e) ->
-      parens [text "set!"; lvalue lv; exp e] fmt
   | ETypecast (_, t, e) ->
       parens [ text "cast"; RTSetExt.p_set RT.pp t; exp e ] fmt
-
-and lvalue lv fmt = match lv with
-    LVar (_, x) -> text x fmt
-  | LProp (_, e1, e2) -> 
-      exp e1 fmt;
-      brackets [exp e2] fmt
+  | ERef (_, e) ->
+      parens [ text "ref"; exp e ] fmt
+  | EDeref (_, e) ->
+      parens [ text "deref"; exp e ] fmt
+  | ESetRef (_, e1, e2) ->
+      parens [ text "set-ref!"; exp e1; exp e2 ] fmt
 
 and prop (s, is_mutable, e) =
   parens [ text s; 

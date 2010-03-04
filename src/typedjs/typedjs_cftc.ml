@@ -21,7 +21,6 @@ let rec a_exp (exp : exp) : exp = match exp with
   | EPrefixOp (p, op, e) -> EPrefixOp (p, op, a_exp e)
   | EInfixOp (p, op, e1, e2) -> EInfixOp (p, op, a_exp e1, a_exp e2)
   | EIf (p, e1, e2, e3) -> EIf (p, a_exp e1, a_exp e2, a_exp e3)
-  | EAssign (p, lv, e) -> EAssign (p, a_lvalue lv, a_exp e)
   | EApp (p, e1, es) -> EApp (p, a_exp e1, map a_exp es)
   | EFunc (p, ids, t, e) -> EFunc (p, ids, t, a_exp e)
   | ELet (p, x, e1, e2) -> ELet (p, x, a_exp e1, a_exp e2)
@@ -33,16 +32,15 @@ let rec a_exp (exp : exp) : exp = match exp with
   | ETryFinally (p, e1, e2) -> ETryFinally (p, a_exp e1, a_exp e2)
   | EThrow (p, e) -> EThrow (p, a_exp e)
   | ETypecast (p, t, e) -> ETypecast (p, t, a_exp e)
+  | ERef (p, e) -> ERef (p, a_exp e)
+  | EDeref (p, e) -> EDeref (p, a_exp e)
+  | ESetRef (p, e1, e2) -> ESetRef (p, a_exp e1, a_exp e2)
 
 and a_prop (s, b, e) = (s, b, a_exp e)
 
 and a_bind (i, t, e) = (i, t, a_exp e)
 
-and a_lvalue v = match v with
-    LVar (p, i) -> LVar (p, i)
-  | LProp (p, e1, e2) -> LProp (p, a_exp e1, a_exp e2)
-
-and a_def (def : def) : def = match def with
+let rec a_def (def : def) : def = match def with
     DEnd -> DEnd
   | DExp (e, d) -> DExp (a_exp e, a_def d)
   | DLet (p, i, e, d) -> DLet (p, i, a_exp e, a_def d)
