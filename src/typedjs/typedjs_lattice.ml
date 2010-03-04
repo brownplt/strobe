@@ -26,8 +26,10 @@ module HeapExt = MapExt.Make (Loc) (Heap)
 
 type av =
   | ASet of RTSet.t
-  | ATypeof of id
-  | ATypeIs of id * RTSet.t
+  | ADeref of Loc.t
+  | ARef of Loc.t
+  | ALocTypeof of Loc.t
+  | ALocTypeIs of Loc.t * RTSet.t
   | AString of string
   | AClosure of int * id list * cpsexp
 
@@ -40,9 +42,11 @@ open FormatExt
 
 let rec p_av av = match av with
   | ASet s -> RTSetExt.p_set RT.pp s
-  | ATypeof x -> horz [ text "typeof"; text x ]
-  | ATypeIs (x, t) -> horz [ text "typeis";  text x; 
-                               RTSetExt.p_set RT.pp t ]
+  | ADeref l -> horz [ text "deref"; Loc.pp l ]
+  | ARef l -> horz [ text "ref"; Loc.pp l ]
+  | ALocTypeof x -> horz [ text "typeof"; Loc.pp x ]
+  | ALocTypeIs (x, t) -> 
+      horz [ text "typeis"; Loc.pp x; RTSetExt.p_set RT.pp t ]
   | AClosure _ -> text "#closure"
 
 let singleton t = ASet (RTSet.singleton t)
@@ -55,12 +59,14 @@ let rtany =
 
 let any = ASet rtany
 
-let to_set v = match v with
+let rec to_set heap v = match v with
   | ASet set -> set
-  | ATypeof _ -> RTSet.singleton RT.String
-  | ATypeIs _ -> RTSet.singleton RT.Boolean
+  | ALocTypeof _ -> RTSet.singleton RT.String
+  | ALocTypeIs _ -> RTSet.singleton RT.Boolean
   | AString _ -> RTSet.singleton RT.String
   | AClosure _ -> RTSet.singleton RT.Function
+  | ARef _ -> rtany
+  | ADeref loc -> to_set heap (Heap.find loc heap)
 
 let deref loc heap : av =
   try 
@@ -70,27 +76,29 @@ let deref loc heap : av =
     raise Not_found
 
 
-let rec av_union av1 av2 = match av1, av2 with
+let rec av_union h av1 av2 = match av1, av2 with
   | ASet s1, ASet s2 -> ASet (RTSet.union s1 s2)
-  | ASet _, _ -> av_union av1 (ASet (to_set av2))
-  | _, ASet _ -> av_union (ASet (to_set av1)) av2
-  | ATypeof x, ATypeof y when x = y -> ATypeof x
-  | ATypeIs (x, s), ATypeIs (y, t) when x = y -> ATypeIs (x, RTSet.union s t)
-  | ATypeof _, _ -> av_union (singleton RT.String) av2
-  | ATypeIs _, _ -> av_union (singleton RT.Boolean) av2
-  | _, ATypeof _ -> av_union av1 (singleton RT.String)
-  | _, ATypeIs _ -> av_union av1 (singleton RT.Boolean)
+  | ASet _, _ -> av_union h av1 (ASet (to_set h av2))
+  | _, ASet _ -> av_union h (ASet (to_set h av1)) av2
+  | ADeref x, ADeref y when x = y -> ADeref x
+  | ARef x, ARef y when x = y -> ARef x
+  | ALocTypeof x, ALocTypeof y when x = y -> ALocTypeof x
+  | ALocTypeIs (x, s), ALocTypeIs (y, t) when x = y -> 
+      ALocTypeIs (x, RTSet.union s t)
+  | ALocTypeof _, _ -> av_union h (singleton RT.String) av2
+  | ALocTypeIs _, _ -> av_union h (singleton RT.Boolean) av2
+  | _, ALocTypeof _ -> av_union h av1 (singleton RT.String)
+  | _, ALocTypeIs _ -> av_union h av1 (singleton RT.Boolean)
+  | ADeref _, _ -> av_union h (ASet (to_set h av1)) av2
+  | _, ADeref _ -> av_union h av1 (ASet (to_set h av2))
   | AClosure (m, _, _), AClosure (n, _, _) when m = n -> av1
 
-
-
-let union_env (env1 : env) (env2 : env) : env = 
-  IdMapExt.join av_union  env1 env2
+let union_env h (env1 : env) (env2 : env) : env = 
+  IdMapExt.join (av_union h) env1 env2
 
 let p_env env = IdMapExt.p_map text p_av env
 
-
-let lookup (x : id) (env : env) : av=
+let lookup (x : id) (env : env) : av =
   try
     IdMap.find x env
   with Not_found ->
@@ -103,8 +111,6 @@ let empty_env = IdMap.empty
 
 let set_ref loc value heap =
   Heap.add loc value heap
-
-
 
 let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
     Typedjs_syntax.TArrow _ -> RTSet.singleton RT.Function
@@ -128,4 +134,9 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
   | Typedjs_syntax.TBot -> RTSet.empty
 
 let runtime t : av = ASet (rt_of_typ t)
-    
+
+let union_heap h1 h2 =
+  (* TODO: heap should just have RTSet.t *)
+  HeapExt.join (av_union h1) h1 h2
+
+let empty_heap = Heap.empty

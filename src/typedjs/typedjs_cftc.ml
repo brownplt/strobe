@@ -10,10 +10,19 @@ let rec a_exp (exp : exp) : exp = match exp with
   | EArray (p, es) -> EArray (p, map a_exp es)
   | EObject (p, props) -> EObject (p, map a_prop props)
   | EThis p -> EThis p
+  | EDeref (_, EId (p, x)) -> begin try
+      let node = H.find bound_id_map (p, x) in
+      let env = H.find envs node in
+      let heap = H.find heaps node in
+        match lookup x env with
+          | ARef loc -> ETypecast (p, to_set heap (deref loc heap), exp)
+          | _ -> exp
+    with Not_found -> exp 
+    end
   | EId (p, x) -> begin try 
       let node = H.find bound_id_map (p,x) in
       let env = H.find envs node in
-        ETypecast (p, to_set (lookup x env), exp)
+        ETypecast (p, to_set (H.find heaps node) (lookup x env), exp)
     with Not_found -> exp 
     end
   | EBracket (p, e1, e2) -> EBracket (p, a_exp e1, a_exp e2)

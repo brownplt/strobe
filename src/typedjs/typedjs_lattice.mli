@@ -9,6 +9,7 @@ type loc =
 module Loc : sig
   type t = loc
   val compare : t -> t -> int
+  val pp : t -> FormatExt.printer
 end
 
 
@@ -21,14 +22,16 @@ module HeapExt : MapExt.S
 
 type av =
   | ASet of RTSet.t
-  | ATypeof of id
-  | ATypeIs of id * RTSet.t
+  | ADeref of Loc.t
+  | ARef of Loc.t
+  | ALocTypeof of Loc.t
+  | ALocTypeIs of Loc.t * RTSet.t
   | AString of string
   | AClosure of int * id list * cpsexp
 
 type env
 
-type heap = av Heap.t
+type heap
 
 val singleton : RT.t -> av
 
@@ -40,9 +43,9 @@ val empty : av
 
 val p_av : av -> FormatExt.printer
 
-val av_union : av -> av -> av
+val av_union : heap -> av -> av -> av
 
-val union_env : env -> env -> env
+val union_env : heap -> env -> env -> env
 
 val lookup : id -> env -> av
 
@@ -56,4 +59,8 @@ val deref : Loc.t -> heap -> av
 
 val set_ref : Loc.t -> av -> heap -> heap
 
-val to_set : av -> RTSet.t
+val to_set : heap -> av -> RTSet.t
+
+val union_heap : heap -> heap -> heap
+
+val empty_heap : heap
