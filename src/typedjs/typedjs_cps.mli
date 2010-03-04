@@ -7,18 +7,30 @@ type cpsval =
 
 type node = int
 
+type op1 = 
+  | Op1Prefix of JavaScript_syntax.prefixOp
+  | Deref
+  | Ref
+
+type op2 =
+  | Op2Infix of JavaScript_syntax.infixOp
+  | GetField
+  | DeleteField
+  | SetRef
+
+type bindexp =
+  | Let of cpsval
+  | Op1 of op1 * cpsval
+  | Op2 of op2 * cpsval * cpsval
+  | Object of (string * cpsval) list
+  | Array of cpsval list
+  | UpdateField of cpsval * cpsval * cpsval
+
 type cpsexp =
     Fix of node * (id * id list * typ * cpsexp) list * cpsexp
   | App of node * cpsval * cpsval list
   | If of node * cpsval * cpsexp * cpsexp
-  | Let0 of node * id * cpsval * cpsexp (* load immediate / reg-reg move *)
-  | Let1 of node * id * JavaScript_syntax.prefixOp * cpsval * cpsexp
-  | Let2 of node * id * JavaScript_syntax.infixOp * cpsval * cpsval * cpsexp
-  | Assign of node * id * cpsval * cpsexp
-  | SetProp of node * cpsval * cpsval * cpsval * cpsexp
-  | Array of node * id * cpsval list * cpsexp
-  | Object of node * id * (string * cpsval) list * cpsexp
-  | GetField of node * id * cpsval * cpsval * cpsexp
+  | Bind of node * id * bindexp * cpsexp
 
 val cps : exp -> cpsexp
 

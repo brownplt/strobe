@@ -17,8 +17,9 @@ open Lambdajs_cps
 open Exprjs_syntax
 open Format
 open FormatExt
+(*
 open Typedjs_cf
-open Typedjs_cftc
+open Typedjs_cftc *)
 
 module Lat = Typedjs_lattice
 
@@ -84,7 +85,8 @@ let action_esc () : unit =
     end
 
 
-let action_df () : unit =
+let action_df () : unit = ()
+(*
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
   let typedjs = Typedjs.from_exprjs exprjs comments !env in
@@ -100,6 +102,7 @@ let action_df () : unit =
               Typedjs_pretty.pretty_def std_formatter annotated_exp
       | _ -> failwith "expected a single expression"
     end
+*)
 
 let action_test_tc () : unit =
   Typedjs_testing.parse_and_test !cin !cin_name
