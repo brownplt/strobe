@@ -54,6 +54,18 @@ let p = (Lexing.dummy_pos, Lexing.dummy_pos)
 
 let mk_id x = Id (p, x)
 
+(* [ext_typ] extends the arrow type on a function to account for additional
+   arguments added by the CPS transformation: the continuation and exception
+   handler. *)
+let ext_typ typ = match typ with
+  | TArrow (this_typ, arg_typs, result_typ) ->
+      (* Note that all return types are TBot. (i.e. does not return) *)
+      let cont_typ = TArrow (TTop, [result_typ], TBot)
+        (* We can throw anything. *)
+      and throw_typ = TArrow (TTop, [TTop], TBot) in 
+      TArrow (this_typ, cont_typ :: throw_typ :: arg_typs, TBot)
+
+
 
 let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
   | EConst (_, c) -> k (Const c)
@@ -120,7 +132,8 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       and k' = new_name () 
       and throw' = new_name () in
         Fix (new_node (),
-             [(f, k' :: throw' :: args, typ, cps_tailexp body throw' k')],
+             [(f, k' :: throw' :: args, ext_typ typ, 
+               cps_tailexp body throw' k')],
              k (mk_id f))
   | ELet (_, x, e1, e2) ->
       cps_exp e1 throw
@@ -268,7 +281,7 @@ and cps_bind ((name, typ, e) : id * typ * exp) = match e with
     EFunc (_, args, _, body) ->
       let k = new_name () 
       and throw = new_name () in
-        (name, k :: throw :: args, typ, cps_tailexp body throw k)
+        (name, k :: throw :: args, ext_typ typ, cps_tailexp body throw k)
   | _ -> failwith "cps_bind : expected a function"
   
 
