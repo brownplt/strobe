@@ -8,6 +8,7 @@ type loc =
 module Loc : sig
   type t = loc
   val compare : t -> t -> int
+  val pp : t -> FormatExt.printer
 end
 
 module AV : sig
@@ -73,6 +74,8 @@ val bind : id -> av -> env -> env
 
 val p_env : env -> FormatExt.printer
 
+val p_heap : heap -> FormatExt.printer
+
 val empty_env : env
 
 val deref : Loc.t -> heap -> AVSet.t
@@ -82,3 +85,9 @@ val set_ref : Loc.t -> AVSet.t -> heap -> heap
 val union_heap : heap -> heap -> heap
 
 val empty_heap : heap
+
+val compare_av : av -> av -> int
+
+val compare_heap : heap -> heap -> int
+
+val compare_env : env -> env -> int

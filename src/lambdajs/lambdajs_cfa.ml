@@ -50,14 +50,38 @@ let is_number v = match v with
   | AConst (Exprjs_syntax.CNum _) -> true
   | _ -> false
 
-let rec restrict_loc env heap (loc : loc) (r : RTSet.t) = 
-  let env' = env in
-  let set = deref loc heap in
-  let f typ set' = match typ with
-    | RT.Number -> AVSet.union set' (AVSet.filter is_number set)
-    | _ -> set in
-  let heap' =  set_ref loc (RTSet.fold f r AVSet.empty) heap in
-    (env', heap')
+
+let restrict_filter rt t = match t with
+  | AV.ANumber -> RTSet.mem RT.Number rt
+  | AV.ABool -> RTSet.mem RT.Boolean rt
+  | AV.AString -> RTSet.mem RT.String rt
+  | AV.AConst c -> begin match c with
+      | Exprjs_syntax.CString _ -> RTSet.mem RT.String rt
+      | Exprjs_syntax.CRegexp _ -> RTSet.mem RT.Object rt
+      | Exprjs_syntax.CNum _ -> RTSet.mem RT.Number rt
+      | Exprjs_syntax.CInt _ -> RTSet.mem RT.Number rt
+      | Exprjs_syntax.CBool _ -> RTSet.mem RT.Boolean rt
+      | Exprjs_syntax.CNull -> RTSet.mem RT.Object rt
+      | Exprjs_syntax.CUndefined -> RTSet.mem RT.Undefined rt
+    end 
+  | ARef _ -> false (* TODO: what?? *)
+  | AObj _ -> RTSet.mem RT.Object rt
+  | AClosure _ -> RTSet.mem RT.Function rt
+
+let remove_filter rt t = not (restrict_filter rt t)
+
+
+let restrict_loc (h : heap) (l : loc) (r : RTSet.t) = 
+  let set = deref l h in
+  let set' = AVSet.filter (restrict_filter r) set in
+    if AVSet.is_empty set' then None
+    else Some (set_ref l set' h)
+
+let remove_loc (h : heap) (l : loc) (r : RTSet.t) =
+  let set = deref l h in
+  let set' = AVSet.filter (remove_filter r) set in
+    if AVSet.is_empty set' then None
+    else Some (set_ref l set' h)
 
 open Lambdajs_syntax
 
@@ -232,10 +256,14 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
               || AVSet.mem ABool set then
               flow env heap e3
         | ALocTypeIs (l, rt) ->
-            eprintf "IF SPLIT\n";
-            let env, heap = restrict_loc env heap l rt in
-            flow env heap e3
-
+            begin match restrict_loc heap l rt with
+              | None -> ()
+              | Some true_heap -> flow env true_heap e2
+            end;
+            begin match remove_loc heap l rt with
+              | None -> ()
+              | Some false_heap -> flow env false_heap e3
+            end
       end
   | Bind ((n, _), x, bindexp, cont) ->
       let bindv, heap'  = match bindexp with
@@ -262,36 +290,42 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) : unit =
     if not (H.mem reachable idx) then
       H.add reachable idx cpsexp;
 
-    let flow_heap, reflow = try
-      begin
-        let old_heap = H.find heaps idx in
-        let new_heap = union_heap old_heap heap in
-          if Pervasives.compare old_heap new_heap = 0 then
-            (old_heap, false)
-          else
-            begin
-              H.replace heaps idx new_heap;
-              (new_heap, true)
-            end
-      end
-    with Not_found -> 
-      H.add heaps idx heap;
-      (heap, true) in
-    let flow_env, reflow = try 
-      begin
-        let old_env = get_env idx in
-        let new_env = union_env flow_heap old_env env in
-          if Pervasives.compare old_env new_env = 0 then
-            (old_env, reflow)
-          else 
-            begin
-              set_env idx new_env;
-              (new_env, true)
-            end
-      end
-    with Not_found -> (set_env idx env; env, true) in
-      if reflow then
-        calc flow_env flow_heap cpsexp
+    let flow_heap, reflow_heap =
+      try
+        begin
+          let old_heap = H.find heaps idx in
+          let new_heap = union_heap old_heap heap in
+            if compare_heap old_heap new_heap = 0 then
+              (old_heap, false)
+            else
+              begin
+                H.replace heaps idx new_heap;
+                (new_heap, true)
+              end
+        end
+      with Not_found -> 
+        (H.add heaps idx heap;
+         (heap, true))
+    in let flow_env, reflow_env =
+      try 
+        begin
+          let old_env = get_env idx in
+          let new_env = union_env flow_heap old_env env in
+            if compare_env old_env new_env = 0 then
+              (old_env, false)
+            else 
+              begin
+                set_env idx new_env;
+                (new_env, true)
+              end
+        end
+      with Not_found ->
+        (set_env idx env;
+         env, true)
+    in if reflow_heap || reflow_env then
+        begin
+          calc flow_env flow_heap cpsexp
+        end
 
 (* node is the Fix's node; new_env is the enclosing environment *)
 and bind_lambda (n : int) (env : env) ((f, args, body) : lambda) = 

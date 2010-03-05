@@ -40,6 +40,7 @@ module AV = struct
   | AObj dict -> IdMapExt.p_map text Loc.pp dict
   | AClosure (n, args, _) -> text ("closure" ^ string_of_int n)
   | ABool -> text "boolean"
+  | ANumber -> text "number"
   | AString -> text "string"
 
 end
@@ -130,6 +131,8 @@ let union_env heap (env1 : env) (env2 : env) : env =
 
 let p_env env = IdMapExt.p_map text p_av env
 
+let p_heap heap = HeapExt.p_map Loc.pp (AVSetExt.p_set AV.pp) heap
+
 let lookup (x : id) (env : env) : av=
   try
     IdMap.find x env
@@ -148,3 +151,15 @@ let set_ref loc value heap =
 
 
 let empty_heap = Heap.empty
+
+let compare_av v1 v2 = match v1, v2 with
+  | ASet s1, ASet s2 -> AVSet.compare s1 s2
+  | ALocTypeIs (l1, s1), ALocTypeIs (l2, s2) ->
+      if l1 = l2 then
+        RTSet.compare s1 s2
+      else compare l1 l2
+  | _ -> compare v1 v2
+
+let compare_heap h1 h2 = Heap.compare AVSet.compare h1 h2
+
+let compare_env env1 env2 = IdMap.compare compare_av env1 env2
