@@ -241,9 +241,9 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
             let body_env =
               List.fold_right2 bind formals argvs empty_env in
               flow (union_env heap body_env (get_env n)) heap body
-        | _ -> () in
+        | _ -> eprintf "Failed application at %d.\n" app_n in
         AVSet.iter do_app (to_set heap (absval env f))
-  | If (_, v1, e2, e3) -> 
+  | If ((n, _), v1, e2, e3) -> 
       begin match absval env v1 with
         | ASet set ->
             if AVSet.mem (AConst (Exprjs_syntax.CBool true)) set 
@@ -261,6 +261,7 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
               | None -> ()
               | Some false_heap -> flow env false_heap e3
             end
+        | _ -> eprintf "Non-boolean test value at %d.\n" n
       end
   | Bind ((n, _), x, bindexp, cont) ->
       let bindv, heap'  = match bindexp with

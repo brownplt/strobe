@@ -28,7 +28,6 @@ let find_coords (svg_str : string) : (int, int * int) H.t =
       let x = int_of_string (Str.matched_group 1 svg_str) in
       let y = int_of_string (Str.matched_group 2 svg_str) in
       let node = int_of_string (Str.matched_group 4 svg_str) in
-        eprintf "Node %d is at (%d, %d)\n" node x y;
         H.add matches node (x,y);
         find (Str.match_end ())
     with Not_found -> () 
@@ -51,7 +50,6 @@ let empty_vars () =
 
 let overlay_call_graph coords : unit =
   let arrow (from_node : int) (to_node : int) : unit = 
-    eprintf "Drawing edge from %d to %d\n" from_node to_node;
     try 
       let (x1, y1) = H.find coords from_node in
       let (x2, y2) = H.find coords to_node in
@@ -75,6 +73,33 @@ let action_load_file path =
   cin := open_in path;
   cin_name := path
 
+let verify_app node exp = match exp with
+  | App (_, Id x, _) ->
+      let v = lookup x (Hashtbl.find envs node) in
+      let set = to_set (Hashtbl.find heaps node) v in
+        if AVSet.is_empty set then
+          eprintf "Unapplied application at %d.\n" node
+        else
+          ()
+  | If (_, Id x, _, _) ->
+      let v = lookup x (Hashtbl.find envs node) in
+      let set = to_set (Hashtbl.find heaps node) v in
+        if AVSet.is_empty set then
+          eprintf "Branch skipped at %d.\n" node
+        else
+          ()
+  | Bind ((n, _), x, _, cont) ->
+      let bound_node = cpsexp_idx cont in
+      let v = lookup x (Hashtbl.find envs bound_node) in
+      let set = to_set (Hashtbl.find heaps bound_node) v in
+        if AVSet.is_empty set then
+          eprintf "%s is bound to an empty set at %d.\n" x node
+        else
+          ()            
+  | _ -> ()
+      
+
+
 let action_cps () : unit =
   let (js, comments) = parse_javascript !cin !cin_name in
   let exprjs = from_javascript js in
@@ -93,7 +118,8 @@ let action_cfa () : unit =
     let src = flush_svg_formatter () in
       print_string src;
       overlay_call_graph (find_coords src);
-      print_string "</svg>"
+      print_string "</svg>";
+      Hashtbl.iter verify_app reachable
         
         
 
