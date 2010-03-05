@@ -119,7 +119,9 @@ let action_cfa () : unit =
       print_string src;
       overlay_call_graph (find_coords src);
       print_string "</svg>";
-      Hashtbl.iter verify_app reachable
+      Hashtbl.iter verify_app reachable;
+      eprintf "%d nodes reached out of %d total nodes.\n"
+        (Hashtbl.length reachable) (Cps.num_nodes ())
         
         
 

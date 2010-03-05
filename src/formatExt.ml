@@ -54,12 +54,6 @@ let to_string (f : 'a -> printer) (x : 'a) : string  =
   f x str_formatter;
   flush_str_formatter ()
 
-
-let ps = Pervasives.print_string
-let pi = Pervasives.print_int
-let pn = Pervasives.print_newline
-
-
 let xml_escape (raw_str : string) : string = 
   let buf = Buffer.create (String.length raw_str) in
   let copy_char ch = match ch with
@@ -70,9 +64,6 @@ let xml_escape (raw_str : string) : string =
     String.iter copy_char raw_str;
     Buffer.contents buf
     
-
-
-
 let (flush_svg_formatter, svg_formatter) = 
   let buf = Buffer.create 5000 in
   let formatter = formatter_of_buffer buf in

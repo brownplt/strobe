@@ -35,6 +35,8 @@ module Cps = struct
       incr next_node_int;
       n, p
 
+  let num_nodes () = !next_node_int
+
   let next_name_int = ref 0
 
   let mk_name () : id = 
@@ -261,8 +263,6 @@ module Pretty = struct
   open Format
   open FormatExt
 
-  module H = Hashtbl
-
   let rec p_cpsval (cpsval : cpsval) : printer = match cpsval with
       Const c -> Exprjs_pretty.p_const c
     | Id x -> text x
@@ -281,7 +281,7 @@ module Pretty = struct
   let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
       Fix ((n, _), binds, body) ->
         vert [ text ("fix/" ^ string_of_int n);
-               nest (vert (map p_bind binds)); p_cpsexp body ]
+               nest (vert (map p_lambda binds)); p_cpsexp body ]
     | App ((n, _), f, args ) ->
         parens ( text ("app/" ^ string_of_int n)
                    :: p_cpsval f :: (map p_cpsval args) )
@@ -294,7 +294,7 @@ module Pretty = struct
                       text x; text "="; p_bindexp b; text "in" ]; 
                p_cpsexp k ]
       
-  and p_bind (f, args, body) : printer =
+  and p_lambda (f, args, body) : printer =
     horz [ text f; text "=";
            nest (parens [ text "lambda"; parens (map text args); 
                           p_cpsexp body ]) ]

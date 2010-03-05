@@ -45,8 +45,21 @@ val cpsexp_idx : cpsexp -> int
 
 val lambda_name : lambda -> id
 
-val mk_node : pos -> node
+module Cps : sig
+
+  val mk_node : pos -> node
+  val num_nodes : unit -> int
+end
 
 val fv : cpsexp -> IdSet.t
 
 val fv_immediate : cpsexp -> IdSet.t
+
+module Pretty : sig
+  open FormatExt
+
+  val p_cpsval : cpsval -> printer
+  val p_bindexp : bindexp -> printer
+  val p_lambda : lambda -> printer
+  val p_cpsexp : cpsexp -> printer
+end
