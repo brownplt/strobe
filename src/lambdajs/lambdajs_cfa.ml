@@ -89,13 +89,13 @@ let calc_op1 h (n : int) (op1 : op1) (avs : av) = match op1 with
   | Ref -> 
       let loc = Loc n in
       singleton (ARef loc), set_ref loc (to_set h  avs) h
-  | Deref -> begin match avs with
-      | ASet set when AVSet.cardinal set = 1 ->
+  | Deref -> begin match (to_set h avs) with
+      | set when AVSet.cardinal set = 1 ->
           begin match AVSet.choose set with
             | ARef l -> ADeref l, h
             | _ -> empty, h (* type error *)
           end
-      | ASet avs ->
+      | avs ->
           let fn v r = match v with
             | ARef loc -> AVSet.union (deref loc h) r
             | _ -> r in
@@ -145,8 +145,8 @@ let calc_op2 h op2 (v1 : av) (v2 : av) = match op2 with
                             | _ ->  r)
                 vs1 empty, h
     end
-  | SetRef -> begin match v1 with
-      | ASet vs1 ->
+  | SetRef -> begin match to_set h v1 with
+      | vs1 ->
           let fn v h = match v with
             | ARef loc -> set_ref loc (to_set h v2) h
             | _ -> h in
@@ -166,10 +166,10 @@ let calc_op2 h op2 (v1 : av) (v2 : av) = match op2 with
             
   | Op2Infix infixOp -> 
       (match infixOp with
-      | JavaScript_syntax.OpLT -> singleton ANumber
-      | JavaScript_syntax.OpLEq  -> singleton ANumber
-      | JavaScript_syntax.OpGT  -> singleton ANumber
-      | JavaScript_syntax.OpGEq   -> singleton ANumber
+      | JavaScript_syntax.OpLT -> singleton ABool
+      | JavaScript_syntax.OpLEq  -> singleton ABool
+      | JavaScript_syntax.OpGT  -> singleton ABool
+      | JavaScript_syntax.OpGEq   -> singleton ABool
       | JavaScript_syntax.OpIn -> singleton ABool
       | JavaScript_syntax.OpInstanceof -> singleton ABool
       | JavaScript_syntax.OpEq -> singleton ABool
@@ -242,10 +242,7 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
               List.fold_right2 bind formals argvs empty_env in
               flow (union_env heap body_env (get_env n)) heap body
         | _ -> () in
-        begin match absval env f with
-          | ASet fset -> AVSet.iter do_app fset
-        end
-
+        AVSet.iter do_app (to_set heap (absval env f))
   | If (_, v1, e2, e3) -> 
       begin match absval env v1 with
         | ASet set ->

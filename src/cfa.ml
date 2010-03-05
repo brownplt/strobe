@@ -93,10 +93,7 @@ let action_cfa () : unit =
     let src = flush_svg_formatter () in
       print_string src;
       overlay_call_graph (find_coords src);
-      print_string "</svg>";
-      let pr_env node env =
-        eprintf "\nEnv at node %d is\n %s\n" node (to_string p_env env) in
-        Hashtbl.iter pr_env envs
+      print_string "</svg>"
         
         
 
