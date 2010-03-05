@@ -5,6 +5,7 @@ type op1 =
   | Op1Prefix of JavaScript_syntax.prefixOp
   | Deref
   | Ref
+  | Prim1 of string
 
 (* TODO: unchecked operations should always use differnet syntax. add an
    uncheckedGetField, uncheckedSetField, updateField, App, and if, ? *)

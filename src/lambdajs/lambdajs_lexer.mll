@@ -104,6 +104,14 @@ rule token = parse
    | "finally" { FINALLY }
    | "throw" { THROW }
    | "in" { IN }
+   | "[[" { LLBRACK }
+   | "]]" { RRBRACK }
+   | "===" { EQEQEQUALS }
+   | "typeof" { TYPEOF }
+   | "true" { BOOL true }
+   | "false" { BOOL false }
+   | "&&" { AMPAMP }
+   | "||" { PIPEPIPE }
 
    | ident as x { ID x }
  

@@ -130,6 +130,10 @@ let action_cps_lambdajs () : unit =
   let lambdajs = Lambdajs.parse_lambdajs !cin !cin_name in
   let cpslambdajs = Lambdajs_cps.cps lambdajs in
     Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
+
+let action_cps_env () : unit =
+  let env = Lambdajs.parse_env !cin !cin_name in
+    ()
   
         
         
@@ -156,11 +160,12 @@ let main () : unit =
       ("-cfa", Arg.Unit (set_action action_cfa),
        "(undocumented)");
       ("-testcps", Arg.Unit (set_action action_cps_lambdajs),
+       "(undocumented)");
+      ("-env", Arg.Unit (set_action action_cps_env),
        "(undocumented)")
-
     ]
     (fun s -> action_load_file s)
     "Typed JavaScript [action] [path]";;
 
-Printexc.print main ();
-Printexc.print !action ()
+main ();
+!action ()

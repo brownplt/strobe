@@ -4,6 +4,7 @@ type op1 =
   | Op1Prefix of JavaScript_syntax.prefixOp
   | Deref
   | Ref
+  | Prim1 of string
 
 type op2 = 
   | Op2Infix of JavaScript_syntax.infixOp
@@ -185,6 +186,7 @@ let p_op1 op = match op with
   | Op1Prefix o -> text (JavaScript_pretty.render_prefixOp o)
   | Deref -> text "deref"
   | Ref -> text "ref"
+  | Prim1 s -> text s
 
 let p_op2 op = match op with
   | Op2Infix o -> text (JavaScript_pretty.render_infixOp o)

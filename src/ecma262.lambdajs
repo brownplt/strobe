@@ -1,0 +1,96 @@
+[[getValue]] = fun x ->
+  if typeof x === "location" then !x else x
+
+// TODO: and, or and not in the parser
+
+
+// TODO: free variables refer to names in the global environment.
+// TODO: apply, 
+
+
+/* Algorithm 9.9 of ECMA-262, ed. 3.  if given an object, expects it to
+  be a (ERef (EObject)) it itself returns Refs */
+[[toObject]] = fun x ->
+  if typeof x === "undefined" then
+    throw "TypeError: toObject received undefined"
+  else if typeof x === "null" then
+    throw "TypeError: toObject received null"
+  else if typeof x === "boolean" then
+    ref { __proto__ : "Boolean.prototype",
+         __class__ : "Boolean",
+         __value__ : x }
+  else if typeof x === "number" then
+    ref { __proto__ : "Number.prototype",
+         __class__ : "Number",
+         __value__ : x }
+  else if typeof x === "string" then
+    ref { __proto__ : "String.prototype",
+         __class__ : "String",
+         __value__ : x }
+  else
+    x
+
+/* Even though GetValue'd values are given to ToPrimitive in ECMA, here
+ we need ERefs because we will apply functions.  So make sure you give
+ this ERef (EObject) if you get an object.  */
+[[toPrimitive_valueOf]] = fun x cont ->
+  let valueOf = (!x)["valueOf"] in
+    if typeof valueof === "location" && 
+       typeof !valueOf === "object" &&
+       typeof (!valueOf)["__lambda__"] === "function" then
+      let result = apply(valueOf, x, { }) in
+         if prim("primitive?", result) then
+           result
+         else 
+           cont()
+    else
+      cont()
+
+[[toPrimitive_toString]] = fun x cont ->
+  let toString = (!x)["toString"] in
+    if typeof toString === "location" && 
+       typeof !toString === "object" &&
+       typeof (!toString)["__lambda__"] === "function" then
+      let result = apply(toString, x, { }) in
+         if prim("primitive?", result) then
+           result
+         else 
+           cont()
+    else
+      cont()
+
+[[toPrimitive_String]] = fun x ->
+  toPrimitive_toString(x, fun -> 
+    toPrimitive_valueOf(x, fun ->
+      throw "TypeError: cannot convert object toPrimitive"))
+
+[[toPrimitive_Number]] = fun x ->
+  toPrimitive_valueOf(x, fun -> 
+    toPrimitive_toString(x, fun ->
+      throw "TypeError: cannot convert object toPrimitive"))
+
+[[toPrimitive]] = toPrimitive_Number
+
+// ECMA 9.3 once again, must get object refs to pass them in as this in
+// toPrimitive
+[[toNumber]] = fun x ->
+  prim("prim->num",
+    if typeof x === "location" then toPrimitive_Number(x) else x)
+
+/* Algorithm 9.8 expects objects to be locations to be able to call
+  toPrimitive.  otherwise it should be a value. */
+[[toString]] = fun x ->
+  prim("prim->str", 
+    if typeof x === "location" then toPrimitive_Number(x) else x)
+
+[[abstractEquality]] = fun lhs rhs ->
+  if prim("abstract=", lhs, rhs) then
+    true
+  else if typeof lhs === "location" then
+     prim("abstract=", toPrimitive(lhs), rhs)
+  else if typeof rhs === "location" then
+     prim("abstract=", lhs, toPrimitive(rhs))
+  else
+    false
+
+    
