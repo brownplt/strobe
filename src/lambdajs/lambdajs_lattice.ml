@@ -82,7 +82,7 @@ type av =
 
 type env = av IdMap.t
 
-type heap = av Heap.t
+type heap = AVSet.t Heap.t
 
 open AV
 
@@ -100,12 +100,6 @@ let singleton t = ASet (AVSet.singleton t)
 
 let empty = ASet AVSet.empty
 
-let deref loc heap : av =
-  try 
-    Heap.find loc heap
-  with Not_found ->
-    eprintf "%s is not a location in the heap " (to_string Loc.pp loc);
-    raise Not_found
 
 
 let rec av_union av1 av2 = match av1, av2 with
@@ -137,7 +131,16 @@ let bind (x : id) (v : av) (env : env) : env = IdMap.add x v env
 
 let empty_env = IdMap.empty
 
-
+let union_heap h1 h2 = HeapExt.join AVSet.union h1 h2
 
 let set_ref loc value heap =
   Heap.add loc value heap
+
+let deref loc heap =
+  try 
+    Heap.find loc heap
+  with Not_found ->
+    eprintf "%s is not a location in the heap " (to_string Loc.pp loc);
+    raise Not_found
+
+let empty_heap = Heap.empty

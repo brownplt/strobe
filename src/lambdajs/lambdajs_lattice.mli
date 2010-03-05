@@ -44,13 +44,6 @@ module AVSetExt : SetExt.S
   with type elt = AV.t
   and type t = AVSet.t
 
-module Heap : Map.S
-  with type key = Loc.t
-
-module HeapExt : MapExt.S 
-  with type key = Loc.t
-  with type +'a t = 'a Heap.t
-
 type av =
   | ASet of AVSet.t
   | ALocTypeof of Loc.t
@@ -60,7 +53,7 @@ type av =
 
 type env
 
-type heap = av Heap.t
+type heap
 
 val singleton : AV.t -> av
 
@@ -80,6 +73,10 @@ val p_env : env -> FormatExt.printer
 
 val empty_env : env
 
-val deref : Loc.t -> heap -> av
+val deref : Loc.t -> heap -> AVSet.t
 
-val set_ref : Loc.t -> av -> heap -> heap
+val set_ref : Loc.t -> AVSet.t -> heap -> heap
+
+val union_heap : heap -> heap -> heap
+
+val empty_heap : heap
