@@ -80,6 +80,7 @@ let (flush_svg_formatter, svg_formatter) =
     pp_get_all_formatter_output_functions formatter () in
   let svg_line = ref 0 in
   let svg_col = ref 0 in
+  let max_svg_col = ref 0 in
   let tmp_buf = Buffer.create 100 in
 
   let out' src_str start_pos num_chars = 
@@ -94,15 +95,12 @@ let (flush_svg_formatter, svg_formatter) =
     Buffer.clear tmp_buf
   and newline' () = 
     incr svg_line;
+    max_svg_col := max !max_svg_col !svg_col;
     svg_col := 0;
     newline ()
   and spaces' n =
     svg_col := !svg_col + n;
     spaces n in
-    Buffer.add_string buf 
-      "<svg xmlns=\"http://www.w3.org/2000/svg\" \
-            xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" \
-            xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
     Buffer.add_string buf
       "<defs><marker \
        inkscape:stockid=\"Arrow2Lend\" \
@@ -121,4 +119,15 @@ let (flush_svg_formatter, svg_formatter) =
       </marker></defs>";
     pp_set_all_formatter_output_functions formatter out' flush newline' spaces';
     (fun () -> pp_print_flush formatter ();
-       Buffer.contents buf), formatter
+       let out_buf = Buffer.create (Buffer.length buf + 200) in
+         Buffer.add_string out_buf
+           (sprintf
+              "<svg xmlns=\"http://www.w3.org/2000/svg\" \
+              xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" \
+              xmlns:xlink=\"http://www.w3.org/1999/xlink\" \
+              width=\"%d\" height=\"%d\">\n"
+              ((!max_svg_col + 10) * 10)
+              ((!svg_line + 10) * 20));
+         Buffer.add_buffer out_buf buf;
+         Buffer.clear buf;
+         Buffer.contents out_buf), formatter
