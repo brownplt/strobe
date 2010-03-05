@@ -88,12 +88,15 @@ let verify_app node exp = match exp with
           eprintf "Branch skipped at %d.\n" node
         else
           ()
-  | Bind ((n, _), x, _, cont) ->
+  | Bind ((n, _), x, e, cont) ->
       let bound_node = cpsexp_idx cont in
       let v = lookup x (Hashtbl.find envs bound_node) in
       let set = to_set (Hashtbl.find heaps bound_node) v in
         if AVSet.is_empty set then
-          eprintf "%s is bound to an empty set at %d.\n" x node
+          begin
+            eprintf "let/%d %s = %s is empty\n" node x
+              (FormatExt.to_string Pretty.p_bindexp e)
+          end 
         else
           ()            
   | _ -> ()

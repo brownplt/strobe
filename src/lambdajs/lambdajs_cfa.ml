@@ -127,7 +127,7 @@ let rec get_fields h obj_fields field_names : av = match field_names with
           av_union h field_val  (get_fields h obj_fields rest)
 
 
-let calc_op2 h op2 (v1 : av) (v2 : av) = match op2 with
+let calc_op2 node h op2 (v1 : av) (v2 : av) = match op2 with
   | GetField -> begin match (to_set h v1), (to_set h v2) with
       | vs1, vs2 ->
           if AVSet.mem AString vs2 then
@@ -145,13 +145,11 @@ let calc_op2 h op2 (v1 : av) (v2 : av) = match op2 with
                             | _ ->  r)
                 vs1 empty, h
     end
-  | SetRef -> begin match to_set h v1 with
-      | vs1 ->
-          let fn v h = match v with
-            | ARef loc -> set_ref loc (to_set h v2) h
-            | _ -> h in
-            v2, AVSet.fold fn vs1 h
-    end
+  | SetRef -> 
+      let fn v h = match v with
+        | ARef loc -> set_ref loc (to_set h v2) h
+        | _ -> eprintf "SetRef error at %d.\n" node; h in
+        v2, AVSet.fold fn (to_set h v1) h
   | Op2Infix JavaScript_syntax.OpStrictEq ->
       begin match v1, v2 with
         | ALocTypeof x, ASet set ->
@@ -267,7 +265,8 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
       let bindv, heap'  = match bindexp with
         | Let v -> absval env v, heap
         | Op1 (op1, v) -> calc_op1 heap n op1 (absval env v)
-        | Op2 (op2, v1, v2) -> calc_op2 heap op2 (absval env v1) (absval env v2)
+        | Op2 (op2, v1, v2) -> 
+            calc_op2 n heap op2 (absval env v1) (absval env v2)
         | Object fields ->
             let alloc_field (fname, fval) (absfields, h) = 
               let loc = LocField (n, fname) in
