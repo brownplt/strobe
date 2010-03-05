@@ -7,6 +7,7 @@ type op1 =
 
 type op2 = 
   | Op2Infix of JavaScript_syntax.infixOp
+  | Prim2 of string
   | GetField
   | DeleteField
   | SetRef
@@ -190,6 +191,7 @@ let p_op2 op = match op with
   | GetField -> text "get-field"
   | DeleteField -> text "delete-field"
   | SetRef -> text "set-ref"
+  | Prim2 s -> text s
 
 
 

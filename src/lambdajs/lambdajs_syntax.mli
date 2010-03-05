@@ -10,6 +10,7 @@ type op1 =
    uncheckedGetField, uncheckedSetField, updateField, App, and if, ? *)
 type op2 =
   | Op2Infix of JavaScript_syntax.infixOp
+  | Prim2 of string
   | GetField
   | DeleteField
   | SetRef

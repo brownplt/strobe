@@ -12,7 +12,7 @@ open FormatExt
 open Lambdajs_lattice
 
 module H = Hashtbl
-
+module ZZ = Lambdajs_lexer
 
 (* [find_coords svg_str] determines the coordinates of nodes in an SVG
    document. *)
@@ -125,6 +125,12 @@ let action_cfa () : unit =
       Hashtbl.iter verify_app reachable;
       eprintf "%d nodes reached out of %d total nodes.\n"
         (Hashtbl.length reachable) (Cps.num_nodes ())
+
+let action_cps_lambdajs () : unit =
+  let lambdajs = Lambdajs.parse_lambdajs !cin !cin_name in
+  let cpslambdajs = Lambdajs_cps.cps lambdajs in
+    Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
+  
         
         
 
@@ -148,7 +154,10 @@ let main () : unit =
     [ ("-cps", Arg.Unit (set_action action_cps),
        "convert program to CPS");
       ("-cfa", Arg.Unit (set_action action_cfa),
+       "(undocumented)");
+      ("-testcps", Arg.Unit (set_action action_cps_lambdajs),
        "(undocumented)")
+
     ]
     (fun s -> action_load_file s)
     "Typed JavaScript [action] [path]";;
