@@ -5,13 +5,6 @@ open Lambdajs_lattice
 open AV
 module H = Hashtbl
 
-let rec to_set heap v = match v with
-  | ASet set -> set
-  | ALocTypeof _ -> AVSet.singleton AString
-  | ALocTypeIs _ ->  AVSet.singleton AString
-  | ADeref l -> deref l heap
-
-
 let reachable = H.create 100
 
 let call_graph = H.create 500
@@ -102,12 +95,12 @@ let rec get_fields h obj_fields field_names : av = match field_names with
   | [] -> empty
   | field :: rest ->
       if not (IdMap.mem field obj_fields) then
-        av_union (singleton (AConst Exprjs_syntax.CUndefined))
+        av_union h (singleton (AConst Exprjs_syntax.CUndefined))
           (get_fields h obj_fields rest)
       else 
         let field_loc = IdMap.find field obj_fields in
         let field_val = ASet (deref field_loc h) in
-          av_union field_val  (get_fields h obj_fields rest)
+          av_union h field_val  (get_fields h obj_fields rest)
 
 
 let calc_op2 h op2 (v1 : av) (v2 : av) = match op2 with
@@ -124,7 +117,7 @@ let calc_op2 h op2 (v1 : av) (v2 : av) = match op2 with
             let fields_to_get = IdSetExt.to_list fields_to_get in
               AVSet.fold (fun v r -> match v with
                             | AObj props ->
-                                av_union (get_fields h props fields_to_get) r
+                                av_union h (get_fields h props fields_to_get) r
                             | _ ->  r)
                 vs1 empty, h
     end
@@ -223,7 +216,7 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
             call_from_to app_n (cpsexp_idx body);
             let body_env =
               List.fold_right2 bind formals argvs empty_env in
-              flow (union_env body_env (get_env n)) heap body
+              flow (union_env heap body_env (get_env n)) heap body
         | _ -> () in
         begin match absval env f with
           | ASet fset -> AVSet.iter do_app fset
@@ -269,20 +262,7 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) : unit =
     if not (H.mem reachable idx) then
       H.add reachable idx cpsexp;
 
-    let flow_env, env_updated =  try 
-      begin
-        let old_env = get_env idx in
-        let new_env = union_env old_env env in
-          if Pervasives.compare old_env new_env = 0 then
-            (old_env, false)
-            else 
-              begin
-                set_env idx new_env;
-                (new_env, true)
-              end
-      end
-    with Not_found -> (set_env idx env; env, true) in
-    let flow_heap, heap_updated = try 
+    let flow_heap, reflow = try
       begin
         let old_heap = H.find heaps idx in
         let new_heap = union_heap old_heap heap in
@@ -297,9 +277,21 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) : unit =
     with Not_found -> 
       H.add heaps idx heap;
       (heap, true) in
-      if env_updated || heap_updated then
+    let flow_env, reflow = try 
+      begin
+        let old_env = get_env idx in
+        let new_env = union_env flow_heap old_env env in
+          if Pervasives.compare old_env new_env = 0 then
+            (old_env, reflow)
+          else 
+            begin
+              set_env idx new_env;
+              (new_env, true)
+            end
+      end
+    with Not_found -> (set_env idx env; env, true) in
+      if reflow then
         calc flow_env flow_heap cpsexp
-      
 
 (* node is the Fix's node; new_env is the enclosing environment *)
 and bind_lambda (n : int) (env : env) ((f, args, body) : lambda) = 

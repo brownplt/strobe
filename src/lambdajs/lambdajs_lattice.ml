@@ -100,25 +100,35 @@ let singleton t = ASet (AVSet.singleton t)
 
 let empty = ASet AVSet.empty
 
+let deref loc heap =
+  try 
+    Heap.find loc heap
+  with Not_found ->
+    eprintf "%s is not a location in the heap " (to_string Loc.pp loc);
+    raise Not_found
 
 
-let rec av_union av1 av2 = match av1, av2 with
-  | ASet s1, ASet s2 -> ASet (AVSet.union s1 s2)
-  | ALocTypeof x, ALocTypeof y when x = y -> ALocTypeof x
+let rec to_set heap v = match v with
+  | ASet set -> set
+  | ALocTypeof _ -> AVSet.singleton AString
+  | ALocTypeIs _ ->  AVSet.singleton AString
+  | ADeref l -> deref l heap
+
+let rec av_union heap av1 av2 = match av1, av2 with
+  | ASet s1, ASet s2 -> 
+      ASet (AVSet.union s1 s2)
+  | ALocTypeof x, ALocTypeof y when x = y -> 
+      ALocTypeof x
   | ALocTypeIs (x, s), ALocTypeIs (y, t) when x = y ->
       ALocTypeIs (x, RTSet.union s t)
-  | ADeref x, ADeref y when x = y -> ADeref x
-  | ALocTypeof _, _ -> av_union (singleton AString) av2
-  | ALocTypeIs _, _ -> av_union (singleton ABool) av2
-  | _, ALocTypeof _ -> av_union av1 (singleton AString)
-  | _, ALocTypeIs _ -> av_union av1 (singleton ABool)
+  | ADeref x, ADeref y when x = y -> 
+      ADeref x
+  | _ -> ASet (AVSet.union (to_set heap av1) (to_set heap av2))
 
-
-let union_env (env1 : env) (env2 : env) : env = 
-  IdMapExt.join av_union  env1 env2
+let union_env heap (env1 : env) (env2 : env) : env = 
+  IdMapExt.join (av_union heap) env1 env2
 
 let p_env env = IdMapExt.p_map text p_av env
-
 
 let lookup (x : id) (env : env) : av=
   try
@@ -136,11 +146,5 @@ let union_heap h1 h2 = HeapExt.join AVSet.union h1 h2
 let set_ref loc value heap =
   Heap.add loc value heap
 
-let deref loc heap =
-  try 
-    Heap.find loc heap
-  with Not_found ->
-    eprintf "%s is not a location in the heap " (to_string Loc.pp loc);
-    raise Not_found
 
 let empty_heap = Heap.empty

@@ -61,9 +61,11 @@ val empty : av
 
 val p_av : av -> FormatExt.printer
 
-val av_union : av -> av -> av
+val to_set : heap -> av -> AVSet.t
 
-val union_env : env -> env -> env
+val av_union : heap -> av -> av -> av
+
+val union_env : heap -> env -> env -> env
 
 val lookup : id -> env -> av
 
