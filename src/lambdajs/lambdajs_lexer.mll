@@ -80,8 +80,7 @@ rule token = parse
    | ')' { RPAREN }
    | "undefined" { UNDEFINED }
    | "null" { NULL }
-   | "fun" { FUNC }
-   | "->" { RARROW }
+   | "func" { FUNC }
    | "let" { LET }
    | "delete" { DELETE }
    | "[" { LBRACK }
@@ -94,7 +93,6 @@ rule token = parse
    | ":=" { COLONEQ }
    | "prim" { PRIM }
    | "if" { IF }
-   | "then" { THEN }
    | "else" { ELSE }
    | ";" { SEMI }
    | "label" { LABEL }
@@ -103,7 +101,6 @@ rule token = parse
    | "catch" { CATCH }
    | "finally" { FINALLY }
    | "throw" { THROW }
-   | "in" { IN }
    | "[[" { LLBRACK }
    | "]]" { RRBRACK }
    | "===" { EQEQEQUALS }
@@ -112,6 +109,7 @@ rule token = parse
    | "false" { BOOL false }
    | "&&" { AMPAMP }
    | "||" { PIPEPIPE }
+   | "return" { RETURN }
 
    | ident as x { ID x }
  
