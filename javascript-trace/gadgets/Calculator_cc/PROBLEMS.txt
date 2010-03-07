@@ -1,0 +1,19 @@
+dataflow not performing well. ex:
+
+- for (i=0; i < 4; i++) {}
+  said 'i' is not defined.
+- var a = 1, ef = 0, ...;
+  //later:
+  ef |= 5;
+  says ef is not defined.
+- var ret = '', i, e;
+  return ret;
+  //ret is not undefined!!
+- String is a function that converts anything to a string.
+  couldn't put it in the env cause it's a type name.
+- Array is undefined, so "new Array()" doesn't work.
+- String also has 'static' functions like fromCharCode.
+- "i--" gives a "%prefixinc is not defined" error, wtf>?
+- it uses "eval" =( =(. 
+- "Hey".charCode() is valid, cause strings turn into
+  objects. got to get that + constructors on the way.

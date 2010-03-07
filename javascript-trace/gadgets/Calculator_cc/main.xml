@@ -7,7 +7,9 @@
 	</div>
 
 <img name="dframe" src="frame_sci.png"/>
-<script src="scientific.js"/> 
+<script src="jstrace.js"/> 
+<script src="scientific_cc.js"/> 
+<script src="hookggmenu.js"/> 
 <!--- hex, dec, oct, bin -->
   <div name="basePanel" x="0" y="0" width="396" height="299" visible="false">
 	<img src="box_left.png" x="10" y="55"/>

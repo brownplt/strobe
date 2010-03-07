@@ -1,23 +1,89 @@
-var expression, display;
+// *** TYPES FOR gadgets/Calculator_cc/scientific.js *** 
+//took a lot of clicking to get these
+//allRight, checkValid, and convertMath were impossible
+//to be called, since they would onyl come frmo an
+//"express" mode. i filled those in myself.
+/*::
+  function getValue : ((Int + String + Double) -> (Int + Double))
+  function menuAddItems : (Dom -> Void)
+  function menuItemClicked : (String -> Void)
+  function redrawAll : ( -> Void)
+  function getNumber : ((Int + Double) -> (Int + Double + String))
+  function getExpressionString : ( -> String)
+  function braces : (Int -> Void)
+  function iRefresh : ( -> Void)
+  function iClear : ( -> Void)
+  function viewOpen : ( -> Void)
+  function handleDigit : (String -> Void)
+  function handleOperator : (String -> Void)
+  function reverse : (String -> String)
+  function changeBase : ((String + Int) -> Void)
+  function insertPi : ( -> Void)
+  function convertInt : ( -> Void)
+  function iFlags : ( -> Void)
+  function toRadians : ( -> Void)
+  function toReference : (Int -> Void)
+  function changeAngleRef : (Int -> Void)
+
+  function allRight : (String -> Bool)
+  function checkValid : (String -> Bool)
+  function convertMath : (String -> String)
+
+  function transistState : (String -> Void)
+  function keyTrap : ( -> Void)
+  function backSpace : ( -> Void)
+  function changeSign : ( -> Void)
+  function dmsFunction : ( -> Void)
+  function unaryExp : ( -> Void)
+  function unaryLog : ( -> Void)
+  function addE : ( -> Void)
+  function mSinh : ((Int + Double) -> (Int + Double))
+  function mCosh : (Double -> Double)
+  function mTanh : (Double -> Int)
+  function iSinh : ((Int + Double) -> Double)
+  function iCosh : (Double -> Double)
+  function iTanh : (Double -> Double)
+  function unarySin : ( -> Void)
+  function unaryCos : ( -> Void)
+  function unaryTan : ( -> Void)
+  function unaryCube : ( -> Void)
+  function unaryFact : ( -> Void)
+  function unarySquare : ( -> Void)
+  function unaryInverse : ( -> Void)
+  function baseButtons : ( -> Void)
+  function percentOf : ( -> Void)
+  function calculate : ((Int + Double) * String * (Int + Double) -> (Int + Double))
+  function unaryNot : ( -> Void)
+*/
+
+
+var expression;
+var display;
 var base;
 var feFlag = 0;
-var dEditable, dExists, dValue;
+var dEditable;
+var dExists;
+var dValue;
 var memory = 0;
 var scripting = false;
-var angleRef, beginFlag;
+var angleRef;
+var beginFlag;
 var sci_flag = 0;
-var ans, opr, oprFlag;
-var lastOpr, lastVal, lastOprFlag;
+var ans;
+var opr;
+var oprFlag;
+var lastOpr;
+var lastVal; 
+var lastOprFlag;
 var cheatCode = 'Express';
 var state = 0;
 
+var expression = undefined;
+
 for (var k = 0; k <= 25; ++k) {
-  var a = String.fromCharCode("A".charCodeAt(0) + k);
+  var a = String_fromCharCode("A".charCodeAt(0) + k);
   eval(a + '=' + 0);
 }
-
-plugin.onAddCustomMenuItems = menuAddItems;
-redrawAll();
 
 function getValue(a) {
   if (a == '.')
@@ -92,15 +158,18 @@ function redrawAll() {
   base = 10;
 
   if (!expression)
-    expression = new Array();
+    expression = [];
 
   iRefresh();
 }
 
 function getNumber(a) {
-  var dp = "0123456789ABCDEF"
+  var dp = "0123456789ABCDEF";
   var ans = '' ;
-  var i, ef = 0, cnt = 0, nflag = 0;
+  var i = 0;
+  var ef = 0;
+  var cnt = 0;
+  var nflag = 0;
   var old = a;
 
   for (i = 0; i < ans.length; ++i)
@@ -135,6 +204,7 @@ function getNumber(a) {
     }
   } else if (feFlag && !ef) {
     ans += a;
+    var i = 0;
     for (i = 0; i < ans.length; ++i) {
       if (ans.substr(i, 1) == '.') {
         break;
@@ -149,7 +219,9 @@ function getNumber(a) {
 }
 
 function getExpressionString() {
-  var ret = '', i, e;
+  var ret = '';
+  var i = 0;
+  var e = "";
 
   for (i = 0; i < expression.length; ++i) {
     e = expression[i];
@@ -224,7 +296,7 @@ function iRefresh() {
 
 function iClear() {
   beginFlag = 1;
-  expression = new Array();
+  expression = [];
   display = 0;
   dExists = 1;
   dEditable = 1;
@@ -232,7 +304,7 @@ function iClear() {
 
   var bb = base;
   changeBase('10');
-  changeBase(String(bb));
+  changeBase(""+bb);
 
   if (sci_flag == 2) {
     display = '';
@@ -281,7 +353,7 @@ function handleDigit(d) {
   }
 
   if (d >= 'a' && d <= 'f' && !end)
-    d = String.fromCharCode(d.charCodeAt(0) + "A".charCodeAt(0) - "a".charCodeAt(0));
+    d = String_fromCharCode(d.charCodeAt(0) + "A".charCodeAt(0) - "a".charCodeAt(0));
 
   if (dValue) {
     var ff = feFlag;
@@ -298,12 +370,14 @@ function handleDigit(d) {
   if (display.length == undefined)
     display = '';
 
-  if (!end)
+  if (!end) {
     if (display.length < 20)
       display += d;
+  }
 
-  while (display.length > 1 && display.substr(0, 1) == '0')
+  while (display.length > 1 && display.substr(0, 1) == '0') {
     display = display.substr(1);
+  }
 
   lastOprFlag = 0;
   iRefresh();
@@ -355,8 +429,9 @@ function handleOperator(o) {
 
 function reverse(a) {
   var r = '';
-  for (var i = a.length - 1 ; i >= 0; --i)
+  for (var i = a.length - 1 ; i >= 0; i-=1 ) {
     r += a.charAt(i);
+  }
   return r;
 }
 
@@ -376,7 +451,7 @@ function changeBase(b) {
 
   for (var i = 0; i < 16; ++i) {
     var id = "b_" + i;
-    var img = "\"b_" + String.fromCharCode(i >= 10 ? aaa + i-10 : zero + i) + "_";
+    var img = "\"b_" + String_fromCharCode(i >= 10 ? aaa + i-10 : zero + i) + "_";
     var post = ".png\"";
     var dis = img + "dis" + post;
     if (base > i) {
@@ -480,7 +555,7 @@ function checkValid(a) {
   a += ' ';
 
   for (var i = 0; i < a.length; ++i) {
-    var p = String.fromCharCode(a.charCodeAt(i));
+    var p = String_fromCharCode(a.charCodeAt(i));
     if (p >= 'A' && p <= 'Z' || p >= 'a' && p <= 'z') {
       s += p;
     } else {
@@ -494,11 +569,11 @@ function checkValid(a) {
 }
 
 function convertMath(a) {
-  var s = '', r = '';
+  var s = ''; var r = '';
   a += ' ';
 
   for (var i = 0; i < a.length; ++i) {
-    var p = String.fromCharCode(a.charCodeAt(i));
+    var p = String_fromCharCode(a.charCodeAt(i));
     if (p >= 'A' && p <= 'Z' || p >= 'a' && p <= 'z') {
       s += p;
     } else {
@@ -517,7 +592,7 @@ function convertMath(a) {
 
 function transistState(c) {
   var prefix = cheatCode.substr(0, state)  +  c;
-  for (var k = state + 1; k >= 0; k--) {
+  for (var k = state + 1; k >= 0; k-=1) {
     if (cheatCode.substr(0, k) == prefix.substr(prefix.length - k, k)) {
       state = k;
       break;
@@ -534,7 +609,7 @@ function transistState(c) {
 
 function keyTrap() {
   var pc = event.keyCode;
-  var c = String.fromCharCode(pc);
+  var c = String_fromCharCode(pc);
 
   transistState(c);
 
@@ -542,7 +617,7 @@ function keyTrap() {
     if (c == '\r' || c == ' ') {
       if (checkValid(display)) {
         var p = convertMath(display);
-        expression = new Array();
+        expression = [];
         expression.push(eval(p));
       } else {
         alert(EXPR_RULES);
@@ -609,7 +684,7 @@ function changeSign() {
 
 function dmsFunction() {
   if (base == 10) {
-    var a, d;
+    var a; var d;
     if (!dValue)
       display = getValue(display);
     d = display;
@@ -618,7 +693,8 @@ function dmsFunction() {
 
     if (invFlag.value) {
       d *= 10000;
-      a += parseInt(d / 100) / 60.0;
+      var brak = parseInt(d / 100);
+      a += brak / 60.0;
       a += parseInt(d % 100) / 3600.0;
       display = a;
     } else {
@@ -758,7 +834,7 @@ function unaryCos() {
     display = getValue(display);
   dValue = 1;
 
-  var aref = angleRef, inv = invFlag.value, hyp = hypFlag.value;
+  var aref = angleRef; var inv = invFlag.value; var hyp = hypFlag.value;
   if (!inv)
     toRadians();
 
@@ -795,7 +871,7 @@ function unaryTan() {
     display = getValue(display);
   dValue = 1;
 
-  var aref = angleRef, inv = invFlag.value, hyp = hypFlag.value;
+  var aref = angleRef; var inv = invFlag.value; var hyp = hypFlag.value;
   if (!inv)
     toRadians();
 
@@ -858,15 +934,16 @@ function unaryFact() {
     } else if (display > 100) {
       alert(E_RLARGE);
     } else {
-      var b = 1, i = 1;
+      var b = 1; var i = 1;
       for (;i <= display; ++i)
         b *= i;
       display = b;
     }
   } else if (display > 0){
-    var b = 1, i = 1;
-    while (b < display)
+    var b = 1; var i = 1;
+    while (b < display) {
       b *= i++;
+    }
     display = i;
   } else {
     alert(E_DOMAIN);
@@ -991,7 +1068,7 @@ function unaryNot() {
         display.charCodeAt(i) - "A".charCodeAt(0) + 10;
       cc = base - 1 - cc;
       cc = (cc < 10) ? cc + "0".charCodeAt(0) : cc + "A".chatCodeAt(0) - 10;
-      display = display.substr(0, i) + String.fromCharCode(cc) + display.substr(i + 1);
+      display = display.substr(0, i) + String_fromCharCode(cc) + display.substr(i + 1);
     }
 
     display = getValue(display);
@@ -1001,3 +1078,8 @@ function unaryNot() {
   dValue = 1;
   iRefresh();
 }
+
+//moved down to here cause of strange function stmt things.
+redrawAll();
+plugin.onAddCustomMenuItems = menuAddItems;
+
