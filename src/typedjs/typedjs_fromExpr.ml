@@ -338,8 +338,8 @@ let rec defs env lst =
                   [], expr :: lst' -> begin match match_decl expr with
                       None -> DExp (exp env expr, defs env lst')
                     | Some (p, x, expr) -> 
-                        let env' = IdMap.add x false env in
-                          DLet (p, x, exp env expr, defs env' lst')
+                        let env' = IdMap.add x true env in
+                          DLet (p, x, ERef (p, exp env expr), defs env' lst')
                   end
                 | func_binds, lst' ->
                     let mk acc (_, f, _) = IdMap.add f false acc in

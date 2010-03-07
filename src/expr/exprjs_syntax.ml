@@ -78,7 +78,7 @@ let rec expr (e : S.expr) = match e with
   | S.PrefixExpr (a,op,e) -> PrefixExpr (a,op,expr e)
   | S.UnaryAssignExpr (a, op, lv) ->
       let func (lv, e) = 
-        (match op with
+        match op with
              S.PrefixInc ->
                seq a
                  (AssignExpr 
@@ -91,26 +91,16 @@ let rec expr (e : S.expr) = match e with
                     (a, lv, InfixExpr (a, S.OpSub, e, ConstExpr (a, CInt 1))))
                   e
            | S.PostfixInc ->
-               LetExpr
-                 (a, "%postfixinc", e,
-                  seq a
-                    (AssignExpr 
-                       (a, lv, InfixExpr 
-                          (* TODO: use numeric addition with casts. *)
-                          (a, S.OpAdd, VarExpr (a, "%postfixinc"), 
-                           ConstExpr (a, CInt 1))))
-                    (VarExpr (a, "%postfixinc")))
+               seq a
+                 (AssignExpr 
+                    (a, lv, InfixExpr (a, S.OpAdd, e, ConstExpr (a, CInt 1))))
+                 (InfixExpr (a, S.OpSub, e, ConstExpr (a, CInt 1)))
            | S.PostfixDec ->
-               LetExpr
-                 (a, "%postfixdec", e,
-                  seq a
-                    (AssignExpr 
-                       (a, lv, InfixExpr 
-                          (* TODO use numeric subtraction with casts *)
-                          (a, S.OpSub, VarExpr (a, "%prefixinc"), 
-                           ConstExpr (a, CInt 1))))
-                       (VarExpr (a, "%prefixinc"))))
-         in eval_lvalue lv func
+               seq a
+                 (AssignExpr 
+                    (a, lv, InfixExpr (a, S.OpSub, e, ConstExpr (a, CInt 1))))
+                 (InfixExpr (a, S.OpAdd, e, ConstExpr (a, CInt 1)))
+      in eval_lvalue lv func
   | S.InfixExpr (a,op,e1,e2) -> InfixExpr (a,op,expr e1,expr e2)
   | S.IfExpr (a,e1,e2,e3) -> IfExpr (a,expr e1,expr e2,expr e3)
   | S.AssignExpr (a,S.OpAssign,lv,e) -> AssignExpr (a,lvalue lv,expr e)

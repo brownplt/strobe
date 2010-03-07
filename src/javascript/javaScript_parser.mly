@@ -204,6 +204,8 @@ unary_expr
       { $1 }
   | PlusPlus unary_expr 
       { UnaryAssignExpr (($startpos, $endpos),PrefixInc,expr_to_lvalue $2) }
+  | MinusMinus unary_expr 
+      { UnaryAssignExpr (($startpos, $endpos),PrefixDec,expr_to_lvalue $2) }
   | Exclamation unary_expr 
       { PrefixExpr (($startpos, $endpos),PrefixLNot,$2) } 
   | Tilde unary_expr 
