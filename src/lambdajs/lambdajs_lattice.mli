@@ -66,6 +66,8 @@ module Range : sig
 
   val add : bound * bound -> bound * bound -> bound * bound
 
+  val intersect : t -> t -> t
+
   val up : t -> AVSet.t
 end
 
@@ -77,6 +79,7 @@ module Type : sig
     | Range of Range.t
     | LocTypeof of Loc.t
     | LocTypeIs of Loc.t * RTSet.t
+    | LocRangeIs of Loc.t * Range.t
     | Deref of Loc.t
 
   val compare : t -> t -> int
