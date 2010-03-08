@@ -14,7 +14,7 @@ type op2 =
   | SetRef
 
 type exp =
-    EConst of pos * Exprjs_syntax.const
+  | EConst of pos * Exprjs_syntax.const
   | EId of pos * id
   | EObject of pos * (pos * string * exp) list
   | EUpdateField of pos * exp * exp * exp
@@ -179,22 +179,71 @@ let desugar (expr : expr) =
 
 (******************************************************************************)
 
-open Format
-open FormatExt
+module Pretty = struct
 
-let p_op1 op = match op with
-  | Op1Prefix o -> text (JavaScript_pretty.render_prefixOp o)
-  | Deref -> text "deref"
-  | Ref -> text "ref"
-  | Prim1 s -> text s
-
-let p_op2 op = match op with
-  | Op2Infix o -> text (JavaScript_pretty.render_infixOp o)
-  | GetField -> text "get-field"
-  | DeleteField -> text "delete-field"
-  | SetRef -> text "set-ref"
-  | Prim2 s -> text s
-
-
-
+  open Format
+  open FormatExt
     
+  let p_op1 op = match op with
+    | Op1Prefix o -> text (JavaScript_pretty.render_prefixOp o)
+    | Deref -> text "deref"
+    | Ref -> text "ref"
+    | Prim1 s -> text s
+
+  let p_op2 op = match op with
+    | Op2Infix o -> text (JavaScript_pretty.render_infixOp o)
+    | GetField -> text "get-field"
+    | DeleteField -> text "delete-field"
+    | SetRef -> text "set-ref"
+    | Prim2 s -> text s
+
+end
+    
+(******************************************************************************)
+
+let rec fv (exp : exp) : IdSet.t = match exp with
+  | EConst _ -> IdSet.empty
+  | EId (_, x) -> IdSet.singleton x
+  | EObject (_, fields) -> IdSetExt.unions (map (fun (_, _, e) -> fv e) fields)
+  | EUpdateField (_, e1, e2, e3) -> IdSetExt.unions (map fv [e1; e2; e3])
+  | EOp1 (_, _, e) -> fv e
+  | EOp2 (_, _, e1, e2) -> IdSet.union (fv e1) (fv e2)
+  | EIf (_, e1, e2, e3) -> IdSetExt.unions (map fv [e1; e2; e3])
+  | EApp (_, f, args) -> IdSetExt.unions (map fv (f :: args))
+  | ESeq (_, e1, e2) -> IdSet.union (fv e1) (fv e2)
+  | ELet (_, x, e1, e2) -> IdSet.union (fv e1) (IdSet.remove x (fv e2))
+  | EFix (_, binds, body) ->
+      IdSet.diff (IdSetExt.unions (map fv (body :: (map snd2 binds))))
+        (IdSetExt.from_list (map fst2 binds))
+  | ELabel (_, _, e) -> fv e
+  | EBreak (_, _, e) -> fv e
+  | ETryCatch (_, e1, e2) -> IdSet.union (fv e1) (fv e2)
+  | ETryFinally (_, e1, e2) -> IdSet.union (fv e1) (fv e2)
+  | EThrow (_, e) ->  fv e
+  | ELambda (_, args, body) -> IdSet.diff (fv body) (IdSetExt.from_list args)
+
+let rename (x : id) (y : id) (exp : exp) : exp = 
+  let rec ren exp = match exp with
+    | EConst _ -> exp
+    | EId (p, z) -> EId (p, if z = x then y else z)
+    | EObject (p, fields) -> EObject (p, map (third3 ren) fields)
+    | EUpdateField (p, e1, e2, e3) -> EUpdateField (p, ren e1, ren e2, ren e3)
+    | EOp1 (p, o, e) -> EOp1 (p, o, ren e)
+    | EOp2 (p, o, e1, e2) -> EOp2 (p, o, ren e1, ren e2)
+    | EIf (p, e1, e2, e3) -> EIf (p, ren e1, ren e2, ren e3)
+    | EApp (p, f, args) -> EApp (p, ren f, map ren args)
+    | ESeq (p, e1, e2) -> ESeq (p, ren e1, ren e2)
+    | ELet (p, z, e1, e2) -> 
+        ELet (p, z, ren e1, if x = z then e2 else ren e2)
+    | EFix (p, binds, body) ->
+        if List.mem x (map fst2 binds) then exp
+        else EFix (p, map (second2 ren) binds, ren body)
+    | ELabel (p, l, e) -> ELabel (p, l, ren e)
+    | EBreak (p, l, e) -> EBreak (p, l, ren e)
+    | ETryCatch (p, e1, e2) -> ETryCatch (p, ren e1, ren e2)
+    | ETryFinally (_, e1, e2) -> ETryFinally (p, ren e1, ren e2)
+    | EThrow (p, e) -> EThrow (p, ren e)
+    | ELambda (p, args, body) ->
+        if List.mem x args then exp
+        else ELambda (p, args, ren body)
+  in ren exp

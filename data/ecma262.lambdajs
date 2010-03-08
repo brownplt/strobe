@@ -40,7 +40,7 @@
 [[toPrimitive_valueOf]] = func (x, cont) {
   return
     let (valueOf = (!x)["valueOf"])
-      if (typeof valueof === "location" && 
+      if (typeof valueOf === "location" && 
           typeof !valueOf === "object" &&
           typeof (!valueOf)["__lambda__"] === "function") {
         let (result = apply(valueOf, x, { }))
@@ -83,7 +83,9 @@
 }
 
 
-[[toPrimitive]] = toPrimitive_Number
+// A deficiency of our CPSer--it requires all bindings in a Fix to be syntactic
+// lambdas.
+[[toPrimitive]] = func(x) { return toPrimitive_Number(x) }
 
 // ECMA 9.3 once again, must get object refs to pass them in as this in
 // toPrimitive

@@ -131,9 +131,17 @@ let action_cps_lambdajs () : unit =
   let cpslambdajs = Lambdajs_cps.cps lambdajs in
     Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
 
-let action_cps_env () : unit =
-  let env = Lambdajs.parse_env !cin !cin_name in
-    ()
+open Lambdajs_env
+open Lambdajs_syntax
+open Lexing
+
+let action_env () : unit =
+  let env = parse_env !cin !cin_name in
+  let exp = enclose_in_env env (EConst ((dummy_pos, dummy_pos), CUndefined)) in
+  let fvs = fv exp in
+    if not (IdSet.is_empty fvs) then
+      printf "Unbound identifiers in environment: %s\n"
+        (to_string (IdSetExt.p_set text) fvs)
   
         
         
@@ -161,7 +169,7 @@ let main () : unit =
        "(undocumented)");
       ("-testcps", Arg.Unit (set_action action_cps_lambdajs),
        "(undocumented)");
-      ("-env", Arg.Unit (set_action action_cps_env),
+      ("-env", Arg.Unit (set_action action_env),
        "(undocumented)")
     ]
     (fun s -> action_load_file s)
