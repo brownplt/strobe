@@ -12,6 +12,7 @@ module Loc : sig
   val pp : t -> FormatExt.printer
 end
 
+
 module AV : sig
   type t = 
     | ANumber
@@ -41,15 +42,34 @@ end
 
 module RTSet : Set.S with type elt = RT.t
 module RTSetExt : SetExt.S with type elt = RT.t with type t = RTSet.t
-  
+
 module AVSet : Set.S with type elt = AV.t
 
 module AVSetExt : SetExt.S 
   with type elt = AV.t
   and type t = AVSet.t
 
+
+module Range : sig
+  type bound =
+    | Int of int
+    | PosInf
+    | NegInf
+
+  type t = 
+    | Set of AVSet.t
+    | Range of bound * bound
+
+  val compare : t -> t -> int
+  
+  val pp : t -> printer
+
+  val up : t -> AVSet.t
+end
+  
+
 type av =
-  | ASet of AVSet.t
+  | ARange of Range.t
   | ALocTypeof of Loc.t
   | ALocTypeIs of Loc.t * RTSet.t
   | ADeref of Loc.t
@@ -67,6 +87,8 @@ val p_av : av -> FormatExt.printer
 
 val to_set : heap -> av -> AVSet.t
 
+val to_range : heap -> av -> Range.t
+
 val av_union : heap -> av -> av -> av
 
 val union_env : heap -> env -> env -> env
@@ -81,9 +103,9 @@ val p_heap : heap -> FormatExt.printer
 
 val empty_env : env
 
-val deref : Loc.t -> heap -> AVSet.t
+val deref : Loc.t -> heap -> Range.t
 
-val set_ref : Loc.t -> AVSet.t -> heap -> heap
+val set_ref : Loc.t -> Range.t -> heap -> heap
 
 val union_heap : heap -> heap -> heap
 
