@@ -70,7 +70,7 @@ val intersperse : 'a -> 'a list -> 'a list
 
 val take_while : ('a -> bool) -> 'a list -> 'a list * 'a list
 
-val  match_while : ( 'a -> 'b option) -> 'a list -> 'b list * 'a list
+val match_while : ( 'a -> 'b option) -> 'a list -> 'b list * 'a list
 
 (** [nub lst] removes duplicates from the [lst]. Duplicates are identified by
     structural equality. *)

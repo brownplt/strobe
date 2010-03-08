@@ -65,6 +65,9 @@ inferred_anns
   : { [] }
   | FUNCTION ID COLON typ inferred_anns { ATyp $4 :: $5 }
   | FUNCTION COLON typ inferred_anns { ATyp $3 :: $4 }
+  | CONSTRUCTOR ID COLON typ inferred_anns { ATyp $4 :: $5 }
+  | CONSTRUCTOR COLON typ inferred_anns { ATyp $3 :: $4 }
+  
 
 
 env_decl

@@ -1,5 +1,14 @@
+// *** TYPES FOR constrs.js *** 
+/*::
+  function pln : ((String + Int + Bool + Void) -> Void)
+  constructor Point : (Int * Int -> {x : Int, y : Int, sum : ([Point]  -> Int), dubit : ([Point]  -> Void)})
+  function Point.prototype.sum : ([Point]  -> Int)
+  function Point.prototype.dubit : ([Point]  -> Void)
+  function usePoints : ( -> Void)
+  function main : (Int -> Void)
+*/
 var pln = function (s) {
-   s = s || "";
+   if (s === undefined) s = "";
    var p = document.createTextNode(s);
    var rezdiv = document.getElementById("rezdiv");
    rezdiv.appendChild(p);

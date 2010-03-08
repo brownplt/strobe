@@ -738,12 +738,13 @@ var holder = (function() {  //lambda to hide all these local funcs
       if (dbg) debug("procced ret!");
 
       if (calledWithNew) {
-        /*//update the type of this upon exiting the constructor
-        tjstype.thist = mergeRttypes(
-          tjstype.thist, reffed_rttype(this));*/
-
         //mark the object as being constructed by this function
         this.$constrBy = traceid;
+        
+        //update the type of the constructed element upon exiting the constructor
+        rttype(this);
+        /*tjstype.thist = mergeRttypes(
+          tjstype.thist, reffed_rttype(this));*/
       }
       return r;
     };
@@ -795,12 +796,12 @@ var holder = (function() {  //lambda to hide all these local funcs
   //it will alert func that its "this" type matters
   //this could be done statically but it'd involve
   //50 lines of boring case breakdowns 
-  var thisref = function (t, func) {
+  var thisref = function (_this, func) {
     if (func.$jstraceid !== undefined) {
       var t = __typedJsTypes[func.$jstraceid];
       t.type.refsthis = true;
     }
-    return t;
+    return _this;
   };
   
   //this function will add our menu items to GG:

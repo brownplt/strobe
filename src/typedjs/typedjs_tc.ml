@@ -235,7 +235,10 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EFunc (p, args, fn_typ, body) -> begin match fn_typ with
         TArrow (_, arg_typs, result_typ) ->
           if List.length arg_typs = List.length args then ()
-          else raise (Typ_error (p, "not all arguments have types"));
+          else raise (Typ_error (p,
+            "given " ^ (string_of_int (List.length args)) ^ " arg names but "
+            ^ (string_of_int (List.length arg_typs)) ^ " arg types"));
+
           let bind_arg env x t = Env.bind_id x t env in
           let env = List.fold_left2 bind_arg env args arg_typs in
           let env = Env.clear_labels env in
