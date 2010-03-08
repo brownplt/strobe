@@ -152,7 +152,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       and k' = new_name () 
       and throw' = new_name () in
         Fix (new_node (),
-             [(f, k' :: throw' :: args, ext_typ typ, 
+             [(f, k' :: throw' :: "%this" :: args, ext_typ typ, 
                cps_tailexp body throw' k')],
              k (mk_id f))
   | ELet (_, x, e1, e2) ->
@@ -281,7 +281,7 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
       and k' = new_name ()
       and throw' = new_name () in
         Fix (new_node (),
-             [(f, k' :: throw' :: "%this" :: args, typ, 
+             [(f, k' :: throw' :: "%this" :: args, ext_typ typ, 
                cps_tailexp body throw' k')],
              App (new_node (), mk_id k, [ mk_id f ]))
   | ELet (_, x, e1, e2) ->

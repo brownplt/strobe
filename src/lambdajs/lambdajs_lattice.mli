@@ -1,5 +1,6 @@
 open Prelude
 open Lambdajs_cps
+open FormatExt
 
 type loc = 
   | Loc of int
@@ -22,6 +23,8 @@ module AV : sig
     | AClosure of int * id list * cpsexp
   
   val compare : t -> t -> int
+
+  val pp : t -> printer
 end
 
 module RT : sig

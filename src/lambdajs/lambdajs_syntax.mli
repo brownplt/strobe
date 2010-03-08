@@ -17,7 +17,7 @@ type op2 =
   | SetRef
 
 type exp =
-    EConst of pos * Exprjs_syntax.const
+  | EConst of pos * Exprjs_syntax.const
   | EId of pos * id
   | EObject of pos * (pos * string * exp) list
   | EUpdateField of pos * exp * exp * exp
@@ -39,6 +39,10 @@ type exp =
 
 val desugar : Exprjs_syntax.expr -> exp
 
-val p_op1 : op1 -> printer
+module Pretty : sig
+  val p_op1 : op1 -> printer
+  val p_op2 : op2 -> printer
+end 
 
-val p_op2 : op2 -> printer
+val fv : exp -> IdSet.t
+val rename : id -> id -> exp -> exp

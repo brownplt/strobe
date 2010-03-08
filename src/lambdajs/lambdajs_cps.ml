@@ -271,8 +271,8 @@ module Pretty = struct
 
   let p_bindexp (bindexp : bindexp) : printer = match bindexp with
     | Let v -> p_cpsval v
-    | Op1 (op, v1) -> parens [ p_op1 op; p_cpsval v1 ]
-    | Op2 (op, v1, v2) -> parens [ p_op2 op; p_cpsval v1; p_cpsval v2 ]
+    | Op1 (op, v1) -> parens [ Pretty.p_op1 op; p_cpsval v1 ]
+    | Op2 (op, v1, v2) -> parens [ Pretty.p_op2 op; p_cpsval v1; p_cpsval v2 ]
     | UpdateField (v1, v2, v3) -> 
         parens [ text "update-field"; p_cpsval v1; p_cpsval v2; p_cpsval v3 ]
     | Object ps -> parens (text "object" :: (map p_prop ps))
