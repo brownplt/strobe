@@ -148,7 +148,8 @@ let calc_op2 node h op2 (v1 : av) (v2 : av) = match op2 with
   | SetRef -> 
       let fn v h = match v with
         | ARef loc -> set_ref loc (to_set h v2) h
-        | _ -> eprintf "SetRef error at %d.\n" node; h in
+        | _ -> eprintf "%d: SetRef on %s\n" node (to_string AV.pp v);
+            h in
         v2, AVSet.fold fn (to_set h v1) h
   | Op2Infix JavaScript_syntax.OpStrictEq ->
       begin match v1, v2 with

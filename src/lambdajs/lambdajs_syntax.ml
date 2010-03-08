@@ -42,7 +42,8 @@ type env = bool IdMap.t
 
 let rec mk_array (p, exps) = 
   let mk_field n v = (p, string_of_int n, v) in
-    EObject (p, List.map2 mk_field (iota (List.length exps)) exps)
+    EOp1 (p, Ref, 
+          EObject (p, List.map2 mk_field (iota (List.length exps)) exps))
  
 let rec ds_expr (env : env) (expr : expr) : exp = match expr with
     ConstExpr (p, c) -> EConst (p, c)
@@ -74,7 +75,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
       EIf (p, ds_expr env e1, ds_expr env e2, ds_expr env e3)
   | AssignExpr (p, VarLValue (p', x), e) -> 
       if IdMap.mem x env then (* assume var-bound *)
-        EOp2 (p, SetRef, EOp1 (p', Deref, EId (p, x)), ds_expr env e)
+        EOp2 (p, SetRef, EId (p, x), ds_expr env e)
       else
         EOp2 (p, SetRef, EId (p, "#global"),
               EUpdateField (p, (EOp1 (p, Deref, EId (p, "#global"))),

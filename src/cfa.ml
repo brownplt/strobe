@@ -14,6 +14,14 @@ open Lambdajs_lattice
 module H = Hashtbl
 module ZZ = Lambdajs_lexer
 
+let print_env_at cxt = 
+  let env = H.find envs cxt in
+    p_env env std_formatter
+
+let print_heap_at cxt =
+  let sto = H.find heaps cxt in
+    p_heap sto std_formatter
+
 (* [find_coords svg_str] determines the coordinates of nodes in an SVG
    document. *)
 let find_coords (svg_str : string) : (int, int * int) H.t =
@@ -125,6 +133,11 @@ let action_cfa () : unit =
       Hashtbl.iter verify_app reachable;
       eprintf "%d nodes reached out of %d total nodes.\n"
         (Hashtbl.length reachable) (Cps.num_nodes ())
+(*
+      print_env_at 15;
+      pp_print_newline std_formatter ();
+      print_heap_at 15
+*)
 
 let action_cps_lambdajs () : unit =
   let lambdajs = Lambdajs.parse_lambdajs !cin !cin_name in
@@ -142,10 +155,6 @@ let action_env () : unit =
     if not (IdSet.is_empty fvs) then
       printf "Unbound identifiers in environment: %s\n"
         (to_string (IdSetExt.p_set text) fvs)
-  
-        
-        
-
 
 let action = ref action_cps
 
@@ -156,10 +165,6 @@ let set_action (thunk : unit -> unit) (() : unit) : unit =
     (eprintf "invalid arguments (-help for help)\n"; exit 1)
   else 
     (is_action_set := true; action := thunk)
-
-
-
-
 
 let main () : unit =
   Arg.parse
