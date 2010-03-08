@@ -137,81 +137,84 @@ end
 module Heap = Map.Make (Loc)
 module HeapExt = MapExt.Make (Loc) (Heap)
 
-type av =
-  | ARange of Range.t
-  | ALocTypeof of Loc.t
-  | ALocTypeIs of Loc.t * RTSet.t
-  | ADeref of Loc.t
-
-
 type heap = Range.t Heap.t
-
-type env = av IdMap.t
-
-
-open AV
-
-open FormatExt
-
-
-let rec p_av av = match av with
-  | ARange r -> Range.pp r
-  | ALocTypeof x -> sep [ text "typeof"; Loc.pp x ]
-  | ALocTypeIs (x, t) -> sep [ text "typeis";  Loc.pp x; 
-                               RTSetExt.p_set RT.pp t ]
-  | ADeref l -> sep [ text "deref"; Loc.pp l ]
-
-let singleton t = ARange (Range.Set (AVSet.singleton t))
-
-let empty = ARange (Range.Set AVSet.empty)
 
 let deref loc heap =
   try 
     Heap.find loc heap
   with Not_found ->
-    eprintf "%s is not a location in the heap " (to_string Loc.pp loc);
+    eprintf "%s is not a location in the heap " 
+      (FormatExt.to_string Loc.pp loc);
     raise Not_found
 
 
-let rec to_set (heap : heap)  v = match v with
-  | ARange r -> Range.up r
-  | ALocTypeof _ -> AVSet.singleton AString
-  | ALocTypeIs _ ->  AVSet.singleton AString
-  | ADeref l -> Range.up (deref l heap)
 
-let to_range (heap : heap) v = match v with
-  | ARange r -> r
-  | ALocTypeof _ -> Range.Set (AVSet.singleton AString)
-  | ALocTypeIs _ ->  Range.Set (AVSet.singleton AString)
-  | ADeref l -> deref l heap
+module Type = struct
 
-let rec av_union heap av1 av2 = match av1, av2 with
-  | ARange r1, ARange r2 -> ARange (Range.union r1 r2)
-  | ALocTypeof x, ALocTypeof y when x = y -> 
-      ALocTypeof x
-  | ALocTypeIs (x, s), ALocTypeIs (y, t) when x = y ->
-      ALocTypeIs (x, RTSet.union s t)
-  | ADeref x, ADeref y when x = y -> 
-      ADeref x
-  | _ -> ARange (Range.Set (AVSet.union (to_set heap av1) (to_set heap av2)))
+  type t =
+    | Range of Range.t
+    | LocTypeof of Loc.t
+    | LocTypeIs of Loc.t * RTSet.t
+    | Deref of Loc.t
+
+  let compare t1 t2 = match t1, t2 with
+    | Range r1, Range r2 -> Range.compare r1 r2
+    | LocTypeIs (l1, s1), LocTypeIs (l2, s2) when l1 = l2 -> RTSet.compare s1 s2
+    | _ -> Pervasives.compare t1 t2
+
+  let up (h : heap) t : Range.t = match t with
+    | Deref l -> deref l h
+    | Range r -> r
+    | LocTypeof _ -> Range.Set (AVSet.singleton AV.AString)
+    | LocTypeIs _ -> Range.Set (AVSet.singleton AV.ABool)
+
+  let union h av1 av2 = match av1, av2 with
+    | Range r1, Range r2 -> Range (Range.union r1 r2)
+    | LocTypeof x, LocTypeof y when x = y -> LocTypeof x
+    | LocTypeIs (x, s), LocTypeIs (y, t) when x = y -> 
+        LocTypeIs (x, RTSet.union s t)
+    | Deref x, Deref y when x = y -> Deref x
+    | _ -> Range (Range.union (up h av1) (up h av2))
+
+
+
+  open FormatExt
+
+  let pp t = match t with
+    | Range r -> Range.pp r
+    | LocTypeof x -> sep [ text "typeof"; Loc.pp x ]
+    | LocTypeIs (x, t) -> sep [ text "typeis";  Loc.pp x; 
+                                 RTSetExt.p_set RT.pp t ]
+    | Deref l -> sep [ text "deref"; Loc.pp l ]
+
+end
+
+
+type env = Type.t IdMap.t
+
+open FormatExt
+
+
+let singleton t = Type.Range (Range.Set (AVSet.singleton t))
+
+let empty = Type.Range (Range.Set AVSet.empty)
 
 let union_env heap (env1 : env) (env2 : env) : env = 
-  IdMapExt.join (av_union heap) env1 env2
+  IdMapExt.join (Type.union heap) env1 env2
 
-let p_env env = IdMapExt.p_map text p_av env
+let p_env env = IdMapExt.p_map text Type.pp env
 
 let p_heap heap = HeapExt.p_map Loc.pp Range.pp heap
 
-let lookup (x : id) (env : env) : av=
+let lookup (x : id) (env : env) =
   try
     IdMap.find x env
   with Not_found ->
     eprintf "%s is unbound in the environment:\n%s\n" x
     (FormatExt.to_string p_env env);
-    
     raise Not_found
 
-let bind (x : id) (v : av) (env : env) : env = IdMap.add x v env
+let bind (x : id) v  (env : env) : env = IdMap.add x v env
 
 let empty_env = IdMap.empty
 
@@ -220,17 +223,8 @@ let union_heap h1 h2 = HeapExt.join Range.union h1 h2
 let set_ref loc value heap =
   Heap.add loc value heap
 
-
 let empty_heap = Heap.empty
-
-let compare_av v1 v2 = match v1, v2 with
-  | ARange r1, ARange r2 -> Range.compare r1 r2
-  | ALocTypeIs (l1, s1), ALocTypeIs (l2, s2) ->
-      if l1 = l2 then
-        RTSet.compare s1 s2
-      else compare l1 l2
-  | _ -> compare v1 v2
 
 let compare_heap h1 h2 = Heap.compare Range.compare h1 h2
 
-let compare_env env1 env2 = IdMap.compare compare_av env1 env2
+let compare_env env1 env2 = IdMap.compare Type.compare env1 env2

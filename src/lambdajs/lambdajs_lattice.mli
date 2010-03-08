@@ -66,36 +66,37 @@ module Range : sig
 
   val up : t -> AVSet.t
 end
-  
-
-type av =
-  | ARange of Range.t
-  | ALocTypeof of Loc.t
-  | ALocTypeIs of Loc.t * RTSet.t
-  | ADeref of Loc.t
-
-
-type env
 
 type heap
 
-val singleton : AV.t -> av
+module Type : sig
 
-val empty : av
+  type t =
+    | Range of Range.t
+    | LocTypeof of Loc.t
+    | LocTypeIs of Loc.t * RTSet.t
+    | Deref of Loc.t
 
-val p_av : av -> FormatExt.printer
+  val compare : t -> t -> int
+  val up : heap -> t -> Range.t
+  val union : heap -> t -> t -> t
+  val pp : t -> printer
 
-val to_set : heap -> av -> AVSet.t
+end
 
-val to_range : heap -> av -> Range.t
+type env
 
-val av_union : heap -> av -> av -> av
+
+
+val singleton : AV.t -> Type.t
+
+val empty : Type.t
 
 val union_env : heap -> env -> env -> env
 
-val lookup : id -> env -> av
+val lookup : id -> env -> Type.t
 
-val bind : id -> av -> env -> env
+val bind : id -> Type.t -> env -> env
 
 val p_env : env -> FormatExt.printer
 
@@ -110,8 +111,6 @@ val set_ref : Loc.t -> Range.t -> heap -> heap
 val union_heap : heap -> heap -> heap
 
 val empty_heap : heap
-
-val compare_av : av -> av -> int
 
 val compare_heap : heap -> heap -> int
 
