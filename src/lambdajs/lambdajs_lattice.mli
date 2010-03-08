@@ -64,6 +64,8 @@ module Range : sig
   
   val pp : t -> printer
 
+  val add : bound * bound -> bound * bound -> bound * bound
+
   val up : t -> AVSet.t
 end
 

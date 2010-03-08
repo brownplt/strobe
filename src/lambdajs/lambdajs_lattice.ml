@@ -102,10 +102,22 @@ module Range = struct
       | _, NegInf -> 1
       | _, PosInf -> -1
 
+   
+
   let min x y = if compare_bound x y < 0 then x else y
 
   let max x y = if compare_bound x y > 0 then x else y
 
+  let add (lb1, ub1) (lb2, ub2) = 
+    let lb = min lb1 lb2 in
+    let ub = max ub1 ub2 in
+    let lb = match lb with
+      | Int n -> if n = 0 then Int 0 else if n > 0 then PosInf else NegInf
+      | _ -> lb in
+    let ub = match ub with
+      | Int n -> if n = 0 then Int 0 else if n > 0 then PosInf else NegInf
+      | _ -> ub in
+      (lb, ub)
 
 
   let up v = match v with
@@ -116,6 +128,7 @@ module Range = struct
     | Set s1, Set s2 -> Set (AVSet.union s1 s2)
     | Range (lb1, ub1), Range (lb2, ub2) -> Range (min lb1 lb2, max ub1 ub2)
     | _ -> Set (AVSet.union (up v1) (up v2))
+
 
   open FormatExt
 

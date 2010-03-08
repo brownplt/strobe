@@ -151,6 +151,14 @@ let calc_op2 node h op2 (v1 : Type.t) (v2 : Type.t) = match op2 with
         | _ -> eprintf "%d: SetRef on %s\n" node (to_string AV.pp v);
             h in
         v2, AVSet.fold fn (Range.up (Type.up h v1)) h
+  | Prim2 "+" ->
+      begin match Type.up h v1, Type.up h v2 with
+        | r1, r2 ->
+            printf "LHS is %s, RHS is %s\n" (to_string Range.pp r1)
+              (to_string Range.pp r2);
+            singleton ANumber
+      end, h
+
   | Op2Infix JavaScript_syntax.OpStrictEq ->
       begin match v1, v2 with
         | Type.LocTypeof x, Type.Range (Range.Set set) ->
@@ -189,12 +197,15 @@ let calc_op2 node h op2 (v1 : Type.t) (v2 : Type.t) = match op2 with
       | JavaScript_syntax.OpBOr -> singleton ANumber
       | JavaScript_syntax.OpAdd -> 
           begin match Type.up h v1, Type.up h v2 with
+            | Range.Range (lb1, ub1), Range.Range (lb2, ub2) ->
+                let lb, ub = Range.add (lb1, ub1) (lb2, ub2) in
+                  Type.Range (Range.Range (lb, ub))
             | r1, r2 ->
                 printf "LHS is %s, RHS is %s\n" (to_string Range.pp r1)
                   (to_string Range.pp r2);
                 singleton ANumber
           end), h
-
+        
 let obj_values h obj = match obj with
   | AObj locs -> 
       IdMap.fold
