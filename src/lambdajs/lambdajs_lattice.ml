@@ -37,7 +37,9 @@ module AV = struct
   let pp v = match v with
   | AConst c -> Exprjs_pretty.p_const c
   | ARef l ->  sep [ text "*"; Loc.pp l ]
-  | AObj dict -> IdMapExt.p_map text Loc.pp dict
+  | AObj dict ->
+      IdMapExt.p_map (fun s -> text ("\"" ^ String.escaped s ^ "\"")) Loc.pp
+        dict
   | AClosure (n, args, _) -> text ("closure" ^ string_of_int n)
   | ABool -> text "boolean"
   | ANumber -> text "number"

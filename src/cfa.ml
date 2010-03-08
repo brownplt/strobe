@@ -133,11 +133,10 @@ let action_cfa () : unit =
       Hashtbl.iter verify_app reachable;
       eprintf "%d nodes reached out of %d total nodes.\n"
         (Hashtbl.length reachable) (Cps.num_nodes ())
-(*
-      print_env_at 15;
+      ;print_env_at 15;
       pp_print_newline std_formatter ();
       print_heap_at 15
-*)
+
 
 let action_cps_lambdajs () : unit =
   let lambdajs = Lambdajs.parse_lambdajs !cin !cin_name in

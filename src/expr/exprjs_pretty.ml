@@ -5,7 +5,7 @@ open Format
 open FormatExt
 
 let p_const e = match e with
-    CString s -> text  ("\"" ^ s ^ "\"")
+    CString s -> text  ("\"" ^ String.escaped s ^ "\"")
   | CRegexp (re, _, _) -> text ("/" ^ re ^ "/")
   | CNum f -> fun fmt -> pp_print_float fmt f
   | CInt n -> int n
