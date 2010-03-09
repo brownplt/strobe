@@ -204,4 +204,6 @@ let main () : unit =
     "Typed JavaScript [action] [path]";;
 
 main ();
-!action ()
+Printexc.print !action ();
+pp_print_flush std_formatter ();
+pp_print_flush err_formatter ()
