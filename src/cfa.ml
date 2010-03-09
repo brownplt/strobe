@@ -16,7 +16,6 @@ open Lexing
 
 
 module H = Hashtbl
-module ZZ = Lambdajs_symb
 
 let print_env_at cxt = 
   let env = H.find envs cxt in
@@ -80,7 +79,12 @@ let load_js () : unit =
     src := Lambdajs_syntax.desugar (Exprjs_syntax.from_javascript js)
 
 let load_lambdajs () : unit =
-  src := Lambdajs.parse_lambdajs !cin !cin_name
+  let p = (Lexing.dummy_pos, Lexing.dummy_pos) in
+    src := 
+      ELet (p, "#global", EOp1 (p, Ref, EObject (p, [])),
+            ELet (p, "%uncaught-exception", EObject (p, []),
+                  ELet (p, "%return-value", EObject (p, []),
+                        Lambdajs.parse_lambdajs !cin !cin_name)))
 
 let verify_app node exp = match exp with
   | App (_, Id x, _) ->
@@ -146,6 +150,11 @@ let action_env () : unit =
       printf "Unbound identifiers in environment: %s\n"
         (to_string (IdSetExt.p_set text) fvs)
 
+let bound_analysis () : unit = 
+  let cpsexp = Lambdajs_cps.cps !src in
+    Lambdajs_cfa.cfa cpsexp;
+    Lambdajs_symb.calc_bounds cpsexp
+
 let action = ref action_cps
 
 let is_action_set = ref false
@@ -171,7 +180,9 @@ let main () : unit =
       ("-testcps", Arg.Unit (set_action action_cps_lambdajs),
        "(undocumented)");
       ("-env", Arg.Unit (set_action action_env),
-       "(undocumented)")
+       "(undocumented)");
+      ("-bounds", Arg.Unit (set_action bound_analysis),
+       "array bounds analysis")
     ]
     (fun s -> action_load_file s)
     "Typed JavaScript [action] [path]";;

@@ -228,3 +228,9 @@ let empty_heap = Heap.empty
 let compare_heap h1 h2 = Heap.compare Range.compare h1 h2
 
 let compare_env env1 env2 = IdMap.compare Type.compare env1 env2
+
+let locations set = 
+  let f v lst = match v with
+    | AV.ARef loc -> loc :: lst
+    | _ -> lst in
+    AVSet.fold f set []

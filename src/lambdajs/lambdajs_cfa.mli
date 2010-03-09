@@ -16,7 +16,8 @@ val heaps : (context, heap) Hashtbl.t
     non-empty. *)    
 val reachable : (int, cpsexp) Hashtbl.t
 
-(** [call_graph] maps nodes for application sites to sets of function names. *)
+(** [call_graph] maps each call-site node to the set of function-node nodes
+    reachable from the call-site. *)
 val call_graph : (int, IntSet.t) Hashtbl.t
 
 val blocks : (int, cpsexp) Hashtbl.t

@@ -119,3 +119,5 @@ val empty_heap : heap
 val compare_heap : heap -> heap -> int
 
 val compare_env : env -> env -> int
+
+val locations : AVSet.t -> Loc.t list

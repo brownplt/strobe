@@ -164,7 +164,8 @@ let calc_op2 node h op2 (v1 : Type.t) (v2 : Type.t) = match op2 with
               singleton ABool
         | _ -> singleton ABool
       end, h
-            
+  | Prim2 "+" -> singleton ANumber, h
+  | Prim2 "<=" -> singleton ABool, h
   | Op2Infix infixOp -> 
       (match infixOp with
       | JavaScript_syntax.OpLT -> singleton ABool
