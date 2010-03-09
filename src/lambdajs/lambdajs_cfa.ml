@@ -173,12 +173,7 @@ let calc_op2 node h op2 (v1 : Type.t) (v2 : Type.t) = match op2 with
             
   | Op2Infix infixOp -> 
       (match infixOp with
-         | JavaScript_syntax.OpLT ->
-             begin match v1, Type.up h v2 with
-               | Type.Deref l, Range.Range (lb, ub) ->
-                   Type.LocRangeIs (l, Range.Range (Range.NegInf,ub))
-               | _ -> singleton ABool
-             end
+      | JavaScript_syntax.OpLT -> singleton ABool
       | JavaScript_syntax.OpLEq  -> singleton ABool
       | JavaScript_syntax.OpGT  -> singleton ABool
       | JavaScript_syntax.OpGEq   -> singleton ABool
@@ -274,15 +269,6 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
             if AVSet.mem (AConst (Exprjs_syntax.CBool false)) set 
               || AVSet.mem ABool set then
               flow env heap e3
-        | Type.LocRangeIs (loc, r1) ->
-            let curr = deref loc heap in
-              begin match curr with
-              | Range.Range _ -> 
-                  let new_range = Range.intersect curr r1 in
-                    flow env (set_ref loc new_range heap) e2;
-                    flow env heap e3
-              | _ -> flow env heap e2; flow env heap e3
-              end 
         | Type.LocTypeIs (l, rt) ->
             begin match restrict_loc heap l rt with
               | None -> ()

@@ -129,10 +129,6 @@ module Range = struct
     | Range (lb1, ub1), Range (lb2, ub2) -> Range (min lb1 lb2, max ub1 ub2)
     | _ -> Set (AVSet.union (up v1) (up v2))
 
-  let intersect v1 v2 = match v1, v2 with
-    | Range (lb1, ub1), Range (lb2, ub2) -> Range (max lb1 lb2, min ub1 ub2)
-    | _ -> failwith "invalid args to intersect"
-
 
   open FormatExt
 
@@ -172,14 +168,11 @@ module Type = struct
     | Range of Range.t
     | LocTypeof of Loc.t
     | LocTypeIs of Loc.t * RTSet.t
-    | LocRangeIs of Loc.t * Range.t
     | Deref of Loc.t
 
   let compare t1 t2 = match t1, t2 with
     | Range r1, Range r2 -> Range.compare r1 r2
     | LocTypeIs (l1, s1), LocTypeIs (l2, s2) when l1 = l2 -> RTSet.compare s1 s2
-    | LocRangeIs (l1, r1), LocRangeIs (l2, r2) when l1 = l2 ->
-        Range.compare r1 r2
     | _ -> Pervasives.compare t1 t2
 
   let up (h : heap) t : Range.t = match t with
@@ -187,7 +180,6 @@ module Type = struct
     | Range r -> r
     | LocTypeof _ -> Range.Set (AVSet.singleton AV.AString)
     | LocTypeIs _ -> Range.Set (AVSet.singleton AV.ABool)
-    | LocRangeIs _ -> Range.Set (AVSet.singleton AV.ABool)
 
   let union h av1 av2 = match av1, av2 with
     | Range r1, Range r2 -> Range (Range.union r1 r2)
@@ -195,8 +187,6 @@ module Type = struct
     | LocTypeIs (x, s), LocTypeIs (y, t) when x = y -> 
         LocTypeIs (x, RTSet.union s t)
     | Deref x, Deref y when x = y -> Deref x
-    | LocRangeIs (x, r1), LocRangeIs (y, r2) when x = y -> 
-        LocRangeIs (x, Range.union r1 r2)
     | _ -> Range (Range.union (up h av1) (up h av2))
 
 
@@ -208,8 +198,6 @@ module Type = struct
     | LocTypeof x -> sep [ text "typeof"; Loc.pp x ]
     | LocTypeIs (x, t) -> sep [ text "typeis";  Loc.pp x; 
                                  RTSetExt.p_set RT.pp t ]
-    | LocRangeIs (x, r) ->
-        sep [ Loc.pp x; text "in range"; Range.pp r ]
     | Deref l -> sep [ text "deref"; Loc.pp l ]
 
 end
