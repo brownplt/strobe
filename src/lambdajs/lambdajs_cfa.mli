@@ -19,6 +19,8 @@ val reachable : (int, cpsexp) Hashtbl.t
 (** [call_graph] maps nodes for application sites to sets of function names. *)
 val call_graph : (int, IntSet.t) Hashtbl.t
 
+val blocks : (int, cpsexp) Hashtbl.t
+
 
 
 val cfa : cpsexp -> unit

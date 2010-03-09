@@ -10,9 +10,13 @@ open Exprjs_syntax
 open Format
 open FormatExt
 open Lambdajs_lattice
+open Lambdajs_env
+open Lambdajs_syntax
+open Lexing
+
 
 module H = Hashtbl
-module ZZ = Lambdajs_lexer
+module ZZ = Lambdajs_symb
 
 let print_env_at cxt = 
   let env = H.find envs cxt in
@@ -42,19 +46,6 @@ let find_coords (svg_str : string) : (int, int * int) H.t =
   end in
     find 0;
     matches
-    
-
-(*
-let empty_vars_at node cpsexp = 
-  let vars = fv_immediate cpsexp in
-  let env = H.find envs node in
-  let find_var x = lookup x env in
-   IdSet.iter find_var vars
-
-let empty_vars () = 
-  Hashtbl.iter empty_vars_at reachable
-*)
-
 
 let overlay_call_graph coords : unit =
   let arrow (from_node : int) (to_node : int) : unit = 
@@ -81,6 +72,16 @@ let action_load_file path =
   cin := open_in path;
   cin_name := path
 
+let src = 
+  ref (EConst ((Lexing.dummy_pos, Lexing.dummy_pos), Exprjs_syntax.CUndefined))
+
+let load_js () : unit = 
+  let (js, _) = parse_javascript !cin !cin_name in
+    src := Lambdajs_syntax.desugar (Exprjs_syntax.from_javascript js)
+
+let load_lambdajs () : unit =
+  src := Lambdajs.parse_lambdajs !cin !cin_name
+
 let verify_app node exp = match exp with
   | App (_, Id x, _) ->
       let v = lookup x (Hashtbl.find envs node) in
@@ -103,7 +104,7 @@ let verify_app node exp = match exp with
         if AVSet.is_empty set then
           begin
             eprintf "let/%d %s = %s is empty\n" node x
-              (FormatExt.to_string Pretty.p_bindexp e)
+              (FormatExt.to_string Lambdajs_cps.Pretty.p_bindexp e)
           end 
         else
           ()            
@@ -112,17 +113,12 @@ let verify_app node exp = match exp with
 
 
 let action_cps () : unit =
-  let (js, comments) = parse_javascript !cin !cin_name in
-  let exprjs = from_javascript js in
-  let lambdajs = Lambdajs_syntax.desugar exprjs in
-  let cpslambdajs = Lambdajs_cps.cps lambdajs in
+  let cpslambdajs = Lambdajs_cps.cps !src in
     Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
       
 
 let action_cfa () : unit =
-  let (js, comments) = parse_javascript !cin !cin_name in
-  let exprjs = from_javascript js in
-  let lambdajs = Lambdajs_syntax.desugar exprjs in
+  let lambdajs = !src in
   let cpsexp = Lambdajs_cps.cps lambdajs in
     Lambdajs_cfa.cfa cpsexp;
     Lambdajs_cps.p_cpsexp cpsexp svg_formatter;
@@ -139,13 +135,8 @@ let action_cfa () : unit =
 
 
 let action_cps_lambdajs () : unit =
-  let lambdajs = Lambdajs.parse_lambdajs !cin !cin_name in
-  let cpslambdajs = Lambdajs_cps.cps lambdajs in
+  let cpslambdajs = Lambdajs_cps.cps !src in
     Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
-
-open Lambdajs_env
-open Lambdajs_syntax
-open Lexing
 
 let action_env () : unit =
   let env = parse_env !cin !cin_name in
@@ -167,7 +158,13 @@ let set_action (thunk : unit -> unit) (() : unit) : unit =
 
 let main () : unit =
   Arg.parse
-    [ ("-cps", Arg.Unit (set_action action_cps),
+    [ ("-file", Arg.String action_load_file,
+       "load from a file");
+      ("-js", Arg.Unit load_js,
+       "Load JavaScript");
+      ("-lambdajs", Arg.Unit load_lambdajs,
+       "Load LambdaJS");
+       ("-cps", Arg.Unit (set_action action_cps),
        "convert program to CPS");
       ("-cfa", Arg.Unit (set_action action_cfa),
        "(undocumented)");

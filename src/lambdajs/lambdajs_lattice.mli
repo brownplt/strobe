@@ -67,6 +67,10 @@ module Range : sig
   val up : t -> AVSet.t
 end
 
+
+module Heap : Map.S with type key = Loc.t
+module HeapExt : MapExt.S with type key = Loc.t with type +'a t = 'a Heap.t
+
 type heap
 
 module Type : sig

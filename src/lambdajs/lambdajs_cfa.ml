@@ -11,6 +11,8 @@ let call_graph = H.create 500
 
 let envs : (int, env) H.t = H.create 500
 
+let blocks : (int, cpsexp) H.t = H.create 500
+
 type context = int
 
 let heaps = H.create 500
@@ -345,4 +347,6 @@ and mk_closure (env : env) ((f, args, body) : lambda) : unit =
           set_env n env
     
 
-let cfa (cpsexp : cpsexp) : unit = flow empty_env empty_heap cpsexp
+let cfa (cpsexp : cpsexp) : unit = 
+  H.replace blocks (cpsexp_idx cpsexp) cpsexp;
+  flow empty_env empty_heap cpsexp
