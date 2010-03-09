@@ -7,6 +7,8 @@ val nest : printer -> printer
 
 val sep : printer list -> printer
 
+val squish : printer list -> printer
+
 val vert : printer list -> printer
 
 val horz : printer list -> printer

@@ -19,6 +19,10 @@ let rec sep (lst : printer list) (fmt : formatter) : unit = match lst with
       x fmt;
       pp_close_box fmt ()
   | [] -> ()
+
+let rec squish (lst : printer list) (fmt : formatter) : unit = match lst with
+  | x :: xs -> x fmt; squish xs fmt
+  | [] -> ()
  
  
 let vert (p : printer list) (fmt : formatter) : unit = 
