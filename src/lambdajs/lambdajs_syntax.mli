@@ -47,3 +47,4 @@ end
 
 val fv : exp -> IdSet.t
 val rename : id -> id -> exp -> exp
+val operators : exp -> IdSet.t

@@ -251,3 +251,29 @@ let rename (x : id) (y : id) (exp : exp) : exp =
         if List.mem x args then exp
         else ELambda (p, args, ren body)
   in ren exp
+
+
+let rec operators (exp : exp) : IdSet.t = match exp with
+  | EConst _ -> IdSet.empty
+  | EId (_, x) -> IdSet.empty
+  | EObject (_, fields) ->
+      IdSetExt.unions (map (fun (_, _, e) -> operators e) fields)
+  | EUpdateField (_, e1, e2, e3) ->
+      IdSetExt.unions (map operators [e1; e2; e3])
+  | EOp1 (_, Prim1 s, e) -> IdSet.add (s ^ "/1") (operators e)
+  | EOp1 (_, _, e) -> operators e
+  | EOp2 (_, Prim2 s, e1, e2) -> 
+      IdSet.add (s ^ "/2") (IdSet.union (operators e1) (operators e2))
+  | EOp2 (_, _, e1, e2) -> IdSet.union (operators e1) (operators e2)
+  | EIf (_, e1, e2, e3) -> IdSetExt.unions (map operators [e1; e2; e3])
+  | EApp (_, f, args) -> IdSetExt.unions (map operators (f :: args))
+  | ESeq (_, e1, e2) -> IdSet.union (operators e1) (operators e2)
+  | ELet (_, x, e1, e2) -> IdSet.union (operators e1) (operators e2)
+  | EFix (_, binds, body) ->
+      IdSetExt.unions (map operators (body :: (map snd2 binds)))
+  | ELabel (_, _, e) -> operators e
+  | EBreak (_, _, e) -> operators e
+  | ETryCatch (_, e1, e2) -> IdSet.union (operators e1) (operators e2)
+  | ETryFinally (_, e1, e2) -> IdSet.union (operators e1) (operators e2)
+  | EThrow (_, e) ->  operators e
+  | ELambda (_, args, body) -> operators body

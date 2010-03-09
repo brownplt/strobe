@@ -147,6 +147,11 @@ let action_cps_lambdajs () : unit =
   let cpslambdajs = Lambdajs_cps.cps !src in
     Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
 
+let action_operators () : unit =
+  let ops = operators !src in
+    IdSetExt.p_set text ops std_formatter;
+    print_newline ()
+
 let action_env str : unit =
   let env = parse_env (open_in str) str in
     src := enclose_in_env env !src;
@@ -181,6 +186,9 @@ let main () : unit =
       ("-full-desugar", Arg.Unit desugar, "like it says");
       ("-env", Arg.String action_env,
        "(undocumented)");
+
+      ("-operators", Arg.Unit (set_action action_operators),
+       "list operators used");
 
        ("-cps", Arg.Unit (set_action action_cps),
 
