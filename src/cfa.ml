@@ -17,6 +17,8 @@ open Lexing
 
 module H = Hashtbl
 
+module ZZZ = Lambdajs_desugar
+
 let print_env_at cxt = 
   let env = H.find envs cxt in
     p_env env std_formatter

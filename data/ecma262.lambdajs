@@ -146,4 +146,28 @@
       false
    }
 }
-   
+
+// 11.8.6, 15.3.5.3
+[[instanceofRec]] = func(obj, constr) {
+  return if (typeof obj === "location" && typeof !obj === "object") {
+    if (!obj["__proto__"] === !constr["prototype"]) {
+      true
+    }
+    else {
+      instanceofRec(!obj["__proto__"], constr)
+    }
+  }
+  else {
+    false
+  }
+}
+
+[[instanceofOperator]] = func (obj, constr) {
+  return
+    if (prim("has-own-property?", !constr, "__code__")) {
+      throw newError("TypeError", "instanceof args of wrong type")
+    }
+   else {
+     instanceofRec(obj, constr)
+   }
+}
