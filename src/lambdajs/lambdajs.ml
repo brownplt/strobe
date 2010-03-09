@@ -10,7 +10,7 @@ let parse_lambdajs cin name =
       Lambdajs_parser.prog Lambdajs_lexer.token lexbuf
     with
       |  Failure "lexing: empty token" ->
-           failwith (sprintf "error lexing LambdaJS source (%s)"
+           failwith (sprintf "lexical error at %s"
                        (string_of_position 
                           (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
       | Lambdajs_parser.Error ->
