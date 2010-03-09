@@ -373,12 +373,33 @@ let rec cps (def : def) : cpsexp = match def with
   | DRec (binds, d) ->
       Fix (new_node (), map cps_bind binds, cps d)
   | DConstructor (cexp, d) -> 
-      Fix (new_node (), [cps_bind (cexp.constr_name, cexp.constr_typ,
-                                   EFunc (cexp.constr_pos,
-                                          cexp.constr_args, 
-                                          TTop, 
-                                          cexp.constr_exp))], cps d)
-                                  
+      let p = cexp.constr_pos in
+        Fix (new_node (), [cps_bind (cexp.constr_name, cexp.constr_typ,
+                                     EFunc (p,
+                                            cexp.constr_args, 
+                                            TTop, 
+                                            cexp.constr_exp))], 
+             (* add setting the prototype as a plain expression: *)
+             cps (DExp (ESetRef (p,
+                                 EBracket (p,
+                                           EDeref (p, 
+                                                   EId (p, cexp.constr_name)),
+                                           EConst (p, Exprjs_syntax.CString 
+                                                     "prototype")),
+                                 cexp.constr_prototype), 
+                        d)))
+
+(* 
+type constr_exp = { 
+  constr_pos : pos;
+  constr_name : id;
+  constr_typ : typ;
+  constr_args : id list;
+  constr_inits : (id * exp) list;
+  constr_exp : exp;
+  constr_prototype : exp
+}
+*)
 let node_of_cpsexp (cpsexp : cpsexp) : node = match cpsexp with
     Fix (n, _, _) -> n
   | App (n, _, _) -> n
