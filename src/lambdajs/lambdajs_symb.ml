@@ -67,8 +67,8 @@ let calc_val (n : int) (v : cpsval) = match v with
   | _ -> Irrelevant
 
 let loc_at (x : id) (n : int) : Loc.t option = 
-  match locations (Range.up (Type.up (H.find heaps n) 
-                               (lookup x (H.find envs n)))) with
+  match locations (Type.up (H.find heaps n) 
+                     (lookup x (H.find envs n))) with
     | [loc] -> Some loc
     | _ -> None
 

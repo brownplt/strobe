@@ -50,24 +50,6 @@ module AVSetExt : SetExt.S
   and type t = AVSet.t
 
 
-module Range : sig
-  type bound =
-    | Int of int
-    | PosInf
-    | NegInf
-
-  type t = 
-    | Set of AVSet.t
-    | Range of bound * bound
-
-  val compare : t -> t -> int
-  
-  val pp : t -> printer
-
-  val up : t -> AVSet.t
-end
-
-
 module Heap : Map.S with type key = Loc.t
 module HeapExt : MapExt.S with type key = Loc.t with type +'a t = 'a Heap.t
 
@@ -76,21 +58,19 @@ type heap
 module Type : sig
 
   type t =
-    | Range of Range.t
+    | Set of AVSet.t
     | LocTypeof of Loc.t
     | LocTypeIs of Loc.t * RTSet.t
     | Deref of Loc.t
 
   val compare : t -> t -> int
-  val up : heap -> t -> Range.t
+  val up : heap -> t -> AVSet.t
   val union : heap -> t -> t -> t
   val pp : t -> printer
 
 end
 
 type env
-
-
 
 val singleton : AV.t -> Type.t
 
@@ -108,9 +88,9 @@ val p_heap : heap -> FormatExt.printer
 
 val empty_env : env
 
-val deref : Loc.t -> heap -> Range.t
+val deref : Loc.t -> heap -> AVSet.t
 
-val set_ref : Loc.t -> Range.t -> heap -> heap
+val set_ref : Loc.t -> AVSet.t -> heap -> heap
 
 val union_heap : heap -> heap -> heap
 

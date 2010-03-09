@@ -89,14 +89,14 @@ let load_lambdajs () : unit =
 let verify_app node exp = match exp with
   | App (_, Id x, _) ->
       let v = lookup x (Hashtbl.find envs node) in
-      let set = Range.up (Type.up (Hashtbl.find heaps node) v) in
+      let set = Type.up (Hashtbl.find heaps node) v in
         if AVSet.is_empty set then
           eprintf "Unapplied application at %d.\n" node
         else
           ()
   | If (_, Id x, _, _) ->
       let v = lookup x (Hashtbl.find envs node) in
-      let set = Range.up (Type.up (Hashtbl.find heaps node) v) in
+      let set = Type.up (Hashtbl.find heaps node) v in
         if AVSet.is_empty set then
           eprintf "Branch skipped at %d.\n" node
         else
@@ -104,7 +104,7 @@ let verify_app node exp = match exp with
   | Bind ((n, _), x, e, cont) ->
       let bound_node = cpsexp_idx cont in
       let v = lookup x (Hashtbl.find envs bound_node) in
-      let set = Range.up (Type.up (Hashtbl.find heaps node) v) in
+      let set = Type.up (Hashtbl.find heaps node) v in
         if AVSet.is_empty set then
           begin
             eprintf "let/%d %s = %s is empty\n" node x

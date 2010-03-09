@@ -74,16 +74,16 @@ let remove_filter rt t = not (restrict_filter rt t)
 
 
 let restrict_loc (h : heap) (l : loc) (r : RTSet.t) = 
-  let set = Range.up (deref l h) in
+  let set = deref l h in
   let set' = AVSet.filter (restrict_filter r) set in
     if AVSet.is_empty set' then None
-    else Some (set_ref l (Range.Set set') h)
+    else Some (set_ref l set' h)
 
 let remove_loc (h : heap) (l : loc) (r : RTSet.t) =
-  let set = Range.up (deref l h) in
+  let set = deref l h in
   let set' = AVSet.filter (remove_filter r) set in
     if AVSet.is_empty set' then None
-    else Some (set_ref l (Range.Set set') h)
+    else Some (set_ref l set' h)
 
 open Lambdajs_syntax
 
@@ -91,7 +91,7 @@ let calc_op1 h (n : int) (op1 : op1) (avs : Type.t) = match op1 with
   | Ref -> 
       let loc = Loc n in
       singleton (ARef loc), set_ref loc (Type.up h avs) h
-  | Deref -> begin match Range.up (Type.up h avs) with
+  | Deref -> begin match Type.up h avs with
       | set when AVSet.cardinal set = 1 ->
           begin match AVSet.choose set with
             | ARef l -> Type.Deref l, h
@@ -99,9 +99,9 @@ let calc_op1 h (n : int) (op1 : op1) (avs : Type.t) = match op1 with
           end
       | avs ->
           let fn v r = match v with
-            | ARef loc -> AVSet.union (Range.up (deref loc h)) r
+            | ARef loc -> AVSet.union (deref loc h) r
             | _ -> r in
-            Type.Range (Range.Set (AVSet.fold fn avs AVSet.empty)), h
+            Type.Set (AVSet.fold fn avs AVSet.empty), h
     end
   | Op1Prefix jsOp -> 
       let r = match jsOp with
@@ -125,14 +125,14 @@ let rec get_fields h obj_fields field_names : Type.t = match field_names with
           (get_fields h obj_fields rest)
       else 
         let field_loc = IdMap.find field obj_fields in
-        let field_val = Type.Range (Range.Set (Range.up (deref field_loc h))) in
+        let field_val = Type.Set (deref field_loc h) in
           Type.union h field_val  (get_fields h obj_fields rest)
 
 
 let calc_op2 node h op2 (v1 : Type.t) (v2 : Type.t) = match op2 with
   | GetField -> 
-      let vs1 = Range.up (Type.up h v1) in
-      let vs2 = Range.up (Type.up h v2) in
+      let vs1 = Type.up h v1 in
+      let vs2 = Type.up h v2 in
         if AVSet.mem AString vs2 then
           failwith "get all fields"
         else 
@@ -152,10 +152,10 @@ let calc_op2 node h op2 (v1 : Type.t) (v2 : Type.t) = match op2 with
         | ARef loc -> set_ref loc (Type.up h v2) h
         | _ -> eprintf "%d: SetRef on %s\n" node (to_string AV.pp v);
             h in
-        v2, AVSet.fold fn (Range.up (Type.up h v1)) h
+        v2, AVSet.fold fn (Type.up h v1) h
   | Op2Infix JavaScript_syntax.OpStrictEq ->
       begin match v1, v2 with
-        | Type.LocTypeof x, Type.Range (Range.Set set) ->
+        | Type.LocTypeof x, Type.Set set ->
             if AVSet.cardinal set = 1 then
               match AVSet.choose set with
                 | AConst (Exprjs_syntax.CString s) -> make_ATypeIs x s
@@ -190,24 +190,18 @@ let calc_op2 node h op2 (v1 : Type.t) (v2 : Type.t) = match op2 with
       | JavaScript_syntax.OpBAnd -> singleton ANumber
       | JavaScript_syntax.OpBXor -> singleton ANumber
       | JavaScript_syntax.OpBOr -> singleton ANumber
-      | JavaScript_syntax.OpAdd -> 
-          begin match Type.up h v1, Type.up h v2 with
-            | r1, r2 ->
-                printf "LHS is %s, RHS is %s\n" (to_string Range.pp r1)
-                  (to_string Range.pp r2);
-                singleton ANumber
-          end), h
+      | JavaScript_syntax.OpAdd -> singleton ANumber), h
 
 let obj_values h obj = match obj with
   | AObj locs -> 
       IdMap.fold
-        (fun fname floc dict -> IdMap.add fname (Range.up (deref floc h)) dict)
+        (fun fname floc dict -> IdMap.add fname (deref floc h) dict)
         locs IdMap.empty
   | _ -> IdMap.empty
 
 let rec calc_op3 h n obj field_name field_value = 
-  let obj = Range.up (Type.up h obj) in
-  let field_name = Range.up (Type.up h field_name) in
+  let obj = Type.up h obj in
+  let field_name = Type.up h field_name in
     if AVSet.mem AString field_name then
       failwith "set all fields"
     else 
@@ -224,14 +218,12 @@ let rec calc_op3 h n obj field_name field_value =
         field_name dict in
       let alloc_field fname fval (absfields, h) = 
         let loc = LocField (n, fname) in
-        (IdMap.add fname loc absfields, set_ref loc (Range.Set fval) h) in
+        (IdMap.add fname loc absfields, set_ref loc fval h) in
       let absfields, h = IdMap.fold alloc_field dict (IdMap.empty, h) in
         (singleton (AObj absfields), h)
           
 
 let rec absval (env : env) (cpsval : cpsval) : Type.t = match cpsval with
-  | Const (Exprjs_syntax.CInt n) -> 
-      Type.Range (Range.Range (Range.Int n, Range.Int n))
   | Const c -> singleton (AV.AConst c)
   | Id "#end" -> empty
   | Id x -> lookup x env
@@ -251,10 +243,10 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
               List.fold_right2 bind formals argvs empty_env in
               flow (union_env heap body_env (get_env n)) heap body
         | _ -> eprintf "Failed application at %d.\n" app_n in
-        AVSet.iter do_app (Range.up (Type.up heap (absval env f)))
+        AVSet.iter do_app (Type.up heap (absval env f))
   | If ((n, _), v1, e2, e3) -> 
       begin match absval env v1 with
-        | Type.Range (Range.Set set) ->
+        | Type.Set set ->
             if AVSet.mem (AConst (Exprjs_syntax.CBool true)) set 
               || AVSet.mem ABool set then
               flow env heap e2;
@@ -289,7 +281,7 @@ let rec calc (env : env) (heap : heap) cpsexp : unit = match cpsexp with
               
         | UpdateField (obj, fname, fval) ->
             calc_op3 heap n (absval env obj) (absval env fname) 
-              (Range.up (Type.up heap (absval env fval)))
+              (Type.up heap (absval env fval))
       in flow (bind x bindv env) heap' cont
 
 and flow (env : env) (heap : heap) (cpsexp : cpsexp) : unit = 

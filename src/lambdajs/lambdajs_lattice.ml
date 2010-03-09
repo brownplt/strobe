@@ -75,69 +75,10 @@ module AVSetExt = SetExt.Make (AVSet)
 module RTSet = Set.Make (RT)
 module RTSetExt = SetExt.Make (RTSet)
 
-
-module Range = struct
-
-  type bound =
-    | Int of int
-    | PosInf
-    | NegInf
-
-
-  type t = 
-    | Set of AVSet.t
-    | Range of bound * bound
-
-
-  let compare v1 v2 = match v1, v2 with
-    | Set s1, Set s2 -> AVSet.compare s1 s2
-    | _ -> Pervasives.compare v1 v2
-
-  let compare_bound b1 b2 = match b1, b2 with
-      | Int n1, Int n2 -> n1 - n2
-      | PosInf, PosInf -> 0
-      | NegInf, NegInf -> 0
-      | NegInf, _ -> -1
-      | PosInf, _ -> 1
-      | _, NegInf -> 1
-      | _, PosInf -> -1
-
-  let min x y = if compare_bound x y < 0 then x else y
-
-  let max x y = if compare_bound x y > 0 then x else y
-
-
-
-  let up v = match v with
-    | Set s -> s
-    | Range _ -> AVSet.singleton AV.ANumber
-
-  let union v1 v2 = match v1, v2 with
-    | Set s1, Set s2 -> Set (AVSet.union s1 s2)
-    | Range (lb1, ub1), Range (lb2, ub2) -> Range (min lb1 lb2, max ub1 ub2)
-    | _ -> Set (AVSet.union (up v1) (up v2))
-
-  open FormatExt
-
-  let pp_bound v = match v with
-    | Int n -> int n
-    | PosInf -> text "+inf"
-    | NegInf -> text "-inf"
-
-  let pp v = match v with
-    | Set s -> AVSetExt.p_set AV.pp s
-    | Range (b1, b2) -> if compare_bound b1 b2 = 0 
-        then parens [text "forall x . x =="; pp_bound b1 ]
-        else parens [text "forall x . x >="; pp_bound b1; 
-                     text "^ x <="; pp_bound b2 ]
-
-end 
-
-
 module Heap = Map.Make (Loc)
 module HeapExt = MapExt.Make (Loc) (Heap)
 
-type heap = Range.t Heap.t
+type heap = AVSet.t Heap.t
 
 let deref loc heap =
   try 
@@ -147,41 +88,39 @@ let deref loc heap =
       (FormatExt.to_string Loc.pp loc);
     raise Not_found
 
-
-
 module Type = struct
 
   type t =
-    | Range of Range.t
+    | Set of AVSet.t
     | LocTypeof of Loc.t
     | LocTypeIs of Loc.t * RTSet.t
     | Deref of Loc.t
 
   let compare t1 t2 = match t1, t2 with
-    | Range r1, Range r2 -> Range.compare r1 r2
+    | Set r1, Set r2 -> AVSet.compare r1 r2
     | LocTypeIs (l1, s1), LocTypeIs (l2, s2) when l1 = l2 -> RTSet.compare s1 s2
     | _ -> Pervasives.compare t1 t2
 
-  let up (h : heap) t : Range.t = match t with
+  let up (h : heap) t = match t with
     | Deref l -> deref l h
-    | Range r -> r
-    | LocTypeof _ -> Range.Set (AVSet.singleton AV.AString)
-    | LocTypeIs _ -> Range.Set (AVSet.singleton AV.ABool)
+    | Set r -> r
+    | LocTypeof _ -> AVSet.singleton AV.AString
+    | LocTypeIs _ -> AVSet.singleton AV.ABool
 
   let union h av1 av2 = match av1, av2 with
-    | Range r1, Range r2 -> Range (Range.union r1 r2)
+    | Set r1, Set r2 -> Set (AVSet.union r1 r2)
     | LocTypeof x, LocTypeof y when x = y -> LocTypeof x
     | LocTypeIs (x, s), LocTypeIs (y, t) when x = y -> 
         LocTypeIs (x, RTSet.union s t)
     | Deref x, Deref y when x = y -> Deref x
-    | _ -> Range (Range.union (up h av1) (up h av2))
+    | _ -> Set (AVSet.union (up h av1) (up h av2))
 
 
 
   open FormatExt
 
   let pp t = match t with
-    | Range r -> Range.pp r
+    | Set set -> AVSetExt.p_set AV.pp set
     | LocTypeof x -> sep [ text "typeof"; Loc.pp x ]
     | LocTypeIs (x, t) -> sep [ text "typeis";  Loc.pp x; 
                                  RTSetExt.p_set RT.pp t ]
@@ -195,16 +134,16 @@ type env = Type.t IdMap.t
 open FormatExt
 
 
-let singleton t = Type.Range (Range.Set (AVSet.singleton t))
+let singleton t = Type.Set (AVSet.singleton t)
 
-let empty = Type.Range (Range.Set AVSet.empty)
+let empty = Type.Set AVSet.empty
 
 let union_env heap (env1 : env) (env2 : env) : env = 
   IdMapExt.join (Type.union heap) env1 env2
 
 let p_env env = IdMapExt.p_map text Type.pp env
 
-let p_heap heap = HeapExt.p_map Loc.pp Range.pp heap
+let p_heap heap = HeapExt.p_map Loc.pp (AVSetExt.p_set AV.pp) heap
 
 let lookup (x : id) (env : env) =
   try
@@ -218,14 +157,14 @@ let bind (x : id) v  (env : env) : env = IdMap.add x v env
 
 let empty_env = IdMap.empty
 
-let union_heap h1 h2 = HeapExt.join Range.union h1 h2
+let union_heap h1 h2 = HeapExt.join AVSet.union h1 h2
 
 let set_ref loc value heap =
   Heap.add loc value heap
 
 let empty_heap = Heap.empty
 
-let compare_heap h1 h2 = Heap.compare Range.compare h1 h2
+let compare_heap h1 h2 = Heap.compare AVSet.compare h1 h2
 
 let compare_env env1 env2 = IdMap.compare Type.compare env1 env2
 
