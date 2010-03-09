@@ -41,6 +41,10 @@ module DesugarOp = struct
                 ESeq (p, e, EConst (p, CBool true))
           end
       end
+    | EOp2 (p, UnsafeGetField, e1, e2) ->
+        EOp2 (p, GetField, 
+              EApp (p, EId (p, "[[toObject]]"), [ e1 ]),
+              EApp (p, EId (p, "[[toString]]"), [ e2 ]))
     | EOp2 (p, Op2Infix op, e1, e2) -> begin match op with
           (* TODO: check comments in Claudiu's implementation *)
         | OpLT -> numnum p "<" e1 e2

@@ -9,7 +9,8 @@ type op1 =
 type op2 = 
   | Op2Infix of JavaScript_syntax.infixOp
   | Prim2 of string
-  | GetField
+  | GetField (** no need for desugaring *)
+  | UnsafeGetField (** needs to be desugared *)
   | DeleteField
   | SetRef
 
@@ -67,7 +68,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
               EConst (p, CString x))
     end
   | BracketExpr (p, e1, e2) ->
-      EOp2 (p, GetField, EOp1 (p, Deref, ds_expr env e1), ds_expr env e2)
+      EOp2 (p, UnsafeGetField, EOp1 (p, Deref, ds_expr env e1), ds_expr env e2)
   | PrefixExpr (p, op, e) -> EOp1 (p, Op1Prefix op, ds_expr env e)
   | InfixExpr (p, op, e1, e2) ->
       EOp2 (p, Op2Infix op, ds_expr env e1, ds_expr env e2)
@@ -128,7 +129,8 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
   | ThrowExpr (p, e) -> EThrow (p, ds_expr env e)
   | AppExpr (p, BracketExpr (p', obj, prop), args) ->
       ELet (p, "%obj", ds_expr env obj,
-            EApp (p, EOp2 (p', GetField, EOp1 (p', Deref, EId (p, "%obj")),
+            EApp (p, EOp2 (p', UnsafeGetField,
+                           EOp1 (p', Deref, EId (p, "%obj")),
                                 ds_expr env prop),
                   [ EId (p, "%obj"); 
                     mk_array (p, map (ds_expr env) args) ]))
@@ -140,7 +142,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
       ELet (p, "%constr", ds_expr env constr,
             EApp (p, EId (p, "%constr"),
                   [ EObject (p, [ (p, "__proto__", 
-                                   EOp2 (p, GetField,
+                                   EOp2 (p, UnsafeGetField,
                                          EOp1 (p, Deref, EId (p, "%constr")),
                                          EConst (p, CString "prototype"))) ]);
                     EOp1 (p, Ref, mk_array (p, map (ds_expr env) args)) ]))
@@ -193,6 +195,7 @@ module Pretty = struct
 
   let p_op2 op = match op with
     | Op2Infix o -> text (JavaScript_pretty.render_infixOp o)
+    | UnsafeGetField -> text "unsafe-get-field"
     | GetField -> text "get-field"
     | DeleteField -> text "delete-field"
     | SetRef -> text "set-ref"

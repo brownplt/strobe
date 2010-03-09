@@ -13,6 +13,7 @@ type op2 =
   | Op2Infix of JavaScript_syntax.infixOp
   | Prim2 of string
   | GetField
+  | UnsafeGetField
   | DeleteField
   | SetRef
 
