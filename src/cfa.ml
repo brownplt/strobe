@@ -88,6 +88,9 @@ let load_lambdajs () : unit =
                   ELet (p, "%return-value", EObject (p, []),
                         Lambdajs.parse_lambdajs !cin !cin_name)))
 
+let desugar () : unit =
+  src := Lambdajs_desugar.desugar_op !src
+
 let verify_app node exp = match exp with
   | App (_, Id x, _) ->
       let v = lookup x (Hashtbl.find envs node) in
@@ -175,6 +178,7 @@ let main () : unit =
        "Load JavaScript");
       ("-lambdajs", Arg.Unit load_lambdajs,
        "Load LambdaJS");
+      ("-full-desugar", Arg.Unit desugar, "like it says");
        ("-cps", Arg.Unit (set_action action_cps),
        "convert program to CPS");
       ("-cfa", Arg.Unit (set_action action_cfa),

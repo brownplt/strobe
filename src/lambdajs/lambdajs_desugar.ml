@@ -11,7 +11,6 @@ module DesugarOp = struct
           EApp (p, EId (p, "[[toNumber]]"), [ e1 ]),
           EApp (p, EId (p, "[[toNumber]]"), [ e2 ]))
 
-
   let rec desugar (exp : exp) = match exp with
     | EIf (p, e1, e2, e3) ->
         EIf (p, EOp1 (p, Prim1 "prim->bool", e1), desugar e2, desugar e3)
@@ -107,8 +106,10 @@ module DesugarOp = struct
   | ELabel (p, l, e) -> ELabel (p, l, desugar e)
   | EBreak (p, l, e) -> EBreak (p, l, desugar e)
   | ETryCatch (p, e1, e2) -> ETryCatch (p, desugar e1, desugar e2)
-  | ETryFinally (p, e1, e2) -> ETryCatch (p, desugar e1, desugar e2)
+  | ETryFinally (p, e1, e2) -> ETryFinally (p, desugar e1, desugar e2)
   | EThrow (p, e) -> EThrow (p, desugar e)
   | ELambda (p, args, body) -> ELambda (p, args, desugar body)
 
 end (* struct *)
+
+let desugar_op = DesugarOp.desugar
