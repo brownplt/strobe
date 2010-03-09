@@ -104,6 +104,7 @@ rule token = parse
    | "[[" { LLBRACK }
    | "]]" { RRBRACK }
    | "===" { EQEQEQUALS }
+   | "!==" { BANGEQEQUALS }
    | "typeof" { TYPEOF }
    | "true" { BOOL true }
    | "false" { BOOL false }

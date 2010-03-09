@@ -12,14 +12,14 @@ open Exprjs_syntax
 %token UNDEFINED NULL FUNC LET DELETE LBRACE RBRACE LPAREN RPAREN LBRACK
   RBRACK EQUALS COMMA DEREF REF COLON COLONEQ PRIM IF ELSE SEMI
   LABEL BREAK TRY CATCH FINALLY THROW LLBRACK RRBRACK EQEQEQUALS TYPEOF
-  AMPAMP PIPEPIPE RETURN
+  AMPAMP PIPEPIPE RETURN BANGEQEQUALS
 
 
 %token EOF
 %right COLONEQ
 %left PIPEPIPE
 %left AMPAMP
-%left EQEQEQUALS
+%left EQEQEQUALS BANGEQEQUALS
 %nonassoc TYPEOF DEREF REF
 
 /* http://stackoverflow.com/questions/1737460/
@@ -95,6 +95,11 @@ exp :
    { EOp2 (($startpos, $endpos), SetRef, $1, $3) }
  | exp EQEQEQUALS exp
      { EOp2 (($startpos, $endpos), Prim2 "stx=", $1, $3) }
+ | exp BANGEQEQUALS exp
+     { let p = ($startpos, $endpos) in
+         EIf (p, EOp2 (p, Prim2 "stx=", $1, $3),
+              EConst (p, CBool false),
+              EConst (p, CBool true)) }
  | TYPEOF exp
      { EOp1 (($startpos, $endpos), Prim1 "typeof", $2) }
  | exp AMPAMP exp

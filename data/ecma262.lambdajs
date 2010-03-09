@@ -138,7 +138,8 @@
     if (prim("has-own-property?", obj, prop)) {
       true
     }
-    else if (prim("has-own-property?", obj, "__proto__")) {
+    else if (prim("has-own-property?", !obj, "__proto__") &&
+             !obj["__proto__"] !== null) {
       inOperator(prop, !obj["__proto__"])
     }
     else {
