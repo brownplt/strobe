@@ -82,11 +82,6 @@
   })
 }
 
-
-// A deficiency of our CPSer--it requires all bindings in a Fix to be syntactic
-// lambdas.
-[[toPrimitive]] = func(x) { return toPrimitive_Number(x) }
-
 // ECMA 9.3 once again, must get object refs to pass them in as this in
 // toPrimitive
 [[toNumber]] = func(x) {
@@ -109,10 +104,10 @@
     true
   }
   else if (typeof lhs === "location") {
-     prim("abstract=", toPrimitive(lhs), rhs)
+     prim("abstract=", toPrimitive_Number(lhs), rhs)
   }
   else if (typeof rhs === "location") {
-     prim("abstract=", lhs, toPrimitive(rhs))
+     prim("abstract=", lhs, toPrimitive_Number(rhs))
   }
   else {
     false
@@ -171,3 +166,6 @@
      instanceofRec(obj, constr)
    }
 }
+
+// A non-lambda binding breaks the Fix.
+[[toPrimitive]] = toPrimitive_Number
