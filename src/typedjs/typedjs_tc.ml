@@ -3,6 +3,7 @@ open Typedjs_syntax
 open Typedjs_types 
 open Typedjs_pretty
 open FormatExt
+open Format
 
 module JS = JavaScript_syntax (* needed for operators *)
 
@@ -137,8 +138,29 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | _ -> 
           raise (Typ_error (p, "field-lookup requires a string- literal"))
     end
-(*  | EThis of 'a *)
-(*| ENew of 'a * 'a exp * 'a exp list *)
+  | EThis p -> begin
+      try 
+        Env.lookup_id "this" env
+      with Not_found -> raise (Typ_error (p, "'this' used in non-func"))
+    end
+  | ENew (p, constr, args) -> begin match constr with
+        ETypecast (_, _, EId (_, cid))
+      | EId (_, cid) -> 
+          (* treat it as a function application, but return the class
+             type instead of the return type *)
+          let class_typ = Env.lookup_class cid env in
+          let arg_typs = tc_exps env args in
+            tc_exp env (EApp (p, EId (p, cid), args));
+            class_typ
+      | _ -> raise (Typ_error (p, 
+                               begin
+                                 sep [ text "new must have ID as constructor";
+                                       text " expression, but got";
+                                       p_exp constr ] Format.str_formatter;
+                                 Format.flush_str_formatter ()
+                               end))
+
+    end
   | EPrefixOp (p, op, e) -> begin match op, tc_exp env e with
         JS.PrefixLNot, TApp ("Boolean", []) -> typ_bool
       | JS.PrefixBNot, TApp ("Int", []) -> typ_int
@@ -273,5 +295,93 @@ let rec tc_def env def = match def with
                         (string_of_typ s)) in
         List.iter tc_bind binds;
         tc_def env d
-
+  | DConstructor (cexp, d) -> let p = cexp.constr_pos in 
+      begin match cexp.constr_typ with
+          TArrow (_, arg_typs, result_typ) -> 
+            if List.length arg_typs = List.length (cexp.constr_args) then ()
+            else raise (
+              Typ_error (p,
+                         "given " ^ (string_of_int (List.length 
+                                                      (cexp.constr_args))) 
+                         ^ " arg names but "
+                         ^ (string_of_int (List.length arg_typs)) 
+                         ^ " arg types"));            
+            let bind_arg env x t = Env.bind_id x t env in
+            let env =List.fold_left2 bind_arg env (cexp.constr_args) arg_typs in
+            let env = Env.clear_labels env in           
+              begin match result_typ with
+                  TObject (fields) -> 
+                    List.iter (fun (n,t) -> 
+                                 eprintf "init: %s\n" n) cexp.constr_inits;
+                    (* first make sure all fields are initialized with
+                       the right types in constr_inits. *)
+                    let check_field (name, typ) = begin 
+                      eprintf "checking field %s\n" name;
+                      try 
+                        let (_, e) = List.find (fun (n,_) -> n = name) 
+                          cexp.constr_inits in 
+                        let etype = tc_exp env e in
+                          if subtype etype typ then () 
+                          else raise (
+                            Typ_error (
+                              p,sprintf"for field %s, expected type %s, got %s" 
+                                name (string_of_typ typ) (string_of_typ etype)))
+                      with
+                          Not_found -> raise (
+                            Typ_error (p, "field " ^ name ^ 
+                                         " not initialized in constructor"))
+                    end in
+                      List.iter check_field fields;
+                      (* now check the body, with "this" bound to res_type *)
+                      ignore (tc_exp (Env.bind_id "this" result_typ env) 
+                        cexp.constr_exp);
+                      (* create a new class, add fields as initial methods *)
+                      (* also add the constr itself as a tarrow *)
+                      let env = Env.new_class cexp.constr_name env in
+                      let env = Env.bind_id cexp.constr_name 
+                        cexp.constr_typ env in
+                      let f (fname, ftype) envacc = Env.add_method
+                        cexp.constr_name fname ftype envacc in
+                      let env = fold_right f fields env in
+                        tc_def env d
+                | _ -> raise (Typ_error (
+                                p, "constructor's ret type must be obj"))
+              end
+        | _ -> raise (Typ_error (p, "expected arrow type on constructor"))
+      end
+        
 let typecheck = tc_def
+
+(* 
+type constr_exp = { 
+  constr_pos : pos;
+  constr_name : id;
+  constr_typ : typ;
+  constr_args : id list;
+  constr_inits : (id * exp) list;
+  constr_exp : exp;
+  constr_prototype : exp
+}
+
+  | EFunc (p, args, fn_typ, body) -> begin match fn_typ with
+        TArrow (_, arg_typs, result_typ) ->
+          if List.length arg_typs = List.length args then ()
+          else raise (Typ_error (p,
+            "given " ^ (string_of_int (List.length args)) ^ " arg names but "
+            ^ (string_of_int (List.length arg_typs)) ^ " arg types"));
+
+          let bind_arg env x t = Env.bind_id x t env in
+          let env = List.fold_left2 bind_arg env args arg_typs in
+          let env = Env.clear_labels env in
+          let body_typ = tc_exp env body in
+            if subtype body_typ result_typ then fn_typ
+            else raise (Typ_error
+                          (p,
+                           sprintf "function body has type %s, but the \
+                             return type is %s" (string_of_typ body_typ)
+                             (string_of_typ result_typ)))
+      | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
+    end
+
+
+*)

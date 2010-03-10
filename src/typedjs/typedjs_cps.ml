@@ -372,6 +372,7 @@ let rec cps (def : def) : cpsexp = match def with
            Bind (new_node (), x, Let v, cps d))
   | DRec (binds, d) ->
       Fix (new_node (), map cps_bind binds, cps d)
+  (* ignore the inits, since we punt on them anyway *)
   | DConstructor (cexp, d) -> 
       let p = cexp.constr_pos in
         Fix (new_node (), [cps_bind (cexp.constr_name, cexp.constr_typ,

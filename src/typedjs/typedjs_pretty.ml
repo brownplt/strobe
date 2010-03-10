@@ -116,3 +116,5 @@ let pretty_typ fmt t = typ t fmt
 let pretty_def fmt d = def d fmt
 
 let p_typ = typ
+
+let p_exp = exp

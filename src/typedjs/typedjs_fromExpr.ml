@@ -296,18 +296,46 @@ let match_constr_body env expr = match expr with
                               else 
                                 acc)
                   env IdMap.empty in
+                (* when doing inits, nothing is reffed yet *)
+              let inits_env = 
+                fold_left (fun acc x -> IdMap.add x false acc) env' args in
               let env' = 
                 fold_left (fun acc x -> IdMap.add x true acc) env' args in
-                Some 
-                  { constr_pos = p;
-                    constr_name = f;
-                    constr_typ = typ;
-                    constr_args = args;
-                    constr_inits = [];
-                    constr_exp = exp env' body;
-                    constr_prototype = EObject (p, []) (* maybe updated later *)
-                  }
-      end
+                (* take the beginning "this.foo = bar"s and put them into inits
+                *)
+              let match_init eexp = match eexp with
+                  AssignExpr (_,
+                              PropLValue (
+                                _, ThisExpr _, ConstExpr (_, CString fname)),
+                              fval) -> Some (fname, exp inits_env fval)
+                | _ -> None in                
+              let body_exp = ref body in
+              let inits : (id * exp) list ref = ref [] in
+              let rec proc_body e = match e with
+                  SeqExpr (_, e1, e2) -> begin match match_init e1 with
+                      Some init -> begin
+                        inits := !inits @ [ init ];
+                        body_exp := e2;
+                        proc_body e2;
+                      end
+                    | None -> () 
+                  end
+                | _ -> () in
+                proc_body !body_exp;
+                (* turn the arguments into mutable ones *)
+                let mutable_arg exp id = 
+                  ELet (p, id, ERef (p, EId (p, id)), exp) in
+                  Some 
+                    { constr_pos = p;
+                      constr_name = f;
+                      constr_typ = typ;
+                      constr_args = args;
+                      constr_inits = !inits;
+                      constr_exp = fold_left mutable_arg 
+                        (exp env' !body_exp) args;
+                      constr_prototype = EObject (p, [])
+                    }
+      end 
   | _ -> None
 
 

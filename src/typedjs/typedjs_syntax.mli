@@ -29,7 +29,7 @@ type constr = string
 type typ = 
     TApp of constr * typ list
   | TUnion of typ * typ
-  | TArrow of typ * typ list * typ
+  | TArrow of typ * typ list * typ      
   | TObject of (id * typ) list
   | TRef of typ
   | TTop
@@ -114,6 +114,8 @@ module Env : sig
   val lookup_id : id -> env -> typ
 
   val lookup_lbl : id -> env -> typ
+
+  val lookup_class : id -> env -> typ
 
   (** JavaScript cannot perform a labelled jump across a function. *)
   val clear_labels : env -> env

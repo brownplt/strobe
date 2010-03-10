@@ -10,3 +10,5 @@ val pretty_typ : formatter -> typ -> unit
 val pretty_def : formatter -> def -> unit
 
 val p_typ : typ -> printer
+
+val p_exp : exp -> printer
