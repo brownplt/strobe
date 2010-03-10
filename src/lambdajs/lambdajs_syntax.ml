@@ -9,7 +9,8 @@ type op1 =
 type op2 = 
   | Op2Infix of JavaScript_syntax.infixOp
   | Prim2 of string
-  | GetField
+  | GetField (** no need for desugaring *)
+  | UnsafeGetField (** needs to be desugared *)
   | DeleteField
   | SetRef
 
@@ -67,7 +68,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
               EConst (p, CString x))
     end
   | BracketExpr (p, e1, e2) ->
-      EOp2 (p, GetField, EOp1 (p, Deref, ds_expr env e1), ds_expr env e2)
+      EOp2 (p, UnsafeGetField, EOp1 (p, Deref, ds_expr env e1), ds_expr env e2)
   | PrefixExpr (p, op, e) -> EOp1 (p, Op1Prefix op, ds_expr env e)
   | InfixExpr (p, op, e1, e2) ->
       EOp2 (p, Op2Infix op, ds_expr env e1, ds_expr env e2)
@@ -128,7 +129,8 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
   | ThrowExpr (p, e) -> EThrow (p, ds_expr env e)
   | AppExpr (p, BracketExpr (p', obj, prop), args) ->
       ELet (p, "%obj", ds_expr env obj,
-            EApp (p, EOp2 (p', GetField, EOp1 (p', Deref, EId (p, "%obj")),
+            EApp (p, EOp2 (p', UnsafeGetField,
+                           EOp1 (p', Deref, EId (p, "%obj")),
                                 ds_expr env prop),
                   [ EId (p, "%obj"); 
                     mk_array (p, map (ds_expr env) args) ]))
@@ -140,7 +142,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
       ELet (p, "%constr", ds_expr env constr,
             EApp (p, EId (p, "%constr"),
                   [ EObject (p, [ (p, "__proto__", 
-                                   EOp2 (p, GetField,
+                                   EOp2 (p, UnsafeGetField,
                                          EOp1 (p, Deref, EId (p, "%constr")),
                                          EConst (p, CString "prototype"))) ]);
                     EOp1 (p, Ref, mk_array (p, map (ds_expr env) args)) ]))
@@ -193,6 +195,7 @@ module Pretty = struct
 
   let p_op2 op = match op with
     | Op2Infix o -> text (JavaScript_pretty.render_infixOp o)
+    | UnsafeGetField -> text "unsafe-get-field"
     | GetField -> text "get-field"
     | DeleteField -> text "delete-field"
     | SetRef -> text "set-ref"
@@ -248,3 +251,29 @@ let rename (x : id) (y : id) (exp : exp) : exp =
         if List.mem x args then exp
         else ELambda (p, args, ren body)
   in ren exp
+
+
+let rec operators (exp : exp) : IdSet.t = match exp with
+  | EConst _ -> IdSet.empty
+  | EId (_, x) -> IdSet.empty
+  | EObject (_, fields) ->
+      IdSetExt.unions (map (fun (_, _, e) -> operators e) fields)
+  | EUpdateField (_, e1, e2, e3) ->
+      IdSetExt.unions (map operators [e1; e2; e3])
+  | EOp1 (_, Prim1 s, e) -> IdSet.add (s ^ "/1") (operators e)
+  | EOp1 (_, _, e) -> operators e
+  | EOp2 (_, Prim2 s, e1, e2) -> 
+      IdSet.add (s ^ "/2") (IdSet.union (operators e1) (operators e2))
+  | EOp2 (_, _, e1, e2) -> IdSet.union (operators e1) (operators e2)
+  | EIf (_, e1, e2, e3) -> IdSetExt.unions (map operators [e1; e2; e3])
+  | EApp (_, f, args) -> IdSetExt.unions (map operators (f :: args))
+  | ESeq (_, e1, e2) -> IdSet.union (operators e1) (operators e2)
+  | ELet (_, x, e1, e2) -> IdSet.union (operators e1) (operators e2)
+  | EFix (_, binds, body) ->
+      IdSetExt.unions (map operators (body :: (map snd2 binds)))
+  | ELabel (_, _, e) -> operators e
+  | EBreak (_, _, e) -> operators e
+  | ETryCatch (_, e1, e2) -> IdSet.union (operators e1) (operators e2)
+  | ETryFinally (_, e1, e2) -> IdSet.union (operators e1) (operators e2)
+  | EThrow (_, e) ->  operators e
+  | ELambda (_, args, body) -> operators body

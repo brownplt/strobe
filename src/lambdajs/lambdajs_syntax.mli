@@ -13,6 +13,7 @@ type op2 =
   | Op2Infix of JavaScript_syntax.infixOp
   | Prim2 of string
   | GetField
+  | UnsafeGetField
   | DeleteField
   | SetRef
 
@@ -46,3 +47,4 @@ end
 
 val fv : exp -> IdSet.t
 val rename : id -> id -> exp -> exp
+val operators : exp -> IdSet.t

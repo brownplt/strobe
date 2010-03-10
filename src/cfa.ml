@@ -17,6 +17,8 @@ open Lexing
 
 module H = Hashtbl
 
+module ZZZ = Lambdajs_desugar
+
 let print_env_at cxt = 
   let env = H.find envs cxt in
     p_env env std_formatter
@@ -86,6 +88,9 @@ let load_lambdajs () : unit =
                   ELet (p, "%return-value", EObject (p, []),
                         Lambdajs.parse_lambdajs !cin !cin_name)))
 
+let desugar () : unit =
+  src := Lambdajs_desugar.desugar_op !src
+
 let verify_app node exp = match exp with
   | App (_, Id x, _) ->
       let v = lookup x (Hashtbl.find envs node) in
@@ -142,20 +147,25 @@ let action_cps_lambdajs () : unit =
   let cpslambdajs = Lambdajs_cps.cps !src in
     Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
 
-let action_env () : unit =
-  let env = parse_env !cin !cin_name in
-  let exp = enclose_in_env env (EConst ((dummy_pos, dummy_pos), CUndefined)) in
-  let fvs = fv exp in
-    if not (IdSet.is_empty fvs) then
-      printf "Unbound identifiers in environment: %s\n"
-        (to_string (IdSetExt.p_set text) fvs)
+let action_operators () : unit =
+  let ops = operators !src in
+    IdSetExt.p_set text ops std_formatter;
+    print_newline ()
+
+let action_env str : unit =
+  let env = parse_env (open_in str) str in
+    src := enclose_in_env env !src;
+    let fvs = fv !src in
+      if not (IdSet.is_empty fvs) then
+        eprintf "Unbound identifiers: %s\n"
+          (to_string (IdSetExt.p_set text) fvs)
 
 let bound_analysis () : unit = 
   let cpsexp = Lambdajs_cps.cps !src in
     Lambdajs_cfa.cfa cpsexp;
     Lambdajs_symb.calc_bounds cpsexp
 
-let action = ref action_cps
+let action = ref (fun () -> ())
 
 let is_action_set = ref false
 
@@ -173,13 +183,19 @@ let main () : unit =
        "Load JavaScript");
       ("-lambdajs", Arg.Unit load_lambdajs,
        "Load LambdaJS");
+      ("-full-desugar", Arg.Unit desugar, "like it says");
+      ("-env", Arg.String action_env,
+       "(undocumented)");
+
+      ("-operators", Arg.Unit (set_action action_operators),
+       "list operators used");
+
        ("-cps", Arg.Unit (set_action action_cps),
+
        "convert program to CPS");
       ("-cfa", Arg.Unit (set_action action_cfa),
        "(undocumented)");
       ("-testcps", Arg.Unit (set_action action_cps_lambdajs),
-       "(undocumented)");
-      ("-env", Arg.Unit (set_action action_env),
        "(undocumented)");
       ("-bounds", Arg.Unit (set_action bound_analysis),
        "array bounds analysis")
@@ -188,4 +204,6 @@ let main () : unit =
     "Typed JavaScript [action] [path]";;
 
 main ();
-!action ()
+Printexc.print !action ();
+pp_print_flush std_formatter ();
+pp_print_flush err_formatter ()

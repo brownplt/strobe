@@ -119,7 +119,8 @@ module Cps = struct
                Fix (mk_node p, 
                     [ throw', [exn], tailcps catch_body throw cont ],
                     tailcps body throw' cont))
-    | ETryCatch _ -> failwith "cps : ill-formed catch block"
+    | ETryCatch (p, _, _) -> 
+        failwith ("cps : ill-formed catch block at " ^ string_of_position p)
     | EThrow (p, e) -> 
         tailcps e throw throw (* that's right *)
     | ETryFinally (p, body, finally) ->
