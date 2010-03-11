@@ -81,15 +81,23 @@ atom :
  | func { $1 }
  | FUNCTION LPAREN ids RPAREN LBRACE RETURN seq_exp RBRACE
    { let p = ($startpos, $endpos) in
+     let args = $3 in
+     let get_arg x n exp =
+       ELet (p, x, 
+             EOp1 (p, Ref,
+                   EOp2 (p, GetField, EOp1 (p, Deref, EId (p, "arguments")),
+                         EConst (p, CString (string_of_int n)))), exp) in
      let fields = 
-       [ (p, "__code__", ELambda (p, $3, $7));
+       [ (p, "__code__", ELambda (p, ["this"; "arguments"], 
+                                  List.fold_right2 get_arg args
+                                    (iota (List.length args)) $7));
          (p, "arguments", EConst (p, CNull));
          (p, "prototype", EOp1 (p, Ref,
                                 EObject 
                                   (p, [(p, "__proto__",
-                                        EId (p, "[[Object_prototype]]"))])));
-         (p, "__proto__", EId (p, "[[Function_prototype]]"));
-         (p, "length", EConst (p, CInt (List.length $3)));
+                                        EId (p, "Object_prototype"))])));
+         (p, "__proto__", EId (p, "Function_prototype"));
+         (p, "length", EConst (p, CInt (List.length args)));
          (p, "__string__", EConst (p, CString "[ builtin function ]")) ] in
        EOp1 (p, Ref, EObject (p, fields)) }
  | atom LPAREN exps RPAREN 
@@ -173,7 +181,7 @@ env :
      { fun x -> 
          ELet (($startpos, $endpos), "[[" ^ $3 ^ "]]", rename_env $6, $7 x) }
  | LBRACE seq_exp RBRACE env
-     { fun x -> ESeq (($startpos, $endpos), $2, $4 x) }
+     { fun x -> ESeq (($startpos, $endpos), rename_env $2, $4 x) }
 
 prog :
  | seq_exp EOF { $1 }
