@@ -1,0 +1,35 @@
+[[global]] = ref { }
+
+[[Object_prototype]] = ref { }
+
+[[Function_prototype]] = ref { }
+  "__proto__": null,
+  "__class__" : "Object",
+  "constructor" : undefined,
+  "toString" : function() {
+    return prim("+", "[object ", prim("+", !this["__class__"], "]"))
+  },
+  "toLocaleString" : function() {
+    return prim("+", "[object ", prim("+", !this["__class__"], "]"))
+  },
+  "hasOwnProperty": function(v) {
+    return prim("has-own-property?", !this, toString(v))
+  }
+}
+
+[[Array_prototype]] = ref {
+  "__proto__": Object_prototype,
+  "__class__" : "Array",
+  "length": 0,
+  "constructor" : undefined,
+  "toString" : function() {
+    return if (!this["__class__"] !== "Array") {
+      throw newError("TypeError", "expected this to be an array")
+    }
+    else {
+      apply(!this["join"], this, {})
+    }
+  },
+  .... etc .......
+}
+

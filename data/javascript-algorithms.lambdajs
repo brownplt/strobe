@@ -1,7 +1,7 @@
 // TODO: free variables refer to names in the global environment.
 // TODO: apply, 
 
-[[getValue]] = func (x) {
+fix [[getValue]] = func (x) {
   return if (typeof x === "location") { !x } else { x }
 }
 
@@ -167,5 +167,13 @@
    }
 }
 
-// A non-lambda binding breaks the Fix.
-[[toPrimitive]] = toPrimitive_Number
+let [[toPrimitive]] = toPrimitive_Number
+
+let [[global]] = ref { }
+
+let [[Object_prototype]] = ref { 
+
+}
+
+let [[Function_prototype]] = ref { }
+

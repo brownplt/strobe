@@ -2,6 +2,11 @@
 open Prelude
 open Lambdajs_syntax
 open Exprjs_syntax
+
+(* All free variables "x" in the environment are renamed to "[[x]]" *)
+let rename_env exp : exp  =
+  let ren v exp = rename v ("[[" ^ v ^ "]]") exp in
+  IdSet.fold ren (fv exp) exp
 %}
 
 %token <int> INT
@@ -12,7 +17,7 @@ open Exprjs_syntax
 %token UNDEFINED NULL FUNC LET DELETE LBRACE RBRACE LPAREN RPAREN LBRACK
   RBRACK EQUALS COMMA DEREF REF COLON COLONEQ PRIM IF ELSE SEMI
   LABEL BREAK TRY CATCH FINALLY THROW LLBRACK RRBRACK EQEQEQUALS TYPEOF
-  AMPAMP PIPEPIPE RETURN BANGEQEQUALS FUNCTION
+  AMPAMP PIPEPIPE RETURN BANGEQEQUALS FUNCTION FIX
 
 
 %token EOF
@@ -26,7 +31,7 @@ open Exprjs_syntax
    how-to-find-shift-reduce-conflict-in-this-yacc-file */
 
 %type <Lambdajs_syntax.exp> prog
-%type <(Prelude.id * Lambdajs_syntax.exp) list> env
+%type <Lambdajs_syntax.exp -> Lambdajs_syntax.exp> env
 
 %start prog
 %start env
@@ -61,6 +66,10 @@ ids :
  | ID COMMA ids { $1 :: $3 }
 
 
+func :
+ | FUNC LPAREN ids RPAREN LBRACE RETURN seq_exp RBRACE
+   { ELambda (($startpos, $endpos), $3, $7) }
+
 atom :
  | const { EConst (($startpos, $endpos), $1) }
  | ID { EId (($startpos, $endpos), $1) }
@@ -69,8 +78,7 @@ atom :
  | LBRACE seq_exp RBRACE
    { $2 }
  | LPAREN seq_exp RPAREN { $2 }
- | FUNC LPAREN ids RPAREN LBRACE RETURN seq_exp RBRACE
-   { ELambda (($startpos, $endpos), $3, $7) }
+ | func { $1 }
  | FUNCTION LPAREN ids RPAREN LBRACE RETURN seq_exp RBRACE
    { let p = ($startpos, $endpos) in
      let fields = 
@@ -147,14 +155,23 @@ seq_exp :
    { ELet (($startpos, $endpos), $3, $5, $7) }
  | cexp SEMI seq_exp
    { ESeq (($startpos, $endpos), $1, $3) }
-      
 
-env_bind :
- | LLBRACK ID RRBRACK EQUALS seq_exp { ($2, $5) }
+
+fix_bind :
+ | LLBRACK ID RRBRACK EQUALS func { ("[[" ^ $2 ^ "]]", rename_env $5) }
+
+fix_binds :
+ | { [] }
+ | fix_bind fix_binds { $1 :: $2 }
 
 env :
- | EOF { [] }
- | env_bind env { $1 :: $2 }
+ | EOF
+     { fun x -> x }
+ | FIX fix_binds env 
+     { fun x -> EFix (($startpos, $endpos), $2, $3 x) }
+ | LET LLBRACK ID RRBRACK EQUALS seq_exp env
+     { fun x -> ELet (($startpos, $endpos), "[[" ^ $3 ^ "]]", rename_env $6,
+                      $7 x) }
 
 prog :
  | seq_exp EOF { $1 }
