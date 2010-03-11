@@ -259,5 +259,29 @@ let [[Object]] = ref {
   }
 }
 
-let [[global]] = ref { }
-
+let [[global]] = ref { 
+  __proto__: Object_prototype,
+  __class__: "window",
+  "NaN": NaN,
+  Infinity: +inf,
+  "undefined": undefined,
+  parseInt: function(n) {
+    return prim("prim->num", toString(n))
+  },
+  parseFloat:  function(n) {
+    return prim("prim->float", toString(n))
+  },
+  isNaN: function(n) {
+    return toNumber(n) === NaN
+  },
+  isFinite: function(n) {
+    return let (n = toNumber(n))
+    if (n === NaN || n === +inf || n === -inf) 
+      false 
+    else 
+      true
+  },
+  Object: Object,
+  Function: Function,
+  Array: Array
+}

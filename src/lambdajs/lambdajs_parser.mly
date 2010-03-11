@@ -48,6 +48,7 @@ const :
  | BOOL { CBool $1 }
 
 prop :
+ | STRING COLON exp { (($startpos, $endpos), $1, $3) }
  | ID COLON exp { (($startpos, $endpos), $1, $3) }
 
 props :
