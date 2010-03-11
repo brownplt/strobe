@@ -14,6 +14,7 @@ let parse_lambdajs cin name =
                        (string_of_position 
                           (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
       | Lambdajs_parser.Error ->
-           failwith (sprintf "parse error at %s"
+           failwith (sprintf "parse error at %s; unexpected token %s"
                        (string_of_position 
-                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p))
+                       (lexeme lexbuf))

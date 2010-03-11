@@ -12,7 +12,7 @@ open Exprjs_syntax
 %token UNDEFINED NULL FUNC LET DELETE LBRACE RBRACE LPAREN RPAREN LBRACK
   RBRACK EQUALS COMMA DEREF REF COLON COLONEQ PRIM IF ELSE SEMI
   LABEL BREAK TRY CATCH FINALLY THROW LLBRACK RRBRACK EQEQEQUALS TYPEOF
-  AMPAMP PIPEPIPE RETURN BANGEQEQUALS
+  AMPAMP PIPEPIPE RETURN BANGEQEQUALS FUNCTION
 
 
 %token EOF
@@ -71,6 +71,19 @@ atom :
  | LPAREN seq_exp RPAREN { $2 }
  | FUNC LPAREN ids RPAREN LBRACE RETURN seq_exp RBRACE
    { ELambda (($startpos, $endpos), $3, $7) }
+ | FUNCTION LPAREN ids RPAREN LBRACE RETURN seq_exp RBRACE
+   { let p = ($startpos, $endpos) in
+     let fields = 
+       [ (p, "__code__", ELambda (p, $3, $7));
+         (p, "arguments", EConst (p, CNull));
+         (p, "prototype", EOp1 (p, Ref,
+                                EObject 
+                                  (p, [(p, "__proto__",
+                                        EId (p, "[[Object_prototype]]"))])));
+         (p, "__proto__", EId (p, "[[Function_prototype]]"));
+         (p, "length", EConst (p, CInt (List.length $3)));
+         (p, "__string__", EConst (p, CString "[ builtin function ]")) ] in
+       EOp1 (p, Ref, EObject (p, fields)) }
  | atom LPAREN exps RPAREN 
    { EApp (($startpos, $endpos), $1, $3) }
  | atom LBRACK seq_exp RBRACK
@@ -137,7 +150,7 @@ seq_exp :
       
 
 env_bind :
- | LLBRACK ID RRBRACK EQUALS atom { ($2, $5) }
+ | LLBRACK ID RRBRACK EQUALS seq_exp { ($2, $5) }
 
 env :
  | EOF { [] }

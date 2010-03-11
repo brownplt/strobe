@@ -24,7 +24,8 @@ let parse_env cin name : parsed_env =
                        (string_of_position 
                           (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
       | Lambdajs_parser.Error ->
-           failwith (sprintf "error parsing environment at %s"
+           failwith (sprintf "unexpected token %s (at %s)"
+                       (lexeme lexbuf)
                        (string_of_position 
                           (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
 

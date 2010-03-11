@@ -111,6 +111,7 @@ rule token = parse
    | "&&" { AMPAMP }
    | "||" { PIPEPIPE }
    | "return" { RETURN }
+   | "function" { FUNCTION }
 
    | ident as x { ID x }
  
