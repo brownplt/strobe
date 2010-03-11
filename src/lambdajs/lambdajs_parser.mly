@@ -170,8 +170,10 @@ env :
  | FIX fix_binds env 
      { fun x -> EFix (($startpos, $endpos), $2, $3 x) }
  | LET LLBRACK ID RRBRACK EQUALS seq_exp env
-     { fun x -> ELet (($startpos, $endpos), "[[" ^ $3 ^ "]]", rename_env $6,
-                      $7 x) }
+     { fun x -> 
+         ELet (($startpos, $endpos), "[[" ^ $3 ^ "]]", rename_env $6, $7 x) }
+ | LBRACE seq_exp RBRACE env
+     { fun x -> ESeq (($startpos, $endpos), $2, $4 x) }
 
 prog :
  | seq_exp EOF { $1 }
