@@ -103,19 +103,21 @@ let calc_op1 h (n : int) (op1 : op1) (avs : Type.t) = match op1 with
             | _ -> r in
             Type.Set (AVSet.fold fn avs AVSet.empty), h
     end
-  | Op1Prefix jsOp -> 
-      let r = match jsOp with
-        | JavaScript_syntax.PrefixLNot -> singleton ANumber
-        | JavaScript_syntax.PrefixBNot -> singleton ABool
-        | JavaScript_syntax.PrefixPlus -> singleton ANumber
-        | JavaScript_syntax.PrefixMinus -> singleton ANumber
-        | JavaScript_syntax.PrefixTypeof -> begin match avs with
+  | Prim1 op ->
+      let r = match op with
+        | "typeof"
+        | "surface-typeof" -> begin match avs with
             | Type.Deref l -> Type.LocTypeof l
             | _ -> singleton AString
           end
-        | JavaScript_syntax.PrefixVoid ->
-            singleton (AConst Exprjs_syntax.CUndefined) in
-        r, h
+        | "primitive?" -> singleton ABool
+        | "prim->str" -> singleton AString
+        | "prim->num" -> singleton ANumber
+        | "prim->float" -> singleton ANumber
+        | "prim->bool" -> singleton ABool
+        | _ -> failwith ("Unknown operator in CFA " ^ op ^ "/1")
+      in r, h
+  | Op1Prefix _ -> failwith "unexpected Op1Prefix in CFA"
 
 let rec get_fields h obj_fields field_names : Type.t = match field_names with
   | [] -> empty
@@ -153,44 +155,22 @@ let calc_op2 node h op2 (v1 : Type.t) (v2 : Type.t) = match op2 with
         | _ -> eprintf "%d: SetRef on %s\n" node (to_string AV.pp v);
             h in
         v2, AVSet.fold fn (Type.up h v1) h
-  | Op2Infix JavaScript_syntax.OpStrictEq ->
-      begin match v1, v2 with
-        | Type.LocTypeof x, Type.Set set ->
-            if AVSet.cardinal set = 1 then
-              match AVSet.choose set with
-                | AConst (Exprjs_syntax.CString s) -> make_ATypeIs x s
-                | _ -> singleton ABool
-            else
-              singleton ABool
-        | _ -> singleton ABool
-      end, h
+  | Prim2 "stx=" -> begin match v1, v2 with
+      | Type.LocTypeof x, Type.Set set ->
+          if AVSet.cardinal set = 1 then
+            match AVSet.choose set with
+              | AConst (Exprjs_syntax.CString s) -> make_ATypeIs x s
+              | _ -> singleton ABool
+          else
+            singleton ABool
+      | _ -> singleton ABool
+    end, h
   | Prim2 "+" -> singleton ANumber, h
   | Prim2 "<=" -> singleton ABool, h
-  | Op2Infix infixOp -> 
-      (match infixOp with
-      | JavaScript_syntax.OpLT -> singleton ABool
-      | JavaScript_syntax.OpLEq  -> singleton ABool
-      | JavaScript_syntax.OpGT  -> singleton ABool
-      | JavaScript_syntax.OpGEq   -> singleton ABool
-      | JavaScript_syntax.OpIn -> singleton ABool
-      | JavaScript_syntax.OpInstanceof -> singleton ABool
-      | JavaScript_syntax.OpEq -> singleton ABool
-      | JavaScript_syntax.OpNEq -> singleton ABool
-      | JavaScript_syntax.OpStrictEq -> singleton ABool
-      | JavaScript_syntax.OpStrictNEq -> singleton ABool
-      | JavaScript_syntax.OpLAnd -> singleton ABool
-      | JavaScript_syntax.OpLOr -> singleton ABool
-      | JavaScript_syntax.OpMul -> singleton ANumber
-      | JavaScript_syntax.OpDiv -> singleton ANumber
-      | JavaScript_syntax.OpMod -> singleton ANumber
-      | JavaScript_syntax.OpSub -> singleton ANumber
-      | JavaScript_syntax.OpLShift -> singleton ANumber
-      | JavaScript_syntax.OpSpRShift -> singleton ANumber
-      | JavaScript_syntax.OpZfRShift -> singleton ANumber
-      | JavaScript_syntax.OpBAnd -> singleton ANumber
-      | JavaScript_syntax.OpBXor -> singleton ANumber
-      | JavaScript_syntax.OpBOr -> singleton ANumber
-      | JavaScript_syntax.OpAdd -> singleton ANumber), h
+  | Prim2 "has-own-property?" -> singleton ABool, h
+  | Prim2 "abstract=" -> singleton ABool, h
+  | Prim2 "obj-can-delete?" -> singleton ABool, h
+  | Op2Infix _ -> failwith "unexpected Op2Infix in CFA"h
 
 let obj_values h obj = match obj with
   | AObj locs -> 

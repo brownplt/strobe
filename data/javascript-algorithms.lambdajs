@@ -5,6 +5,10 @@ fix [[getValue]] = func (x) {
   return if (typeof x === "location") { !x } else { x }
 }
 
+[[newError]] = func(typ, s) {
+  return throw typ
+}
+
 /* Algorithm 9.9 of ECMA-262, ed. 3.  if given an object, expects it to
   be a (ERef (EObject)) it itself returns Refs */
 [[toObject]] = func (x) {
@@ -43,7 +47,7 @@ fix [[getValue]] = func (x) {
       if (typeof valueOf === "location" && 
           typeof !valueOf === "object" &&
           typeof (!valueOf)["__lambda__"] === "function") {
-        let (result = apply(valueOf, x, { }))
+        let (result = !valueOf["__code__"](x, { }))
           if (prim("primitive?", result)) result
           else cont()
       }
@@ -57,7 +61,7 @@ fix [[getValue]] = func (x) {
     if (typeof toString === "location" && 
         typeof !toString === "object" &&
         typeof (!toString)["__lambda__"] === "function")
-      let (result = apply(toString, x, { }))
+      let (result = !toString["__code__"](x, {}))
          if (prim("primitive?", result))
            result
          else 
@@ -258,6 +262,10 @@ let [[Object]] = ref {
       toObject(value)
   }
 }
+
+let [[Function]] = ref { }
+
+let [[Array]] = ref { }
 
 let [[global]] = ref { 
   __proto__: Object_prototype,

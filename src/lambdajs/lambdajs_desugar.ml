@@ -6,39 +6,41 @@ module DesugarOp = struct
 
   open JavaScript_syntax (* for infixOp and prefixOp *)
 
-  let numnum p op e1 e2 = 
+  let rec numnum p op e1 e2 = 
     EOp2 (p, Prim2 op, 
-          EApp (p, EId (p, "[[toNumber]]"), [ e1 ]),
-          EApp (p, EId (p, "[[toNumber]]"), [ e2 ]))
+          EApp (p, EId (p, "[[toNumber]]"), [ desugar e1 ]),
+          EApp (p, EId (p, "[[toNumber]]"), [ desugar e2 ]))
 
-  let rec desugar (exp : exp) = match exp with
+  and desugar (exp : exp) = match exp with
     | EIf (p, e1, e2, e3) ->
-        EIf (p, EOp1 (p, Prim1 "prim->bool", e1), desugar e2, desugar e3)
+        EIf (p, EOp1 (p, Prim1 "prim->bool", desugar e1), 
+             desugar e2, desugar e3)
     | EOp1 (p, Op1Prefix op, e) -> begin match op with
         | PrefixLNot -> 
-            EIf (p, EOp1 (p, Prim1 "prim->bool", e),
+            EIf (p, EOp1 (p, Prim1 "prim->bool", desugar e),
                  EConst (p, CBool false),
                  EConst (p, CBool true))
         | PrefixBNot ->
             EOp1 (p, Prim1 "~",
                   EOp1 (p, Prim1 "to-int-32",
-                        EApp (p, EId (p, "[[toNumber]]"), [ e ])))
+                        EApp (p, EId (p, "[[toNumber]]"), [ desugar e ])))
         | PrefixPlus ->
-            EApp (p, EId (p, "[[toNumber]]"), [ e ])
+            EApp (p, EId (p, "[[toNumber]]"), [ desugar e ])
         | PrefixMinus ->
             EOp2 (p, Prim2 "-", 
                   EConst (p, CNum 0.0),
-                  EApp (p, EId (p, "[[toNumber]]"), [ e ]))
+                  EApp (p, EId (p, "[[toNumber]]"), [ desugar e ]))
         | PrefixTypeof ->
             EOp1 (p, Prim1 "surface-typeof", 
-                  EApp (p, EId (p, "[[getValue]]"), [ e ]))
+                  EApp (p, EId (p, "[[getValue]]"), [ desugar e ]))
         | PrefixVoid ->
             ESeq (p, e, EConst (p, CUndefined))
         | PrefixDelete -> begin match e with
             | EOp2 (p', GetField, EOp1 (p'', Deref, obj), field) ->
-                EApp (p, EId (p, "[[safeDelete]]"), [ obj; field ])
+                EApp (p, EId (p, "[[safeDelete]]"), 
+                      [ desugar obj; desugar field ])
             | _ -> 
-                ESeq (p, e, EConst (p, CBool true))
+                ESeq (p, desugar e, EConst (p, CBool true))
           end
       end
     | EOp2 (p, UnsafeGetField, e1, e2) ->
@@ -64,37 +66,40 @@ module DesugarOp = struct
         | OpLAnd ->
             (* NOTE: If e1 is false-valued, we return the value of e1, which
                may be false, or zero, or ... *)               
-            ELet (p, "[[and-lhs]]", e1,
+            ELet (p, "[[and-lhs]]", desugar e1,
                   EIf (p, EOp1 (p, Prim1 "prim->bool", EId (p, "[[and-lhs]]")),
-                       e2, 
+                       desugar e2, 
                        EId (p, "[[and-lhs]]")))
         | OpLOr ->
-            ELet (p, "[[or-lhs]]", e1,
+            ELet (p, "[[or-lhs]]", desugar e1,
                   EIf (p, EOp1 (p, Prim1 "prim->bool", EId (p, "[[or-lhs]]")),
                        EId (p, "[[or-lhs]]"),
-                       e2))
+                       desugar e2))
         | OpEq ->
-            EApp (p, EId (p, "[[abstractEquality]]"), [ e1; e2 ])
+            EApp (p, EId (p, "[[abstractEquality]]"),
+                  [ desugar e1; desugar e2 ])
         | OpNEq ->
-            EIf (p, EApp (p, EId (p, "[[abstractEquality]]"), [e1; e2] ),
+            EIf (p, EApp (p, EId (p, "[[abstractEquality]]"), 
+                          [ desugar e1; desugar e2 ] ),
                  EConst (p, CBool false),
                  EConst (p, CBool true))
         | OpStrictEq ->
-            EOp2 (p, Prim2 "stx=", e1, e2)
+            EOp2 (p, Prim2 "stx=", desugar e1, desugar e2)
         | OpStrictNEq ->
-            EIf (p, EOp2 (p, Prim2 "stx=", e1, e2),
+            EIf (p, EOp2 (p, Prim2 "stx=", desugar e1, desugar e2),
                  EConst (p, CBool false),
                  EConst (p, CBool true))
         | OpIn ->
             EApp (p, EId (p, "[[inOperator]]"),
-                  [ EApp (p, EId (p, "[[toString]]"), [ e1 ]);
-                    EApp (p, EId (p, "[[toObject]]"), [ e2 ]) ])
+                  [ EApp (p, EId (p, "[[toString]]"), [ desugar e1 ]);
+                    EApp (p, EId (p, "[[toObject]]"), [ desugar e2 ]) ])
         | OpInstanceof ->
-            EApp (p, EId (p, "[[instanceofOperator]]"), [ e1; e2 ])
+            EApp (p, EId (p, "[[instanceofOperator]]"),
+                  [ desugar e1; desugar e2 ])
         | OpAdd ->
             EOp2 (p, Prim2 "+",
-                  EApp (p, EId (p, "[[toPrimitive]]"), [ e1 ]),
-                  EApp (p, EId (p, "[[toPrimitive]]"), [ e1 ]))
+                  EApp (p, EId (p, "[[toPrimitive]]"), [ desugar e1 ]),
+                  EApp (p, EId (p, "[[toPrimitive]]"), [ desugar e2 ]))
       end
   | EConst _ -> exp
   | EId _ -> exp

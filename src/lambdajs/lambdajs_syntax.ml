@@ -184,7 +184,7 @@ module Pretty = struct
   open FormatExt
     
   let p_op1 op = match op with
-    | Op1Prefix o -> text (JavaScript_pretty.render_prefixOp o)
+    | Op1Prefix o -> text ("PREFIX " ^ JavaScript_pretty.render_prefixOp o)
     | Deref -> text "deref"
     | Ref -> text "ref"
     | Prim1 s -> text s
