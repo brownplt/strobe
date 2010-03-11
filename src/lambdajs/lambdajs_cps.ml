@@ -306,10 +306,14 @@ let lambda_name (f, _, _) = f
 
 let p_cpsexp  = Pretty.p_cpsexp      
 
-let cps (exp : exp) : cpsexp = 
-  Cps.tailcps exp "%uncaught-exception" "%return-value"
+let p = Lexing.dummy_pos, Lexing.dummy_pos
 
 let mk_node = Cps.mk_node
+
+let cps (exp : exp) : cpsexp = 
+  Cps.tailcps exp "[[uncaught_exception]]" "[[return_value]]"
+
+
 
 let rec fv (cpsexp : cpsexp) : IdSet.t = match cpsexp with
   |  Fix (_, binds, body) ->

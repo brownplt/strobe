@@ -226,3 +226,38 @@ let [[Function_prototype]] = ref {
 }
 
 
+let [[Date_prototype]] = ref {
+  __proto__: Object_prototype,
+  __class__: "Date",
+  __value__: NaN,
+  valueOf: function() { return !this["__value__"] }
+}
+
+let [[Number_prototype]] = ref {
+  __proto__: Object_prototype,
+  __class__: "Number",
+  __value__: 0,
+  __toString: function(radix) {
+    return prim("prim->str", !this["__value__"])
+  }
+}
+
+let [[Array_prototype]] = ref {
+  __proto__: Object_prototype
+}
+
+// Sections 15.2.1 and 15.2.2
+let [[Object]] = ref {
+  __proto__: Function_prototype, // This is correct.
+  prototype: Object_prototype,
+  length: 1,
+  __code__: func(value) {
+    return if (value === undefined || value === null)
+      ref { __class__: "Object", __proto__: Object_prototype }
+    else
+      toObject(value)
+  }
+}
+
+let [[global]] = ref { }
+

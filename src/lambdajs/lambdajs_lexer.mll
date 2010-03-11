@@ -74,6 +74,7 @@ rule token = parse
    | ''' (single_quoted_string_char* as x) ''' { STRING x }
   
    | num_lit as x { parse_num_lit x }
+   | "NaN" { NUM nan }
    | "{" { LBRACE }
    | "}" { RBRACE }
    | '(' { LPAREN }

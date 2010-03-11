@@ -82,11 +82,7 @@ let load_js () : unit =
 
 let load_lambdajs () : unit =
   let p = (Lexing.dummy_pos, Lexing.dummy_pos) in
-    src := 
-      ELet (p, "#global", EOp1 (p, Ref, EObject (p, [])),
-            ELet (p, "%uncaught-exception", EObject (p, []),
-                  ELet (p, "%return-value", EObject (p, []),
-                        Lambdajs.parse_lambdajs !cin !cin_name)))
+    src :=  Lambdajs.parse_lambdajs !cin !cin_name
 
 let desugar () : unit =
   src := Lambdajs_desugar.desugar_op !src

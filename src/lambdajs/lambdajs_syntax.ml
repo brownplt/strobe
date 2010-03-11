@@ -64,7 +64,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
         else
           EId (p, x)
       with Not_found ->
-        EOp2 (p, GetField, EOp1 (p, Deref, EId (p, "#global")),
+        EOp2 (p, GetField, EOp1 (p, Deref, EId (p, "[[global]]")),
               EConst (p, CString x))
     end
   | BracketExpr (p, e1, e2) ->
@@ -78,8 +78,8 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
       if IdMap.mem x env then (* assume var-bound *)
         EOp2 (p, SetRef, EId (p, x), ds_expr env e)
       else
-        EOp2 (p, SetRef, EId (p, "#global"),
-              EUpdateField (p, (EOp1 (p, Deref, EId (p, "#global"))),
+        EOp2 (p, SetRef, EId (p, "[[global]]"),
+              EUpdateField (p, (EOp1 (p, Deref, EId (p, "[[global]]"))),
                             EConst (p, CString x),
                             ds_expr env e))
   | AssignExpr (p, PropLValue (p', e1, e2), e3) -> 
@@ -118,8 +118,8 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
         (* var-lifting would have introduced a binding for x. *)
         EOp2 (p, SetRef, EId (p, x), ds_expr env e)
       else 
-        EOp2 (p, SetRef, EId (p, "#global"),
-              EUpdateField (p, EOp1 (p, Deref, EId (p, "#global")),
+        EOp2 (p, SetRef, EId (p, "[[global]]"),
+              EUpdateField (p, EOp1 (p, Deref, EId (p, "[[global]]")),
                             EConst (p, CString x),
                             ds_expr env e))
   | TryCatchExpr (p, body, x, catch) ->
@@ -136,7 +136,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
                     mk_array (p, map (ds_expr env) args) ]))
   | AppExpr (p, f, args) ->
       EApp (p, ds_expr env f,
-            [ EId (p, "#global"); 
+            [ EId (p, "[[global]]"); 
               EOp1 (p, Ref, mk_array (p, map (ds_expr env) args)) ])
   | NewExpr (p, constr, args) -> (* TODO: FIX THIS AND APP *)
       ELet (p, "%constr", ds_expr env constr,
@@ -174,11 +174,7 @@ and ds_field env (p, x, e) = (p, x, ds_expr env e)
 
 let p = (Lexing.dummy_pos, Lexing.dummy_pos)
 
-let desugar (expr : expr) = 
-  ELet (p, "#global", EOp1 (p, Ref, EObject (p, [])),
-        ELet (p, "%uncaught-exception", EObject (p, []),
-              ELet (p, "%return-value", EObject (p, []),
-                    ds_expr IdMap.empty expr)))
+let desugar (expr : expr) = ds_expr IdMap.empty expr
 
 (******************************************************************************)
 
