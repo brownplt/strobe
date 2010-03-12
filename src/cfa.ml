@@ -126,17 +126,17 @@ let action_cfa () : unit =
   let lambdajs = !src in
   let cpsexp = Lambdajs_cps.cps lambdajs in
     Lambdajs_cfa.cfa cpsexp;
-    Lambdajs_cps.p_cpsexp cpsexp svg_formatter;
+    pp_print_string std_formatter "<html><body><pre>\n";
+    Lambdajs_cps.Pretty.p_cpsexp_html cpsexp std_formatter;
+    pp_print_string std_formatter "</pre></body></html>\n";
+(*
     let src = flush_svg_formatter () in
       print_string src;
       overlay_call_graph (find_coords src);
-      print_string "</svg>";
+      print_string "</svg>"; *)
       Hashtbl.iter verify_app reachable;
       eprintf "%d nodes reached out of %d total nodes.\n"
         (Hashtbl.length reachable) (Cps.num_nodes ())
-      ;print_env_at 20;
-      pp_print_newline std_formatter ();
-      print_heap_at 20
 
 
 let action_cps_lambdajs () : unit =
@@ -199,6 +199,8 @@ let main () : unit =
     (fun s -> action_load_file s)
     "Typed JavaScript [action] [path]";;
 
+set_tags true;
+set_html_formatter_tag_functions ();
 main ();
 Printexc.print !action ();
 pp_print_flush std_formatter ();

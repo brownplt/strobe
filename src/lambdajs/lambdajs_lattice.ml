@@ -155,9 +155,7 @@ let lookup (x : id) (env : env) =
 
 let bind (x : id) v  (env : env) : env = IdMap.add x v env
 
-let empty_env =
-  IdMapExt.from_list [("[[uncaught_exception]]", singleton AV.ABool);
-                      ("[[return_value]]", singleton AV.ABool)]
+let empty_env = IdMap.add "[[exit]]" (singleton AV.ABool) IdMap.empty
 
 
 let union_heap h1 h2 = HeapExt.join AVSet.union h1 h2

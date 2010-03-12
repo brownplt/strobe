@@ -60,6 +60,6 @@ module Pretty : sig
 
   val p_cpsval : cpsval -> printer
   val p_bindexp : bindexp -> printer
-  val p_lambda : lambda -> printer
   val p_cpsexp : cpsexp -> printer
+  val p_cpsexp_html : cpsexp -> printer
 end

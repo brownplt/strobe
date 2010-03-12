@@ -46,7 +46,7 @@ fix [[getValue]] = func (x) {
     let (valueOf = (!x)["valueOf"])
       if (typeof valueOf === "location" && 
           typeof !valueOf === "object" &&
-          typeof (!valueOf)["__lambda__"] === "function") {
+          typeof (!valueOf)["__code__"] === "function") {
         let (result = !valueOf["__code__"](x, { }))
           if (prim("primitive?", result)) result
           else cont()
@@ -60,7 +60,7 @@ fix [[getValue]] = func (x) {
   let (toString = (!x)["toString"])
     if (typeof toString === "location" && 
         typeof !toString === "object" &&
-        typeof (!toString)["__lambda__"] === "function")
+        typeof (!toString)["__code__"] === "function")
       let (result = !toString["__code__"](x, {}))
          if (prim("primitive?", result))
            result

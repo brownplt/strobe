@@ -54,6 +54,29 @@ let brackets = enclose "[" "]"
 
 let angles = enclose "<" ">"
 
+let set_html_formatter_tag_functions () : unit = 
+  let ftf = get_formatter_tag_functions () in
+  let re = Str.regexp "\\([a-z]+\\) .*" in
+  let close_tag tag =
+    let tag' = try 
+      let _ = Str.search_forward re tag 0 in
+        Str.matched_group 1 tag
+    with 
+      | Not_found -> (eprintf "Error parsing tag %s" tag; tag) in
+      ("</" ^ tag' ^ ">") in
+    set_formatter_tag_functions { ftf with mark_close_tag = close_tag }
+
+
+let tag (s : string) (p : printer) (f : formatter) : unit = 
+  pp_open_tag f s;
+  p f;
+  pp_close_tag f ()
+
+(*
+let mark (s : string) (f : formatter) : unit =
+  let 
+val mark : string -> printer *)
+
 let to_string (f : 'a -> printer) (x : 'a) : string  =
   f x str_formatter;
   flush_str_formatter ()

@@ -21,11 +21,12 @@ let rename_env exp : exp  =
 
 
 %token EOF
-%right COLONEQ
+%left COLONEQ
+%left LPAREN
 %left PIPEPIPE
 %left AMPAMP
 %left EQEQEQUALS BANGEQEQUALS
-%nonassoc TYPEOF DEREF REF
+%left LBRACK
 
 /* http://stackoverflow.com/questions/1737460/
    how-to-find-shift-reduce-conflict-in-this-yacc-file */
@@ -101,26 +102,22 @@ atom :
          (p, "length", EConst (p, CInt (List.length args)));
          (p, "__string__", EConst (p, CString "[ builtin function ]")) ] in
        EOp1 (p, Ref, EObject (p, fields)) }
- | atom LPAREN exps RPAREN 
-   { EApp (($startpos, $endpos), $1, $3) }
- | atom LBRACK seq_exp RBRACK
-   { EOp2 (($startpos, $endpos), GetField, $1, $3) }
- | atom LBRACK seq_exp EQUALS seq_exp RBRACK
-   { EUpdateField (($startpos, $endpos), $1, $3, $5) }
- | atom LBRACK DELETE seq_exp RBRACK
-   { EOp2 (($startpos, $endpos), DeleteField, $1, $4) }
+ | DEREF atom
+   { EOp1 (($startpos, $endpos), Deref, $2) }
+ | REF atom
+   { EOp1 (($startpos, $endpos), Ref, $2) }
+ | TYPEOF atom
+     { EOp1 (($startpos, $endpos), Prim1 "typeof", $2) }
 
 
 exp :
  | atom { $1 }
+ | exp LPAREN exps RPAREN 
+   { EApp (($startpos, $endpos), $1, $3) }
  | PRIM LPAREN STRING COMMA seq_exp COMMA seq_exp RPAREN
    { EOp2 (($startpos, $endpos), Prim2 $3, $5, $7) }
  | PRIM LPAREN STRING COMMA seq_exp RPAREN
    { EOp1 (($startpos, $endpos), Prim1 $3, $5) }
- | REF exp 
-   { EOp1 (($startpos, $endpos), Ref, $2) }
- | DEREF exp 
-   { EOp1 (($startpos, $endpos), Deref, $2) }
  | exp COLONEQ exp
    { EOp2 (($startpos, $endpos), SetRef, $1, $3) }
  | exp EQEQEQUALS exp
@@ -130,8 +127,13 @@ exp :
          EIf (p, EOp2 (p, Prim2 "stx=", $1, $3),
               EConst (p, CBool false),
               EConst (p, CBool true)) }
- | TYPEOF exp
-     { EOp1 (($startpos, $endpos), Prim1 "typeof", $2) }
+ | exp LBRACK seq_exp EQUALS seq_exp RBRACK
+   { EUpdateField (($startpos, $endpos), $1, $3, $5) }
+ | exp LBRACK seq_exp RBRACK
+   { EOp2 (($startpos, $endpos), GetField, $1, $3) }
+ | exp LBRACK DELETE seq_exp RBRACK
+   { EOp2 (($startpos, $endpos), DeleteField, $1, $4) }
+
  | exp AMPAMP exp
      { EIf (($startpos, $endpos), $1, 
             $3,
@@ -146,7 +148,6 @@ cexp :
  | exp { $1 }
  | IF LPAREN seq_exp RPAREN seq_exp ELSE seq_exp
      { EIf (($startpos, $endpos), $3, $5, $7) }
-
  | LABEL ID COLON cexp
      { ELabel (($startpos, $endpos), $2, $4) } 
  | BREAK ID cexp

@@ -137,7 +137,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
   | AppExpr (p, f, args) ->
       EApp (p, ds_expr env f,
             [ EId (p, "[[global]]"); 
-              EOp1 (p, Ref, mk_array (p, map (ds_expr env) args)) ])
+              mk_array (p, map (ds_expr env) args) ])
   | NewExpr (p, constr, args) -> (* TODO: FIX THIS AND APP *)
       ELet (p, "%constr", ds_expr env constr,
             EApp (p, EId (p, "%constr"),
@@ -145,7 +145,7 @@ let rec ds_expr (env : env) (expr : expr) : exp = match expr with
                                    EOp2 (p, UnsafeGetField,
                                          EOp1 (p, Deref, EId (p, "%constr")),
                                          EConst (p, CString "prototype"))) ]);
-                    EOp1 (p, Ref, mk_array (p, map (ds_expr env) args)) ]))
+                    mk_array (p, map (ds_expr env) args) ]))
 
   | FuncExpr (p, args, body) ->
       let init_var x exp =

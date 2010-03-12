@@ -278,11 +278,15 @@ module Pretty = struct
         parens [ text "update-field"; p_cpsval v1; p_cpsval v2; p_cpsval v3 ]
     | Object ps -> parens (text "object" :: (map p_prop ps))
 
+  let p_lambda (p_body : cpsexp -> printer) (f, args, body) : printer =
+    horz [ text f; text "=";
+           nest (parens [ text "lambda"; parens (map text args); 
+                          p_body body ]) ]
 
   let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
-      Fix ((n, _), binds, body) ->
+    | Fix ((n, _), binds, body) ->
         vert [ text ("fix/" ^ string_of_int n);
-               nest (vert (map p_lambda binds)); p_cpsexp body ]
+               nest (vert (map (p_lambda p_cpsexp) binds)); p_cpsexp body ]
     | App ((n, _), f, args ) ->
         parens ( text ("app/" ^ string_of_int n)
                    :: p_cpsval f :: (map p_cpsval args) )
@@ -294,11 +298,29 @@ module Pretty = struct
         vert [ horz [ text ("let/" ^ string_of_int n); 
                       text x; text "="; p_bindexp b; text "in" ]; 
                p_cpsexp k ]
+
+  let rec p_cpsexp_html (cpsexp : cpsexp) : printer = match cpsexp with
+    | Fix ((n, _), binds, body) ->
+        vert [ tag (sprintf "span class=\"node\" id=\"node%d\"" n)
+                 (text "fix");
+               nest (vert (map (p_lambda p_cpsexp_html) binds));
+               p_cpsexp_html body ]
+    | App ((n, _), f, args ) ->
+        tag (sprintf "span class=\"node\" id=\"node%d\"" n)
+          (parens (text "app" :: p_cpsval f :: (map p_cpsval args)))
+    | If ((n, _), v1, e2, e3) -> 
+        parens 
+          [ vert 
+              [ tag (sprintf "span class=\"node\" id=\"node%d\"" n)
+                  (horz [ text "if"; p_cpsval v1 ]) ];
+            p_cpsexp_html e2; 
+            p_cpsexp_html e3 ]
+    | Bind ((n, _), x, b, k) ->
+        vert [ 
+          tag (sprintf "span class=\"node\" id=\"node%d\"" n)
+            (horz [ text "let"; text x; text "="; p_bindexp b; text "in" ]);
+          p_cpsexp_html k ]
       
-  and p_lambda (f, args, body) : printer =
-    horz [ text f; text "=";
-           nest (parens [ text "lambda"; parens (map text args); 
-                          p_cpsexp body ]) ]
 end
 
 
@@ -311,7 +333,12 @@ let p = Lexing.dummy_pos, Lexing.dummy_pos
 let mk_node = Cps.mk_node
 
 let cps (exp : exp) : cpsexp = 
-  Cps.tailcps exp "[[uncaught_exception]]" "[[return_value]]"
+  Fix (mk_node p,
+       [ ("[[return_value]]", [ "v" ],
+          App (mk_node p, Id "[[exit]]", [ Id "v" ]));
+         ("[[uncaught_exception]]", [ "v" ],
+          App (mk_node p, Id "[[exit]]", [ Id "v" ])) ],
+  Cps.tailcps exp "[[uncaught_exception]]" "[[return_value]]")
 
 
 
