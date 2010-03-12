@@ -301,10 +301,11 @@ module Pretty = struct
 
   let rec p_cpsexp_html (cpsexp : cpsexp) : printer = match cpsexp with
     | Fix ((n, _), binds, body) ->
-        vert [ tag (sprintf "span class=\"node\" id=\"node%d\"" n)
-                 (text "fix");
-               nest (vert (map (p_lambda p_cpsexp_html) binds));
-               p_cpsexp_html body ]
+        parens [ 
+          vert [ tag (sprintf "span class=\"node\" id=\"node%d\"" n)
+                   (text "fix");
+                 nest (vert (map (p_lambda p_cpsexp_html) binds));
+                 p_cpsexp_html body ] ]
     | App ((n, _), f, args ) ->
         tag (sprintf "span class=\"node\" id=\"node%d\"" n)
           (parens (text "app" :: p_cpsval f :: (map p_cpsval args)))

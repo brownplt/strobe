@@ -81,7 +81,7 @@ let load_js () : unit =
     src := Lambdajs_syntax.desugar (Exprjs_syntax.from_javascript js)
 
 let load_lambdajs () : unit =
-  let p = (Lexing.dummy_pos, Lexing.dummy_pos) in
+  let _ = (Lexing.dummy_pos, Lexing.dummy_pos) in
     src :=  Lambdajs.parse_lambdajs !cin !cin_name
 
 let desugar () : unit =
@@ -120,7 +120,28 @@ let verify_app node exp = match exp with
 let action_cps () : unit =
   let cpslambdajs = Lambdajs_cps.cps !src in
     Lambdajs_cps.p_cpsexp cpslambdajs std_formatter
-      
+
+
+
+let call_graph_as_js : printer =
+  let arrow (from_node : int) formatter (to_node : int) : unit =
+    eprintf "foo\n";
+    horz
+      [ braces [ horz [ text "from:"; int from_node; 
+                        text ", to:"; int to_node ] ];
+        text "," ] formatter in
+  let arrows_from formatter (from_node : int) (to_set : IntSet.t) : unit  = 
+    IntSet.iter (arrow from_node formatter) to_set in
+    horz [ text "var"; text "graph"; text "=";
+           brackets [ fun fmt ->  H.iter (arrows_from fmt) call_graph ] ]
+
+
+let reachable_nodes_as_js : printer =
+  let reached fmt (node : int) _ = horz [ int node; text "," ] fmt in
+    horz 
+     [ text "var"; text "reachable"; text "="; 
+       brackets [ fun fmt -> H.iter (reached fmt) reachable ] ]
+     
 
 let action_cfa () : unit =
   let lambdajs = !src in
@@ -129,11 +150,23 @@ let action_cfa () : unit =
     pp_print_string std_formatter "<html><body><pre>\n";
     Lambdajs_cps.Pretty.p_cpsexp_html cpsexp std_formatter;
     pp_print_string std_formatter "</pre></body></html>\n";
-(*
-    let src = flush_svg_formatter () in
+    vert 
+      [ text "<script type=\"text/javascript\">";
+        call_graph_as_js;
+        reachable_nodes_as_js;
+        text "</script>" ;
+        text "<script type=\"text/javascript\" src=\"raphael-min.js\">";
+        text "</script>";
+        text "<script type=\"text/javascript\" src=\"jquery-1.4.2.min.js\">";
+        text "</script>";
+        text "<script type=\"text/javascript\" src=\"cfa.js\">";
+        text "</script>"        
+      ] std_formatter;
+
+   (* let src = flush_svg_formatter () in
       print_string src;
       overlay_call_graph (find_coords src);
-      print_string "</svg>"; *)
+      print_string "</svg>";  *)
       Hashtbl.iter verify_app reachable;
       eprintf "%d nodes reached out of %d total nodes.\n"
         (Hashtbl.length reachable) (Cps.num_nodes ())
