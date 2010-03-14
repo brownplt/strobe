@@ -48,7 +48,7 @@ arg_typ
   | UNDEF { typ_undef }
   | DOM { TDom }
   | arg_typ UNION arg_typ { typ_union $1 $3 }
-  | LBRACE fields RBRACE { TObject $2 }
+  | LBRACE fields RBRACE { typ_permute (TObject $2) }
   | LPAREN typ RPAREN { $2 }
 
 typ 

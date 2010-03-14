@@ -7,7 +7,7 @@ function Point(x, y) /*: constructor (Int * Int -> {x : Int, y : Int}) */ {
     lastSum = addition;
   };
 
-function sumPoint(pt) /*: {x : Int, y : Int} -> Int */ {
+function sumPoint(pt) /*: {y : Int, x : Int} -> Int */ {
   return pt.x + pt.y;
 }
 
