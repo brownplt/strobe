@@ -389,18 +389,11 @@ let rec cps (def : def) : cpsexp = match def with
                                                      "prototype")),
                                  cexp.constr_prototype), 
                         d)))
+  | DExternalMethod (p, cname, mid, me, d) ->
+      (* we would punt on setting to .proto anyway, so just cps the expr
+         and move on *)
+      cps_exp me "%uncaught-exception" (fun _ -> cps d)
 
-(* 
-type constr_exp = { 
-  constr_pos : pos;
-  constr_name : id;
-  constr_typ : typ;
-  constr_args : id list;
-  constr_inits : (id * exp) list;
-  constr_exp : exp;
-  constr_prototype : exp
-}
-*)
 let node_of_cpsexp (cpsexp : cpsexp) : node = match cpsexp with
     Fix (n, _, _) -> n
   | App (n, _, _) -> n

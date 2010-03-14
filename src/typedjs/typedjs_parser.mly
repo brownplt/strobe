@@ -50,6 +50,7 @@ arg_typ
   | arg_typ UNION arg_typ { typ_union $1 $3 }
   | LBRACE fields RBRACE { typ_permute (TObject $2) }
   | LPAREN typ RPAREN { $2 }
+  | ID { TApp ( $1, [] ) }
 
 typ 
   : arg_typ { $1 }

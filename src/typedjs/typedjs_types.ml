@@ -74,5 +74,5 @@ let rec typ_permute (obj_typ : typ) : typ = match obj_typ with
   | TApp (c, typs) -> TApp (c, map typ_permute typs)
   | TUnion (t1,t2) -> TUnion (typ_permute t1, typ_permute t2)
   | TRef t -> TRef (typ_permute t)
-  (* TTop, TBot, TDom *)
+      (* TTop, TBot, TDom *)
   | typ -> typ

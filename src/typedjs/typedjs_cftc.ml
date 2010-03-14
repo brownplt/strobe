@@ -59,5 +59,7 @@ let rec a_def (def : def) : def = match def with
                   constr_prototype = a_exp c.constr_prototype;
                   constr_inits = map (second2 a_exp) c.constr_inits} 
       in DConstructor (c', a_def d)
+  | DExternalMethod (p, cname, mid, me, d) -> 
+      DExternalMethod (p, cname, mid, a_exp me, a_def d)
 
 let insert_typecasts  = a_def

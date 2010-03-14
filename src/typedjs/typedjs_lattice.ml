@@ -159,8 +159,8 @@ let rec static (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TApp ("Int", []) -> if RTSet.mem RT.Number rt then typ else TBot
   | TApp ("Boolean", []) -> if RTSet.mem RT.Boolean rt then typ else TBot
   | TApp ("Undefined", []) -> if RTSet.mem RT.Undefined rt then typ else TBot
-  | TApp _ -> failwith (sprintf "unknown type in static: %s"
-                          (pretty_string Typedjs_pretty.pretty_typ typ))
+  (* any other app will be an object from a constructor *)
+  | TApp _ -> if RTSet.mem RT.Object rt then typ else TBot
   | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
   | TRef t -> TRef t
   | TDom -> simple_static (RTSetExt.to_list rt)

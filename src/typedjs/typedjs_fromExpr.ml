@@ -353,6 +353,17 @@ let match_decl expr = match expr with
     VarDeclExpr (p, x, e) -> Some (p, x, e)
   | _ -> None
 
+let match_external_method expr = match expr with
+    AssignExpr (
+      p, 
+      PropLValue (
+        _, 
+        BracketExpr (
+          _, VarExpr (_, cname), ConstExpr (_, CString "prototype")),
+        ConstExpr (_, CString methodname)),
+      methodexpr) -> Some (p, cname, methodname, methodexpr)
+  | _ -> None
+
 
 let rec defs env lst = 
   begin match lst with
@@ -364,7 +375,12 @@ let rec defs env lst =
           | None ->
               begin match match_while match_func_decl (expr :: lst') with
                   [], expr :: lst' -> begin match match_decl expr with
-                      None -> DExp (exp env expr, defs env lst')
+                      None -> begin match match_external_method expr with
+                          None -> DExp (exp env expr, defs env lst')
+                        | Some (p, name, mid, me) -> 
+                            DExternalMethod (p, name, mid, exp env me, 
+                                             defs env lst')
+                      end
                     | Some (p, x, expr) -> 
                         let env' = IdMap.add x true env in
                           DLet (p, x, ERef (p, exp env expr), defs env' lst')

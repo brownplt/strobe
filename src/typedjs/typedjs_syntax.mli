@@ -99,6 +99,8 @@ type def =
   | DLet of pos * id * exp * def
   | DRec of (id * typ * exp) list * def
   | DConstructor of constr_exp * def
+      (* p, constr name, field name, field type, field expr, rest of defs *)
+  | DExternalMethod of pos * id * id * exp * def
 
 
 module Env : sig

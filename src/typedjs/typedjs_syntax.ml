@@ -101,6 +101,7 @@ type def =
   | DLet of pos * id * exp * def
   | DRec of (id * typ * exp) list * def
   | DConstructor of constr_exp * def
+  | DExternalMethod of pos * id * id * exp * def
 
 (******************************************************************************)
 

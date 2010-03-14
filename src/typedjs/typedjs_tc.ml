@@ -132,9 +132,30 @@ let rec tc_exp (env : Env.env) exp = match exp with
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
       | TDom, _ -> TDom (* TODO: banned fields? *)
+      | TApp (cname, apps), EConst (_, Exprjs_syntax.CString x) -> 
+          (try
+             let (TObject fs) = Env.lookup_class cname env in
+               (try
+                  snd2 (List.find (fun (x', _) -> x = x') fs)
+                with Not_found ->
+                  raise (Typ_error (p, sprintf "field %s.%s does not exist"
+                                      x cname)))
+           with Not_found ->
+             raise (Typ_error (p, "class " ^ cname ^ " does not exist")))
       | t, EConst (_, Exprjs_syntax.CString _) ->
-          raise (Typ_error
-                   (p, "expected an object, received " ^ string_of_typ t))
+          (* better error messages! *)
+          match obj with
+              EId (_, cid) -> begin try
+                ignore (Env.lookup_class cid env);
+                raise (Typ_error (p, "can only add external methods to a " ^
+                                    "class at the top-level"))
+              with Not_found -> raise (
+                Typ_error (
+                  p, "expected an object, received " ^ string_of_typ t))
+              end                
+            | _ -> 
+                raise (Typ_error
+                         (p, "expected an object, received " ^ string_of_typ t))
       | _ -> 
           raise (Typ_error (p, "field-lookup requires a string- literal"))
     end
@@ -151,7 +172,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
           let class_typ = Env.lookup_class cid env in
           let arg_typs = tc_exps env args in
             tc_exp env (EApp (p, EId (p, cid), args));
-            class_typ
+            TApp (cid, [])
       | _ -> raise (Typ_error (p, 
                                begin
                                  sep [ text "new must have ID as constructor";
@@ -349,39 +370,14 @@ let rec tc_def env def = match def with
               end
         | _ -> raise (Typ_error (p, "expected arrow type on constructor"))
       end
+  | DExternalMethod (p, cname, mid, me, d) -> 
+      try
+        let expenv = Env.bind_id "this" (TApp (cname, [])) env in
+        let env' = Env.add_method cname mid (tc_exp expenv me) env in
+          tc_def env' d
+      with Not_found -> raise (
+        Typ_error (p, "class " ^ cname ^ " doesnt exist"))
         
 let typecheck = tc_def
 
-(* 
-type constr_exp = { 
-  constr_pos : pos;
-  constr_name : id;
-  constr_typ : typ;
-  constr_args : id list;
-  constr_inits : (id * exp) list;
-  constr_exp : exp;
-  constr_prototype : exp
-}
 
-  | EFunc (p, args, fn_typ, body) -> begin match fn_typ with
-        TArrow (_, arg_typs, result_typ) ->
-          if List.length arg_typs = List.length args then ()
-          else raise (Typ_error (p,
-            "given " ^ (string_of_int (List.length args)) ^ " arg names but "
-            ^ (string_of_int (List.length arg_typs)) ^ " arg types"));
-
-          let bind_arg env x t = Env.bind_id x t env in
-          let env = List.fold_left2 bind_arg env args arg_typs in
-          let env = Env.clear_labels env in
-          let body_typ = tc_exp env body in
-            if subtype body_typ result_typ then fn_typ
-            else raise (Typ_error
-                          (p,
-                           sprintf "function body has type %s, but the \
-                             return type is %s" (string_of_typ body_typ)
-                             (string_of_typ result_typ)))
-      | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
-    end
-
-
-*)
