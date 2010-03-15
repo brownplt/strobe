@@ -1,5 +1,3 @@
-//TODO: subtyping between objects and constructed objects =/.
-
 function Point(x, y) /*: constructor (Int * Int -> {x : Int, y : Int}) */ {
     this.x = x;
     this.y = y;
