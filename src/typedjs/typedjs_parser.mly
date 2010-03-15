@@ -47,7 +47,7 @@ arg_typ
   | BOOL { typ_bool }
   | UNDEF { typ_undef }
   | DOM { TDom }
-  | arg_typ UNION arg_typ { typ_union $1 $3 }
+  | arg_typ UNION arg_typ { typ_union IdMap.empty $1 $3 }
   | LBRACE fields RBRACE { typ_permute (TObject $2) }
   | LPAREN typ RPAREN { $2 }
   | ID { TApp ( $1, [] ) }

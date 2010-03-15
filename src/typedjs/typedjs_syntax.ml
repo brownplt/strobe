@@ -132,6 +132,8 @@ module Env = struct
 
   let id_env env = env.id_typs
 
+  let get_classes env = env.classes (* ocaml sucks *)
+
   let clear_labels env = { env with lbl_typs = IdMap.empty }
 
   let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)

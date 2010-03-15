@@ -142,14 +142,14 @@ let empty_heap = Heap.empty
 open Typedjs_syntax
 open Typedjs_types
 
-let rec simple_static lst  : typ = match lst with
+let rec simple_static cs lst  : typ = match lst with
   | [] -> TBot
-  | RT.Number :: lst' ->typ_union typ_num (simple_static lst')
-  | RT.String :: lst' ->typ_union typ_str (simple_static lst')
-  | RT.Boolean :: lst' -> typ_union typ_bool (simple_static lst')
+  | RT.Number :: lst' ->typ_union cs typ_num (simple_static cs lst')
+  | RT.String :: lst' ->typ_union cs typ_str (simple_static cs lst')
+  | RT.Boolean :: lst' -> typ_union cs typ_bool (simple_static cs lst')
   | _ -> TDom
 
-let rec static (rt : RTSet.t) (typ : typ) : typ = match typ with
+let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TTop -> TTop
   | TBot -> TBot (* might change if we allow arbitrary casts *)
   | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
@@ -163,5 +163,5 @@ let rec static (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TApp _ -> if RTSet.mem RT.Object rt then typ else TBot
   | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
   | TRef t -> TRef t
-  | TDom -> simple_static (RTSetExt.to_list rt)
-  | TUnion (s, t) -> typ_union (static rt s) (static rt t)
+  | TDom -> simple_static cs (RTSetExt.to_list rt)
+  | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)

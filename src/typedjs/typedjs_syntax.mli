@@ -119,6 +119,8 @@ module Env : sig
 
   val lookup_class : id -> env -> typ
 
+  val get_classes : env -> typ IdMap.t (* ocaml sucks *)
+
   (** JavaScript cannot perform a labelled jump across a function. *)
   val clear_labels : env -> env
 

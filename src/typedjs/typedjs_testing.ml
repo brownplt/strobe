@@ -32,7 +32,8 @@ let test ((pos, js_expr, comments, expected) : test) : unit =
     let actual_typ = tc_exp Env.empty_env typed_stx in
       begin match expected with
           ExpectedTyp t ->
-            if subtype actual_typ t && subtype t actual_typ then 
+            if subtype IdMap.empty actual_typ t && 
+              subtype IdMap.empty t actual_typ then 
               ()
             else begin
               incr num_failures;

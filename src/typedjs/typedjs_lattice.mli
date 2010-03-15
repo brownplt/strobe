@@ -31,7 +31,7 @@ val any : av
 
 val runtime : Typedjs_syntax.typ -> av
 
-val static : RTSet.t -> Typedjs_syntax.typ -> Typedjs_syntax.typ
+val static : typ IdMap.t -> RTSet.t -> Typedjs_syntax.typ -> Typedjs_syntax.typ
 
 val empty : av
 
