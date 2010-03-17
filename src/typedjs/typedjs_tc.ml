@@ -69,19 +69,19 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ERef (p, e) -> TRef (tc_exp env e)
   | EDeref (p, e) -> begin match tc_exp env e with
       | TRef t -> t
+      | TSource t -> t
       | t -> failwith "TypedJS bug: deref failure"
     end 
-  | ESetRef (p, e1, e2) -> begin match tc_exp env e1, tc_exp env e2 with
-
-      | TRef s, t -> 
-          if subtype (Env.get_classes env) t s then t
-          else raise 
-            (Typ_error 
-               (p, sprintf "%s : left-hand side has type %s, but the \
-                  right-hand side has type %s" (string_of_position p)
-                  (string_of_typ s) (string_of_typ t)))
-      | s, t -> failwith "TypedJS bug: erroneous ESetRef"
-    end
+  | ESetRef (p, e1, e2) -> 
+      let t = tc_exp env e2 in
+      let s = tc_exp env e1 in
+        if subtype (Env.get_classes env) s (TSink t) then
+          t
+        else raise 
+          (Typ_error 
+             (p, sprintf "left-hand side has type %s, but the \
+                  right-hand side has type %s"
+                (string_of_typ s) (string_of_typ t)))
   | ELabel (p, l, t, e) -> 
       let s = tc_exp (Env.bind_lbl l t env) e in
         if subtype (Env.get_classes env) s t then t
@@ -128,10 +128,15 @@ let rec tc_exp (env : Env.env) exp = match exp with
         | t, _, _ -> raise (Typ_error (p, "expected a boolean"))
     end
   | EObject (p, fields) ->
-      let tc_field (x, is_mutable, e) = 
-        let t = tc_exp env e in
-          (x, if is_mutable then TRef t else t) in
+      let tc_field (x, _, e) = (x, tc_exp env e) in
         typ_permute (TObject (map tc_field fields))
+  | EUpdateField (p, obj, f_name, f_val) -> 
+      begin match tc_exp env obj, f_name, tc_exp env f_val with
+        | TObject fs, EConst (_, Exprjs_syntax.CString name), t ->
+            let fs' = List.filter (fun (x, _) -> x <> name) fs in
+              typ_permute (TObject ((name, t) :: fs'))
+        | _ -> raise (Typ_error (p, "type error updating a field"))
+      end
   | EBracket (p, obj, field) -> begin match tc_exp env obj, field with
         TObject fs, EConst (_, Exprjs_syntax.CString x) -> 
           (try

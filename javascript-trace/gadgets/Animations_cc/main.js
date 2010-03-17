@@ -69,8 +69,8 @@ function View_onOpen() {
  * Fade the next image in and the previous image out
  */
 function fadeImages() {
-  var outImage;
-  var inImage;
+  var outImage = kitty;
+  var inImage = kitty;
   
   // Determine which image is out and which image is in
   if (isPuppyTurn) {

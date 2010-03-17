@@ -55,6 +55,8 @@ let rec a_exp (exp : exp) : exp = match exp with
   | ERef (p, e) -> ERef (p, a_exp e)
   | EDeref (p, e) -> EDeref (p, a_exp e)
   | ESetRef (p, e1, e2) -> ESetRef (p, a_exp e1, a_exp e2)
+  | EUpdateField (p, e1, e2, e3) ->
+      EUpdateField (p, a_exp e1, a_exp e2, a_exp e3)
 
 and a_prop (s, b, e) = (s, b, a_exp e)
 

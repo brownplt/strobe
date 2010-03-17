@@ -124,10 +124,8 @@ let rec exp (env : env) expr = match expr with
         raise (Not_well_formed (a, "repeated field names"));
       let prop (p, x, e) = 
         let start_p, end_p = p in
-        let is_mutable = is_mutable_between start_p end_p in
-          (x, is_mutable, 
-           if is_mutable then ERef (p, exp env e) else exp env e) in
-        EObject (a, map prop ps)
+          (x, false, exp env e) in
+        ERef (a, EObject (a, map prop ps))
   | ThisExpr a -> EThis a
   | VarExpr (a, x) -> begin
       try
@@ -137,12 +135,19 @@ let rec exp (env : env) expr = match expr with
           EId (a, x)
       with Not_found -> raise (Not_well_formed (a, x ^ " is not defined"))
     end
-  | BracketExpr (a, e1, e2) -> EBracket (a, exp env e1, exp env e2)
+  | BracketExpr (a, e1, e2) -> EBracket (a, EDeref (a, exp env e1), exp env e2)
   | NewExpr (a, c, args) -> ENew (a, exp env c, map (exp env) args)
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
   | InfixExpr (a, op, e1, e2) -> EInfixOp (a, op, exp env e1, exp env e2)
   | IfExpr (a, e1, e2, e3) -> EIf (a, exp env e1, exp env e2, exp env e3)
-  | AssignExpr (a, lv, e) -> ESetRef (a, lvalue env lv, exp env e)
+  | AssignExpr (a, VarLValue (p', x), e) -> ESetRef (a, EId (p', x), exp env e)
+  | AssignExpr (p, PropLValue (_, e1, e2), e3) ->
+      ELet 
+        (p, "%obj", exp env e1,
+         ESetRef
+           (p, EId (p, "%obj"),
+            EUpdateField
+              (p, EDeref (p, EId (p, "%obj")), exp env e2, exp env e3)))
   | AppExpr (a, f, args) -> EApp (a, exp env f, map (exp env) args)
   | FuncExpr _ -> 
       (match match_func env expr with
@@ -258,10 +263,6 @@ and block_intro env (decls, body) = match take_while is_func_decl decls with
              | _ -> failwith "expected a FuncExpr") in
         ERec (map mk_bind funcs,
               block_intro env' (rest, body))
-
-and lvalue env lv = match lv with
-    VarLValue (a, x) -> EId (a, x)
-  | PropLValue (a, e1, e2) -> EBracket (a, exp env e1, exp env e2)
 
 (* assumes [SeqExpr]s are nested to the right. *)
 let rec flatten_seq (expr : expr) : expr list = match expr with

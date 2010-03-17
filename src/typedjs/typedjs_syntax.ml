@@ -36,6 +36,8 @@ type typ =
   | TArrow of typ * typ list * typ
   | TObject of (id * typ) list
   | TRef of typ
+  | TSource of typ
+  | TSink of typ
   | TTop
   | TBot
   | TDom
@@ -61,6 +63,7 @@ type exp
   | EThis of pos
   | EId of pos * id
   | EBracket of pos * exp * exp
+  | EUpdateField of pos * exp * exp * exp
   | ENew of pos * exp * exp list
   | EPrefixOp of pos * JavaScript_syntax.prefixOp * exp
   | EInfixOp of pos * JavaScript_syntax.infixOp * exp * exp

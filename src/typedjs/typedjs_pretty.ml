@@ -19,7 +19,9 @@ let rec typ t  = match t with
   | TObject fs ->
       let f (k, t) = horz [ text k; text ":"; typ t ] in
         braces (intersperse (text ",") (map f fs))
-  | TRef s -> horz [ text "mutable"; parens [ typ s ] ]
+  | TRef s -> horz [ text "ref"; parens [ typ s ] ]
+  | TSource s -> horz [ text "source"; parens [ typ s ] ]
+  | TSink s -> horz [ text "sink"; parens [ typ s ] ]
   | TDom -> text "Dom"
 
     
@@ -33,6 +35,8 @@ let rec exp e fmt = match e with
   | EBracket (_, e1, e2) ->
       exp e1 fmt;
       brackets [exp e2] fmt
+  | EUpdateField (_, e1, e2, e3) ->
+      squish [ exp e1; brackets [ exp e2; text "="; exp e3 ] ] fmt
   | ENew (_, c, args) -> 
       parens (text "new" :: exp c :: map exp args) fmt
   | EIf (_, e1, e2, e3) ->

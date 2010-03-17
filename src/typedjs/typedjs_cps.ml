@@ -92,6 +92,16 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                 let x = new_name () in
                   Bind (new_node (), x, Op2 (GetField, v1, v2),
                         k (mk_id x))))
+  | EUpdateField (_, e1, e2, e3) ->
+      cps_exp e1 throw
+        (fun v1 ->
+           cps_exp e2 throw
+             (fun v2 ->
+                cps_exp e3 throw
+                  (fun v3 ->
+                     let x = new_name () in
+                       Bind (new_node (), x, UpdateField (v1, v2, v3),
+                             k (mk_id x)))))
   | EPrefixOp (_, op, e) ->
       cps_exp e throw
         (fun v -> 
@@ -236,6 +246,16 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
                 let x = new_name () in
                   Bind (new_node (), x, Op2 (GetField, v1, v2),
                         App (new_node (), mk_id k, [ mk_id x ]))))
+  | EUpdateField (_, e1, e2, e3) ->
+      cps_exp e1 throw
+        (fun v1 ->
+           cps_exp e2 throw
+             (fun v2 ->
+                cps_exp e3 throw
+                  (fun v3 ->
+                     let x = new_name () in
+                       Bind (new_node (), x, UpdateField (v1, v2, v3),
+                             App (new_node (), mk_id k, [ mk_id x ])))))
   | EPrefixOp (_, op, e) ->
       cps_exp e throw
         (fun v -> 

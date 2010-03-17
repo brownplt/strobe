@@ -99,7 +99,7 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         | AClosure (_, formals, body), argvs -> 
             let flow_env = List.fold_right2 bind formals argvs empty_env in
               flow flow_env heap body
-        | _ -> eprintf "applying an escaped function at %d\n" n
+        | _ -> ()
       end
 
 and bind_lambda env (f, args, typ, body_exp) =
@@ -118,7 +118,6 @@ and sub_flow (env_node : node) (f, args, typ, body_exp) =  match typ with
       try
         ignore (H.find lambdas (node_of_cpsexp body_exp))
       with Not_found ->
-        eprintf "sub_flow to %d.\n" env_node;
         H.add lambdas (node_of_cpsexp body_exp)
           (env_node, 
            List.fold_right2 bind args (map runtime arg_typs) empty_env,
@@ -127,8 +126,6 @@ and sub_flow (env_node : node) (f, args, typ, body_exp) =  match typ with
 
 and flow (env : env) (heap : heap) (cpsexp : cpsexp) = 
   let node = node_of_cpsexp cpsexp in
-    eprintf "Flowing to %d... " node;
-
   let old_env, reflow  = 
     try H.find envs node, false
     with Not_found -> empty_env, true in
@@ -141,20 +138,18 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) =
         Pervasives.compare old_heap new_heap != 0 ||
         reflow) then
       begin
-        eprintf "calc\n";
         H.replace reached_nodes node true;
         H.replace envs node new_env;
         H.replace heaps node new_heap;
         calc new_env new_heap cpsexp
       end
-    else eprintf "not flowing\n"
+    else ()
               
 let typed_cfa (env : env) (cpsexp : cpsexp) : unit =
   flow env empty_heap cpsexp;
   let sub node (env_node, arg_env, exp) =
     if not (H.mem reached_nodes node) then 
       begin
-        eprintf "Subflow...\n";
         flow (union_env empty_heap arg_env (H.find envs env_node))
           empty_heap exp
       end
