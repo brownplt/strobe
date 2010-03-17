@@ -38,6 +38,8 @@ val node_of_cpsexp : cpsexp -> node
 
 val p_cpsexp : cpsexp -> FormatExt.printer
 
+val fv_cpsexp : cpsexp -> IdSet.t
+
 (** [esc_cpsexp e] returns names of the escaping functions of [e]. [e] must
     follow the unique binding convention. *)
 val esc_cpsexp : cpsexp -> IdSet.t

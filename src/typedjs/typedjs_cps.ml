@@ -417,6 +417,20 @@ let fv_bindexp (e : bindexp) : IdSet.t = match e with
   | UpdateField (v1, v2, v3) ->
       IdSet.union (fv_val v1) (IdSet.union (fv_val v2) (fv_val v3))
 
+let rec fv_cpsexp (cpsexp : cpsexp) : IdSet.t = match cpsexp with
+    Fix (_, binds, body) ->
+      IdSetExt.unions (fv_cpsexp body :: (map fv_bind binds))
+  | App (_, f, vs) ->
+      IdSetExt.unions (map fv_val (f :: vs))
+  | If (_, v, e1, e2) -> 
+      IdSet.union (fv_val v) (IdSet.union (fv_cpsexp e1) (fv_cpsexp e2))
+  | Bind (_, x, e, k) -> 
+      IdSet.union (fv_bindexp e) (IdSet.remove x (fv_cpsexp k))
+
+and fv_bind (_, args, _, e) =
+  IdSet.diff (fv_cpsexp e) (IdSetExt.from_list args)
+
+
 
 let rec esc_cpsexp (cpsexp : cpsexp) : IdSet.t = match cpsexp with
     Fix (_, binds, body) ->

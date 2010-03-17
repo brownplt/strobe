@@ -14,9 +14,11 @@ let heaps : (node, heap) H.t = H.create 200
 
 let bound_id_map : (pos * id, node) H.t = H.create 200
 
-let subflows : (node, (bool ref * node * env * cpsexp)) H.t = H.create 200
+let reached_nodes : (node, bool) H.t = H.create 200
 
-let queue : (node * id list * typ * cpsexp) list ref = ref [] 
+let lambdas : (node, node * env * cpsexp) H.t = H.create 200
+
+let subflows : (node, (bool ref * node * env * cpsexp)) H.t = H.create 200
 
 let mk_type_is x s = match s with
   | "string" -> ALocTypeIs (x, RTSet.singleton RT.String)
@@ -89,13 +91,13 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
       let env' = fold_left bind_esc_lambda env' esc_binds in
         List.iter (mk_closure env') nonesc_binds;
         flow env' heap cont; 
-        List.iter (sub_flow (node_of_cpsexp cont)) esc_binds
+        List.iter (sub_flow (node_of_cpsexp cont)) binds
   | App (n, f, args) ->
       begin match abs_of_cpsval n env f, map (abs_of_cpsval n env) args with
         | AClosure (_, formals, body), argvs -> 
             let flow_env = List.fold_right2 bind formals argvs empty_env in
               flow flow_env heap body
-        | _ -> eprintf "applying an escaped function\n"
+        | _ -> eprintf "applying an escaped function at %d\n" n
       end
 
 and bind_lambda env (f, args, typ, body_exp) =
@@ -112,11 +114,11 @@ and mk_closure (env : env) (f, args, typ, body_exp) =
 and sub_flow (env_node : node) (f, args, typ, body_exp) =  match typ with
     Typedjs_syntax.TArrow (_, arg_typs, _) -> 
       try
-        ignore (H.find subflows (node_of_cpsexp body_exp))
+        ignore (H.find lambdas (node_of_cpsexp body_exp))
       with Not_found ->
-        H.add subflows (node_of_cpsexp body_exp)
-          (ref false, 
-           env_node, 
+        eprintf "sub_flow to %d.\n" env_node;
+        H.add lambdas (node_of_cpsexp body_exp)
+          (env_node, 
            List.fold_right2 bind args (map runtime arg_typs) empty_env,
            body_exp)
   | _ -> failwith "expected TArrow in sub_flow"
@@ -124,6 +126,7 @@ and sub_flow (env_node : node) (f, args, typ, body_exp) =  match typ with
 and flow (env : env) (heap : heap) (cpsexp : cpsexp) = 
   let node = node_of_cpsexp cpsexp in
     eprintf "Flowing to %d... " node;
+
   let old_env, reflow  = 
     try H.find envs node, false
     with Not_found -> empty_env, true in
@@ -137,6 +140,7 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) =
         reflow) then
       begin
         eprintf "calc\n";
+        H.replace reached_nodes node true;
         H.replace envs node new_env;
         H.replace heaps node new_heap;
         calc new_env new_heap cpsexp
@@ -145,12 +149,12 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) =
               
 let typed_cfa (env : env) (cpsexp : cpsexp) : unit =
   flow env empty_heap cpsexp;
-  let sub node (is_done, env_node, arg_env, exp) =
-    if not !is_done then 
+  let sub node (env_node, arg_env, exp) =
+    if not (H.mem reached_nodes node) then 
       begin
         eprintf "Subflow...\n";
-        is_done := true;
-        flow (union_env empty_heap arg_env (H.find envs env_node)) empty_heap exp
+        flow (union_env empty_heap arg_env (H.find envs env_node))
+          empty_heap exp
       end
-  in H.iter sub subflows
+  in H.iter sub lambdas
         
