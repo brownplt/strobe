@@ -72,9 +72,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | t -> failwith "TypedJS bug: deref failure"
     end 
   | ESetRef (p, e1, e2) -> begin match tc_exp env e1, tc_exp env e2 with
+
       | TRef s, t -> 
-          if subtype (Env.get_classes env) s t && 
-            subtype (Env.get_classes env) t s then t
+          if subtype (Env.get_classes env) t s then t
           else raise 
             (Typ_error 
                (p, sprintf "%s : left-hand side has type %s, but the \

@@ -10,6 +10,17 @@ let rec a_exp (exp : exp) : exp = match exp with
   | EArray (p, es) -> EArray (p, map a_exp es)
   | EObject (p, props) -> EObject (p, map a_prop props)
   | EThis p -> EThis p
+  | ESetRef (p', EId (p, x), e) -> begin try
+      let node = H.find bound_id_map (p, x) in
+      let env = H.find envs node in
+      let heap = H.find heaps node in
+        match lookup x env with
+          | ARef loc -> ESetRef (p', ETypecast (p, deref loc heap, EId (p, x)),
+                                 a_exp e)
+          | _ -> ESetRef (p', EId (p, x), a_exp e)
+    with Not_found -> 
+      ESetRef (p', EId (p, x), a_exp e)
+    end
   | EDeref (_, EId (p, x)) -> begin try
       let node = H.find bound_id_map (p, x) in
       let env = H.find envs node in
