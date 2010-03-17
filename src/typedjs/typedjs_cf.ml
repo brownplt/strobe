@@ -58,6 +58,8 @@ let calc_op1 node env heap (op : op1)  v = match op, v with
 let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
   | Op2Infix J.OpStrictEq, ALocTypeof loc, AString str ->
       mk_type_is loc str, heap
+  | SetRef, ARef l, v ->
+      v, set_ref l (to_set heap v) heap
   | _ -> any, heap
 
 
