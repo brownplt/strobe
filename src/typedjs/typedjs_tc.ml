@@ -1,5 +1,6 @@
 open Prelude
 open Typedjs_syntax
+open Typedjs_env
 open Typedjs_types 
 open Typedjs_pretty
 open FormatExt

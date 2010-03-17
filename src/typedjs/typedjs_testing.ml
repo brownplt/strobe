@@ -4,6 +4,7 @@ open Typedjs_pretty
 open Typedjs_tc
 open Typedjs_types
 open Typedjs_syntax
+open Typedjs_env
 open Typedjs_fromExpr
 
 let string_of_typ = pretty_string pretty_typ

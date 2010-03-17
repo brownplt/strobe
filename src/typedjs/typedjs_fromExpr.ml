@@ -2,6 +2,7 @@ open Prelude
 open Typedjs_syntax
 open Exprjs_syntax
 open Typedjs_types
+open Typedjs_env
 
 exception Not_well_formed of pos * string
 

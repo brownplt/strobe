@@ -103,36 +103,3 @@ type def =
   | DExternalMethod of pos * id * id * exp * def
 
 
-module Env : sig
-  
-  type env
-
-  val empty_env : env
-
-  val bind_id : id -> typ -> env -> env
-
-  val bind_lbl : id -> typ -> env -> env
-
-  val lookup_id : id -> env -> typ
-
-  val lookup_lbl : id -> env -> typ
-
-  val lookup_class : id -> env -> typ
-
-  val get_classes : env -> typ IdMap.t (* ocaml sucks *)
-
-  (** JavaScript cannot perform a labelled jump across a function. *)
-  val clear_labels : env -> env
-
-  val id_env : env -> typ IdMap.t
-
-  val dom : env -> IdSet.t
-
-  (** A new class with no methods. *)
-  val new_class : id -> env -> env
-
-
-  (** Adds a method to a class. *)
-  val add_method : id -> id -> typ -> env -> env
-
-end

@@ -82,6 +82,7 @@ In this case, we report that [x] is unbound in [(+ x 50)].
 open Typedjs_syntax
 open Prelude
 open JavaScript_syntax
+open Typedjs_env
 
 (** [from_exprjs] raises this exception. *)
 exception Not_well_formed of pos * string

@@ -1,6 +1,64 @@
 open Prelude
 open Typedjs_syntax
 
+module Env = struct
+
+  type env = { id_typs : typ IdMap.t; 
+               lbl_typs : typ IdMap.t;
+               (* maps class names to a structural object type *)
+               classes : typ IdMap.t 
+             }
+
+
+  let empty_env = { 
+    id_typs = IdMap.empty;
+    lbl_typs = IdMap.empty;
+    classes = IdMap.empty
+  }
+
+  let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
+
+  let bind_lbl x t env = { env with lbl_typs = IdMap.add x t env.lbl_typs }
+
+  let lookup_id x env = IdMap.find x env.id_typs
+
+  let lookup_lbl x env = IdMap.find x env.lbl_typs
+
+  let lookup_class x env = IdMap.find x env.classes
+
+  let id_env env = env.id_typs
+
+  let get_classes env = env.classes (* ocaml sucks *)
+
+  let clear_labels env = { env with lbl_typs = IdMap.empty }
+
+  let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)
+
+  let new_class class_name env = 
+    if IdMap.mem class_name env.classes then
+      raise (Invalid_argument ("class already exists: " ^ class_name))
+    else 
+      { env with
+          classes = IdMap.add class_name (TObject []) env.classes
+      }
+
+
+  let add_method class_name method_name method_typ env =
+    let class_typ = IdMap.find class_name env.classes in
+      match class_typ with
+          TObject fields ->
+            if List.mem_assoc method_name fields then
+              raise (Invalid_argument ("method already exists: " ^ method_name))
+            else
+              let class_typ' = TObject ((method_name, method_typ) :: fields) in
+                { env with classes = IdMap.add class_name 
+                    (Typedjs_types.typ_permute class_typ') env.classes }
+        | _ ->
+            failwith ("class type is not an object: " ^ class_name)
+
+
+end
+
 let parse_env (cin : in_channel) (name : string) : env_decl list =
   let lexbuf = Lexing.from_channel cin in
     lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with 
