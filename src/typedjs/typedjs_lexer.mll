@@ -14,6 +14,8 @@ let blank = [ ' ' '\t' '\r' ]
 rule token = parse
    | blank + { token lexbuf }
    | '\n' { new_line lexbuf; token lexbuf }
+   | '\r' { new_line lexbuf; token lexbuf }
+   | "\r\n" { new_line lexbuf; token lexbuf }
    | "->" { ARROW }
    | "(" { LPAREN }
    | ")" { RPAREN }

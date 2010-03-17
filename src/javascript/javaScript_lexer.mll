@@ -80,6 +80,8 @@ let single_quoted_string_char =
 rule token = parse
    | blank + { token lexbuf }
    | '\n' { new_line lexbuf; token lexbuf }
+   | '\r' { new_line lexbuf; token lexbuf }
+   | "\r\n" { new_line lexbuf; token lexbuf }
    | "/*" { comment_start_p := lexeme_start_p lexbuf; block_comment lexbuf }
    | "//"([^ '\r' '\n']* as x) [ '\r' '\n' ]
        { comment_start_p := lexeme_start_p lexbuf; 
