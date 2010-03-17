@@ -77,10 +77,8 @@ let rec exp e fmt = match e with
   | ESetRef (_, e1, e2) ->
       parens [ text "set-ref!"; exp e1; exp e2 ] fmt
 
-and prop (s, is_mutable, e) =
-  parens [ text s; 
-           text (if is_mutable then "mutable:" else ":");
-           exp e ]
+and prop (s, e) =
+  parens [ text s; text ":"; exp e ]
 
 and bind (x, e) = 
   parens [text x; text "="; exp e]
@@ -93,7 +91,7 @@ let constr (c : constr_exp) =
                         parens (map text c.constr_args);
                         text ":"; typ c.constr_typ ];
                   exp c.constr_exp ] ]
-           
+          
 
 let rec def (d : def) = match d with
     DEnd -> fun fmt -> pp_print_newline fmt () 
@@ -105,13 +103,6 @@ let rec def (d : def) = match d with
       let p_bind (x, t, e) = brackets [ text x; exp e ] in
       vert [ parens [ text "define-rec"; parens [ vert (map p_bind binds) ] ];
              def d' ]
-(*
-  | DExternalField (_, c_name, f_name, e) ->
-      sep [ text (sprintf "%s.prototype.%s" c_name f_name); text "="; exp e ]
-  | DExternalMethods methods -> 
-      let f (_, c_name, f_name, _, e) =
-        sep [ text (sprintf "%s.prototype.%s" c_name f_name); text "="; exp e ]
-      in vert (map f methods) *)
 
 let pretty_exp fmt e = exp e fmt
 

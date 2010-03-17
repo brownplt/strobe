@@ -78,11 +78,11 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
            let x = new_name () in
              Bind (new_node (), x, Array vs, k (mk_id x)))
   | EObject (_, ps) ->
-      cps_exp_list (map thd3 ps) throw
+      cps_exp_list (map snd2 ps) throw
         (fun vs -> 
            let x = new_name () in
              Bind (new_node (), x, 
-                   Object (List.combine (map (fun (f, _, _) -> f) ps) vs),
+                   Object (List.combine (map fst2 ps) vs),
                    k (mk_id x)))
   | EBracket (_, e1, e2) ->
       cps_exp e1 throw
@@ -232,11 +232,11 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
              Bind (new_node (), x, Array vs,
                    App (new_node (), mk_id k, [ mk_id x ])))
   | EObject (_, ps) ->
-      cps_exp_list (map thd3 ps) throw
+      cps_exp_list (map snd2 ps) throw
         (fun vs -> 
            let x = new_name () in
              Bind (new_node (), x,
-                   Object (List.combine (map (fun (f, _, _) -> f) ps) vs),
+                   Object (List.combine (map fst2 ps) vs),
                    App (new_node (), mk_id k, [ mk_id x ])))
   | EBracket (_, e1, e2) ->
       cps_exp e1 throw

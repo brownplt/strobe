@@ -131,8 +131,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
         | t, _, _ -> raise (Typ_error (p, "expected a boolean"))
     end
   | EObject (p, fields) ->
-      let tc_field (x, _, e) = (x, tc_exp env e) in
-        typ_permute (TObject (map tc_field fields))
+      typ_permute (TObject (map (second2 (tc_exp env)) fields))
   | EUpdateField (p, obj, f_name, f_val) -> 
       begin match tc_exp env obj, f_name, tc_exp env f_val with
         | TObject fs, EConst (_, Exprjs_syntax.CString name), t ->

@@ -57,9 +57,7 @@ type annotation =
 type exp
   = EConst of pos * Exprjs_syntax.const
   | EArray of pos * exp list
-  | EObject of pos * (string * bool * exp) list
-      (* [Typedjs_fromExpr.from_exprjs] ensures that the field names are 
-         unique. If the [bool] on a field is true, the field is mutable. *)
+  | EObject of pos * (string * exp) list
   | EThis of pos
   | EId of pos * id
   | EBracket of pos * exp * exp
@@ -70,15 +68,10 @@ type exp
   | EIf of pos * exp * exp * exp
   | EApp of pos * exp * exp list
   | EFunc of pos * id list * typ * exp
-      (* [Typedjs_fromExpr.from_exprjs] ensures that the argument names are
-         unique. *)
   | ELet of pos * id * exp * exp
   | ERec of (id * typ * exp) list * exp
   | ESeq of pos * exp * exp
   | ELabel of pos * id * typ * exp 
-      (** A labelled jump has a type-annotation to aid the type-checker. Without
-          the annotation, we would have to union the types of all [EBreak]s to
-          each label. *)
   | EBreak of pos * id * exp
   | ETryCatch of pos * exp * id * exp
   | ETryFinally of pos * exp * exp

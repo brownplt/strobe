@@ -8,7 +8,7 @@ module H = Hashtbl
 let rec a_exp (exp : exp) : exp = match exp with
   | EConst _ -> exp
   | EArray (p, es) -> EArray (p, map a_exp es)
-  | EObject (p, props) -> EObject (p, map a_prop props)
+  | EObject (p, props) -> EObject (p, map (second2 a_exp) props)
   | EThis p -> EThis p
   | ESetRef (p', EId (p, x), e) -> begin try
       let node = H.find bound_id_map (p, x) in
@@ -57,8 +57,6 @@ let rec a_exp (exp : exp) : exp = match exp with
   | ESetRef (p, e1, e2) -> ESetRef (p, a_exp e1, a_exp e2)
   | EUpdateField (p, e1, e2, e3) ->
       EUpdateField (p, a_exp e1, a_exp e2, a_exp e3)
-
-and a_prop (s, b, e) = (s, b, a_exp e)
 
 and a_bind (i, t, e) = (i, t, a_exp e)
 

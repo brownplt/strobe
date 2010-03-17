@@ -75,16 +75,6 @@ let type_between (start_p : Lexing.position) (end_p : Lexing.position) : typ =
     | _ ->
         raise (Not_well_formed ((start_p, end_p), "expected a type annotation"))
 
-let is_mutable_between start_p end_p : bool =
-  match annotation_between start_p end_p with
-      Some (pos, AMutable) -> 
-        type_dbs := PosMap.remove pos !type_dbs;
-        true
-    | None -> false
-    | Some _ ->
-        raise (Not_well_formed ((start_p, end_p),
-                                "unexpected annotation"))
-
 (******************************************************************************)
 
 
@@ -120,12 +110,9 @@ let rec exp (env : env) expr = match expr with
     ConstExpr (a, c) -> EConst (a, c)
   | ArrayExpr (a, es) -> EArray (a, map (exp env) es)
   | ObjectExpr (a, ps) -> 
-      if List.length ps != List.length (nub (map (fun (_,p,_) -> p) ps)) then
+      if List.length ps != List.length (nub (map (fun (_, p, _) -> p) ps)) then
         raise (Not_well_formed (a, "repeated field names"));
-      let prop (p, x, e) = 
-        let start_p, end_p = p in
-          (x, false, exp env e) in
-        ERef (a, EObject (a, map prop ps))
+      ERef (a, EObject (a, map (fun (_, x, e) ->  x, exp env e) ps))
   | ThisExpr a -> EThis a
   | VarExpr (a, x) -> begin
       try

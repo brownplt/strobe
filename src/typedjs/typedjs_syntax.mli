@@ -53,9 +53,8 @@ type annotation =
 type exp
   = EConst of pos * Exprjs_syntax.const
   | EArray of pos * exp list
-  | EObject of pos * (string * bool * exp) list
-      (* [Typedjs_fromExpr.from_exprjs] ensures that the field names are 
-         unique. If the [bool] on a field is true, the field is mutable. *)
+  | EObject of pos * (string * exp) list
+      (* [Typedjs_fromExpr.from_exprjs] ensures that field names are unique. *)
   | EThis of pos
   | EId of pos * id
   | EBracket of pos * exp * exp
