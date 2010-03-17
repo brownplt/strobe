@@ -155,8 +155,8 @@ module Env = struct
               raise (Invalid_argument ("method already exists: " ^ method_name))
             else
               let class_typ' = TObject ((method_name, method_typ) :: fields) in
-                { env with classes = IdMap.add class_name 
-                    (Typedjs_types.typ_permute class_typ') env.classes }
+                { env with classes = IdMap.add class_name class_typ'
+                    (* (Typedjs_types.typ_permute class_typ') *) env.classes }
         | _ ->
             failwith ("class type is not an object: " ^ class_name)
 

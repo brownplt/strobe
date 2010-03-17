@@ -46,7 +46,8 @@ let tc_arith env (p : pos) (t1 : typ) (t2 : typ) (int_args : bool)
 let tc_cmp env (p : pos) (lhs : typ) (rhs : typ) : typ = 
   let subtype = subtype (Env.get_classes env) in
     if (subtype lhs typ_str && subtype rhs typ_str) || 
-      (subtype lhs typ_num && subtype rhs typ_num) then
+      (subtype lhs typ_num && subtype rhs typ_num) || 
+      (subtype lhs TDom || subtype rhs TDom) then
         typ_bool
     else
       raise (Typ_error (p, "comparision type error"))
@@ -149,7 +150,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
              raise (Typ_error (p, "class " ^ cname ^ " does not exist")))
       | t, EConst (_, Exprjs_syntax.CString _) ->
           (* better error messages! *)
-          match obj with
+          begin match obj with
               EId (_, cid) -> begin try
                 ignore (Env.lookup_class cid env);
                 raise (Typ_error (p, "can only add external methods to a " ^
@@ -161,8 +162,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
             | _ -> 
                 raise (Typ_error
                          (p, "expected an object, received " ^ string_of_typ t))
+          end
       | _ -> 
-          raise (Typ_error (p, "field-lookup requires a string- literal"))
+          raise (Typ_error (p, "field-lookup requires a string literal"))
     end
   | EThis p -> begin
       try 
