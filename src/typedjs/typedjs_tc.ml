@@ -71,6 +71,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | TRef t -> t
       | TSource t -> t
       | TDom -> TDom
+      | TApp (constr, _) -> Env.lookup_class constr env
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
                                  (string_of_typ t)))
     end 

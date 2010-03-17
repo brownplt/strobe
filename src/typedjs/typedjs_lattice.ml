@@ -121,7 +121,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
       | "Int" -> RTSet.singleton RT.Number
       | "Boolean" -> RTSet.singleton RT.Boolean
       | "Undefined" -> RTSet.singleton RT.Undefined
-      | _ -> failwith (sprintf "unknown type: TApp (\"%s\", [])" s)
+      | _ -> RTSet.singleton RT.Object
     end
   | Typedjs_syntax.TApp _ -> failwith 
       (sprintf "unknown type: %s" 
