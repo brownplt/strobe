@@ -70,7 +70,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EDeref (p, e) -> begin match tc_exp env e with
       | TRef t -> t
       | TSource t -> t
-      | t -> failwith "TypedJS bug: deref failure"
+      | TDom -> TDom
+      | t -> raise (Typ_error (p, "cannot read an expression of type " ^
+                                 (string_of_typ t)))
     end 
   | ESetRef (p, e1, e2) -> 
       let t = tc_exp env e2 in
@@ -354,7 +356,7 @@ let rec tc_def env def = match def with
             let env =List.fold_left2 bind_arg env (cexp.constr_args) arg_typs in
             let env = Env.clear_labels env in           
               begin match result_typ with
-                  TObject (fields) -> 
+                  TRef (TObject fields) -> 
                     List.iter (fun (n,t) -> 
                                  eprintf "init: %s\n" n) cexp.constr_inits;
                     (* first make sure all fields are initialized with

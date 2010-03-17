@@ -230,8 +230,10 @@ and match_func env expr = match expr with
         let mutable_arg exp id =
           ELet (a, id, ERef (a, EId (a, id)), exp) in
         begin match typ with
-            TArrow (_, _, r) ->
+            TArrow (_, arg_typs, r) ->
               incr func_index;
+              if List.length args != List.length arg_typs then
+                raise (Not_well_formed (a, "not all arguments have names"));
               Some (typ, EFunc (a, args, typ, 
                                 fold_left mutable_arg
                                   (ELabel (a', "%return", r, exp env' body))
