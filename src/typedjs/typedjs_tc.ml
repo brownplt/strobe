@@ -321,6 +321,12 @@ let rec tc_exp (env : Env.env) exp = match exp with
                              (string_of_typ result_typ)))
       | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
     end
+  | ESubsumption (p, t, e) ->
+      let s = tc_exp env e in
+        if subtype (Env.get_classes env) s t then
+          t
+        else 
+          raise (Typ_error (p, "subsumption error"))
 
 and tc_exps env es = map (tc_exp env) es
 

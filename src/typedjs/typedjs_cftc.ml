@@ -57,6 +57,7 @@ let rec a_exp (exp : exp) : exp = match exp with
   | ESetRef (p, e1, e2) -> ESetRef (p, a_exp e1, a_exp e2)
   | EUpdateField (p, e1, e2, e3) ->
       EUpdateField (p, a_exp e1, a_exp e2, a_exp e3)
+  | ESubsumption (p, t, e) -> ESubsumption (p, t, a_exp e)
 
 and a_bind (i, t, e) = (i, t, a_exp e)
 

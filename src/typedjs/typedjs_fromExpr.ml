@@ -4,6 +4,8 @@ open Exprjs_syntax
 open Typedjs_types
 open Typedjs_env
 
+module H = Hashtbl
+
 exception Not_well_formed of pos * string
 
 let type_from_comment ((pos, end_p), str) =
@@ -28,12 +30,15 @@ let type_dbs : annotation PosMap.t ref = ref PosMap.empty
 
 let inferred_array : annotation array ref = ref (Array.make 0 (ATyp TBot))
 
+let hints : (pos, annotation) H.t = H.create 200
+
 let rec init_types lst = match lst with
     [] -> ()
   | (pos, str) :: rest when String.length str > 0 && str.[0] == ':' ->
       begin match type_from_comment (pos, str) with
-          AInferred xs -> 
+        | AInferred xs -> 
             inferred_array := Array.of_list xs
+        | AUpcast t -> H.add hints pos (AUpcast t)
         | x ->
             type_dbs := PosMap.add pos x !type_dbs
       end;
@@ -387,12 +392,6 @@ let rec defs env lst =
         end
   end
 
-
-let from_exprjs env expr = 
-  defs 
-    (IdSet.fold (fun x env -> IdMap.add x false env) (Env.dom env) IdMap.empty)
-    (flatten_seq expr)
-
 (*
 
 let match_external_method binds expr = match expr with
@@ -483,4 +482,39 @@ module InsertHints = struct
             else
               None
 
+  let mk p a exp = match a with
+    | AUpcast typ -> 
+        ins p (fun e -> ESubsumption (p, typ, e)) exp
+    | _ -> failwith "expected Upcast"
+
+  let rec insert_hint p a def = match def with
+    | DLet (q, x, e, d) -> begin match mk p a e with
+        | Some e' -> DLet (q, x, e', d)
+        | None -> DLet (q, x, e, insert_hint p a d)
+      end
+    | DRec (binds, d) -> begin match insert_bind p a binds with
+        | Some binds' -> DRec (binds', d)
+        | None -> DRec (binds, insert_hint p a d)
+      end
+    | DExp (e, d) -> begin match mk p a e with
+        | Some e' -> DExp (e', d)
+        | None -> DExp (e, insert_hint p a d)
+      end
+    | DEnd -> raise (Not_well_formed (p, "unusable typing hint"))
+
+  and insert_bind p a binds = match binds with
+    | [] -> None
+    | (x, t, e) :: rest -> match mk p a e with
+        | Some e' -> Some ((x, t, e') :: rest)
+        | None -> match insert_bind p a rest with
+            | Some rest' -> Some ((x, t, e) :: rest')
+            | None -> None
+
 end
+
+let from_exprjs env expr = 
+  let exp = defs 
+    (IdSet.fold (fun x env -> IdMap.add x false env) (Env.dom env) IdMap.empty)
+    (flatten_seq expr) in
+  let exp = H.fold InsertHints.insert_hint hints exp in
+    exp

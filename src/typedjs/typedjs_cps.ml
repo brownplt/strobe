@@ -215,6 +215,8 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                              App (new_node (), constrv,
                                   mk_id k' :: mk_id throw :: mk_id obj ::
                                     argvs)))))
+  | ESubsumption (_, _, e) -> cps_exp e throw k
+
                              
 
 (*
@@ -359,6 +361,7 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
                              App (new_node (), constrv,
                                   mk_id k' :: mk_id throw :: mk_id obj ::
                                     argvs)))))
+  | ESubsumption (_, _, e) -> cps_tailexp e throw k
 
 
 
