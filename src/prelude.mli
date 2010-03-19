@@ -2,6 +2,13 @@ type id = string
 
 type pos = Lexing.position * Lexing.position
 
+module Pos : sig
+  type t = pos
+  val compare : t -> t -> int
+  val before : t -> t -> bool
+end
+
+
 module IntSet : Set.S
   with type elt = int
 

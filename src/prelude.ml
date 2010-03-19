@@ -15,7 +15,9 @@ module Pos = struct
   type t = pos
 
   let compare = Pervasives.compare
-   
+
+  let before (_, p1_end) (p2_start, _) = 
+    p1_end.pos_cnum < p2_start.pos_cnum
 end
 
 module Int = struct

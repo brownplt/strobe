@@ -9,7 +9,7 @@ open Typedjs_types
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA COLONCOLON FUNCTION DOM
-        PROTOTYPE CLASS
+        PROTOTYPE CLASS UPCAST
 
 %right UNION
 
@@ -57,6 +57,7 @@ typ
 
 typ_ann
   : COLON typ EOF { ATyp $2 }
+  | COLON UPCAST typ EOF { AUpcast $3 }
   | COLON CONSTRUCTOR typ EOF { AConstructor $3 }
   | COLONCOLON inferred_anns EOF { AInferred $2 }
 

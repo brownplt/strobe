@@ -454,3 +454,33 @@ let rec defs binds lst  =
     | exts, lst ->
         DExternalMethods exts :: defs binds lst 
 *)
+
+
+module InsertHints = struct
+
+  let rec ins_list (p : pos) (v : exp -> exp) lst  : exp list option =
+    match lst with
+      | [] -> None
+      | e :: rest -> 
+          if Pos.before (Exp.pos e) p then
+            begin match ins_list p v rest with
+              | None -> None
+              | Some rest' -> Some (e :: rest')
+            end
+          else 
+            begin match ins p v e with
+              | Some e' -> Some (e' :: rest)
+              | None -> None
+            end
+
+  and ins (p : pos) (v : exp -> exp) (exp : exp) : exp option = 
+    let lst = Exp.children exp in
+      match ins_list p v lst with
+        | Some lst' -> Some (Exp.set_children exp lst')
+        | None -> 
+            if Pos.before p (Exp.pos exp) then
+              Some (v exp)
+            else
+              None
+
+end

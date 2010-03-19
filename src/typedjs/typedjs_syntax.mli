@@ -46,6 +46,7 @@ type annotation =
     ATyp of typ
   | AConstructor of typ 
   | AInferred of annotation list
+  | AUpcast of typ
 
 (** Typed JavaScript expressions. Additional well-formedness criteria are
     inline. *)
@@ -91,7 +92,6 @@ type constr_exp = {
   constr_exp : exp;
   constr_prototype : exp
 }
-              
 
 (** Module-level definitions *)
 type def =
@@ -103,4 +103,16 @@ type def =
       (* p, constr name, field name, field type, field expr, rest of defs *)
   | DExternalMethod of pos * id * id * exp * def
 
+module Exp : sig
 
+  type t = exp
+
+  val children : t -> t list
+
+  (** raises [Invalid_argument] if the number of children does not match
+      the node type. *)
+  val set_children : t -> t list -> t
+
+  val pos : exp -> pos
+
+end

@@ -37,5 +37,6 @@ rule token = parse
    | "function" { FUNCTION }
    | "prototype" { PROTOTYPE }
    | "class" { CLASS }
+   | "upcast" { UPCAST }
    | eof { EOF }
    | ident as x { ID x }
