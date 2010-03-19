@@ -97,6 +97,10 @@ let rec def (d : def) = match d with
     DEnd -> fun fmt -> pp_print_newline fmt () 
   | DExp (e, d') -> vert [ exp e; def d' ]
   | DConstructor (c, d') -> vert [ constr c; def d' ]
+  | DExternalMethod (p, cname, fname, e, d) -> 
+      vert [ sep [ text (cname ^ ".prototype." ^ fname ^ " = ");
+                   exp e; ];
+             def d ]
   | DLet  (_, x, e, d') ->
       vert [ parens [ text "define"; text x; exp e ]; def d' ]
   | DRec (binds, d') ->

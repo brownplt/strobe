@@ -137,6 +137,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
         | TObject fs, EConst (_, Exprjs_syntax.CString name), t ->
             let fs' = List.filter (fun (x, _) -> x <> name) fs in
               typ_permute (TObject ((name, t) :: fs'))
+        | TDom, EConst (_, Exprjs_syntax.CString name), t -> TDom
+        | _, _, _ -> raise (Typ_error (p, "field update must use string lit"))
         | _ -> raise (Typ_error (p, "type error updating a field"))
       end
   | EBracket (p, obj, field) -> begin match tc_exp env obj, field with

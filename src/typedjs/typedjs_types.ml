@@ -58,6 +58,7 @@ let rec subtype (classes : typ IdMap.t) (s : typ) (t : typ) : bool =
       | TSink s, TSink t -> subtype t s
       | TRef s, TSource t -> subtype s t
       | TRef s, TSink t -> subtype t s
+      | TDom, TSink _ -> true (* can always write to a TDom *)
       | TApp (c, []), TDom -> 
           List.mem c [ "String"; "Number"; "RegExp"; "Int"; "Boolean"; "Null";
                        "Undefined" ]
