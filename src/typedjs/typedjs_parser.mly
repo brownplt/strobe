@@ -8,7 +8,7 @@ open Typedjs_types
 
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
-       UNDEF BOOL LBRACE RBRACE COMMA MUTABLE COLONCOLON FUNCTION DOM
+       UNDEF BOOL LBRACE RBRACE COMMA COLONCOLON FUNCTION DOM
         PROTOTYPE CLASS
 
 %right UNION
@@ -32,7 +32,6 @@ args
 
 field
   : ID COLON typ { ($1, $3) }
-  | ID COLON MUTABLE typ { ($1, TRef $4) }
 
 fields
   : { [] }
@@ -58,7 +57,6 @@ typ
 
 typ_ann
   : COLON typ EOF { ATyp $2 }
-  | COLON MUTABLE EOF { AMutable }
   | COLON CONSTRUCTOR typ EOF { AConstructor $3 }
   | COLONCOLON inferred_anns EOF { AInferred $2 }
 

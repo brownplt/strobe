@@ -26,7 +26,7 @@ let func_index = ref 0
 
 let type_dbs : annotation PosMap.t ref = ref PosMap.empty
 
-let inferred_array : annotation array ref = ref (Array.make 0 AMutable)
+let inferred_array : annotation array ref = ref (Array.make 0 (ATyp TBot))
 
 let rec init_types lst = match lst with
     [] -> ()

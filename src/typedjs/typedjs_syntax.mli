@@ -45,7 +45,6 @@ type env_decl =
 type annotation =
     ATyp of typ
   | AConstructor of typ 
-  | AMutable
   | AInferred of annotation list
 
 (** Typed JavaScript expressions. Additional well-formedness criteria are
