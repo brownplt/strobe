@@ -8,7 +8,7 @@ exception Expected_lvalue
 exception Parse_failure of string
 
 let rec expr_to_lvalue (e : expr) : lvalue =  match e with
-    VarExpr (p,x) -> VarLValue (p,x)
+  | VarExpr (p,x) -> VarLValue (p,x)
   | DotExpr (p,e,x) -> DotLValue (p,e,x)
   | BracketExpr (p,e1,e2) -> BracketLValue (p,e1,e2)
   | ParenExpr (_, e) -> expr_to_lvalue e
@@ -35,9 +35,8 @@ let rec expr_to_lvalue (e : expr) : lvalue =  match e with
 
 %token EOF
 
-
-/* http://stackoverflow.com/questions/1737460/
-   how-to-find-shift-reduce-conflict-in-this-yacc-file */
+(* http://stackoverflow.com/questions/1737460/
+   how-to-find-shift-reduce-conflict-in-this-yacc-file *)
 %nonassoc GreaterThanColon
 %nonassoc Colon
 %nonassoc LowerThanElse
@@ -105,11 +104,6 @@ varDecls_noin
   : varDecl_noin { [$1] }
   | varDecl_noin Comma varDecls_noin { $1::$3 } 
 
-
-/*******************************************************************************
- * Expressions
- */
-
 element_list
   : 
       { [] }
@@ -153,13 +147,13 @@ member_expr
   | Function LParen ids RParen LBrace src_elts RBrace
     { FuncExpr (($startpos, $endpos), $3, 
                 BlockStmt (($startpos($5), $endpos($7)), $6)) }
-/* Reduce/reduce conflict with function statements.  Who here knew that
+(* Reduce/reduce conflict with function statements.  Who here knew that
    named function expressions existed?
   | Function Id LParen ids RParen LBrace src_elts RBrace
     { let _,x = $2 in 
         NamedFuncExpr (($startpos, $endpos), x, $4, 
                        BlockStmt (($startpos($6), $startpos($8)), $7)) }
-*/
+*)
 
   | member_expr Period Id 
       { let _,x = $3 in DotExpr (($startpos, $endpos),$1,x) } 
@@ -221,9 +215,8 @@ unary_expr
   | Delete unary_expr 
       { PrefixExpr (($startpos, $endpos),PrefixDelete,$2) }
 
-/* Combines UnaryExpression, MultiplicativeExpression, AdditiveExpression, and
- * ShiftExpression by using precedence and associativity rules.
- */
+(* Combines UnaryExpression, MultiplicativeExpression, AdditiveExpression, and
+   ShiftExpression by using precedence and associativity rules. *)
 op_expr
   : unary_expr { $1 }
   | op_expr Times op_expr
@@ -287,7 +280,7 @@ cond_expr
 assign_expr
   : cond_expr
       { $1 }
-  /* we need the use Assign (token for =) in other productions. */
+  (* we need the use Assign (token for =) in other productions. *)
   | lhs_expr AssignOp assign_expr 
     { AssignExpr (($startpos, $endpos), $2, expr_to_lvalue $1, $3) }
   | lhs_expr Assign assign_expr 
@@ -337,8 +330,6 @@ cond_noin_expr
   | noin_expr Ques assign_noin_expr Colon assign_noin_expr 
     { IfExpr (($startpos, $endpos),$1,$3,$5) }
 
-
-
 assign_noin_expr
   : cond_noin_expr { $1 }
   | lhs_expr AssignOp assign_noin_expr 
@@ -350,12 +341,6 @@ expr_noin
   : assign_noin_expr { $1 }
   | noin_expr Comma assign_noin_expr 
       { ListExpr (($startpos, $endpos),$1,$3) }
-
-
-
-/*******************************************************************************
- * Statements 
- */
 
 varDecl
   : Id
@@ -369,13 +354,11 @@ varDecl_noin
   | Id Assign assign_noin_expr 
       { let _,x = $1 in VarDecl (($startpos, $endpos),x,$3) }
 
-
 case
   : Case expr Colon stmts 
   { CaseClause (($startpos, $endpos),$2,BlockStmt (($startpos, $endpos),$4)) }
   | Default Colon stmts
   { CaseDefault (($startpos, $endpos),BlockStmt (($startpos, $endpos),$3)) }
-
 
 forInInit
   : Id { let loc,x = $1 in NoVarForInInit (loc,x) }
@@ -401,7 +384,6 @@ paren_expr : LParen expr RParen
 opt_expr :
   | { UndefinedExpr (($startpos, $endpos)) }
   | expr { $1 }
-
 
 stmt 
   : LBrace stmts RBrace
@@ -452,7 +434,7 @@ stmt
 src_elt_block
   : LBrace src_elts RBrace 
       { BlockStmt (($startpos, $endpos),$2) }
-  
+ 
 src_elts
   : { [] }
   | src_elt src_elts { $1::$2 }
