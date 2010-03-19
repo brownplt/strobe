@@ -187,6 +187,7 @@ let rec exp (env : env) expr = match expr with
               ERec ([ (f,  t, e) ], EConst (a, CUndefined))
           | None -> failwith "match_func returned None on a FuncExpr (2)"
       end
+  | ParenExpr (p, e) -> EParens (p, exp env e)
 
 and match_func env expr = match expr with
   | FuncExpr (a, args, LabelledExpr (a', "%return", body)) ->
@@ -473,14 +474,18 @@ module InsertHints = struct
             end
 
   and ins (p : pos) (v : exp -> exp) (exp : exp) : exp option = 
-    let lst = Exp.children exp in
-      match ins_list p v lst with
-        | Some lst' -> Some (Exp.set_children exp lst')
-        | None -> 
-            if Pos.before p (Exp.pos exp) then
-              Some (v exp)
-            else
-              None
+    begin match exp with
+      | EParens (q, e) when Pos.before p q -> Some (v exp)
+      | _ -> 
+          let lst = Exp.children exp in
+            match ins_list p v lst with
+              | Some lst' -> Some (Exp.set_children exp lst')
+              | None -> 
+                  if Pos.before p (Exp.pos exp) then
+                    Some (v exp)
+                  else
+                    None
+    end
 
   let mk p a exp = match a with
     | AUpcast typ -> 

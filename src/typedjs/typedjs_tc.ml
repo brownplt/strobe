@@ -327,6 +327,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
           t
         else 
           raise (Typ_error (p, "subsumption error"))
+  | EParens (_, e) -> tc_exp env e
 
 and tc_exps env es = map (tc_exp env) es
 

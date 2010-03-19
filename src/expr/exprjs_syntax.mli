@@ -53,6 +53,8 @@ type expr
   | FuncStmtExpr of pos * id * id list * expr
       (** We leave function statements in place, so that they can be lifted
           for JavaScript to turned into letrecs for Typed JavaScript. *)
+  | ParenExpr of pos * expr
+      (** Parenthesis are useful for scoping annotations in comments. *)
 
 
 and lvalue =

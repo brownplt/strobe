@@ -81,6 +81,7 @@ type exp
   | EDeref of pos * exp
   | ESetRef of pos * exp * exp
   | ESubsumption of pos * typ * exp
+  | EParens of pos * exp
 
 type constr_exp = { 
   constr_pos : pos;
@@ -132,6 +133,8 @@ module Exp = struct
     | ERef (_, e) -> [e]
     | EDeref (_, e) -> [e]
     | ESetRef (_, e1, e2) -> [e1; e2]
+    | EParens (_, e) -> [e]
+    | ESubsumption (_, _, e) -> [e]
 
   let len = List.length
 
@@ -164,6 +167,8 @@ module Exp = struct
     | ERef (p, _), [e] -> ERef (p, e)
     | EDeref (p, _), [e] -> EDeref (p, e)
     | ESetRef (p, _, _), [e1; e2] -> ESetRef (p, e1, e2)
+    | EParens (p, _), [e] -> EParens (p, e)
+    | ESubsumption (p, t, _), [e] -> ESubsumption (p, t, e)
     | _ -> raise (Invalid_argument "Exp.set_children")
 
   let pos exp = match exp with
@@ -192,5 +197,7 @@ module Exp = struct
     | ERef (p, _) -> p
     | EDeref (p, _) -> p
     | ESetRef (p, _, _) -> p
+    | EParens (p, _) -> p
+    | ESubsumption (p, _, _) -> p
 
 end
