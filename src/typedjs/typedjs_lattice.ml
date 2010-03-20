@@ -128,6 +128,8 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
          (pretty_string Typedjs_pretty.pretty_typ t))
   | Typedjs_syntax.TObject _ -> RTSet.singleton RT.Object
   | Typedjs_syntax.TRef t -> rt_of_typ t
+  | Typedjs_syntax.TSource t -> rt_of_typ t
+  | Typedjs_syntax.TSink t -> rt_of_typ t
   | Typedjs_syntax.TDom -> rtany
   | Typedjs_syntax.TTop -> rtany
   | Typedjs_syntax.TBot -> RTSet.empty
@@ -163,5 +165,7 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TApp _ -> if RTSet.mem RT.Object rt then typ else TBot
   | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
   | TRef t -> TRef t
+  | TSource t -> TSource t
+  | TSink t -> TSink t
   | TDom -> simple_static cs (RTSetExt.to_list rt)
   | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)

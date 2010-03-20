@@ -505,6 +505,16 @@ module InsertHints = struct
         | Some e' -> DExp (e', d)
         | None -> DExp (e, insert_hint p a d)
       end
+    | DConstructor (constr, d) -> begin match mk p a constr.constr_exp with
+        | Some e' ->
+            (* TODO: We ignore hints on initializers. *)
+            DConstructor ({ constr with constr_exp = e' }, d)
+        | None -> DConstructor (constr, insert_hint p a d)
+      end
+    | DExternalMethod (p, x, y, e, d) -> begin match mk p a e with
+        | Some e' -> DExternalMethod (p, x, y, e', d)
+        | None -> DExternalMethod (p, x, y, e, insert_hint p a d)
+      end
     | DEnd -> raise (Not_well_formed (p, "unusable typing hint"))
 
   and insert_bind p a binds = match binds with
