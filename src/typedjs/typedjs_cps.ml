@@ -217,13 +217,17 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                                     argvs)))))
   | ESubsumption (_, _, e) -> cps_exp e throw k
   | EParens (_, e) -> cps_exp e throw k
-
-                             
-
-(*
-  | ETryCatch of pos * exp * id * exp
-  | ETryFinally of pos * exp * exp
-  | ETypecast of pos * runtime_typs * exp *)
+  | ETypecast (_, _, e) -> cps_exp e throw k
+  | ETryCatch (p, body, exn, catch_body) ->
+      let cont = mk_name "catch-cont" in
+      let throw' = mk_name "throw-cont" in
+        Fix (new_node (), 
+             [let r = mk_name "catch-result" in
+                (cont, [r], TArrow (TTop, [TTop], TBot), k (mk_id r))],
+             Fix (new_node (),
+                  [throw', [exn], TArrow (TTop, [TTop], TBot),
+                   cps_tailexp catch_body throw cont],
+                  cps_tailexp body throw' cont))
 
 and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
     EConst (_, c) -> App (new_node (), mk_id k, [ Const c ])
@@ -348,6 +352,7 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
       cps_tailexp e throw l
   | EThrow (_, e) ->
       cps_tailexp e throw throw
+  | EThis _ -> App (new_node (), mk_id k, [ Id (p, "%this") ])
   | ENew (_, constr, args) ->
       let k' = mk_name "app-cont"
       and obj = new_name () in
@@ -364,9 +369,13 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
                                     argvs)))))
   | ESubsumption (_, _, e) -> cps_tailexp e throw k
   | EParens (_, e) -> cps_tailexp e throw k
-
-
-
+  | ETypecast (_, _, e) -> cps_tailexp e throw k
+  | ETryCatch (p, body, exn, catch_body) ->
+      let throw' = mk_name "throw-cont" in
+        Fix (new_node (),
+             [throw', [exn], TArrow (TTop, [TTop], TBot),
+              cps_tailexp catch_body throw k],
+             cps_tailexp body throw' k)
 
 and cps_bind ((name, typ, e) : id * typ * exp) = match e with
     EFunc (_, args, _, body) ->
@@ -375,7 +384,6 @@ and cps_bind ((name, typ, e) : id * typ * exp) = match e with
         (name, k :: throw :: "%this" :: args,
          ext_typ typ, cps_tailexp body throw k)
   | _ -> failwith "cps_bind : expected a function"
-  
 
 and cps_exp_list exps throw (k : cpsval list -> cpsexp) = match exps with
     [] -> k []
