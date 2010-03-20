@@ -128,7 +128,9 @@ let rec exp (env : env) expr = match expr with
       with Not_found -> raise (Not_well_formed (a, x ^ " is not defined"))
     end
   | BracketExpr (a, e1, e2) -> EBracket (a, EDeref (a, exp env e1), exp env e2)
-  | NewExpr (a, c, args) -> ENew (a, exp env c, map (exp env) args)
+  | NewExpr (a, VarExpr (_, x), args) -> ENew (a, x, map (exp env) args)
+  | NewExpr (p, _, _) ->
+      raise (Not_well_formed (p, "new expressions much name the constructor"))
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
   | InfixExpr (a, op, e1, e2) -> EInfixOp (a, op, exp env e1, exp env e2)
   | IfExpr (a, e1, e2, e3) -> EIf (a, exp env e1, exp env e2, exp env e3)

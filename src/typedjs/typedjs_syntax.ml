@@ -62,7 +62,7 @@ type exp
   | EId of pos * id
   | EBracket of pos * exp * exp
   | EUpdateField of pos * exp * exp * exp
-  | ENew of pos * exp * exp list
+  | ENew of pos * id * exp list
   | EPrefixOp of pos * JavaScript_syntax.prefixOp * exp
   | EInfixOp of pos * JavaScript_syntax.infixOp * exp * exp
   | EIf of pos * exp * exp * exp
@@ -115,7 +115,7 @@ module Exp = struct
     | EId _ -> []
     | EBracket (_, e1, e2) -> [e1; e2]
     | EUpdateField (_, e1, e2, e3) -> [e1; e2; e3]
-    | ENew (_, e1, es) -> e1 :: es
+    | ENew (_, _, es) -> es
     | EPrefixOp (_, _, e) -> [e]
     | EInfixOp (_, _, e1, e2) -> [e1; e2]
     | EIf (_, e1, e2, e3) -> [e1; e2; e3]
@@ -147,7 +147,7 @@ module Exp = struct
     | EId (p, x), [] -> EId (p, x)
     | EBracket (p, _, _), [e1; e2] -> EBracket (p, e1, e2)
     | EUpdateField (p, _, _, _), [e1; e2; e3] -> EUpdateField (p, e1, e2, e3)
-    | ENew (p, _, es'), e1 :: es when len es' = len es -> ENew (p, e1, es)
+    | ENew (p, c_id, es'), es when len es' = len es -> ENew (p, c_id, es)
     | EPrefixOp (p, op, _), [e] -> EPrefixOp (p, op, e)
     | EInfixOp (p, op, _, _), [e1; e2] -> EInfixOp  (p, op, e1, e2)
     | EIf (p, _, _, _), [e1; e2; e3] -> EIf (p, e1, e2, e3)

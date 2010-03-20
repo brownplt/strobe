@@ -208,13 +208,11 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
               Fix (new_node (),
                    [(k', [new_name ()], TArrow (TTop, [TTop], TTop), 
                      k (mk_id obj))],
-                   cps_exp constr throw
-                     (fun constrv ->
-                        cps_exp_list args throw
-                          (fun argvs ->
-                             App (new_node (), constrv,
-                                  mk_id k' :: mk_id throw :: mk_id obj ::
-                                    argvs)))))
+                   cps_exp_list args throw
+                     (fun argvs ->
+                        App (new_node (), mk_id constr,
+                             mk_id k' :: mk_id throw :: mk_id obj ::
+                               argvs))))
   | ESubsumption (_, _, e) -> cps_exp e throw k
   | EParens (_, e) -> cps_exp e throw k
   | ETypecast (_, _, e) -> cps_exp e throw k
@@ -360,13 +358,11 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
               Fix (new_node (),
                    [(k', [new_name ()], TArrow (TTop, [TTop], TTop), 
                      App (new_node (), mk_id k, [ mk_id obj ]))],
-                   cps_exp constr throw
-                     (fun constrv ->
-                        cps_exp_list args throw
-                          (fun argvs ->
-                             App (new_node (), constrv,
-                                  mk_id k' :: mk_id throw :: mk_id obj ::
-                                    argvs)))))
+                   cps_exp_list args throw
+                     (fun argvs ->
+                        App (new_node (), mk_id constr,
+                             mk_id k' :: mk_id throw :: mk_id obj ::
+                               argvs))))
   | ESubsumption (_, _, e) -> cps_tailexp e throw k
   | EParens (_, e) -> cps_tailexp e throw k
   | ETypecast (_, _, e) -> cps_tailexp e throw k

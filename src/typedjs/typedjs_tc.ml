@@ -181,29 +181,18 @@ let rec tc_exp (env : Env.env) exp = match exp with
         Env.lookup_id "this" env
       with Not_found -> raise (Typ_error (p, "'this' used in non-func"))
     end
-  | ENew (p, constr, args) -> begin match constr with
-        ETypecast (_, _, EId (_, cid))
-      | EId (_, cid) -> 
-          (* treat it as a function application, but return the class
-             type instead of the return type *)
-          begin try
-            let class_typ = Env.lookup_class cid env in
-            let arg_typs = tc_exps env args in
-              tc_exp env (EApp (p, EId (p, cid), args));
-              TApp (cid, [])
-          with 
-              Not_found -> raise (
-                Typ_error (p, sprintf "new: class %s does not exist" cid))
-          end
-      | _ -> raise (Typ_error (p, 
-                               begin
-                                 sep [ text "new must have ID as constructor";
-                                       text " expression, but got";
-                                       p_exp constr ] Format.str_formatter;
-                                 Format.flush_str_formatter ()
-                               end))
-
-    end
+  | ENew (p, cid, args) ->
+      (* treat it as a function application, but return the class
+         type instead of the return type *)
+      begin try
+        let class_typ = Env.lookup_class cid env in
+        let arg_typs = tc_exps env args in
+          tc_exp env (EApp (p, EId (p, cid), args));
+          TApp (cid, [])
+      with 
+          Not_found -> raise (
+            Typ_error (p, sprintf "new: class %s does not exist" cid))
+      end
   | EPrefixOp (p, op, e) -> begin match op, tc_exp env e with
         JS.PrefixLNot, TApp ("Boolean", []) -> typ_bool
       | JS.PrefixBNot, TApp ("Int", []) -> typ_int

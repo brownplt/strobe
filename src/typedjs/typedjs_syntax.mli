@@ -59,7 +59,7 @@ type exp
   | EId of pos * id
   | EBracket of pos * exp * exp
   | EUpdateField of pos * exp * exp * exp
-  | ENew of pos * exp * exp list
+  | ENew of pos * id * exp list
   | EPrefixOp of pos * JavaScript_syntax.prefixOp * exp
   | EInfixOp of pos * JavaScript_syntax.infixOp * exp * exp
   | EIf of pos * exp * exp * exp
