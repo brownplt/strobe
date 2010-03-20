@@ -2,7 +2,7 @@
 
 OCAMLBUILD = ocamlbuild -build-dir ../build -quiet
 
-all: debug cfa
+all: debug
 
 clean:
 	rm -rf ../build

@@ -2,6 +2,7 @@
 #menhir --explain javascript/javaScript_parser.mly
 #rm -f javascript/javaScript_parser.ml
 #rm -f javascript/javaScript_parser.mli
-menhir --explain lambdajs/lambdajs_parser.mly
-rm -f lambdajs/lambdajs_parser.ml
-rm -f lambdajs/lambdajs_parser.mli
+SRC=$1
+menhir --explain $SRC.mly
+rm -f $SRC.ml
+rm -f $SRC.mli

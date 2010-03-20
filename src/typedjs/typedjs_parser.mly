@@ -55,14 +55,17 @@ typ
   : arg_typ { $1 }
   | args ARROW typ { TArrow (TTop, $1, $3) }
 
-typ_ann
-  : COLON typ EOF { ATyp $2 }
-  | COLON UPCAST typ EOF { AUpcast $3 }
-  | COLON CONSTRUCTOR typ EOF { AConstructor $3 }
-  | COLONCOLON inferred_anns EOF { AInferred $2 }
+annotation :
+  | COLON typ { ATyp $2 }
+  | COLON UPCAST typ { AUpcast $3 }
+  | COLON CONSTRUCTOR typ { AConstructor $3 }
+  | COLONCOLON inferred_anns { AInferred $2 }
 
-inferred_anns 
-  : { [] }
+typ_ann :
+  | annotation EOF { $1 }
+
+inferred_anns : 
+  | { [] }
   | FUNCTION ID COLON typ inferred_anns { ATyp $4 :: $5 }
   | FUNCTION COLON typ inferred_anns { ATyp $3 :: $4 }
   | CONSTRUCTOR ID COLON typ inferred_anns { ATyp $4 :: $5 }

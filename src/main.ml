@@ -11,8 +11,6 @@ open Typedjs_syntax
 open Typedjs_pretty
 open Typedjs_fromExpr
 open Typedjs_env
-open Lambdajs_cfa
-open Lambdajs_cps
 open Exprjs_syntax
 open Format
 open FormatExt
