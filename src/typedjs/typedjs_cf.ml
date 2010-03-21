@@ -20,6 +20,8 @@ let lambdas : (node, node * env * cpsexp) H.t = H.create 200
 
 let subflows : (node, (bool ref * node * env * cpsexp)) H.t = H.create 200
 
+let global_heap = ref empty_heap
+
 let mk_type_is x s = match s with
   | "string" -> ALocTypeIs (x, RTSet.singleton RT.String)
   | "number" -> ALocTypeIs (x, RTSet.singleton RT.Number)
@@ -41,9 +43,7 @@ let abs_of_cpsval node env (cpsval : cpsval) = match cpsval with
     end
   | Id (p, x) -> 
       H.replace bound_id_map (p, x) node;
-      let rt = lookup x env in
-        eprintf "Runtime type of %s is %s\n" x (FormatExt.to_string p_av rt);
-        rt
+      lookup x env
 
 let calc_op1 node env heap (op : op1)  v = match op, v with
   | Ref, v -> 
@@ -125,6 +125,7 @@ and sub_flow (env_node : node) (f, args, typ, body_exp) =  match typ with
   | _ -> failwith "expected TArrow in sub_flow"
 
 and flow (env : env) (heap : heap) (cpsexp : cpsexp) = 
+  global_heap := union_heap heap !global_heap;
   let node = node_of_cpsexp cpsexp in
   let old_env, reflow  = 
     try H.find envs node, false
@@ -147,11 +148,19 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) =
               
 let typed_cfa (env : env) (cpsexp : cpsexp) : unit =
   flow env empty_heap cpsexp;
-  let sub node (env_node, arg_env, exp) =
-    if not (H.mem reached_nodes node) then 
-      begin
-        flow (union_env empty_heap arg_env (H.find envs env_node))
-          empty_heap exp
-      end
-  in H.iter sub lambdas
+  let rec sub_flows () =
+    if H.length lambdas > 0 then 
+      let sub node (env_node, arg_env, exp) =
+        H.remove lambdas node;
+        if not (H.mem reached_nodes node) then 
+          begin
+            let heap = !global_heap in
+            flow (union_env heap arg_env (H.find envs env_node)) heap exp
+          end in
+        H.iter sub lambdas;
+        sub_flows () (* subflows may add lambdas *)
+    else
+      () in
+    sub_flows ()
+        
         
