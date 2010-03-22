@@ -60,3 +60,7 @@ val to_set : heap -> av -> RTSet.t
 val union_heap : heap -> heap -> heap
 
 val empty_heap : heap
+
+val compare_heap : heap -> heap -> int
+
+val compare_env : env -> env -> int

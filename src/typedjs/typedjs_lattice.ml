@@ -21,6 +21,7 @@ module Loc = struct
 
 end
 
+
 module Heap = Map.Make (Loc)
 module HeapExt = MapExt.Make (Loc) (Heap)
 
@@ -32,6 +33,18 @@ type av =
   | ALocTypeIs of Loc.t * RTSet.t
   | AString of string
   | AClosure of int * id list * cpsexp
+
+module AV = struct
+
+  type t = av
+
+  let compare v1 v2 = match v1, v2 with
+    | ASet s1, ASet s2 -> RTSet.compare s1 s2
+    | ALocTypeIs (l1, s1), ALocTypeIs (l2, s2) when l1 = l2 ->
+        RTSet.compare s1 s2
+    | _ -> Pervasives.compare v1 v2
+
+end
 
 type env = av IdMap.t
 
@@ -146,6 +159,11 @@ let p_heap h =
 
 open Typedjs_syntax
 open Typedjs_types
+
+
+let compare_heap = Heap.compare RTSet.compare
+
+let compare_env = IdMap.compare AV.compare
 
 let rec simple_static cs lst  : typ = match lst with
   | [] -> TBot
