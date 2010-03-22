@@ -228,7 +228,9 @@ and match_func env expr = match expr with
             TArrow (_, arg_typs, r) ->
               incr func_index;
               if List.length args != List.length arg_typs then
-                raise (Not_well_formed (a, "not all arguments have names"));
+                raise (Not_well_formed (
+                         a, sprintf "given %d args but %d arg types"
+                           (List.length args) (List.length arg_typs)));
               Some (typ, EFunc (a, args, typ, 
                                 fold_left mutable_arg
                                   (ELabel (a', "%return", r, exp env' body))

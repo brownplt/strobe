@@ -83,7 +83,7 @@ var _UpdateSecondHandInterval = 0,
     _BounceRotationIncrement = 1.8,
     _NewRotation = 0;
 
-function l(a) {
+function l(a) /*: Date -> Void */ {
     if (_UpdateSecondHandInterval != 0) {
         clearInterval(_UpdateSecondHandInterval);
         _UpdateSecondHandInterval = 0;
@@ -119,7 +119,7 @@ function f() {
 }
 var _SecondHandFade = 0;
 
-function g(a) {
+function g(a) /*: Bool -> Void */ {
     var b = a ? 255 : 0;
     if (_SecondHandFade != 0) {
         cancelAnimation(_SecondHandFade);
