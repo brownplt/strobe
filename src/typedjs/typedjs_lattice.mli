@@ -47,6 +47,8 @@ val bind : id -> av -> env -> env
 
 val p_env : env -> FormatExt.printer
 
+val p_heap : heap -> FormatExt.printer
+
 val empty_env : env
 
 val deref : Loc.t -> heap -> RTSet.t

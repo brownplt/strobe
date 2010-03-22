@@ -136,7 +136,7 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) =
     with Not_found -> empty_heap, true in
   let new_heap = union_heap old_heap heap in
   let new_env = union_env new_heap old_env env in
-(*    eprintf "Flow at %d\n" node;
+    eprintf "Flow at %d\n" node;
     eprintf "envsdiff: %s, heapsdiff: %s, reflow: %s\n" 
       (string_of_bool (Pervasives.compare old_env new_env != 0))
       (string_of_bool (Pervasives.compare old_heap new_heap != 0))
@@ -145,7 +145,7 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) =
     p_env old_env Format.err_formatter;
     eprintf "\nNew env:\n";
     p_env new_env Format.err_formatter;
-    eprintf "\n"; *)
+    eprintf "\n";
 
     if (Pervasives.compare old_env new_env != 0 || 
         Pervasives.compare old_heap new_heap != 0 ||

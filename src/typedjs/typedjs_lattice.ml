@@ -141,6 +141,9 @@ let union_heap h1 h2 =
 
 let empty_heap = Heap.empty
 
+let p_heap h =
+  HeapExt.p_map Loc.pp (RTSetExt.p_set RT.pp) h
+
 open Typedjs_syntax
 open Typedjs_types
 
