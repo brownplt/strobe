@@ -9,7 +9,11 @@ let rec typ t  = match t with
   | TBot -> text "DoesNotReturn"
   | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
   | TArrow (_, arg_typs, r_typ) ->
-      horz[ horz (intersperse (text "*") (map typ arg_typs));
+      horz[ horz (intersperse (text "*") 
+                    (map (fun at -> begin match at with
+                              TArrow _ -> parens [ typ at ]
+                            | _ -> typ at 
+                          end) arg_typs));
             text "->";
             typ r_typ ]
   | TApp (s, []) -> text s
