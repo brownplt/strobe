@@ -14,15 +14,15 @@
   function check_key : ( -> Void)
 */
 
-var curAudioClip_ = null;
-var timer = null;
+var curAudioClip_ = /*:upcast Audioclip + Bool*/ false;
+var timer = 0; // ARJUN
 var flag = 0;
-var bpm = /*:upcast Dom */ undefined;
+var bpm = 0;
 var AUDIO_CLIP_URI = "tick.wav";
 
 function on_viewOpen() {
   options.putDefaultValue("bpm",100);
-  bpm = options.getValue("bpm");
+  // ARJUN: DOM bpm = options.getValue("bpm");
   bpm_display.innerText = bpm;
 	//pluginHelper.onAddCustomMenuItems = onAddCustomMenuItems;
 }
@@ -38,7 +38,7 @@ function onMoreGadgetsClick(_ /* Arjun: ignored arg */)  {
 function onStart() {
   if(flag == 0) {
     onStop();
-    var time = parseInt((60/bpm)*1000);
+    var time = parseInt((60/bpm)*1000, undefined);
     timer = setInterval(onPlay,time);
     btn.image = "stop.png";
     btn.overImage = "stop_over.png";
@@ -55,9 +55,9 @@ function onStart() {
 }
 
 function onStop() {
-  if(timer) {
+  if(timer != 0) {
     clearInterval(timer);
-    timer = null;
+    timer = 0;
   }
 }
 
@@ -86,7 +86,7 @@ function decr() {
 }
 
 function onPlay() {
-  if (curAudioClip_ == null) {      // Not playing anything
+  if (typeof curAudioClip_ === "boolean") {      // Not playing anything
     curAudioClip_ = framework.audio.play(AUDIO_CLIP_URI, onAudioStateChange); 
     startedAudio();
   } else {                  // Already playing something

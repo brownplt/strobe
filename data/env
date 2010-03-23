@@ -14,3 +14,22 @@ undefined: Void
 parseInt : String + Number * Int + Void -> Int
 parseFloat : String + Number -> Double
 
+gddSoundStateStopped : Int
+gddSoundStatePlaying : Int
+
+class Audioclip prototype {} {
+  balance : Int,
+  currentPosition : Int,
+  duration : Int,
+  error: Int,
+  src : String,
+  state : Int,
+  volume : Int
+}
+
+framework : {
+  openURL : String -> Void,
+  audio : {
+    play : String * (Dom * Int -> Void) -> Audioclip
+  }
+}
