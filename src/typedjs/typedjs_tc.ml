@@ -195,14 +195,23 @@ let rec tc_exp (env : Env.env) exp = match exp with
             Typ_error (p, sprintf "new: class %s does not exist" cid))
       end
   | EPrefixOp (p, op, e) -> begin match op, tc_exp env e with
-        JS.PrefixLNot, TApp ("Boolean", []) -> typ_bool
+      | JS.PrefixLNot, TApp ("Boolean", []) -> typ_bool
+      | JS.PrefixLNot, t -> 
+          raise (Typ_error (p, "! (logical not) expects a number; received " ^
+                              (string_of_typ t)))
       | JS.PrefixBNot, TApp ("Int", []) -> typ_int
       | JS.PrefixBNot, TApp ("Number", []) ->
           (** JavaScript converts floats to integers before doing a bitwise
               negation. E.g. [~(1.0)], [~1], and [-2] are equivalent. *)
           typ_int 
+      | JS.PrefixBNot, t ->
+          raise (Typ_error (p, "~ (bitwise not) expects a number; received " ^
+                              (string_of_typ t)))
       | JS.PrefixPlus, TApp ("Int", []) -> typ_int
       | JS.PrefixPlus, TApp ("Number", []) -> typ_num 
+      | JS.PrefixPlus, t ->
+          raise (Typ_error (p, "+ (plus) expects a number; received " ^
+                              (string_of_typ t)))
       | JS.PrefixMinus, TApp ("Int", []) -> typ_int
       | JS.PrefixMinus, TApp ("Number", []) -> typ_num 
       | JS.PrefixMinus, t -> 
@@ -212,7 +221,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
                   string_of_typ t))
       | JS.PrefixTypeof, _ -> typ_str
       | JS.PrefixVoid, _ -> typ_undef
-          (* | PrefixDelete *)
+      | JS.PrefixDelete, _ -> failwith "PrefixDelete NYI"
     end
    | EInfixOp (p, op, e1, e2) -> 
        let t1 = tc_exp env e1

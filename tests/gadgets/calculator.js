@@ -59,7 +59,7 @@
 
 var expression;
 var display;
-var base;
+var base /*: Int + Undefined */ = 0;
 var feFlag = 0;
 var dEditable;
 var dExists;
@@ -109,7 +109,7 @@ function menuAddItems(menu) {
 
 function menuItemClicked(item) {
   var id = (item == "Simple") ? 0 : ((item == "Scientific") ? 1 : 2);
-  if (id ^ sci_flag) {
+  if ((id ^ sci_flag) != 0) {
     sci_flag = id;
     redrawAll();
     iClear();
@@ -160,7 +160,7 @@ function redrawAll() {
 
   base = 10;
 
-  if (!expression)
+  if (expression === undefined)
     expression = [];
 
   iRefresh();
