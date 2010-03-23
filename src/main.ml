@@ -95,7 +95,8 @@ let action_df () : unit =
             (cf_env_of_tc_env !env))) in
     typed_cfa env cpstypedjs;
     let annotated_exp = insert_typecasts typedjs in
-      Typedjs_pretty.pretty_def std_formatter annotated_exp
+      Typedjs_pretty.pretty_def std_formatter annotated_exp;
+      printf "Dataflow analysis successful.\n"
 
 let action_test_tc () : unit =
   Typedjs_testing.parse_and_test !cin !cin_name
@@ -123,7 +124,7 @@ let main () : unit =
       ("-expr", Arg.Unit (set_action action_expr),
        "simplify JavaScript to exprjs");
       ("-pretc", Arg.Unit (set_action action_pretypecheck),
-       "basic well-formedness checks before typing");
+       "basic well-formedness checks before type-checking and flow-analysis");
       ("-cps", Arg.Unit (set_action action_cps),
        "convert program to CPS");
       ("-esc", Arg.Unit (set_action action_esc),

@@ -138,7 +138,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
             let fs' = List.filter (fun (x, _) -> x <> name) fs in
               typ_permute (TObject ((name, t) :: fs'))
         | TDom, EConst (_, Exprjs_syntax.CString name), t -> TDom
-        | _, _, _ -> raise (Typ_error (p, "field update must use string lit"))
         | _ -> raise (Typ_error (p, "type error updating a field"))
       end
   | EBracket (p, obj, field) -> begin match tc_exp env obj, field with
@@ -148,16 +147,18 @@ let rec tc_exp (env : Env.env) exp = match exp with
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
       | TDom, _ -> TDom (* TODO: banned fields? *)
-      | TApp (cname, apps), EConst (_, Exprjs_syntax.CString x) -> 
-          (try
-             let (TObject fs) = Env.lookup_class cname env in
-               (try
-                  snd2 (List.find (fun (x', _) -> x = x') fs)
-                with Not_found ->
-                  raise (Typ_error (p, sprintf "field %s.%s does not exist"
-                                      cname x)))
-           with Not_found ->
-             raise (Typ_error (p, "class " ^ cname ^ " does not exist")))
+      | TApp (cname, apps), EConst (_, Exprjs_syntax.CString x) -> begin
+          try
+            let (TObject fs) = Env.lookup_class cname env in
+              begin try
+                snd2 (List.find (fun (x', _) -> x = x') fs)
+              with Not_found ->
+                raise 
+                  (Typ_error (p, sprintf "field %s.%s does not exist" cname x))
+              end
+          with Not_found ->
+            raise (Typ_error (p, "class " ^ cname ^ " does not exist"))
+        end
       | t, EConst (_, Exprjs_syntax.CString _) ->
           (* better error messages! *)
           begin match obj with

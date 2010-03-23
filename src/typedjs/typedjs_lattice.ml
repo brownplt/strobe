@@ -73,6 +73,10 @@ let rtany =
 
 let any = ASet rtany
 
+let p_heap h =
+  HeapExt.p_map Loc.pp (RTSetExt.p_set RT.pp) h
+
+
 let rec to_set heap v = match v with
   | ASet set -> set
   | ALocTypeof _ -> RTSet.singleton RT.String
@@ -80,7 +84,12 @@ let rec to_set heap v = match v with
   | AString _ -> RTSet.singleton RT.String
   | AClosure _ -> RTSet.singleton RT.Function
   | ARef _ -> rtany
-  | ADeref loc -> Heap.find loc heap
+  | ADeref loc -> 
+      try Heap.find loc heap
+      with Not_found ->
+        eprintf "to_set cannot dereference location %s.\n"
+          (FormatExt.to_string Loc.pp loc);
+        raise Not_found
 
 let deref loc heap  =
   try 
@@ -121,6 +130,10 @@ let bind (x : id) (v : av) (env : env) : env = IdMap.add x v env
 
 let empty_env = IdMap.empty
 
+let escape_env (heap : heap) (env : env) : env =
+  let f v = ASet (to_set heap v) in
+    IdMap.map f env
+
 let set_ref loc value heap =
   Heap.add loc value heap
 
@@ -154,8 +167,6 @@ let union_heap h1 h2 =
 
 let empty_heap = Heap.empty
 
-let p_heap h =
-  HeapExt.p_map Loc.pp (RTSetExt.p_set RT.pp) h
 
 open Typedjs_syntax
 open Typedjs_types

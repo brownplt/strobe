@@ -63,6 +63,10 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
       v, set_ref l (to_set heap v) heap
   | _ -> any, heap
 
+let mk_closure (env : env) (f, args, typ, body_exp) =
+  let node = node_of_cpsexp body_exp in
+    try ignore (H.find envs node)
+    with Not_found -> H.replace envs node env
 
 let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
   | Bind (node, x, bindexp, cont) ->
@@ -109,11 +113,6 @@ and bind_lambda env (f, args, typ, body_exp) =
 and bind_esc_lambda env (f, _,_, _) =
   bind f (singleton RT.Function) env
 
-and mk_closure (env : env) (f, args, typ, body_exp) =
-  let node = node_of_cpsexp body_exp in
-    try ignore (H.find envs node)
-    with Not_found -> H.replace envs node env
-
 and sub_flow (env_node : node) (f, args, typ, body_exp) =  match typ with
   | Typedjs_syntax.TArrow (_, arg_typs, _) -> begin try
       ignore (H.find lambdas (node_of_cpsexp body_exp))
@@ -126,7 +125,6 @@ and sub_flow (env_node : node) (f, args, typ, body_exp) =  match typ with
   | _ -> failwith "expected TArrow in sub_flow"
 
 and flow (env : env) (heap : heap) (cpsexp : cpsexp) = 
-  global_heap := union_heap heap !global_heap;
   let node = node_of_cpsexp cpsexp in
   let old_env, reflow  = 
     try H.find envs node, false
@@ -155,10 +153,14 @@ let typed_cfa (env : env) (cpsexp : cpsexp) : unit =
         H.remove lambdas node;
         if not (H.mem reached_nodes node) then 
           begin
-            let heap = !global_heap in
-            flow (union_env heap arg_env (H.find envs env_node)) heap exp
+            let heap = empty_heap in
+            let env = escape_env (H.find heaps env_node)
+              (H.find envs env_node) in
+              H.remove envs node;
+              flow (union_env heap arg_env env) heap exp
           end in
         H.iter sub lambdas;
+
         sub_flows () (* subflows may add lambdas *)
     else
       () in

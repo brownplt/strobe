@@ -64,3 +64,5 @@ val empty_heap : heap
 val compare_heap : heap -> heap -> int
 
 val compare_env : env -> env -> int
+
+val escape_env : heap -> env -> env

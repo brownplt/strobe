@@ -459,14 +459,11 @@ let rec fv_cpsexp (cpsexp : cpsexp) : IdSet.t = match cpsexp with
 and fv_bind (_, args, _, e) =
   IdSet.diff (fv_cpsexp e) (IdSetExt.from_list args)
 
-
-
 let rec esc_cpsexp (cpsexp : cpsexp) : IdSet.t = match cpsexp with
     Fix (_, binds, body) ->
       IdSetExt.unions (esc_cpsexp body :: (map esc_bind binds))
   | App (_, _, vs) ->
-      (* An identifier in function position does not "escape," even if it is
-         a call to a known function. *)
+      (* An identifier in function position does not escape. *)
       IdSetExt.unions (map fv_val vs)
   | If (_, _, e1, e2) -> IdSet.union (esc_cpsexp e1) (esc_cpsexp e2)
   | Bind (_, x, e, k) -> 
