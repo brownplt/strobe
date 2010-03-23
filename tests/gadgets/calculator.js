@@ -6,7 +6,7 @@
 /*::
   function getValue : ((Int + String + Double) -> (Int + Double))
   function menuAddItems : (Dom -> Void)
-  function menuItemClicked : (String -> Void)
+  function menuItemClicked : (Dom -> Void)
   function redrawAll : ( -> Void)
   function getNumber : ((Int + Double) -> (Int + Double + String))
   function getExpressionString : ( -> String)
