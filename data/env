@@ -2,10 +2,15 @@ class HTMLWindow prototype {} {
   document : Dom
 }
 
+class String prototype {} {
+  charCodeAt : Int -> Double
+}
+
 document : Dom
 window : Dom
 setTimeout : Dom
 undefined: Void
 
-parseInt : String * Int + Void -> Int
-parseFloat : String -> Double
+parseInt : String + Number * Int + Void -> Int
+parseFloat : String + Number -> Double
+

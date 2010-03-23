@@ -72,9 +72,12 @@ inferred_anns :
   | CONSTRUCTOR COLON typ inferred_anns { ATyp $3 :: $4 }
   
 
+any_id :
+  | ID { $1 }
+  | STR { "String" }
 
 env_decl
-  : CLASS ID PROTOTYPE typ LBRACE fields RBRACE
+  : CLASS any_id PROTOTYPE typ LBRACE fields RBRACE
     { EnvClass
         ( $2 (* name *) , 
           $4 (* prototype type *),

@@ -276,7 +276,14 @@ let rec tc_exp (env : Env.env) exp = match exp with
               arg_typs then
               TDom
             else
-              raise (Typ_error (p, "DOM-function application"))
+              let is_bad (_, t) = not (subtype (Env.get_classes env) t TDom) in
+              let (ix, typ) = List.find is_bad 
+                (List.combine (iota (List.length arg_typs)) arg_typs) in
+              raise (Typ_error 
+                       (p, sprintf "argument %d has type %s; but the function \
+                                    is an imported DOM function." (ix + 1)
+                          (string_of_typ typ)))
+
       | _ -> raise (Typ_error (p, "expected a function"))
     end
   | ERec (binds, body) -> 

@@ -80,22 +80,25 @@ var state = 0;
 
 var expression = undefined;
 
+/*
 for (var k = 0; k <= 25; ++k) {
   var a = String_fromCharCode("A".charCodeAt(0) + k);
   eval(a + '=' + 0);
-}
+  } */
 
 function getValue(a) {
   if (a == '.')
     a += '0';
 
+  return (base != 10) ? parseInt (a, base) : parseFloat(a);
+  /*
   if (base != 10) {
     a = parseInt(a, base);
   } else {
     a = parseFloat(a);
-  }
+    }*/
 
-  return a;
+  //  return a;
 }
 
 function menuAddItems(menu) {
