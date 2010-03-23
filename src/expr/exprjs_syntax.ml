@@ -59,7 +59,9 @@ let infix_of_assignOp op = match op with
   | S.OpAssignBOr -> S.OpBOr
   | S.OpAssign -> failwith "infix_of_assignOp applied to OpAssign"
 
-let seq a e1 e2 = SeqExpr (a, e1, e2)
+let rec seq a e1 e2 = match e1 with
+  | SeqExpr (a', e11, e12) -> SeqExpr (a, e11, seq a' e12 e2)
+  | _ -> SeqExpr (a, e1, e2)
 
 let rec expr (e : S.expr) = match e with
     S.StringExpr (a,s) -> ConstExpr (a, CString s)
@@ -218,8 +220,7 @@ and forInInit fii = match fii with
   | S.NoVarForInInit (p, x) -> (x, ConstExpr (p, CUndefined))
 
 and varDeclList p decls = match decls with
-    [] -> ConstExpr (p, CUndefined)
-  | [d] -> varDecl p d
+  | [] -> ConstExpr (p, CUndefined)
   | d :: ds -> seq p (varDecl p d) (varDeclList p ds)
 
 and varDecl p (decl : S.varDecl) = match decl with
