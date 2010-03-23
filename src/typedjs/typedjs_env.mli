@@ -33,6 +33,9 @@ module Env : sig
   (** Adds a method to a class. *)
   val add_method : id -> id -> typ -> env -> env
 
+ (** Used to load environments from multiple files. *)
+  val union : env -> env -> env
+
 end
 
 

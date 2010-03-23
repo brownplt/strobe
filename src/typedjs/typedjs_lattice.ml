@@ -106,7 +106,7 @@ let rec av_union h av1 av2 = match av1, av2 with
   | _ -> av_union h (ASet (to_set h av1)) (ASet (to_set h av2))
 
 let union_env h (env1 : env) (env2 : env) : env = 
-  IdMapExt.join (av_union h) env1 env2
+  IdMapExt.join (fun _ -> av_union h) env1 env2
 
 let p_env env = IdMapExt.p_map text p_av env
 
@@ -150,7 +150,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
 let runtime t : av = ASet (rt_of_typ t)
 
 let union_heap h1 h2 =
-  HeapExt.join RTSet.union h1 h2
+  HeapExt.join (fun _ -> RTSet.union) h1 h2
 
 let empty_heap = Heap.empty
 

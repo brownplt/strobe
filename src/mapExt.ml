@@ -9,7 +9,7 @@ module type S = sig
   val keys : 'a t -> key list
   val values : 'a t -> 'a list
   val union : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
-  val join : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
+  val join : (key -> 'a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
   val p_map : (key -> printer) -> ('a -> printer) -> 'a t -> printer
   val diff : 'a t -> 'a t -> 'a t
 end
@@ -41,7 +41,7 @@ module Make (Ord: Map.OrderedType) (Map : Map.S with type key = Ord.t) = struct
   let join f m1 m2 =
     let mk k v acc = 
       if Map.mem k acc then 
-        Map.add k (f v (Map.find k acc)) acc (* f m1-val  m2-val *)
+        Map.add k (f k v (Map.find k acc)) acc (* f m1-val  m2-val *)
       else 
         Map.add k v acc
     in Map.fold mk m1 m2 (* m2 is the accumulator *)

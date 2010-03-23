@@ -18,7 +18,7 @@ module type S = sig
   (** [join f map1 map2] returns a new map with all the keys of [map1] and 
       [map2]. If a key exists on both maps, its two values are combined using
       [f]. *)
-  val join : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
+  val join : (key -> 'a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
 
   val p_map : (key -> printer) -> ('a -> printer) -> 'a t -> printer
 

@@ -111,7 +111,7 @@ let set_action (thunk : unit -> unit) (() : unit) : unit =
     (is_action_set := true; action := thunk)
 
 let set_env (fname : string) : unit = 
-  env := mk_env (parse_env (open_in fname) fname)
+  env := Env.union !env (mk_env (parse_env (open_in fname) fname))
 
 let main () : unit =
   Arg.parse

@@ -56,6 +56,13 @@ module Env = struct
         | _ ->
             failwith ("class type is not an object: " ^ class_name)
 
+  let union env1 env2 = 
+    let err k _ _ = 
+      failwith (k ^ " is defined multiple times in the environment") in
+      { id_typs = IdMapExt.join err env1.id_typs env2.id_typs;
+        lbl_typs = IdMapExt.join err env1.lbl_typs env2.lbl_typs;
+        classes = IdMapExt.join err env1.classes env2.classes
+      }
 
 end
 

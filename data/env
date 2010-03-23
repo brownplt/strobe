@@ -5,7 +5,6 @@ class HTMLWindow prototype {} {
 document : Dom
 window : Dom
 setTimeout : Dom
-view : Dom
 undefined: Void
 
 parseInt : String * Int + Void -> Int
