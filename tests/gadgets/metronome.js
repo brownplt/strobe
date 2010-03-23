@@ -2,7 +2,7 @@
 /*::
   function on_viewOpen : ( -> Void)
   function onAddCustomMenuItems : (Dom -> Void)
-  function onMoreGadgetsClick : (String -> Void)
+  function onMoreGadgetsClick : (Dom -> Void)
   function onStart : ( -> Void)
   function onStop : ( -> Void)
   function incr : ( -> Void)
@@ -17,7 +17,7 @@
 var curAudioClip_ = null;
 var timer = null;
 var flag = 0;
-var bpm;
+var bpm = /*:upcast Dom */ undefined;
 var AUDIO_CLIP_URI = "tick.wav";
 
 function on_viewOpen() {
@@ -31,7 +31,7 @@ function onAddCustomMenuItems(menu) {
   menu.AddItem("More Gadgets", 0, onMoreGadgetsClick);
 }
 
-function onMoreGadgetsClick()  {
+function onMoreGadgetsClick(_ /* Arjun: ignored arg */)  {
 	framework.openURL("http://www.gdgadgets.com");
 }
 
@@ -119,3 +119,5 @@ function check_key() {
   if(event.keycode == 43)
     incr();
 }
+
+on_viewOpen();
