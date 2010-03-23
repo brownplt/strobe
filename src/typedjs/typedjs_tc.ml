@@ -188,7 +188,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       begin try
         let class_typ = Env.lookup_class cid env in
         let arg_typs = tc_exps env args in
-          tc_exp env (EApp (p, EId (p, cid), args));
+        let _ = tc_exp env (EApp (p, EId (p, cid), args)) in
           TApp (cid, [])
       with 
           Not_found -> raise (
@@ -333,6 +333,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
           t
         else 
           raise (Typ_error (p, "subsumption error"))
+  | EDowncast (p, t, e) -> 
+      let _ = tc_exp env e in
+        t
   | EParens (_, e) -> tc_exp env e
 
 and tc_exps env es = map (tc_exp env) es

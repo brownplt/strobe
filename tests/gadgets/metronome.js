@@ -86,6 +86,7 @@ function decr() {
 }
 
 function onPlay() {
+    /*
   if (typeof curAudioClip_ === "boolean") {      // Not playing anything
     curAudioClip_ = framework.audio.play(AUDIO_CLIP_URI, onAudioStateChange); 
     startedAudio();
@@ -93,7 +94,7 @@ function onPlay() {
     curAudioClip_.stop();
     curAudioClip_ = null;
     stoppedAudio();
-  }
+    } */
 }
 
 function onAudioStateChange(audioClip, state) {

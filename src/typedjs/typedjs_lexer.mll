@@ -38,5 +38,6 @@ rule token = parse
    | "prototype" { PROTOTYPE }
    | "class" { CLASS }
    | "upcast" { UPCAST }
+   | "downcast" { DOWNCAST }
    | eof { EOF }
    | ident as x { ID x }

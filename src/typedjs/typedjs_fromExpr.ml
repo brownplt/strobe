@@ -39,6 +39,7 @@ let rec init_types lst = match lst with
         | AInferred xs -> 
             inferred_array := Array.of_list xs
         | AUpcast t -> H.add hints pos (AUpcast t)
+        | ADowncast t -> H.add hints pos (ADowncast t)
         | x ->
             type_dbs := PosMap.add pos x !type_dbs
       end;
@@ -494,7 +495,9 @@ module InsertHints = struct
   let mk p a exp = match a with
     | AUpcast typ -> 
         ins p (fun e -> ESubsumption (p, typ, e)) exp
-    | _ -> failwith "expected Upcast"
+    | ADowncast typ -> 
+        ins p (fun e -> EDowncast (p, typ, e)) exp
+    | _ -> failwith "expected Upcast or Downcast"
 
   let rec insert_hint p a def = match def with
     | DLet (q, x, e, d) -> begin match mk p a e with

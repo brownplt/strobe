@@ -81,7 +81,9 @@ let rec exp e fmt = match e with
   | ESetRef (_, e1, e2) ->
       parens [ text "set-ref!"; exp e1; exp e2 ] fmt
   | ESubsumption (_, t, e) ->
-      parens [ text "upcast"; typ t; exp e ] fmt
+      parens [ text "upcast"; parens [typ t]; exp e ] fmt
+  | EDowncast (_, t, e) ->
+      parens [ text "downcast"; parens [typ t]; exp e ] fmt
   | EParens (_, e) -> exp e fmt
 
 and prop (s, e) =

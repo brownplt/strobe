@@ -214,6 +214,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                              mk_id k' :: mk_id throw :: mk_id obj ::
                                argvs))))
   | ESubsumption (_, _, e) -> cps_exp e throw k
+  | EDowncast (_, _, e) -> cps_exp e throw k
   | EParens (_, e) -> cps_exp e throw k
   | ETypecast (_, _, e) -> cps_exp e throw k
   | ETryCatch (p, body, exn, catch_body) ->
@@ -364,6 +365,7 @@ and cps_tailexp (exp : exp) (throw : id) (k : id) : cpsexp = match exp with
                              mk_id k' :: mk_id throw :: mk_id obj ::
                                argvs))))
   | ESubsumption (_, _, e) -> cps_tailexp e throw k
+  | EDowncast (_, _, e) -> cps_tailexp e throw k
   | EParens (_, e) -> cps_tailexp e throw k
   | ETypecast (_, _, e) -> cps_tailexp e throw k
   | ETryCatch (p, body, exn, catch_body) ->

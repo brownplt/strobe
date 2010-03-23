@@ -47,6 +47,7 @@ type annotation =
   | AConstructor of typ 
   | AInferred of annotation list
   | AUpcast of typ
+  | ADowncast of typ
 
 (** Typed JavaScript expressions. Additional well-formedness criteria are
     inline. *)
@@ -84,6 +85,7 @@ type exp
   | ESetRef of pos * exp * exp
   | ESubsumption of pos * typ * exp
   | EParens of pos * exp
+  | EDowncast of pos * typ * exp
 
 type constr_exp = { 
   constr_pos : pos;

@@ -4,6 +4,7 @@ function onPlay() /*: -> Void */ {
     if (typeof currentAudioClip === "boolean") {
     }
     else {
-        currentAudioClip.stop();
+        /*:downcast { stop : -> Void } */ (currentAudioClip.stop());
     }
 }
+

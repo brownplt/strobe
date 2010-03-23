@@ -9,7 +9,7 @@ open Typedjs_types
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA COLONCOLON FUNCTION DOM
-        PROTOTYPE CLASS UPCAST
+       PROTOTYPE CLASS UPCAST DOWNCAST
 
 %right UNION
 
@@ -58,6 +58,7 @@ typ
 annotation :
   | COLON typ { ATyp $2 }
   | COLON UPCAST typ { AUpcast $3 }
+  | COLON DOWNCAST typ { ADowncast $3 }
   | COLON CONSTRUCTOR typ { AConstructor $3 }
   | COLONCOLON inferred_anns { AInferred $2 }
 
