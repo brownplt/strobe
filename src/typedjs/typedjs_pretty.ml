@@ -31,7 +31,7 @@ let rec typ t  = match t with
     
 
 let rec exp e fmt = match e with
-    EConst (_, c) -> Exprjs_pretty.p_const c fmt
+    EConst (_, c) -> JavaScript_pretty.p_const c fmt
   | EArray (_, es) -> parens (map exp es) fmt
   | EObject (_, ps) -> brackets (map prop ps) fmt
   | EThis _ -> pp_print_string fmt "#this"

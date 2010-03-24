@@ -2,7 +2,7 @@ open Prelude
 open Typedjs_syntax 
 
 type cpsval =
-    Const of Exprjs_syntax.const
+  | Const of JavaScript_syntax.const
   | Id of pos * id
 
 type node = int
@@ -416,7 +416,7 @@ let rec cps (def : def) : cpsexp = match def with
                                  EBracket (p,
                                            EDeref (p, 
                                                    EId (p, cexp.constr_name)),
-                                           EConst (p, Exprjs_syntax.CString 
+                                           EConst (p, JavaScript_syntax.CString 
                                                      "prototype")),
                                  cexp.constr_prototype), 
                         d)))
@@ -482,7 +482,7 @@ open Format
 open FormatExt
 
 let rec p_cpsval (cpsval : cpsval) : printer = match cpsval with
-    Const c -> Exprjs_pretty.p_const c
+    Const c -> JavaScript_pretty.p_const c
   | Id (_, x) -> text x
     
 and p_prop (x, v) : printer = brackets [ text x; p_cpsval v ]

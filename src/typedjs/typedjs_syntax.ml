@@ -56,7 +56,7 @@ type annotation =
 (** Typed JavaScript expressions. Additional well-formedness criteria are
     inline. *)
 type exp
-  = EConst of pos * Exprjs_syntax.const
+  = EConst of pos * JavaScript_syntax.const
   | EArray of pos * exp list
   | EObject of pos * (string * exp) list
   | EThis of pos

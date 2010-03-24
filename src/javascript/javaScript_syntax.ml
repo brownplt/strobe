@@ -1,7 +1,7 @@
 open Prelude
 
-type prefixOp
-  = PrefixLNot 
+type prefixOp =
+  | PrefixLNot 
   | PrefixBNot 
   | PrefixPlus
   | PrefixMinus 
@@ -9,14 +9,14 @@ type prefixOp
   | PrefixVoid 
   | PrefixDelete
 
-type unaryAssignOp
-  = PrefixInc 
+type unaryAssignOp =
+  | PrefixInc 
   | PrefixDec 
   | PostfixInc 
   | PostfixDec
 
-type infixOp
-  = OpLT 
+type infixOp =
+  | OpLT 
   | OpLEq 
   | OpGT 
   | OpGEq  
@@ -40,8 +40,8 @@ type infixOp
   | OpBOr
   | OpAdd
 
-type assignOp
-  =  OpAssign
+type assignOp =
+  | OpAssign
   | OpAssignAdd
   | OpAssignSub
   | OpAssignMul
@@ -54,43 +54,47 @@ type assignOp
   | OpAssignBXor
   | OpAssignBOr
 
-type prop 
-  = PropId of id
+type const =
+  | CString of string
+  | CRegexp of string * bool * bool
+  | CNum of float
+  | CInt of int
+  | CBool of bool
+  | CNull 
+  | CUndefined
+
+type prop =
+  | PropId of id
   | PropString of string
   | PropNum of int
 
-type varDecl
-  = VarDeclNoInit of pos * id
+type varDecl =
+  | VarDeclNoInit of pos * id
   | VarDecl of pos * id * expr
 
-and forInit
-  = NoForInit
+and forInit =
+  | NoForInit
   | VarForInit of varDecl list
   | ExprForInit of expr
 
-and catch
-  = CatchClause of pos * id * stmt
+and catch =
+  | CatchClause of pos * id * stmt
 
-and forInInit
- = VarForInInit of pos * id
- | NoVarForInInit of pos * id
+and forInInit =
+  | VarForInInit of pos * id
+  | NoVarForInInit of pos * id
 
-and caseClause
-  = CaseClause of pos * expr * stmt
+and caseClause =
+  | CaseClause of pos * expr * stmt
   | CaseDefault of pos * stmt
 
-and lvalue
-  = VarLValue of pos * id
+and lvalue =
+  | VarLValue of pos * id
   | DotLValue of pos * expr * id
   | BracketLValue of pos * expr * expr
 
-and expr 
-  = StringExpr of pos * string
-  | RegexpExpr of pos * string * bool * bool
-  | NumExpr of pos * float
-  | IntExpr of pos * int
-  | BoolExpr of pos * bool
-  | NullExpr of pos
+and expr =
+  | ConstExpr of pos * const
   | ArrayExpr of pos * expr list
   | ObjectExpr of pos * (pos * prop * expr) list
   | ThisExpr of pos
@@ -108,13 +112,9 @@ and expr
   | CallExpr of pos * expr * expr list
   | FuncExpr of pos * id list * stmt
   | NamedFuncExpr of pos * id * id list * stmt
-  (* While parsing, these are created by elisions in array literals and by
-     omitted results in return statements.  Semantically, both stand for the
-     value undefined.  We pretty-print it as an empty string *)
-  | UndefinedExpr of pos
 
-and stmt 
-  = BlockStmt of pos * stmt list
+and stmt =
+  | BlockStmt of pos * stmt list
   | EmptyStmt of pos  
   | ExprStmt of expr
   | IfStmt of pos * expr * stmt * stmt
@@ -137,4 +137,4 @@ and stmt
   | FuncStmt of pos * id * id list * stmt
 
 type prog =
-  Prog of pos * stmt list
+  | Prog of pos * stmt list

@@ -1,15 +1,7 @@
 open Prelude
-type const =
-    CString of string
-  | CRegexp of string * bool * bool
-  | CNum of float
-  | CInt of int
-  | CBool of bool
-  | CNull 
-  | CUndefined
 
 type expr
-  = ConstExpr of pos * const
+  = ConstExpr of pos * JavaScript_syntax.const
   | ArrayExpr of pos * expr list
   | ObjectExpr of pos * (pos * string * expr) list
   | ThisExpr of pos
@@ -64,18 +56,12 @@ let rec seq a e1 e2 = match e1 with
   | _ -> SeqExpr (a, e1, e2)
 
 let rec expr (e : S.expr) = match e with
-    S.StringExpr (a,s) -> ConstExpr (a, CString s)
-  | S.RegexpExpr (a,re,g,i) -> ConstExpr (a, CRegexp (re, g, i))
-  | S.NumExpr (a,f) -> ConstExpr (a, CNum f)
-  | S.IntExpr (a,n) -> ConstExpr (a, CInt n)
-  | S.BoolExpr (a,b) -> ConstExpr (a, CBool b)
-  | S.NullExpr a -> ConstExpr (a, CNull)
-  | S.UndefinedExpr a -> ConstExpr (a, CUndefined)
+  | S.ConstExpr (p, c) -> ConstExpr (p, c)
   | S.ArrayExpr (a,es) -> ArrayExpr (a,map expr es)
   | S.ObjectExpr (a,ps) -> ObjectExpr (a,map prop ps)
   | S.ThisExpr a -> ThisExpr a
   | S.VarExpr (a,x) -> VarExpr (a,x)
-  | S.DotExpr (a,e,x) -> BracketExpr (a, expr e, ConstExpr (a, CString x))
+  | S.DotExpr (a,e,x) -> BracketExpr (a, expr e, ConstExpr (a, S.CString x))
   | S.BracketExpr (a,e1,e2) -> BracketExpr (a,expr e1,expr e2)
   | S.NewExpr (a,e,es) -> NewExpr (a,expr e,map expr es)
   | S.PrefixExpr (a,op,e) -> PrefixExpr (a,op,expr e)
@@ -85,24 +71,24 @@ let rec expr (e : S.expr) = match e with
              S.PrefixInc ->
                seq a
                  (AssignExpr 
-                    (a, lv, InfixExpr (a, S.OpAdd, e, ConstExpr (a, CInt 1))))
+                    (a, lv, InfixExpr (a, S.OpAdd, e, ConstExpr (a, S.CInt 1))))
                  e
            | S.PrefixDec ->
                seq
                  a
                  (AssignExpr 
-                    (a, lv, InfixExpr (a, S.OpSub, e, ConstExpr (a, CInt 1))))
+                    (a, lv, InfixExpr (a, S.OpSub, e, ConstExpr (a, S.CInt 1))))
                   e
            | S.PostfixInc ->
                seq a
                  (AssignExpr 
-                    (a, lv, InfixExpr (a, S.OpAdd, e, ConstExpr (a, CInt 1))))
-                 (InfixExpr (a, S.OpSub, e, ConstExpr (a, CInt 1)))
+                    (a, lv, InfixExpr (a, S.OpAdd, e, ConstExpr (a, S.CInt 1))))
+                 (InfixExpr (a, S.OpSub, e, ConstExpr (a, S.CInt 1)))
            | S.PostfixDec ->
                seq a
                  (AssignExpr 
-                    (a, lv, InfixExpr (a, S.OpSub, e, ConstExpr (a, CInt 1))))
-                 (InfixExpr (a, S.OpAdd, e, ConstExpr (a, CInt 1)))
+                    (a, lv, InfixExpr (a, S.OpSub, e, ConstExpr (a, S.CInt 1))))
+                 (InfixExpr (a, S.OpAdd, e, ConstExpr (a, S.CInt 1)))
       in eval_lvalue lv func
   | S.InfixExpr (a,op,e1,e2) -> InfixExpr (a,op,expr e1,expr e2)
   | S.IfExpr (a,e1,e2,e3) -> IfExpr (a,expr e1,expr e2,expr e3)
@@ -124,7 +110,7 @@ let rec expr (e : S.expr) = match e with
          inconsequential. *)
       let anonymous_func = 
         FuncExpr (a,args,LabelledExpr (a,"%return",stmt body)) in
-      LetExpr (a,name, ConstExpr (a, CUndefined),
+      LetExpr (a,name, ConstExpr (a, S.CUndefined),
                seq a
                  (AssignExpr (a,
                               VarLValue (a,name),anonymous_func))
@@ -132,20 +118,20 @@ let rec expr (e : S.expr) = match e with
                         
 and lvalue (lv : S.lvalue) = match lv with
     S.VarLValue (a,x) -> VarLValue (a,x)
-  | S.DotLValue (a,e,x) -> PropLValue (a, expr e, ConstExpr (a, CString x))
+  | S.DotLValue (a,e,x) -> PropLValue (a, expr e, ConstExpr (a, S.CString x))
   | S.BracketLValue (a,e1,e2) -> PropLValue (a,expr e1,expr e2)
 
 and stmt (s : S.stmt) = match s with 
-    S.BlockStmt (a,[]) -> ConstExpr (a, CUndefined)
+    S.BlockStmt (a,[]) -> ConstExpr (a, S.CUndefined)
   | S.BlockStmt (a,s1::ss) -> seq a (stmt s1) (stmt (S.BlockStmt (a, ss)))
-  | S.EmptyStmt a -> ConstExpr (a, CUndefined)
+  | S.EmptyStmt a -> ConstExpr (a, S.CUndefined)
   | S.IfStmt (a,e,s1,s2) -> IfExpr (a,expr e,stmt s1,stmt s2)
   | S.IfSingleStmt (a,e,s) -> 
-      IfExpr (a,expr e,stmt s, ConstExpr (a, CUndefined))
+      IfExpr (a,expr e,stmt s, ConstExpr (a, S.CUndefined))
   | S.SwitchStmt (p,e,clauses) ->
       LetExpr (p, "%v", expr e,
                LetExpr (p, "%t",
-                        ConstExpr (p, CBool false),
+                        ConstExpr (p, S.CBool false),
                         caseClauses p clauses))
   | S.LabelledStmt (p1, lbl ,S.WhileStmt (p2, test, body)) -> LabelledExpr 
         (p1, "%break", LabelledExpr
@@ -170,11 +156,11 @@ and stmt (s : S.stmt) = match s with
       (p, "%break", WhileExpr 
            (p, LabelledExpr (p, "%continue", stmt body),
             expr test))
-  | S.BreakStmt a -> BreakExpr (a,"%break", ConstExpr (a, CUndefined))
-  | S.BreakToStmt (a,lbl) -> BreakExpr (a,lbl, ConstExpr (a, CUndefined))
-  | S.ContinueStmt a -> BreakExpr (a,"%continue", ConstExpr (a, CUndefined))
+  | S.BreakStmt a -> BreakExpr (a,"%break", ConstExpr (a, S.CUndefined))
+  | S.BreakToStmt (a,lbl) -> BreakExpr (a,lbl, ConstExpr (a, S.CUndefined))
+  | S.ContinueStmt a -> BreakExpr (a,"%continue", ConstExpr (a, S.CUndefined))
   | S.ContinueToStmt (a,lbl) -> 
-      BreakExpr (a,"%continue-"^lbl, ConstExpr (a, CUndefined))
+      BreakExpr (a,"%continue-"^lbl, ConstExpr (a, S.CUndefined))
   | S.FuncStmt (a, f, args, s) -> 
       FuncStmtExpr 
         (a, f, args, LabelledExpr 
@@ -211,34 +197,35 @@ and stmt (s : S.stmt) = match s with
       LabelledExpr (p, lbl, stmt s)
 
 and forInit p (fi : S.forInit) = match fi with
-    S.NoForInit -> ConstExpr (p, CUndefined)
+    S.NoForInit -> ConstExpr (p, S.CUndefined)
   | S.ExprForInit e -> expr e
   | S.VarForInit decls -> varDeclList p decls
 
 and forInInit fii = match fii with
-    S.VarForInInit (p, x) -> (x, VarDeclExpr (p, x, ConstExpr (p, CUndefined)))
-  | S.NoVarForInInit (p, x) -> (x, ConstExpr (p, CUndefined))
+  | S.VarForInInit (p, x) ->
+      (x, VarDeclExpr (p, x, ConstExpr (p, S.CUndefined)))
+  | S.NoVarForInInit (p, x) -> (x, ConstExpr (p, S.CUndefined))
 
 and varDeclList p decls = match decls with
-  | [] -> ConstExpr (p, CUndefined)
+  | [] -> ConstExpr (p, S.CUndefined)
   | d :: ds -> seq p (varDecl p d) (varDeclList p ds)
 
 and varDecl p (decl : S.varDecl) = match decl with
-    S.VarDeclNoInit (a, x) -> VarDeclExpr (a, x, ConstExpr (p, CUndefined))
+    S.VarDeclNoInit (a, x) -> VarDeclExpr (a, x, ConstExpr (p, S.CUndefined))
   | S.VarDecl (a, x, e) -> VarDeclExpr (a, x, expr e)
 
 and caseClauses p (clauses : S.caseClause list) = match clauses with
-    [] -> ConstExpr (p, CUndefined)
+    [] -> ConstExpr (p, S.CUndefined)
   | (S.CaseDefault (a,s)::clauses) -> seq a (stmt s) (caseClauses p clauses)
   | (S.CaseClause (a,e,s)::clauses) ->
       LetExpr (a,"%t",
                IfExpr (a,VarExpr (a,"%t"), 
-                       (ConstExpr (a, CBool true)),
+                       (ConstExpr (a, S.CBool true)),
                        (expr e)),
                SeqExpr (a,
                         IfExpr (a,VarExpr (a,"%t"),
                                 stmt s,
-                                ConstExpr (a, CUndefined)),
+                                ConstExpr (a, S.CUndefined)),
                         caseClauses p clauses))
 
 and prop pr =  match pr with
@@ -255,8 +242,9 @@ and eval_lvalue (lv :  S.lvalue) (body_fn : lvalue * expr -> expr) =
     S.VarLValue (a,x) -> body_fn (VarLValue (a,x),VarExpr (a,x))
   | S.DotLValue (a,e,x) -> 
       LetExpr (a,"%lhs",expr e,
-        body_fn (PropLValue (a,VarExpr (a,"%lhs"), ConstExpr (a, CString x)),
-                 BracketExpr (a,VarExpr (a,"%lhs"), ConstExpr (a, CString x))))
+        body_fn
+          (PropLValue (a,VarExpr (a,"%lhs"), ConstExpr (a, S.CString x)),
+           BracketExpr (a,VarExpr (a,"%lhs"), ConstExpr (a, S.CString x))))
   | S.BracketLValue (a,e1,e2) -> 
       LetExpr (a,"%lhs",expr e1,
       LetExpr (a,"%field",expr e2,
@@ -265,7 +253,7 @@ and eval_lvalue (lv :  S.lvalue) (body_fn : lvalue * expr -> expr) =
 
 let from_javascript (S.Prog (p, stmts)) = 
   let f s e = seq p (stmt s) e
-  in fold_right f stmts (ConstExpr (p, CUndefined))
+  in fold_right f stmts (ConstExpr (p, S.CUndefined))
 
 let from_javascript_expr = expr
 

@@ -5,6 +5,7 @@ open Typedjs_types
 open Typedjs_env
 
 module H = Hashtbl
+module S = JavaScript_syntax
 
 exception Not_well_formed of pos * string
 
@@ -162,7 +163,7 @@ let rec exp (env : env) expr = match expr with
                        EIf (a, exp env e1, 
                             ESeq (a, exp env e2, 
                                   EApp (a, EId (a, "%loop"), [])),
-                            EConst (a, CUndefined))))],
+                            EConst (a, S.CUndefined))))],
               EApp (a, EId (a, "%loop"), []))
   | DoWhileExpr (a, e1, e2) ->
       let loop_typ = TArrow (TTop, [], typ_undef) in
@@ -171,7 +172,7 @@ let rec exp (env : env) expr = match expr with
                        ESeq (a, exp env e1, 
                              EIf (a, exp env e2, 
                                   EApp (a, EId (a, "%loop"), []),
-                                    EConst (a, CUndefined)))))],
+                                    EConst (a, S.CUndefined)))))],
               EApp (a, EId (a, "%loop"), []))
 
   | LabelledExpr (a, x, e) -> 
@@ -182,12 +183,12 @@ let rec exp (env : env) expr = match expr with
   | SeqExpr (a, _, _) -> block_intro env (seq expr)
   | VarDeclExpr (a, x, e) -> 
       (* peculiar code: body or block ends with var *)
-      ELet (a, x, exp env e, EConst (a, CUndefined))
+      ELet (a, x, exp env e, EConst (a, S.CUndefined))
   | FuncStmtExpr (a, f, args, body) ->
       begin match match_func (IdMap.add f false env) 
         (FuncExpr (a, args, body)) with
             Some (t, e) ->
-              ERec ([ (f,  t, e) ], EConst (a, CUndefined))
+              ERec ([ (f,  t, e) ], EConst (a, S.CUndefined))
           | None -> failwith "match_func returned None on a FuncExpr (2)"
       end
   | ParenExpr (p, e) -> EParens (p, exp env e)
@@ -308,7 +309,7 @@ let match_constr_body env expr = match expr with
               let match_init eexp = match eexp with
                   AssignExpr (_,
                               PropLValue (
-                                _, ThisExpr _, ConstExpr (_, CString fname)),
+                                _, ThisExpr _, ConstExpr (_, S.CString fname)),
                               fval) -> Some (fname, exp inits_env fval)
                 | _ -> None in                
               let body_exp = ref body in
@@ -361,8 +362,8 @@ let match_external_method expr = match expr with
       PropLValue (
         _, 
         BracketExpr (
-          _, VarExpr (_, cname), ConstExpr (_, CString "prototype")),
-        ConstExpr (_, CString methodname)),
+          _, VarExpr (_, cname), ConstExpr (_, S.CString "prototype")),
+        ConstExpr (_, S.CString methodname)),
       methodexpr) -> Some (p, cname, methodname, methodexpr)
   | _ -> None
 

@@ -2,7 +2,7 @@ open Prelude
 open Typedjs_syntax 
 
 type cpsval =
-    Const of Exprjs_syntax.const
+    Const of JavaScript_syntax.const
   | Id of pos * id
 
 type node = int

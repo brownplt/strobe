@@ -5,5 +5,3 @@ open Exprjs_syntax
 val pretty_expr : formatter -> expr -> unit
 
 val print_expr : expr -> unit
-
-val p_const : const -> printer

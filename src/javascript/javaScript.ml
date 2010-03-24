@@ -2,7 +2,6 @@ open Prelude
 open JavaScript_syntax
 open Lexing
 
-
 let parse_javascript cin name =
   JavaScript_lexer.comments := [];
   let lexbuf = Lexing.from_channel cin in

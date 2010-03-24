@@ -34,13 +34,13 @@ let mk_type_is x s = match s with
 
 let abs_of_cpsval node env (cpsval : cpsval) = match cpsval with
   | Const c -> begin match c with
-      | Exprjs_syntax.CString s -> AString s
-      | Exprjs_syntax.CRegexp _ -> singleton RT.Object
-      | Exprjs_syntax.CNum _ -> singleton RT.Number
-      | Exprjs_syntax.CInt _ -> singleton RT.Number
-      | Exprjs_syntax.CBool _ -> singleton RT.Boolean
-      | Exprjs_syntax.CNull -> singleton RT.Object
-      | Exprjs_syntax.CUndefined -> singleton RT.Undefined
+      | JavaScript_syntax.CString s -> AString s
+      | JavaScript_syntax.CRegexp _ -> singleton RT.Object
+      | JavaScript_syntax.CNum _ -> singleton RT.Number
+      | JavaScript_syntax.CInt _ -> singleton RT.Number
+      | JavaScript_syntax.CBool _ -> singleton RT.Boolean
+      | JavaScript_syntax.CNull -> singleton RT.Object
+      | JavaScript_syntax.CUndefined -> singleton RT.Undefined
     end
   | Id (p, x) -> 
       H.replace bound_id_map (p, x) node;

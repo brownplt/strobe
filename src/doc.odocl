@@ -8,9 +8,7 @@ MapExt
 Prelude
 SetExt
 Typedjs
-Typedjs_anf
 Typedjs_fromExpr
 Typedjs_pretty
 Typedjs_syntax
 Typedjs_types
-Typedjs_stxutil

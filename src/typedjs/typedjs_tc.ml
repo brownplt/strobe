@@ -10,14 +10,14 @@ module JS = JavaScript_syntax (* needed for operators *)
 
 let string_of_typ = pretty_string pretty_typ
 
-let tc_const (const : Exprjs_syntax.const) = match const with
-    Exprjs_syntax.CString _ -> typ_str
-  | Exprjs_syntax.CRegexp _ -> typ_regexp
-  | Exprjs_syntax.CNum _ -> typ_num
-  | Exprjs_syntax.CInt _ -> typ_int
-  | Exprjs_syntax.CBool _ -> typ_bool
-  | Exprjs_syntax.CNull -> typ_bool
-  | Exprjs_syntax.CUndefined -> typ_undef
+let tc_const (const : JavaScript_syntax.const) = match const with
+    JavaScript_syntax.CString _ -> typ_str
+  | JavaScript_syntax.CRegexp _ -> typ_regexp
+  | JavaScript_syntax.CNum _ -> typ_num
+  | JavaScript_syntax.CInt _ -> typ_int
+  | JavaScript_syntax.CBool _ -> typ_bool
+  | JavaScript_syntax.CNull -> typ_bool
+  | JavaScript_syntax.CUndefined -> typ_undef
 
 let tc_arith env (p : pos) (t1 : typ) (t2 : typ) (int_args : bool) 
     (num_result : bool) : typ =
@@ -134,20 +134,20 @@ let rec tc_exp (env : Env.env) exp = match exp with
       typ_permute (TObject (map (second2 (tc_exp env)) fields))
   | EUpdateField (p, obj, f_name, f_val) -> 
       begin match tc_exp env obj, f_name, tc_exp env f_val with
-        | TObject fs, EConst (_, Exprjs_syntax.CString name), t ->
+        | TObject fs, EConst (_, JavaScript_syntax.CString name), t ->
             let fs' = List.filter (fun (x, _) -> x <> name) fs in
               typ_permute (TObject ((name, t) :: fs'))
-        | TDom, EConst (_, Exprjs_syntax.CString name), t -> TDom
+        | TDom, EConst (_, JavaScript_syntax.CString name), t -> TDom
         | _ -> raise (Typ_error (p, "type error updating a field"))
       end
   | EBracket (p, obj, field) -> begin match tc_exp env obj, field with
-        TObject fs, EConst (_, Exprjs_syntax.CString x) -> 
+        TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
           (try
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
       | TDom, _ -> TDom (* TODO: banned fields? *)
-      | TApp (cname, apps), EConst (_, Exprjs_syntax.CString x) -> begin
+      | TApp (cname, apps), EConst (_, JavaScript_syntax.CString x) -> begin
           try
             let (TObject fs) = Env.lookup_class cname env in
               begin try
@@ -159,7 +159,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
           with Not_found ->
             raise (Typ_error (p, "class " ^ cname ^ " does not exist"))
         end
-      | t, EConst (_, Exprjs_syntax.CString _) ->
+      | t, EConst (_, JavaScript_syntax.CString _) ->
           (* better error messages! *)
           begin match obj with
               EId (_, cid) -> begin try

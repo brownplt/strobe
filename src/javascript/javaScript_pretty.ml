@@ -3,6 +3,15 @@ open Prelude
 open Format
 open FormatExt
 
+let p_const e = match e with
+  | CString s -> text  ("\"" ^ String.escaped s ^ "\"")
+  | CRegexp (re, _, _) -> text ("/" ^ re ^ "/")
+  | CNum f -> squish [ (fun fmt -> pp_print_float fmt f); text "f" ]
+  | CInt n -> int n
+  | CBool b -> fun fmt -> pp_print_bool fmt b
+  | CNull -> text "#null"
+  | CUndefined -> text "#undefined"
+
 let prefixOp (op : prefixOp) = match op with
     PrefixLNot -> text "!"
   | PrefixBNot -> text "~"
@@ -126,13 +135,10 @@ and catch clause = match clause with
 
 
 and expr e = match e with
-    StringExpr (_,s) -> string s
-  | RegexpExpr (p,s,g,i) -> string s (* TODO: fixme *)
-  | NumExpr (_,f) -> text (string_of_float f)
-  | IntExpr (_,n) -> int n
-  | BoolExpr (_,true) -> text "true"
-  | BoolExpr (_,false) -> text "false"
-  | NullExpr _ -> text "null"
+  | ConstExpr (_, c) -> begin match c with
+      | CUndefined -> text ""
+      | c -> p_const c
+    end
   | ArrayExpr (_,es) -> brackets (List.map expr es)
   | ObjectExpr (_,ps) -> 
       let f (_, p, e) = sep [prop p; text ":"; expr e]
@@ -164,7 +170,6 @@ and expr e = match e with
       vert [ sep [ text "function"; text name; 
                    parens (commas (map text args)) ];
              stmt body ]
-  | UndefinedExpr _ -> text ""
 
 and stmt s = match s with
    BlockStmt (_,ss) -> 

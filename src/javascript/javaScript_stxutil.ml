@@ -2,12 +2,7 @@ open Prelude
 open JavaScript_syntax
 
 let expr_annotation (e : expr) = match e with
-    StringExpr (a, _) -> a
-  | RegexpExpr (a, _, _, _) -> a
-  | NumExpr (a, _) -> a
-  | IntExpr (a, _) -> a
-  | BoolExpr (a, _) -> a
-  | NullExpr a -> a
+  | ConstExpr (a, _) -> a
   | ArrayExpr (a, _) -> a
   | ObjectExpr (a, _) -> a
   | ThisExpr a -> a
@@ -25,7 +20,6 @@ let expr_annotation (e : expr) = match e with
   | CallExpr (a, _, _) -> a
   | FuncExpr (a, _, _) -> a
   | NamedFuncExpr (a, _, _, _) -> a
-  | UndefinedExpr a -> a
 
 let stmt_annotation (s : stmt) = match s with
     BlockStmt (a, _) -> a

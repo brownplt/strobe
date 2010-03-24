@@ -108,36 +108,28 @@ element_list
   : 
       { [] }
   | Comma 
-      { [UndefinedExpr (( $startpos, $endpos))] }
+      { [ ConstExpr (($startpos, $endpos), CUndefined) ] }
   | assign_expr { [$1] }
   | assign_expr Comma element_list 
       { $1::$3 }
 
-primary_expr
-  : True 
-      { BoolExpr (($startpos, $endpos), true) }
-  | False 
-      { BoolExpr (($startpos, $endpos), false) }
-  | This 
-      { ThisExpr (($startpos, $endpos)) }
-  | Null
-      { NullExpr (($startpos, $endpos)) }  
+const :
+  | True { CBool true }
+  | False { CBool false }
+  | Null { CNull }
+  | String { let _, s = $1 in CString s }
+  | Regexp { let re, g, ci = $1 in  CRegexp (re, g, ci) }
+  | Int { let _, n = $1 in CInt n }
+  | Float { let _, f = $1 in CNum f }
+
+primary_expr :
+  | const { ConstExpr (($startpos, $endpos), $1) }
   | Id 
       { let loc,x = $1 in VarExpr (loc,x) }
   | LBrack element_list RBrack
       { ArrayExpr (($startpos, $endpos),$2) }
   | LBrace fields RBrace
       { ObjectExpr (($startpos, $endpos),$2) }
-  | String
-      { let loc, s = $1 in StringExpr (loc, s) }
-  | Regexp
-      { let re,g,ci = $1 in 
-          RegexpExpr 
-            (($startpos, $endpos), re, g, ci) }
-  | Int
-      { let loc,n = $1 in IntExpr (loc,n) }
-  | Float
-      { let loc,f = $1 in NumExpr (loc,f) }
   | LParen expr RParen
       { ParenExpr (($startpos, $endpos),$2) }
 
@@ -382,7 +374,7 @@ paren_expr : LParen expr RParen
       { ParenExpr (($startpos, $endpos),$2) }
 
 opt_expr :
-  | { UndefinedExpr (($startpos, $endpos)) }
+  | { ConstExpr (($startpos, $endpos), CUndefined) }
   | expr { $1 }
 
 stmt 
@@ -423,7 +415,8 @@ stmt
   | Throw expr Semi 
       { ThrowStmt (($startpos, $endpos),$2) }
   | Return Semi 
-      { ReturnStmt (($startpos, $endpos),UndefinedExpr (($startpos, $endpos))) }
+      { ReturnStmt (($startpos, $endpos),
+                    ConstExpr (($startpos, $endpos), CUndefined)) }
   | Return expr Semi 
       { ReturnStmt (($startpos, $endpos),$2) } 
   | Var varDecls Semi

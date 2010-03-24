@@ -9,21 +9,10 @@
     transformations. However, we do not transform [VarDeclStmt]s into
     let-bindings at this stage. Therefore, Expr{_ JS} uses both lexical scope
     and scope objects. *)
-
 open Prelude
 
-type const =
-    CString of string
-  | CRegexp of string * bool * bool
-  | CNum of float
-  | CInt of int
-  | CBool of bool
-  | CNull 
-  | CUndefined
-
-
 type expr
-  = ConstExpr of pos * const
+  = ConstExpr of pos * JavaScript_syntax.const
   | ArrayExpr of pos * expr list
   | ObjectExpr of pos * (pos * string * expr) list
       (** Object properties are transformed into string literals *)

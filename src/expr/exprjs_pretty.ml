@@ -4,15 +4,6 @@ open JavaScript_pretty
 open Format
 open FormatExt
 
-let p_const e = match e with
-    CString s -> text  ("\"" ^ String.escaped s ^ "\"")
-  | CRegexp (re, _, _) -> text ("/" ^ re ^ "/")
-  | CNum f -> squish [ (fun fmt -> pp_print_float fmt f); text "f" ]
-  | CInt n -> int n
-  | CBool b -> fun fmt -> pp_print_bool fmt b
-  | CNull -> text "#null"
-  | CUndefined -> text "#undefined"
-
 let rec expr e fmt = match e with
     ConstExpr (_, c) -> p_const c fmt
   | ArrayExpr (_, es) -> parens (map expr es) fmt
