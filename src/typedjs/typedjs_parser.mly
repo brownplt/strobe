@@ -57,8 +57,6 @@ typ
 
 annotation :
   | COLON typ { ATyp $2 }
-  | COLON UPCAST typ { AUpcast $3 }
-  | COLON DOWNCAST typ { ADowncast $3 }
   | UPCAST typ { AUpcast $2 }
   | DOWNCAST typ { ADowncast $2 }
   | COLON CONSTRUCTOR typ { AConstructor $3 }
