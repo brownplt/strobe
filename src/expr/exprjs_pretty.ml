@@ -59,8 +59,8 @@ let rec expr e fmt = match e with
       parens [ text (render_infixOp op); expr e1; expr e2] fmt
   | AssignExpr (_, lv, e) ->
       parens [text "set"; lvalue lv; expr e] fmt
-  | ParenExpr (_, e) ->
-      parens [ text "parens"; expr e ] fmt
+  | HintExpr (_, txt, e) ->
+      parens [ text ("/**" ^ txt ^ "*/"); expr e ] fmt
 
 and lvalue lv fmt = match lv with
     VarLValue (_, x) -> text x fmt

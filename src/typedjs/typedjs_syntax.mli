@@ -84,7 +84,6 @@ type exp
   | EDeref of pos * exp
   | ESetRef of pos * exp * exp
   | ESubsumption of pos * typ * exp
-  | EParens of pos * exp
   | EDowncast of pos * typ * exp
 
 type constr_exp = { 

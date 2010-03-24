@@ -26,7 +26,6 @@ type expr
   | TryFinallyExpr of pos * expr * expr
   | ThrowExpr of pos * expr
   | FuncStmtExpr of pos * id * id list * expr
-  | ParenExpr of pos * expr
   | HintExpr of pos * string * expr
 
 and lvalue =
@@ -98,7 +97,7 @@ let rec expr (e : S.expr) = match e with
       let body_fn (lv,lv_e) = 
         AssignExpr (a,lv,InfixExpr (a,infix_of_assignOp op,lv_e,expr e))
       in eval_lvalue lv body_fn
-  | S.ParenExpr (p, e) -> ParenExpr (p, expr e)
+  | S.ParenExpr (_, e) -> expr e
   | S.ListExpr (a,e1,e2) -> seq a (expr e1) (expr e2)
   | S.CallExpr (a,func,args) -> AppExpr (a,expr func,map expr args)
   | S.FuncExpr (a, args, body) ->
@@ -292,7 +291,6 @@ let rec locals expr = match expr with
   | TryFinallyExpr (_, e1, e2) -> IdSet.union (locals e1) (locals e2)
   | ThrowExpr (_, e) -> locals e
   | FuncStmtExpr (_, f, _, _) -> IdSet.singleton f
-  | ParenExpr (_, e) -> locals e
   | HintExpr (_, _, e) -> locals e
 
 and lv_locals lvalue = match lvalue with

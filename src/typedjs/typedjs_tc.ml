@@ -336,7 +336,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EDowncast (p, t, e) -> 
       let _ = tc_exp env e in
         t
-  | EParens (_, e) -> tc_exp env e
 
 and tc_exps env es = map (tc_exp env) es
 

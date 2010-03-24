@@ -31,16 +31,12 @@ let type_dbs : annotation PosMap.t ref = ref PosMap.empty
 
 let inferred_array : annotation array ref = ref (Array.make 0 (ATyp TBot))
 
-let hints : (pos, annotation) H.t = H.create 200
-
 let rec init_types lst = match lst with
     [] -> ()
   | (pos, str) :: rest when String.length str > 0 && str.[0] == ':' ->
       begin match type_from_comment (pos, str) with
         | AInferred xs -> 
             inferred_array := Array.of_list xs
-        | AUpcast t -> H.add hints pos (AUpcast t)
-        | ADowncast t -> H.add hints pos (ADowncast t)
         | x ->
             type_dbs := PosMap.add pos x !type_dbs
       end;
@@ -191,7 +187,6 @@ let rec exp (env : env) expr = match expr with
               ERec ([ (f,  t, e) ], EConst (a, S.CUndefined))
           | None -> failwith "match_func returned None on a FuncExpr (2)"
       end
-  | ParenExpr (p, e) -> EParens (p, exp env e)
   | HintExpr (p, text, e) -> 
       let e' = exp env e in
         begin match type_from_comment (p, text) with
@@ -467,83 +462,8 @@ let rec defs binds lst  =
         DExternalMethods exts :: defs binds lst 
 *)
 
-
-module InsertHints = struct
-
-  let rec ins_list (p : pos) (v : exp -> exp) lst  : exp list option =
-    match lst with
-      | [] -> None
-      | e :: rest -> 
-          if Pos.before (Exp.pos e) p then
-            begin match ins_list p v rest with
-              | None -> None
-              | Some rest' -> Some (e :: rest')
-            end
-          else 
-            begin match ins p v e with
-              | Some e' -> Some (e' :: rest)
-              | None -> None
-            end
-
-  and ins (p : pos) (v : exp -> exp) (exp : exp) : exp option = 
-    begin match exp with
-      | EParens (q, e) when Pos.before p q -> Some (v exp)
-      | _ -> 
-          let lst = Exp.children exp in
-            match ins_list p v lst with
-              | Some lst' -> Some (Exp.set_children exp lst')
-              | None -> 
-                  if Pos.before p (Exp.pos exp) then
-                    Some (v exp)
-                  else
-                    None
-    end
-
-  let mk p a exp = match a with
-    | AUpcast typ -> 
-        ins p (fun e -> ESubsumption (p, typ, e)) exp
-    | ADowncast typ -> 
-        ins p (fun e -> EDowncast (p, typ, e)) exp
-    | _ -> failwith "expected Upcast or Downcast"
-
-  let rec insert_hint p a def = match def with
-    | DLet (q, x, e, d) -> begin match mk p a e with
-        | Some e' -> DLet (q, x, e', d)
-        | None -> DLet (q, x, e, insert_hint p a d)
-      end
-    | DRec (binds, d) -> begin match insert_bind p a binds with
-        | Some binds' -> DRec (binds', d)
-        | None -> DRec (binds, insert_hint p a d)
-      end
-    | DExp (e, d) -> begin match mk p a e with
-        | Some e' -> DExp (e', d)
-        | None -> DExp (e, insert_hint p a d)
-      end
-    | DConstructor (constr, d) -> begin match mk p a constr.constr_exp with
-        | Some e' ->
-            (* TODO: We ignore hints on initializers. *)
-            DConstructor ({ constr with constr_exp = e' }, d)
-        | None -> DConstructor (constr, insert_hint p a d)
-      end
-    | DExternalMethod (p, x, y, e, d) -> begin match mk p a e with
-        | Some e' -> DExternalMethod (p, x, y, e', d)
-        | None -> DExternalMethod (p, x, y, e, insert_hint p a d)
-      end
-    | DEnd -> raise (Not_well_formed (p, "unusable typing hint"))
-
-  and insert_bind p a binds = match binds with
-    | [] -> None
-    | (x, t, e) :: rest -> match mk p a e with
-        | Some e' -> Some ((x, t, e') :: rest)
-        | None -> match insert_bind p a rest with
-            | Some rest' -> Some ((x, t, e) :: rest')
-            | None -> None
-
-end
-
 let from_exprjs env expr = 
   let exp = defs 
     (IdSet.fold (fun x env -> IdMap.add x false env) (Env.dom env) IdMap.empty)
     (flatten_seq expr) in
-  let exp = H.fold InsertHints.insert_hint hints exp in
     exp

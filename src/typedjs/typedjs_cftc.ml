@@ -59,7 +59,6 @@ let rec a_exp (exp : exp) : exp = match exp with
       EUpdateField (p, a_exp e1, a_exp e2, a_exp e3)
   | ESubsumption (p, t, e) -> ESubsumption (p, t, a_exp e)
   | EDowncast (p, t, e) -> EDowncast (p, t, a_exp e)
-  | EParens (p, e) -> EParens (p, a_exp e)
 
 and a_bind (i, t, e) = (i, t, a_exp e)
 
