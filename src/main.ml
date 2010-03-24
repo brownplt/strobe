@@ -1,11 +1,9 @@
 open JavaScript
 open Exprjs
-open Typedjs
 open Prelude
 open Printf
 open Typedjs_types
 open Typedjs_tc
-open Typedjs_testing
 open Format
 open Typedjs_syntax
 open Typedjs_pretty
@@ -16,6 +14,7 @@ open Format
 open FormatExt
 open Typedjs_cf
 open Typedjs_cftc
+open Lexing
 
 module Lat = Typedjs_lattice
 
@@ -29,32 +28,47 @@ let action_load_file path =
   cin := open_in path;
   cin_name := path
 
+let inferred_annotations = ref []
+
+let action_load_inferred name = 
+  let lexbuf = Lexing.from_channel (open_in name) in
+    try 
+      lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = name };
+      inferred_annotations := 
+        Typedjs_parser.inferred Typedjs_lexer.token lexbuf
+    with
+      |  Failure "lexing: empty token" ->
+           failwith (sprintf "lexical error at %s"
+                       (string_of_position 
+                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+      | Typedjs_parser.Error ->
+           failwith (sprintf "parse error at %s"
+                       (string_of_position 
+                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+
+
 
 let action_pretty () : unit = 
-  let (prog, _) = parse_javascript !cin !cin_name in
+  let prog = parse_javascript !cin !cin_name in
     print_string (JavaScript_pretty.render_prog prog);
     print_newline ()
 
-let action_comments () : unit = 
-    let (_, comments) = parse_javascript !cin !cin_name in
-    let pc (pos, str) = printf "%s %s\n" (string_of_position pos) str in
-      List.iter pc comments
-
 let action_expr () : unit =
-  let (prog, _) = parse_javascript !cin !cin_name in
+  let prog = parse_javascript !cin !cin_name in
   let e = from_javascript prog in
     print_expr e
 
+let get_typedjs () =
+  Typedjs_fromExpr.from_exprjs !env
+    (from_javascript (parse_javascript !cin !cin_name))
+    !inferred_annotations
+
 let action_pretypecheck () : unit = 
-  let (js, comments) = parse_javascript !cin !cin_name in
-  let exprjs = from_javascript js in
-  let typedjs = Typedjs.from_exprjs exprjs comments !env in
+  let typedjs = get_typedjs () in
     Typedjs_pretty.pretty_def std_formatter typedjs
 
 let action_tc () : unit = 
-  let (js, comments) = parse_javascript !cin !cin_name in
-  let exprjs = from_javascript js in
-  let typedjs = Typedjs.from_exprjs exprjs comments !env in
+  let typedjs = get_typedjs () in
   let cpstypedjs = Typedjs_cps.cps typedjs in
   let cf_env =
     Lat.bind "%end" (Lat.singleton RT.Function)
@@ -67,26 +81,12 @@ let action_tc () : unit =
     ()
 
 let action_cps () : unit =
-  let (js, comments) = parse_javascript !cin !cin_name in
-  let exprjs = from_javascript js in
-  let typedjs = Typedjs.from_exprjs exprjs comments !env in
+  let typedjs = get_typedjs () in
   let cps = Typedjs_cps.cps typedjs in
     Typedjs_cps.p_cpsexp cps std_formatter
 
-
-let action_esc () : unit =
-  let (js, comments) = parse_javascript !cin !cin_name in
-  let exprjs = from_javascript js in
-  let typedjs = Typedjs.from_exprjs exprjs comments !env in
-  let cpstypedjs = Typedjs_cps.cps typedjs in
-  let esc = Typedjs_cps.esc_cpsexp cpstypedjs in
-    IdSetExt.pretty std_formatter Format.pp_print_string esc
-
-
 let action_df () : unit =
-  let (js, comments) = parse_javascript !cin !cin_name in
-  let exprjs = from_javascript js in
-  let typedjs = Typedjs.from_exprjs exprjs comments !env in
+  let typedjs = get_typedjs () in
   let cpstypedjs = Typedjs_cps.cps typedjs in
   let env =
     Lat.bind "%end" (Lat.singleton RT.Function)
@@ -98,9 +98,6 @@ let action_df () : unit =
       Typedjs_pretty.pretty_def std_formatter annotated_exp;
       printf "Dataflow analysis successful.\n"
 
-let action_test_tc () : unit =
-  Typedjs_testing.parse_and_test !cin !cin_name
-   
 let action = ref action_tc
 
 let is_action_set = ref false
@@ -119,20 +116,14 @@ let main () : unit =
     [ ("-env", Arg.String set_env, "load the environment from a file");
       ("-pretty", Arg.Unit (set_action action_pretty),
        "pretty-print JavaScript");
-      ("-comments", Arg.Unit (set_action action_comments),
-       "extract comments from JavaScript");
       ("-expr", Arg.Unit (set_action action_expr),
        "simplify JavaScript to exprjs");
       ("-pretc", Arg.Unit (set_action action_pretypecheck),
        "basic well-formedness checks before type-checking and flow-analysis");
       ("-cps", Arg.Unit (set_action action_cps),
        "convert program to CPS");
-      ("-esc", Arg.Unit (set_action action_esc),
-       "escape analysis of CPS");
       ("-df", Arg.Unit (set_action action_df),
        "convert program to ANF, then apply dataflow analysis");
-      ("-unittest", Arg.Unit (set_action action_test_tc),
-       "(undocumented)");
       ("-tc", Arg.Unit (set_action action_tc),
        "type-check (default action)") ]
     (fun s -> action_load_file s)

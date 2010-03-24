@@ -27,21 +27,7 @@ let type_from_comment ((pos, end_p), str) =
 
 let func_index = ref 0
 
-let type_dbs : annotation PosMap.t ref = ref PosMap.empty
-
 let inferred_array : annotation array ref = ref (Array.make 0 (ATyp TBot))
-
-let rec init_types lst = match lst with
-    [] -> ()
-  | (pos, str) :: rest when String.length str > 0 && str.[0] == ':' ->
-      begin match type_from_comment (pos, str) with
-        | AInferred xs -> 
-            inferred_array := Array.of_list xs
-        | x ->
-            type_dbs := PosMap.add pos x !type_dbs
-      end;
-      init_types rest
-  | _ :: rest -> init_types rest
 
 (******************************************************************************)
 
@@ -440,7 +426,8 @@ let rec defs binds lst  =
         DExternalMethods exts :: defs binds lst 
 *)
 
-let from_exprjs env expr = 
+let from_exprjs env expr inferred = 
+  inferred_array := Array.of_list inferred;
   let exp = defs 
     (IdSet.fold (fun x env -> IdMap.add x false env) (Env.dom env) IdMap.empty)
     (flatten_seq expr) in

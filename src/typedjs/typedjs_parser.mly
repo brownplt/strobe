@@ -16,10 +16,13 @@ open Typedjs_types
 %start typ
 %start typ_ann
 %start env
+%start inferred
 
 %type <Typedjs_syntax.typ> typ
 
 %type <Typedjs_syntax.annotation> typ_ann
+
+%type <Typedjs_syntax.annotation list> inferred
 
 %type <Typedjs_syntax.env_decl list> env
 
@@ -60,10 +63,12 @@ annotation :
   | UPCAST typ { AUpcast $2 }
   | DOWNCAST typ { ADowncast $2 }
   | CONSTRUCTOR typ { AConstructor $2 }
-  | COLONCOLON inferred_anns { AInferred $2 }
 
 typ_ann :
   | annotation EOF { $1 }
+
+inferred :
+  | inferred_anns { $1 }
 
 inferred_anns : 
   | { [] }

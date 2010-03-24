@@ -29,15 +29,9 @@ let parse_num_lit (s : string) (l : pos) : token =
 let mk_loc (buf : lexbuf) : pos =
   Lexing.lexeme_start_p buf, Lexing.lexeme_end_p buf
 
-let comments : (pos * string) list ref = ref []
-
-let new_comment (p : pos) (c : string) = 
-  comments := (p, c) :: !comments
-
 let block_comment_buf = Buffer.create 120
 
 let comment_start_p = ref dummy_pos
-
 }
 
 (* dec_digit+ corresponds to DecimalDigits in the spec. *)
@@ -82,12 +76,8 @@ rule token = parse
    | '\n' { new_line lexbuf; token lexbuf }
    | '\r' { new_line lexbuf; token lexbuf }
    | "\r\n" { new_line lexbuf; token lexbuf }
-   | "/*" { comment_start_p := lexeme_start_p lexbuf; block_comment lexbuf }
-   | "//"([^ '\r' '\n']* as x) [ '\r' '\n' ]
-       { comment_start_p := lexeme_start_p lexbuf; 
-         new_comment (!comment_start_p, lexeme_end_p lexbuf) x; 
-         new_line lexbuf;
-         token lexbuf }
+   | "/*" { block_comment lexbuf }
+   | "//"[^ '\r' '\n']* [ '\r' '\n' ] { new_line lexbuf; token lexbuf }
 
    | "/*:" { comment_start_p := lexeme_start_p lexbuf; hint lexbuf }
 
@@ -200,21 +190,10 @@ rule token = parse
    | eof { EOF }
 
 and block_comment = parse
-    "*/" 
-      { new_comment (!comment_start_p, lexeme_end_p lexbuf)
-          (Buffer.contents block_comment_buf);
-        Buffer.clear block_comment_buf;
-        token lexbuf }
-  | '*'
-      { Buffer.add_char block_comment_buf '*';
-        block_comment lexbuf }
-  | [ '\n' '\r' ] 
-      { new_line lexbuf;
-        Buffer.add_char block_comment_buf '\n';
-        block_comment lexbuf }
-  | ([^ '\n' '\r' '*'])+ as txt
-      { Buffer.add_string block_comment_buf txt;
-        block_comment lexbuf }
+  | "*/" { token lexbuf }
+  | '*' { block_comment lexbuf }
+  | [ '\n' '\r' ]  { block_comment lexbuf }
+  | [^ '\n' '\r' '*'] { block_comment lexbuf }
 
 and hint = parse
   | "*/" { let str = Buffer.contents block_comment_buf in

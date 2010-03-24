@@ -49,7 +49,6 @@ type env_decl =
 type annotation =
     ATyp of typ
   | AConstructor of typ 
-  | AInferred of annotation list
   | AUpcast of typ
   | ADowncast of typ
 

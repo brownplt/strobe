@@ -1,9 +1,4 @@
 #!/bin/sh
-for file in ../tests/*.txt
-do
-  ../build/main.d.byte -env ../data/env -unittest $file || echo "ERROR on $file"
-done
-
 
 for file in ../tests/not-well-formed/*.js
 do
