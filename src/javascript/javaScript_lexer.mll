@@ -89,7 +89,7 @@ rule token = parse
          new_line lexbuf;
          token lexbuf }
 
-   | "/**" { comment_start_p := lexeme_start_p lexbuf; hint lexbuf }
+   | "/*:" { comment_start_p := lexeme_start_p lexbuf; hint lexbuf }
 
    (* ContinueId and BreakId are tokens for labelled break and continue.  They
     * include their target label.

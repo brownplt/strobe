@@ -1,0 +1,1 @@
+var foo = /*:Int -> Int */ (function(x) { return x; });

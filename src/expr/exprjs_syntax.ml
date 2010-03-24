@@ -196,6 +196,7 @@ and stmt (s : S.stmt) = match s with
   | S.VarDeclStmt (a, decls) -> varDeclList a decls
   | S.LabelledStmt (p, lbl, s) ->
       LabelledExpr (p, lbl, stmt s)
+  | S.HintStmt (p, txt, s) -> HintExpr (p, txt, stmt s)
 
 and forInit p (fi : S.forInit) = match fi with
     S.NoForInit -> ConstExpr (p, S.CUndefined)

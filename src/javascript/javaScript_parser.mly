@@ -143,6 +143,12 @@ member_expr
   | Function LParen ids RParen LBrace src_elts RBrace
     { FuncExpr (($startpos, $endpos), $3, 
                 BlockStmt (($startpos($5), $endpos($7)), $6)) }
+  | Function LParen ids RParen HINT LBrace src_elts RBrace
+      { HintExpr 
+          (($startpos($5), $endpos($5)), $5,
+           FuncExpr (($startpos, $endpos), $3, 
+                     BlockStmt (($startpos($6), $endpos($8)), $7))) }
+
 (* Reduce/reduce conflict with function statements.  Who here knew that
    named function expressions existed?
   | Function Id LParen ids RParen LBrace src_elts RBrace
@@ -440,6 +446,10 @@ src_elt
   : stmt { $1 }
   | Function Id LParen ids RParen src_elt_block
     { let _,x = $2 in FuncStmt (($startpos, $endpos),x,$4,$6) } 
+  | Function Id LParen ids RParen HINT src_elt_block
+    { let _,x = $2 in 
+        HintStmt (($startpos($6), $endpos($6)), $6,
+                  FuncStmt (($startpos, $endpos),x,$4,$7)) } 
 
 program : src_elts EOF { Prog (($startpos, $endpos), $1) }
 

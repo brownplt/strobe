@@ -43,41 +43,6 @@ let rec init_types lst = match lst with
       init_types rest
   | _ :: rest -> init_types rest
 
-let annotation_between start_p end_p =
-  let found = ref None in
-  let f (typ_start_p, typ_end_p) ann = 
-    if typ_start_p.Lexing.pos_cnum > start_p.Lexing.pos_cnum &&
-      typ_end_p.Lexing.pos_cnum < end_p.Lexing.pos_cnum then
-        begin match !found with
-           None -> found := Some ((typ_start_p, typ_end_p), ann)
-          | Some _ ->
-              raise (Not_well_formed ((start_p, end_p), 
-                                      "found multiple type annotations"))
-        end in
-    PosMap.iter f !type_dbs;
-    !found
-
-let constr_between (p1, p2) = match annotation_between p1 p2 with
-    Some (p, AConstructor typ) -> 
-      type_dbs := PosMap.remove p !type_dbs;
-      Some typ
-  | _ -> None
-
-let type_between (start_p : Lexing.position) (end_p : Lexing.position) : typ =
-  match annotation_between start_p end_p with
-      Some (pos, ATyp typ) -> 
-        type_dbs := PosMap.remove pos !type_dbs;
-        typ
-    | None when !func_index < Array.length !inferred_array ->
-        begin match !inferred_array.(!func_index) with
-            ATyp t -> t
-          | _ -> raise (Not_well_formed 
-                          ((start_p, end_p), "expected a type annotation"))
-        end
-        
-    | _ ->
-        raise (Not_well_formed ((start_p, end_p), "expected a type annotation"))
-
 (******************************************************************************)
 
 
@@ -92,13 +57,14 @@ let rec seq expr = match expr with
     SeqExpr (a1, VarDeclExpr (a2, x, e1), e2) ->
       let (decls, body) = seq e2 in
         ((a2, x, e1) :: decls, body)
-  | SeqExpr (a1, FuncStmtExpr (a2, f, args, e1), e2) ->
+  | SeqExpr (a1, HintExpr (a3, txt, FuncStmtExpr (a2, f, args, e1)), e2) ->
       let (decls, body) = seq e2 in
-        ((a2, f, FuncExpr (a2, args, e1)) :: decls, body)
+        ((a2, f, HintExpr (a3, txt, FuncExpr (a2, args, e1))) :: decls, body)
   | _ -> ([], expr)
 
 let is_func_decl (_, _, e) = match e with
-    FuncExpr _ -> true
+  | FuncExpr _ -> true
+  | HintExpr (_, _, FuncExpr _) -> true
   | _ -> false
 
 let is_not_func_decl d = not (is_func_decl d)
@@ -141,10 +107,6 @@ let rec exp (env : env) expr = match expr with
             EUpdateField
               (p, EDeref (p, EId (p, "%obj")), exp env e2, exp env e3)))
   | AppExpr (a, f, args) -> EApp (a, exp env f, map (exp env) args)
-  | FuncExpr _ -> 
-      (match match_func env expr with
-           Some (_, e) -> e
-         | None -> failwith "match_func returned None on a FuncExpr (1)")
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdMap.add x true env) e2)
   | TryCatchExpr (a, body, x, catch) ->
@@ -180,27 +142,36 @@ let rec exp (env : env) expr = match expr with
   | VarDeclExpr (a, x, e) -> 
       (* peculiar code: body or block ends with var *)
       ELet (a, x, exp env e, EConst (a, S.CUndefined))
-  | FuncStmtExpr (a, f, args, body) ->
+  | HintExpr (p', txt, FuncStmtExpr (a, f, args, body)) ->
       begin match match_func (IdMap.add f false env) 
-        (FuncExpr (a, args, body)) with
+        (HintExpr (p', txt, FuncExpr (a, args, body))) with
             Some (t, e) ->
               ERec ([ (f,  t, e) ], EConst (a, S.CUndefined))
           | None -> failwith "match_func returned None on a FuncExpr (2)"
       end
+  | HintExpr (p, txt, FuncExpr _) -> 
+      (match match_func env expr with
+           Some (_, e) -> e
+         | None -> failwith "match_func returned None on a FuncExpr (1)")
   | HintExpr (p, text, e) -> 
       let e' = exp env e in
         begin match type_from_comment (p, text) with
           | AUpcast typ -> ESubsumption (p, typ, e')
           | ADowncast typ -> EDowncast (p, typ, e')
         end
+  | FuncExpr (p, _, _) -> 
+      raise (Not_well_formed (p, "function is missing a type annotation"))
+  | FuncStmtExpr (p, _, _, _) ->
+      raise (Not_well_formed (p, "function is missing a type annotation"))
 
 and match_func env expr = match expr with
-  | FuncExpr (a, args, LabelledExpr (a', "%return", body)) ->
+  | HintExpr (p, txt, FuncExpr (a, args, LabelledExpr (a', "%return", body))) ->
       if List.length args != List.length (nub args) then
         raise (Not_well_formed (a, "each argument must have a distinct name"));
-      let typ = type_between (fst2 a) (fst2 a') in
-        (* Within [body], a free variable, [x] cannot be referenced, if there
-           is any local variable with the name [x]. *)
+      let typ = match type_from_comment (p, txt) with
+        | ATyp t -> t
+        | _ -> raise
+            (Not_well_formed (p, "expected type on function, got " ^ txt)) in
       let locally_defined_vars = locals body in
       let visible_free_vars = 
         IdSet.diff (IdSetExt.from_list (IdMapExt.keys env))
@@ -271,13 +242,20 @@ let rec flatten_seq (expr : expr) : expr list = match expr with
     SeqExpr (_, e1, e2) -> e1 :: flatten_seq e2
   | _ -> [ expr ]
 
+let constructor_re = Str.regexp " *constructor.*"
+
+let is_constructor_hint hint_txt =
+  let r = Str.string_match constructor_re hint_txt 0 in
+    eprintf "%s is what %b\n" hint_txt r;
+    r
+
 let match_constr_body env expr = match expr with
     (* we drop the LabelledExpr, which will prevents us from using
         return within a constructor. *)
-    FuncStmtExpr (p, f, args, LabelledExpr (p', l, body)) ->
-      begin match constr_between (fst2 p, fst2 p') with
-          None -> None
-        | Some typ -> 
+    HintExpr (p'', txt, FuncStmtExpr (p, f, args, LabelledExpr (p', l, body)))
+      when is_constructor_hint txt ->
+        let typ = match type_from_comment (p'', txt) with
+          | AConstructor typ -> typ in 
             let locally_defined_vars = locals body in
             let visible_free_vars = 
               IdSet.diff (IdSetExt.from_list (IdMapExt.keys env))
@@ -339,18 +317,18 @@ let match_constr_body env expr = match expr with
                         (exp env' !body_exp) args;
                       constr_prototype = EObject (p, [])
                     }
-      end 
   | _ -> None
 
 
 (** [match_func_decl expr] matches function statements and variables bound to
     function expressions. *)
 let match_func_decl expr = match expr with
-    VarDeclExpr (p, x, e) ->
-      (match e with
-           FuncExpr _ -> Some (p, x, e)
-         | _ -> None)
-  | FuncStmtExpr (p, f, args, e) -> Some (p, f, FuncExpr (p, args, e))
+  | VarDeclExpr (p, x, e) -> begin match e with
+      | HintExpr (_, _, FuncExpr _) -> Some (p, x, e)
+      | _ -> None
+    end
+  | HintExpr (p', txt, FuncStmtExpr (p, f, args, e)) ->
+      Some (p, f, HintExpr (p', txt, FuncExpr (p, args, e)))
   | _ -> None
 
 let match_decl expr = match expr with

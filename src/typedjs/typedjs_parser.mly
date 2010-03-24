@@ -56,10 +56,10 @@ typ
   | args ARROW typ { TArrow (TTop, $1, $3) }
 
 annotation :
-  | COLON typ { ATyp $2 }
+  | typ { ATyp $1 }
   | UPCAST typ { AUpcast $2 }
   | DOWNCAST typ { ADowncast $2 }
-  | COLON CONSTRUCTOR typ { AConstructor $3 }
+  | CONSTRUCTOR typ { AConstructor $2 }
   | COLONCOLON inferred_anns { AInferred $2 }
 
 typ_ann :
