@@ -108,68 +108,6 @@ module Exp = struct
 
   type t = exp
 
-  let children exp = match exp with
-    | EConst _ -> []
-    | EArray (_, es) -> es 
-    | EObject (_, ps) -> map snd2 ps
-    | EThis _ -> []
-    | EId _ -> []
-    | EBracket (_, e1, e2) -> [e1; e2]
-    | EUpdateField (_, e1, e2, e3) -> [e1; e2; e3]
-    | ENew (_, _, es) -> es
-    | EPrefixOp (_, _, e) -> [e]
-    | EInfixOp (_, _, e1, e2) -> [e1; e2]
-    | EIf (_, e1, e2, e3) -> [e1; e2; e3]
-    | EApp (_, e1, es) -> e1 :: es
-    | EFunc (_, _, _, e) -> [e]
-    | ELet (_, _, e1, e2) -> [e1; e2]
-    | ERec (binds, e) -> e :: map thd3 binds
-    | ESeq (_, e1, e2) -> [e1; e2]
-    | ELabel (_, _, _, e) -> [e]
-    | EBreak (_, _, e) -> [e]
-    | ETryCatch (_, e1, _, e2) -> [e1; e2]
-    | ETryFinally (_, e1, e2) -> [e1; e2]
-    | EThrow (_, e) -> [e]
-    | ETypecast (_, _, e) -> [e]
-    | ERef (_, e) -> [e]
-    | EDeref (_, e) -> [e]
-    | ESetRef (_, e1, e2) -> [e1; e2]
-    | ESubsumption (_, _, e) -> [e]
-
-  let len = List.length
-
-  let set_children exp children = match exp, children with
-    | EConst (p, c), [] -> exp
-    | EArray (p, es'), es when len es' = len es -> EArray (p, es)
-    | EObject (p, ps), es when len ps = len es ->
-        EObject (p, List.map2 (fun (x, _) e -> (x, e)) ps es)
-    | EThis p, [] -> EThis p
-    | EId (p, x), [] -> EId (p, x)
-    | EBracket (p, _, _), [e1; e2] -> EBracket (p, e1, e2)
-    | EUpdateField (p, _, _, _), [e1; e2; e3] -> EUpdateField (p, e1, e2, e3)
-    | ENew (p, c_id, es'), es when len es' = len es -> ENew (p, c_id, es)
-    | EPrefixOp (p, op, _), [e] -> EPrefixOp (p, op, e)
-    | EInfixOp (p, op, _, _), [e1; e2] -> EInfixOp  (p, op, e1, e2)
-    | EIf (p, _, _, _), [e1; e2; e3] -> EIf (p, e1, e2, e3)
-    | EApp (p, _, args), e1 :: es when len args = len es ->
-        EApp (p, e1, es)
-    | EFunc (p, xs, t, _), [e] -> EFunc (p, xs, t, e)
-    | ELet (p, x, _, _), [e1; e2] -> ELet (p, x, e1, e2)
-    | ERec (binds, _), e :: es when len binds = len es ->
-        ERec (List.map2 (fun (x, t, _) e -> (x, t, e)) binds es, e)
-    | ESeq (p, _, _), [e1; e2] -> ESeq (p, e1, e2)
-    | ELabel (p, l, t, _), [e] -> ELabel (p, l, t, e)
-    | EBreak (p, l, _), [e] -> EBreak (p, l, e)
-    | ETryCatch (p, _, x, _), [e1; e2] -> ETryCatch (p, e1, x, e2)
-    | ETryFinally (p, _, _), [e1; e2] -> ETryFinally (p, e1, e2)
-    | EThrow (p, _), [e] -> EThrow (p, e)
-    | ETypecast (p, r, _), [e] -> ETypecast (p, r, e)
-    | ERef (p, _), [e] -> ERef (p, e)
-    | EDeref (p, _), [e] -> EDeref (p, e)
-    | ESetRef (p, _, _), [e1; e2] -> ESetRef (p, e1, e2)
-    | ESubsumption (p, t, _), [e] -> ESubsumption (p, t, e)
-    | _ -> raise (Invalid_argument "Exp.set_children")
-
   let pos exp = match exp with
     | EConst (p, _) -> p
     | EArray (p, _) -> p

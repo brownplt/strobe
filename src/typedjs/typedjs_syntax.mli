@@ -110,12 +110,6 @@ module Exp : sig
 
   type t = exp
 
-  val children : t -> t list
-
-  (** raises [Invalid_argument] if the number of children does not match
-      the node type. *)
-  val set_children : t -> t list -> t
-
   val pos : exp -> pos
 
 end
