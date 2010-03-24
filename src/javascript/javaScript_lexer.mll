@@ -89,6 +89,8 @@ rule token = parse
          new_line lexbuf;
          token lexbuf }
 
+   | "/**" { comment_start_p := lexeme_start_p lexbuf; hint lexbuf }
+
    (* ContinueId and BreakId are tokens for labelled break and continue.  They
     * include their target label.
     *)
@@ -213,3 +215,13 @@ and block_comment = parse
   | ([^ '\n' '\r' '*'])+ as txt
       { Buffer.add_string block_comment_buf txt;
         block_comment lexbuf }
+
+and hint = parse
+  | "*/" { let str = Buffer.contents block_comment_buf in
+             Buffer.clear block_comment_buf; HINT str }
+  | '*' { Buffer.add_char block_comment_buf '*'; hint lexbuf }
+  | [ '\n' '\r' ] { new_line lexbuf; Buffer.add_char block_comment_buf '\n';
+                    hint lexbuf }
+  | ([^ '\n' '\r' '*'])+ as txt { Buffer.add_string block_comment_buf txt;
+                                  hint lexbuf }
+

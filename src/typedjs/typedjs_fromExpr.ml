@@ -192,6 +192,12 @@ let rec exp (env : env) expr = match expr with
           | None -> failwith "match_func returned None on a FuncExpr (2)"
       end
   | ParenExpr (p, e) -> EParens (p, exp env e)
+  | HintExpr (p, text, e) -> 
+      let e' = exp env e in
+        begin match type_from_comment (p, text) with
+          | AUpcast typ -> ESubsumption (p, typ, e')
+          | ADowncast typ -> EDowncast (p, typ, e')
+        end
 
 and match_func env expr = match expr with
   | FuncExpr (a, args, LabelledExpr (a', "%return", body)) ->

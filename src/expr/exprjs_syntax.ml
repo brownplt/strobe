@@ -27,6 +27,7 @@ type expr
   | ThrowExpr of pos * expr
   | FuncStmtExpr of pos * id * id list * expr
   | ParenExpr of pos * expr
+  | HintExpr of pos * string * expr
 
 and lvalue =
     VarLValue of pos * id
@@ -103,6 +104,7 @@ let rec expr (e : S.expr) = match e with
   | S.FuncExpr (a, args, body) ->
       FuncExpr (a, args,
                 LabelledExpr (stmt_annotation body, "%return", stmt body))
+  | S.HintExpr (p, text, e) -> HintExpr (p, text, expr e)      
   | S.NamedFuncExpr (a, name, args, body) ->
       (* INFO: This translation is absurd and makes typing impossible.
          Introduce FIX and eliminate loops in the process. Note that the
@@ -260,7 +262,7 @@ let from_javascript_expr = expr
 (******************************************************************************)
 
 let rec locals expr = match expr with
-    ConstExpr _ -> IdSet.empty
+  | ConstExpr _ -> IdSet.empty
   | ArrayExpr (_, es) -> IdSetExt.unions (map locals es)
   | ObjectExpr (_, ps) -> IdSetExt.unions (map (fun (_, _, e) -> locals e) ps)
   | ThisExpr _ -> IdSet.empty
@@ -291,6 +293,7 @@ let rec locals expr = match expr with
   | ThrowExpr (_, e) -> locals e
   | FuncStmtExpr (_, f, _, _) -> IdSet.singleton f
   | ParenExpr (_, e) -> locals e
+  | HintExpr (_, _, e) -> locals e
 
 and lv_locals lvalue = match lvalue with
     VarLValue _ -> IdSet.empty

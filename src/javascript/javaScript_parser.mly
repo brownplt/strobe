@@ -24,6 +24,8 @@ let rec expr_to_lvalue (e : expr) : lvalue =  match e with
 %token <Prelude.pos * float> Float
 %token <JavaScript_syntax.assignOp> AssignOp
 
+%token <string> HINT
+
 %token If Else True False New Instanceof This Null Function Typeof Void
  Delete Switch Default Case While Do Break Var In For Try Catch Finally Throw
  Return With Continue 
@@ -132,6 +134,8 @@ primary_expr :
       { ObjectExpr (($startpos, $endpos),$2) }
   | LParen expr RParen
       { ParenExpr (($startpos, $endpos),$2) }
+  | HINT primary_expr { HintExpr (($startpos, $endpos), $1, $2) }
+  | This { ThisExpr (($startpos, $endpos)) }
 
 member_expr
   : primary_expr 

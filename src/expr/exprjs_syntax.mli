@@ -44,6 +44,7 @@ type expr
           for JavaScript to turned into letrecs for Typed JavaScript. *)
   | ParenExpr of pos * expr
       (** Parenthesis are useful for scoping annotations in comments. *)
+  | HintExpr of pos * string * expr
 
 
 and lvalue =

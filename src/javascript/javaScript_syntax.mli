@@ -112,6 +112,7 @@ and expr =
   | CallExpr of pos * expr * expr list
   | FuncExpr of pos * id list * stmt
   | NamedFuncExpr of pos * id * id list * stmt
+  | HintExpr of pos * string * expr
 
 and stmt =
   | BlockStmt of pos * stmt list
