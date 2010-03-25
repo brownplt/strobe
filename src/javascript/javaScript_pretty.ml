@@ -95,7 +95,7 @@ let prop (p : prop) = match p with
 
 let rec varDecl decl = match decl with
     VarDeclNoInit (_,x) -> text x
-  | VarDecl (_,x,e) -> sep [text x; text "="; expr e]
+  | VarDecl (_,x,e) -> horz [text x; text "="; expr e]
 
 
 and caseClause clause = match clause with
@@ -145,8 +145,8 @@ and expr e = match e with
       in vert [ text "{"; nest (vert (map f ps)); text "}" ]
   | ThisExpr _ -> text "this"
   | VarExpr (_,x) -> text x
-  | DotExpr (_,e,x) -> sep [expr e; text "."; text x]
-  | BracketExpr (_,e1,e2) -> sep [expr e1; text "["; expr e2; text "]"]
+  | DotExpr (_,e,x) -> squish [expr e; text "."; text x]
+  | BracketExpr (_,e1,e2) -> squish [expr e1; text "["; expr e2; text "]"]
   | NewExpr (_,constr,args) -> 
       sep [text "new "; expr constr; parens (commas (List.map expr args)) ]
   | PrefixExpr (_,op,e) -> sep [prefixOp op; expr e]
@@ -162,7 +162,7 @@ and expr e = match e with
   | ParenExpr (_,e) -> sep [ parens [ expr e ] ]
   | ListExpr (_,e1,e2) -> sep (commas [expr e1; expr e2 ])
   | CallExpr (_,func,args) ->
-      sep [ expr func; parens (commas (map expr args)) ]
+     squish [ expr func; parens (commas (map expr args)) ]
   | FuncExpr (_,args,body) ->
       vert [ sep [ text "function"; parens (commas (map text args)) ];
              stmt body ]
@@ -205,9 +205,7 @@ and stmt s = match s with
   | ReturnStmt (_,e) ->  sep [ text "return"; nest (expr e); text ";" ]
   | WithStmt (e,s) -> sep [text "with"; paren_exp e; stmt s]
   | VarDeclStmt (_,decls) ->
-      sep [ text "var"; 
-            vert (commas (map varDecl decls));
-            text ";" ]
+      squish [ text "var "; horz (commas (map varDecl decls)); text ";" ]
   | FuncStmt (_,name,args,body) ->
       sep [text "function"; text name; parens (intersperse (text ",") 
                                                  (List.map text args));

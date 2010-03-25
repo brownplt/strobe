@@ -27,8 +27,8 @@ contracts.zipWith = function(f,arr1,arr2) {
 contracts.blame = function(guilty,expected,received,message,loc) {
   var guiltyMsg = typeof(guilty) == "string" 
                     ? guilty : guilty.value;
-  var msg = guiltyMsg + " violated the contract at " + loc + "; expected " + 
-             expected + " but received " + received + "; " + message;
+  var msg = "contract violation: expected " + expected + ", but received "
+    + received + "\n" + loc;
   var err = new Error(msg);
   err.guilty = msg;
   err.blamed = guiltyMsg;
@@ -108,8 +108,18 @@ contracts.undefined = contracts.flat("undefined", function(val) {
   return val === undefined;
 });
 
+contracts.String = function(v) {
+    return typeof v === "string";
+};
+
+contracts.Int = function(v) {
+    return typeof v === "number";
+};
+
 
 // pos is the name of val.  neg should be the name of the calling context.
 contracts.guard = function(ctc,val,pos,neg,loc) {
   return ctc.client(neg,loc)(ctc.server(pos,loc)(val));
 };
+
+/* End of contracts.js ********************************************************/
