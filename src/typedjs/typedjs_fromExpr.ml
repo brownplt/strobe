@@ -9,7 +9,7 @@ module S = JavaScript_syntax
 
 exception Not_well_formed of pos * string
 
-let type_from_comment ((pos, end_p), str) =
+let parse_annotation (pos, end_p) str =
   let lexbuf = Lexing.from_string str in
     lexbuf.Lexing.lex_start_p <- pos;
     lexbuf.Lexing.lex_curr_p <- pos;
@@ -141,7 +141,7 @@ let rec exp (env : env) expr = match expr with
          | None -> failwith "match_func returned None on a FuncExpr (1)")
   | HintExpr (p, text, e) -> 
       let e' = exp env e in
-        begin match type_from_comment (p, text) with
+        begin match parse_annotation p text with
           | AUpcast typ -> ESubsumption (p, typ, e')
           | ADowncast typ -> EDowncast (p, typ, e')
         end
@@ -154,7 +154,7 @@ and match_func env expr = match expr with
   | HintExpr (p, txt, FuncExpr (a, args, LabelledExpr (a', "%return", body))) ->
       if List.length args != List.length (nub args) then
         raise (Not_well_formed (a, "each argument must have a distinct name"));
-      let typ = match type_from_comment (p, txt) with
+      let typ = match parse_annotation p txt with
         | ATyp t -> t
         | _ -> raise
             (Not_well_formed (p, "expected type on function, got " ^ txt)) in
@@ -240,7 +240,7 @@ let match_constr_body env expr = match expr with
         return within a constructor. *)
     HintExpr (p'', txt, FuncStmtExpr (p, f, args, LabelledExpr (p', l, body)))
       when is_constructor_hint txt ->
-        let typ = match type_from_comment (p'', txt) with
+        let typ = match parse_annotation p'' txt with
           | AConstructor typ -> typ in 
             let locally_defined_vars = locals body in
             let visible_free_vars = 
