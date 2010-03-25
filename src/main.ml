@@ -17,7 +17,6 @@ open Typedjs_cftc
 open Lexing
 
 module Lat = Typedjs_lattice
-module ZZZZ = Contract_compiler
 
 let cin = ref stdin
 
@@ -52,6 +51,12 @@ let action_load_inferred name =
 let action_pretty () : unit = 
   let prog = parse_javascript !cin !cin_name in
     print_string (JavaScript_pretty.render_prog prog);
+    print_newline ()
+
+let action_contracts () : unit = 
+  let prog = parse_javascript !cin !cin_name in
+  let prog' = Typedjs_contracts.types_to_contracts prog in
+    print_string (JavaScript_pretty.render_prog prog');
     print_newline ()
 
 let action_expr () : unit =
@@ -126,7 +131,9 @@ let main () : unit =
       ("-df", Arg.Unit (set_action action_df),
        "convert program to ANF, then apply dataflow analysis");
       ("-tc", Arg.Unit (set_action action_tc),
-       "type-check (default action)") ]
+       "type-check (default action)");
+      ("-contracts", Arg.Unit (set_action action_contracts),
+       "insert contracts") ]
     (fun s -> action_load_file s)
     "Typed JavaScript [action] [path]";;
 
