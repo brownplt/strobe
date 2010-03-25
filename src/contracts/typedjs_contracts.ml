@@ -18,6 +18,7 @@ module S = struct
         CArrow (map (ctc_of_typ p) args, ctc_of_typ p result)
     | TApp ("Int", []) -> flat p "Int"
     | TApp ("String", []) -> flat p "String"
+    | TApp ("Undefined", []) -> flat p "Undefined"
     | _ -> raise (Invalid_argument "ctc_of_typ")
     
   let contract_parser p text = match parse_annotation p text with

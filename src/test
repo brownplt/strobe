@@ -53,3 +53,10 @@ do
       echo "$file: aborted with exit code $?; output was:\n$result\n"
   fi
 done
+
+cd ../tests/contracts
+for FILE in *.js
+do
+  ./runtest.sh $FILE
+done
+

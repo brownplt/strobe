@@ -35,14 +35,18 @@ contracts.blame = function(guilty,expected,received,message,loc) {
   err.expected = expected;
   err.received = received;
   err.guardLoc = loc;
-  try { console.log(err); } catch(_) { };
+  try { 
+    console.log(err); 
+  } 
+  catch(_) { 
+
+  };
   throw err;
-}
+};
  
 contracts.flat = function(name) {
   return function(pred) {
     return {
-      flat: function(val) { return pred(val); },
       server: function(s,loc) {
         return function(val) {
           if (pred(val)) { 
@@ -63,8 +67,6 @@ contracts.flat = function(name) {
 contracts.varArityFunc = function(name) {
   return function(fixedArgs,restArgs,result) {
     return {
-      isHigherOrder: true,
-      flat: function(val) { return typeof(val) == "function"; },
       server: function(s,loc) {
         return function(proc) {
           if (typeof(proc) == "function") {
@@ -104,7 +106,7 @@ contracts.varArityFunc = function(name) {
 };
 
 
-contracts.undefined = contracts.flat("undefined", function(val) { 
+contracts.Undefined = contracts.flat("undefined", function(val) { 
   return val === undefined;
 });
 
@@ -116,8 +118,8 @@ contracts.Int = function(v) {
     return typeof v === "number";
 };
 
-
 // pos is the name of val.  neg should be the name of the calling context.
+// loc is the location where the contract is declared.
 contracts.guard = function(ctc,val,pos,neg,loc) {
   return ctc.client(neg,loc)(ctc.server(pos,loc)(val));
 };
