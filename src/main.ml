@@ -17,6 +17,7 @@ open Typedjs_cftc
 open Lexing
 
 module Lat = Typedjs_lattice
+module ZZZZ = Contract_compiler
 
 let cin = ref stdin
 
