@@ -10,5 +10,5 @@ function(x) /*: Int + Void -> { h : (-> Void) -> Void } */ {
     }
   };
 
-  return { /* g : g,*/  h : h };
+  return { h : h };
 };

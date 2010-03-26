@@ -132,7 +132,7 @@ let empty_env = IdMap.empty
 
 let escape_env (heap : heap) (env : env) : env =
   let f v = match v with
-    | AClosure _ -> ASet (RTSet.singleton RT.Function)
+(*    | AClosure _ -> ASet (RTSet.singleton RT.Function) *)
     | ALocTypeIs _ -> ASet (RTSet.singleton RT.Boolean)
     | ALocTypeof _ -> ASet (RTSet.singleton RT.String)
     | _ -> v in
