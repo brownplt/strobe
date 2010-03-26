@@ -131,8 +131,15 @@ let bind (x : id) (v : av) (env : env) : env = IdMap.add x v env
 let empty_env = IdMap.empty
 
 let escape_env (heap : heap) (env : env) : env =
-  let f v = ASet (to_set heap v) in
+  let f v = match v with
+    | AClosure _ -> ASet (RTSet.singleton RT.Function)
+    | ALocTypeIs _ -> ASet (RTSet.singleton RT.Boolean)
+    | ALocTypeof _ -> ASet (RTSet.singleton RT.String)
+    | _ -> v in
     IdMap.map f env
+
+let escape_heap (heap : heap) = 
+  Heap.map (fun _ -> rtany) heap
 
 let set_ref loc value heap =
   Heap.add loc value heap

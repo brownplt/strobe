@@ -153,10 +153,10 @@ let typed_cfa (env : env) (cpsexp : cpsexp) : unit =
         H.remove lambdas node;
         if not (H.mem reached_nodes node) then 
           begin
-            let heap = empty_heap in
-            let env = escape_env (H.find heaps env_node)
-              (H.find envs env_node) in
+            let heap = escape_heap (H.find heaps env_node) in
+            let env = escape_env heap (H.find envs env_node) in
               H.remove envs node;
+              (* eprintf "%d: restarting flow with this env:\n%s\nand this heap:\n%s\n" node (FormatExt.to_string p_env env) (FormatExt.to_string p_heap heap); *)
               flow (union_env heap arg_env env) heap exp
           end in
         H.iter sub lambdas;
