@@ -34,7 +34,7 @@ args
   | arg_typ STAR args { $1 :: $3 }
 
 field
-  : ID COLON typ { ($1, $3) }
+  : ID COLON typ { ($1, TRef $3) }
 
 fields
   : { [] }
@@ -49,7 +49,7 @@ arg_typ
   | BOOL { typ_bool }
   | UNDEF { typ_undef }
   | arg_typ UNION arg_typ { typ_union IdMap.empty $1 $3 }
-  | LBRACE fields RBRACE { TRef (typ_permute (TObject $2)) }
+  | LBRACE fields RBRACE { typ_permute (TObject $2) }
   | LPAREN typ RPAREN { $2 }
   | ID { TApp ( $1, [] ) }
 

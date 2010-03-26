@@ -66,7 +66,7 @@ let rec exp (env : env) expr = match expr with
   | ObjectExpr (a, ps) -> 
       if List.length ps != List.length (nub (map (fun (_, p, _) -> p) ps)) then
         raise (Not_well_formed (a, "repeated field names"));
-      ERef (a, EObject (a, map (fun (_, x, e) ->  x, exp env e) ps))
+      EObject (a, map (fun (_, x, e) ->  x, ERef (a, exp env e)) ps)
   | ThisExpr a -> EThis a
   | VarExpr (a, x) -> begin
       try
@@ -76,7 +76,7 @@ let rec exp (env : env) expr = match expr with
           EId (a, x)
       with Not_found -> raise (Not_well_formed (a, x ^ " is not defined"))
     end
-  | BracketExpr (a, e1, e2) -> EBracket (a, EDeref (a, exp env e1), exp env e2)
+  | BracketExpr (a, e1, e2) -> EDeref (a, EBracket (a, exp env e1, exp env e2))
   | NewExpr (a, VarExpr (_, x), args) -> ENew (a, x, map (exp env) args)
   | NewExpr (p, _, _) ->
       raise (Not_well_formed (p, "new expressions much name the constructor"))
@@ -85,12 +85,7 @@ let rec exp (env : env) expr = match expr with
   | IfExpr (a, e1, e2, e3) -> EIf (a, exp env e1, exp env e2, exp env e3)
   | AssignExpr (a, VarLValue (p', x), e) -> ESetRef (a, EId (p', x), exp env e)
   | AssignExpr (p, PropLValue (_, e1, e2), e3) ->
-      ELet 
-        (p, "%obj", exp env e1,
-         ESetRef
-           (p, EId (p, "%obj"),
-            EUpdateField
-              (p, EDeref (p, EId (p, "%obj")), exp env e2, exp env e3)))
+      ESetRef (p, EBracket (p, exp env e1, exp env e2), exp env e3)
   | AppExpr (a, f, args) -> EApp (a, exp env f, map (exp env) args)
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdMap.add x true env) e2)

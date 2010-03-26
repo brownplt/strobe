@@ -40,7 +40,7 @@ let rec subtype (classes : typ IdMap.t) (s : typ) (t : typ) : bool =
         with
             _ -> false
         end
-      | TApp (cid, apps), TRef (TObject fs2) -> begin try
+      | TApp (cid, apps), TObject fs2 -> begin try
           match IdMap.find cid classes with
               TObject fs1 -> subtype_fields classes fs1  fs2
         with

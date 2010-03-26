@@ -130,13 +130,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
     end
   | EObject (p, fields) ->
       typ_permute (TObject (map (second2 (tc_exp env)) fields))
-  | EUpdateField (p, obj, f_name, f_val) -> 
-      begin match tc_exp env obj, f_name, tc_exp env f_val with
-        | TObject fs, EConst (_, JavaScript_syntax.CString name), t ->
-            let fs' = List.filter (fun (x, _) -> x <> name) fs in
-              typ_permute (TObject ((name, t) :: fs'))
-        | _ -> raise (Typ_error (p, "type error updating a field"))
-      end
   | EBracket (p, obj, field) -> begin match tc_exp env obj, field with
         TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
           (try
@@ -355,12 +348,12 @@ let rec tc_def env def = match def with
             let env =List.fold_left2 bind_arg env (cexp.constr_args) arg_typs in
             let env = Env.clear_labels env in           
               begin match result_typ with
-                  TRef (TObject fields) -> 
+                  TObject fields -> 
                     List.iter (fun (n,t) -> 
                                  eprintf "init: %s\n" n) cexp.constr_inits;
                     (* first make sure all fields are initialized with
                        the right types in constr_inits. *)
-                    let check_field (name, typ) = begin 
+                    let check_field (name, TRef typ) = begin 
                       eprintf "checking field %s\n" name;
                       try 
                         let (_, e) = List.find (fun (n,_) -> n = name) 
