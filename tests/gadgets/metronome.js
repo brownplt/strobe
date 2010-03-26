@@ -1,41 +1,26 @@
 // *** TYPES FOR gadgets/Metronome_cc/main.js *** 
-/*::
-  function on_viewOpen : ( -> Void)
-  function onAddCustomMenuItems : (Dom -> Void)
-  function onMoreGadgetsClick : (Dom -> Void)
-  function onStart : ( -> Void)
-  function onStop : ( -> Void)
-  function incr : ( -> Void)
-  function decr : ( -> Void)
-  function onPlay : ( -> Void)
-  function onAudioStateChange : (Dom * Int -> Void)
-  function startedAudio : ( -> Void)
-  function stoppedAudio : ( -> Void)
-  function check_key : ( -> Void)
-*/
-
 var curAudioClip_ = /*:upcast Audioclip + Bool*/ false;
 var timer = 0; // ARJUN
 var flag = 0;
 var bpm = 0;
 var AUDIO_CLIP_URI = "tick.wav";
 
-function on_viewOpen() {
+function on_viewOpen() /*: -> Void */ {
   options.putDefaultValue("bpm",100);
-  // ARJUN: DOM bpm = options.getValue("bpm");
+  // ARJUN: Int bpm = /*:downcast Int */options.getValue("bpm");
   bpm_display.innerText = bpm;
 	//pluginHelper.onAddCustomMenuItems = onAddCustomMenuItems;
 }
 
-function onAddCustomMenuItems(menu) {
+function onAddCustomMenuItems(menu) /*: Menu -> Void */ {
   menu.AddItem("More Gadgets", 0, onMoreGadgetsClick);
 }
 
-function onMoreGadgetsClick(_ /* Arjun: ignored arg */)  {
+function onMoreGadgetsClick(_ /* Arjun: ignored arg */) /*: { } -> Void */ {
 	framework.openURL("http://www.gdgadgets.com");
 }
 
-function onStart() {
+function onStart() /*: -> Void */ {
   if(flag == 0) {
     onStop();
     var time = parseInt((60/bpm)*1000, undefined);
@@ -54,14 +39,14 @@ function onStart() {
   }
 }
 
-function onStop() {
+function onStop() /*: -> Void */ {
   if(timer != 0) {
     clearInterval(timer);
     timer = 0;
   }
 }
 
-function incr() {
+function incr() /*: -> Void */ {
   if(280 > bpm) {
     bpm++;
     options.putValue("bpm",bpm);
@@ -73,7 +58,7 @@ function incr() {
   }
 }
 
-function decr() {
+function decr() /*: -> Void */ {
   if(60 < bpm) {
     bpm-=1;
     options.putValue("bpm",bpm);
@@ -85,7 +70,7 @@ function decr() {
   }
 }
 
-function onPlay() {
+function onPlay() /*: -> Void */ {
     /*
   if (typeof curAudioClip_ === "boolean") {      // Not playing anything
     curAudioClip_ = framework.audio.play(AUDIO_CLIP_URI, onAudioStateChange); 
@@ -97,7 +82,7 @@ function onPlay() {
     } */
 }
 
-function onAudioStateChange(audioClip, state) {
+function onAudioStateChange(audioClip, state) /*: {} * Int -> Void */ {
   if (state == gddSoundStateStopped) {
     stoppedAudio();
     curAudioClip_ = null;
@@ -106,15 +91,15 @@ function onAudioStateChange(audioClip, state) {
   }
 }
 
-function startedAudio() {
+function startedAudio() /*: -> Void */ {
   status_image.src = "green.png";
 }
 
-function stoppedAudio() {
+function stoppedAudio() /*: -> Void */ {
   status_image.src = "red.png";
 }
 
-function check_key() {
+function check_key() /*: -> Void */ {
   if(event.keycode == 45)
     decr();
   if(event.keycode == 43)

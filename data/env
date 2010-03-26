@@ -1,6 +1,8 @@
 class HTMLWindow prototype {} {
   document : { },
-  setTimeout : (-> Void) * Int -> Int
+  setTimeout : (-> Void) * Int -> Int,
+  setInterval : ( -> Void) * Int -> Int,
+  clearInterval : Int -> Void
 }
 
 class String prototype {} {
@@ -10,27 +12,9 @@ class String prototype {} {
 document : { }
 window : HTMLWindow
 setTimeout : (-> Void) * Int -> Int
+setInterval : ( -> Void) * Int -> Int
+clearInterval : Int -> Void
 undefined: Void
 
 parseInt : String + Number * Int + Void -> Int
 parseFloat : String + Number -> Double
-
-gddSoundStateStopped : Int
-gddSoundStatePlaying : Int
-
-class Audioclip prototype {} {
-  balance : Int,
-  currentPosition : Int,
-  duration : Int,
-  error: Int,
-  src : String,
-  state : Int,
-  volume : Int
-}
-
-framework : {
-  openURL : String -> Void,
-  audio : {
-    play : String * (Dom * Int -> Void) -> Audioclip
-  }
-}

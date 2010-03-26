@@ -49,7 +49,6 @@ let rec seq expr = match expr with
   | _ -> ([], expr)
 
 let is_func_decl (_, _, e) = match e with
-  | FuncExpr _ -> true
   | HintExpr (_, _, FuncExpr _) -> true
   | _ -> false
 
@@ -232,7 +231,6 @@ let constructor_re = Str.regexp " *constructor.*"
 
 let is_constructor_hint hint_txt =
   let r = Str.string_match constructor_re hint_txt 0 in
-    eprintf "%s is what %b\n" hint_txt r;
     r
 
 let match_constr_body env expr = match expr with

@@ -132,6 +132,8 @@ let main () : unit =
        "convert program to ANF, then apply dataflow analysis");
       ("-tc", Arg.Unit (set_action action_tc),
        "type-check (default action)");
+      ("-inferred", Arg.String action_load_inferred,
+       "load inferred annotations");
       ("-contracts", Arg.Unit (set_action action_contracts),
        "insert contracts") ]
     (fun s -> action_load_file s)

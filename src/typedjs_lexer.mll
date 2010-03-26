@@ -16,6 +16,9 @@ rule token = parse
    | '\n' { new_line lexbuf; token lexbuf }
    | '\r' { new_line lexbuf; token lexbuf }
    | "\r\n" { new_line lexbuf; token lexbuf }
+   | "/*" { block_comment lexbuf }
+   | "//"[^ '\r' '\n']* [ '\r' '\n' ] { new_line lexbuf; token lexbuf }
+
    | "->" { ARROW }
    | "(" { LPAREN }
    | ")" { RPAREN }
@@ -39,3 +42,9 @@ rule token = parse
    | "downcast" { DOWNCAST }
    | eof { EOF }
    | ident as x { ID x }
+
+and block_comment = parse
+  | "*/" { token lexbuf }
+  | '*' { block_comment lexbuf }
+  | [ '\n' '\r' ]  { block_comment lexbuf }
+  | [^ '\n' '\r' '*'] { block_comment lexbuf }

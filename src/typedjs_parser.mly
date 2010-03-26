@@ -67,7 +67,7 @@ typ_ann :
   | annotation EOF { $1 }
 
 inferred :
-  | inferred_anns { $1 }
+  | inferred_anns EOF { $1 }
 
 inferred_anns : 
   | { [] }

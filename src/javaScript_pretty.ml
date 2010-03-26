@@ -170,6 +170,8 @@ and expr e = match e with
       vert [ sep [ text "function"; text name; 
                    parens (commas (map text args)) ];
              stmt body ]
+  | HintExpr (_, txt, e) ->
+      horz [ text "/*:"; text txt; text "*/"; expr e ]
 
 and stmt s = match s with
    BlockStmt (_,ss) -> 
