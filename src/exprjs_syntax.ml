@@ -34,7 +34,6 @@ and lvalue =
 
 (******************************************************************************)
 
-open JavaScript_stxutil
 module S = JavaScript_syntax
 
 let infix_of_assignOp op = match op with
@@ -101,8 +100,7 @@ let rec expr (e : S.expr) = match e with
   | S.ListExpr (a,e1,e2) -> seq a (expr e1) (expr e2)
   | S.CallExpr (a,func,args) -> AppExpr (a,expr func,map expr args)
   | S.FuncExpr (a, args, body) ->
-      FuncExpr (a, args,
-                LabelledExpr (stmt_annotation body, "%return", stmt body))
+      FuncExpr (a, args, LabelledExpr (a, "%return", stmt body))
   | S.HintExpr (p, text, e) -> HintExpr (p, text, expr e)      
   | S.NamedFuncExpr (a, name, args, body) ->
       (* INFO: This translation is absurd and makes typing impossible.
@@ -165,7 +163,7 @@ and stmt (s : S.stmt) = match s with
   | S.FuncStmt (a, f, args, s) -> 
       FuncStmtExpr 
         (a, f, args, LabelledExpr 
-           (stmt_annotation s, "%return", stmt s))
+           (a, "%return", stmt s))
   | S.ExprStmt e -> expr e
   | S.ThrowStmt (a, e) -> ThrowExpr (a, expr e)
   | S.ReturnStmt (a, e) -> BreakExpr (a, "%return", expr e)

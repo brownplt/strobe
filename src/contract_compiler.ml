@@ -16,11 +16,8 @@ end
 module Make ( C : Contracts) = struct
 
   open C
-  open JavaScript_stxutil
 
-  let p = expr_annotation contract_lib
-
-  let rec cc (ctc : contract) : expr = match ctc with
+  let rec cc p (ctc : contract) : expr = match ctc with
     | CPred (name, expr) -> 
         CallExpr 
           (p, CallExpr (p, DotExpr (p, contract_lib, "flat"), 
@@ -30,9 +27,9 @@ module Make ( C : Contracts) = struct
         CallExpr
           (p, CallExpr (p, DotExpr (p, contract_lib, "varArityFunc"),
                         [ ConstExpr (p, CString "function") ]),
-           [ ArrayExpr (p, map cc args); 
+           [ ArrayExpr (p, map (cc p) args); 
              ArrayExpr (p, []); (* zero var-arity arguments *)
-             cc result ])
+             cc p result ])
 
   let rec ic_expr (expr : expr) = match expr with
     | ConstExpr _ -> expr
@@ -57,7 +54,7 @@ module Make ( C : Contracts) = struct
         | None -> ic_expr e
         | Some contract -> 
             CallExpr (p, DotExpr (p, contract_lib, "guard"),
-                      [ cc contract; ic_expr e;
+                      [ cc p contract; ic_expr e;
                         ConstExpr (p, CString "callee");
                         ConstExpr (p, CString "caller");
                         ConstExpr (p, CString (string_of_position p)) ])
@@ -94,7 +91,7 @@ module Make ( C : Contracts) = struct
           | Some contract ->
               let e = 
                 CallExpr (p, DotExpr (p, contract_lib, "guard"),
-                          [ cc contract; 
+                          [ cc p contract; 
                             ic_expr (FuncExpr (p', args, ic_stmt s));
                             ConstExpr (p', CString "callee");
                             ConstExpr (p', CString "caller");
