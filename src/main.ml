@@ -24,6 +24,9 @@ let cin_name = ref "stdin"
 
 let env = ref Env.empty_env
 
+let get_env () = 
+  Env.set_global_object !env "HTMLWindow"
+
 let action_load_file path =
   cin := open_in path;
   cin_name := path
@@ -65,7 +68,7 @@ let action_expr () : unit =
     print_expr e
 
 let get_typedjs () =
-  Typedjs_fromExpr.from_exprjs !env
+  Typedjs_fromExpr.from_exprjs (get_env ())
     (from_javascript (parse_javascript !cin !cin_name))
     !inferred_annotations
 
@@ -80,10 +83,10 @@ let action_tc () : unit =
     Lat.bind "%end" (Lat.singleton RT.Function)
       (Lat.bind "%global" (Lat.singleton RT.Object)
          (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
-            (cf_env_of_tc_env !env))) in
+            (cf_env_of_tc_env (get_env ())))) in
     typed_cfa cf_env cpstypedjs;
     let annotated_typedjs = insert_typecasts typedjs in
-    let _ = Typedjs_tc.typecheck !env annotated_typedjs in
+    let _ = Typedjs_tc.typecheck (get_env ()) annotated_typedjs in
     ()
 
 let action_cps () : unit =
@@ -98,7 +101,7 @@ let action_df () : unit =
     Lat.bind "%end" (Lat.singleton RT.Function)
       (Lat.bind "%global" (Lat.singleton RT.Object)
          (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
-            (cf_env_of_tc_env !env))) in
+            (cf_env_of_tc_env (get_env ())))) in
     typed_cfa env cpstypedjs;
     let annotated_exp = insert_typecasts typedjs in
       Typedjs_pretty.pretty_def std_formatter annotated_exp;

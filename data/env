@@ -1,20 +1,22 @@
-class HTMLWindow prototype {} {
-  document : { },
-  setTimeout : (-> Void) * Int -> Int,
-  setInterval : ( -> Void) * Int -> Int,
-  clearInterval : Int -> Void
-}
+// NOTE: This file should _only_ contain class definitions. The fields of
+// HTMLWindow (the global object's type) are automatically added to the
+// initial environment.
 
 class String prototype {} {
   charCodeAt : Int -> Double
 }
 
-document : { }
-window : HTMLWindow
-setTimeout : (-> Void) * Int -> Int
-setInterval : ( -> Void) * Int -> Int
-clearInterval : Int -> Void
-undefined: Void
+// HTMLWindow is the type of the global object. All its fields are added to the
+// initial environment.
+class HTMLWindow prototype {} {
+  document : { },
+  setTimeout : (-> Void) * Int -> Int,
+  setInterval : ( -> Void) * Int -> Int,
+  clearInterval : Int -> Void,
+  parseInt : String + Number * Int + Void -> Int,
+  parseFloat : String + Number -> Double,
+  window : HTMLWindow,
+  undefined: Void
+}
 
-parseInt : String + Number * Int + Void -> Int
-parseFloat : String + Number -> Double
+

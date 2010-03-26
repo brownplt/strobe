@@ -69,6 +69,11 @@ module Env = struct
         classes = IdMapExt.join err env1.classes env2.classes
       }
 
+  let set_global_object env cname = match lookup_class cname env with
+    | TObject fs -> 
+        List.fold_left (fun env (x, t) -> bind_id x t env) env fs
+    | _ -> failwith "set_global_object: got a class that is not an object"
+
 end
 
 let parse_env (cin : in_channel) (name : string) : env_decl list =

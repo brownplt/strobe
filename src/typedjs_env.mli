@@ -36,6 +36,10 @@ module Env : sig
  (** Used to load environments from multiple files. *)
   val union : env -> env -> env
 
+  (** [set_global_object env class_name] adds all the fields of [class_name]
+      to the environment. *)
+  val set_global_object : env -> string -> env
+
 end
 
 
