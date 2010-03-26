@@ -36,8 +36,6 @@ let rec exp e fmt = match e with
   | EBracket (_, e1, e2) ->
       exp e1 fmt;
       brackets [exp e2] fmt
-  | EUpdateField (_, e1, e2, e3) ->
-      squish [ exp e1; brackets [ exp e2; text "="; exp e3 ] ] fmt
   | ENew (_, c_id, args) -> 
       parens (text "new" :: text c_id :: map exp args) fmt
   | EIf (_, e1, e2, e3) ->
