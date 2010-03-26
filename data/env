@@ -1,14 +1,15 @@
 class HTMLWindow prototype {} {
-  document : Dom
+  document : { },
+  setTimeout : (-> Void) * Int -> Int
 }
 
 class String prototype {} {
   charCodeAt : Int -> Double
 }
 
-document : Dom
-window : Dom
-setTimeout : Dom
+document : { }
+window : HTMLWindow
+setTimeout : (-> Void) * Int -> Int
 undefined: Void
 
 parseInt : String + Number * Int + Void -> Int

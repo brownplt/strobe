@@ -1,2 +1,2 @@
-window.setTimeoutz(function (x) /*: Dom -> Void */ {
-  return; });
+window.setTimeout(function () /*: -> Void */ {
+        return; }, 200);
