@@ -47,8 +47,7 @@ let tc_arith env (p : pos) (t1 : typ) (t2 : typ) (int_args : bool)
 let tc_cmp env (p : pos) (lhs : typ) (rhs : typ) : typ = 
   let subtype = subtype (Env.get_classes env) in
     if (subtype lhs typ_str && subtype rhs typ_str) || 
-      (subtype lhs typ_num && subtype rhs typ_num) || 
-      (subtype lhs TDom || subtype rhs TDom) then
+      (subtype lhs typ_num && subtype rhs typ_num) then
         typ_bool
     else
       raise (Typ_error (p, "comparision type error"))
@@ -70,7 +69,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EDeref (p, e) -> begin match tc_exp env e with
       | TRef t -> t
       | TSource t -> t
-      | TDom -> TDom
       | TApp (constr, _) -> Env.lookup_class constr env
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
                                  (string_of_typ t)))
@@ -137,7 +135,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
         | TObject fs, EConst (_, JavaScript_syntax.CString name), t ->
             let fs' = List.filter (fun (x, _) -> x <> name) fs in
               typ_permute (TObject ((name, t) :: fs'))
-        | TDom, EConst (_, JavaScript_syntax.CString name), t -> TDom
         | _ -> raise (Typ_error (p, "type error updating a field"))
       end
   | EBracket (p, obj, field) -> begin match tc_exp env obj, field with
@@ -146,7 +143,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
-      | TDom, _ -> TDom (* TODO: banned fields? *)
       | TApp (cname, apps), EConst (_, JavaScript_syntax.CString x) -> begin
           try
             let (TObject fs) = Env.lookup_class cname env in
@@ -279,20 +275,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
                           (p, sprintf "arity-mismatch: the function expects %d \
                                 arguments, but %d arguments given"
                              (List.length expected_typs) (List.length args)))
-      | TDom -> 
-          let arg_typs = tc_exps env args in
-            if List.for_all (fun t -> subtype (Env.get_classes env) t TDom) 
-              arg_typs then
-              TDom
-            else
-              let is_bad (_, t) = not (subtype (Env.get_classes env) t TDom) in
-              let (ix, typ) = List.find is_bad 
-                (List.combine (iota (List.length arg_typs)) arg_typs) in
-              raise (Typ_error 
-                       (p, sprintf "argument %d has type %s; but the function \
-                                    is an imported DOM function." (ix + 1)
-                          (string_of_typ typ)))
-
       | _ -> raise (Typ_error (p, "expected a function"))
     end
   | ERec (binds, body) -> 

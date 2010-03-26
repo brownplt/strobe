@@ -26,9 +26,6 @@ let rec typ t  = match t with
   | TRef s -> horz [ text "ref"; parens [ typ s ] ]
   | TSource s -> horz [ text "source"; parens [ typ s ] ]
   | TSink s -> horz [ text "sink"; parens [ typ s ] ]
-  | TDom -> text "Dom"
-
-    
 
 let rec exp e fmt = match e with
     EConst (_, c) -> JavaScript_pretty.p_const c fmt

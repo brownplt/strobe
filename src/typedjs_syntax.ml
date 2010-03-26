@@ -40,7 +40,6 @@ type typ =
   | TSink of typ
   | TTop
   | TBot
-  | TDom
 
 type env_decl =
     EnvClass of constr * typ * (id * typ) list

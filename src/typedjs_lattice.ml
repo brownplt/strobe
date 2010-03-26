@@ -156,7 +156,6 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
   | Typedjs_syntax.TRef t -> rt_of_typ t
   | Typedjs_syntax.TSource t -> rt_of_typ t
   | Typedjs_syntax.TSink t -> rt_of_typ t
-  | Typedjs_syntax.TDom -> rtany
   | Typedjs_syntax.TTop -> rtany
   | Typedjs_syntax.TBot -> RTSet.empty
 
@@ -176,13 +175,6 @@ let compare_heap = Heap.compare RTSet.compare
 
 let compare_env = IdMap.compare AV.compare
 
-let rec simple_static cs lst  : typ = match lst with
-  | [] -> TBot
-  | RT.Number :: lst' ->typ_union cs typ_num (simple_static cs lst')
-  | RT.String :: lst' ->typ_union cs typ_str (simple_static cs lst')
-  | RT.Boolean :: lst' -> typ_union cs typ_bool (simple_static cs lst')
-  | _ -> TDom
-
 let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TTop -> TTop
   | TBot -> TBot (* might change if we allow arbitrary casts *)
@@ -199,5 +191,4 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TRef t -> TRef t
   | TSource t -> TSource t
   | TSink t -> TSink t
-  | TDom -> simple_static cs (RTSetExt.to_list rt)
   | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)

@@ -8,7 +8,7 @@ open Typedjs_types
 
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
-       UNDEF BOOL LBRACE RBRACE COMMA COLONCOLON FUNCTION DOM
+       UNDEF BOOL LBRACE RBRACE COMMA FUNCTION
        PROTOTYPE CLASS UPCAST DOWNCAST
 
 %right UNION
@@ -48,7 +48,6 @@ arg_typ
   | STR { typ_str }
   | BOOL { typ_bool }
   | UNDEF { typ_undef }
-  | DOM { TDom }
   | arg_typ UNION arg_typ { typ_union IdMap.empty $1 $3 }
   | LBRACE fields RBRACE { TRef (typ_permute (TObject $2)) }
   | LPAREN typ RPAREN { $2 }

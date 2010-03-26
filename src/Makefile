@@ -3,7 +3,6 @@
 OCAMLBUILD = ocamlbuild -build-dir ../build -quiet
 
 all: debug
-	ocamltags *.ml
 
 clean:
 	rm -rf ../build
