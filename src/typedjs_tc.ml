@@ -349,12 +349,9 @@ let rec tc_def env def = match def with
             let env = Env.clear_labels env in           
               begin match result_typ with
                   TObject fields -> 
-                    List.iter (fun (n,t) -> 
-                                 eprintf "init: %s\n" n) cexp.constr_inits;
                     (* first make sure all fields are initialized with
                        the right types in constr_inits. *)
                     let check_field (name, TRef typ) = begin 
-                      eprintf "checking field %s\n" name;
                       try 
                         let (_, e) = List.find (fun (n,_) -> n = name) 
                           cexp.constr_inits in 
@@ -390,7 +387,7 @@ let rec tc_def env def = match def with
   | DExternalMethod (p, cname, mid, me, d) -> 
       try
         let expenv = Env.bind_id "this" (TApp (cname, [])) env in
-        let env' = Env.add_method cname mid (tc_exp expenv me) env in
+        let env' = Env.add_method cname mid (TRef (tc_exp expenv me)) env in
           tc_def env' d
       with Not_found -> raise (
         Typ_error (p, "class " ^ cname ^ " doesnt exist"))

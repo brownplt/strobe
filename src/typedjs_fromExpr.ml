@@ -357,71 +357,9 @@ let rec defs env lst =
         end
   end
 
-(*
-
-let match_external_method binds expr = match expr with
-    AssignExpr 
-      (p,
-       PropLValue 
-         (_, BracketExpr (_, VarExpr (_, c_name), StringExpr (_, "prototype")),
-          StringExpr (_, f_name)),
-       rhs_expr) -> begin match match_func binds rhs_expr with
-          Some (typ, e) -> Some (p, c_name, f_name, typ, e)
-        | None -> None
-      end
-  | _ -> None
-
-let match_methods_for c_name env expr = match expr with
-    AssignExpr 
-      (p,
-       PropLValue 
-         (_, BracketExpr (_, VarExpr (_, c_name'), StringExpr (_, "prototype")),
-          StringExpr (_, f_name)),
-       rhs_expr) when c_name = c_name' -> Some (p, f_name, exp env rhs_expr)
-  | _ -> None
-  
-let def binds expr = match expr with
-    AssignExpr 
-      (p,
-       PropLValue 
-         (_, BracketExpr (_, VarExpr (_, c_name), StringExpr (_, "prototype")),
-          StringExpr (_, f_name)),
-       rhs_expr) ->
-        DExternalField (p, c_name, f_name, exp binds rhs_expr), binds
-  | VarDeclExpr (_, x, _) -> DExp (exp binds expr), IdSet.add x binds
-  | _ -> DExp (exp binds expr), binds
-
-
-let match_prototype c_name env lst =
-  match match_while (match_methods_for c_name env) lst with
-      [], expr :: lst' ->
-        begin match expr with
-            AssignExpr
-              (p,
-               PropLValue
-                 (_, VarExpr (_, c_name'), StringExpr (_, "prototype")),
-               rhs_expr) when c_name = c_name' ->
-                Some (exp env rhs_expr), lst'
-          | _ -> None, lst
-        end
-    | (p, f_name, f_exp) :: fields, lst' -> 
-        let mk_field (_, x, e) = (x, false, e) in
-          Some (EObject (p, map mk_field ((p, f_name, f_exp) :: fields))), lst'
-      
-
-let rec defs binds lst  = 
-  match match_while (match_external_method binds) lst with
-    | [], [] -> []
-    | [],  e :: lst'  ->
-        let d, binds' = def binds e in
-          d :: defs binds' lst'
-    | exts, lst ->
-        DExternalMethods exts :: defs binds lst 
-*)
-
 let from_exprjs env expr inferred = 
   inferred_array := Array.of_list inferred;
   let exp = defs 
-    (IdSet.fold (fun x env -> IdMap.add x false env) (Env.dom env) IdMap.empty)
+    (IdSet.fold (fun x env -> IdMap.add x true env) (Env.dom env) IdMap.empty)
     (flatten_seq expr) in
     exp
