@@ -6,16 +6,6 @@ open JavaScript_syntax
 
 module S = String
 
-(* Requires: start < String.length str *)
-let rec drop_spaces (str : string) (start : int) = 
-  match String.get str start with
-    ' '  -> drop_spaces str (start + 1)
-  | '\t' -> drop_spaces str (start + 1)
-  | '\r' -> drop_spaces str (start + 1)
-  | '\n' -> drop_spaces str (start + 1)
-  |  _   -> String.sub str start (String.length str - start)
-
-
 (* TODO: if integer conversions overflow, treat as a float *)
 let parse_num_lit (s : string) (l : pos) : token =
   if S.contains s 'x' || S.contains s 'X'
@@ -84,11 +74,8 @@ rule token = parse
    (* ContinueId and BreakId are tokens for labelled break and continue.  They
     * include their target label.
     *)
-   | "continue" [ ' ' '\t' ]+ ident as cont 
-       { ContinueId (drop_spaces cont 8) }
-   | "break" [ ' ' '\t' ]+ ident as cont 
-       { BreakId (drop_spaces cont 8) }
-
+   | "continue" [ ' ' '\t' ]+ (ident as x) { ContinueId x }
+   | "break" [ ' ' '\t' ]+ (ident as x) { BreakId x }
    | '/' ([^ '*'] double_quoted_string_char* as x) "/gi"
        { Regexp (x, true, true) }
    | '/' ([^ '*'] double_quoted_string_char* as x) "/g"
