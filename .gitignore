@@ -1,5 +1,4 @@
 build
 .DS_Store
 javascript-trace/dist
-src/javascript/javaScript_parser.conflicts
-src/lambdajs/lambdajs_parser.conflicts
+src/*.conflicts

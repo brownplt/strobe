@@ -1,3 +1,2 @@
-<expr> or <javascript> or <typedjs> or <lambdajs> or <contracts> : include
 true : use_menhir
 true : use_str
