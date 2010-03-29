@@ -23,12 +23,19 @@ let rec t_xml (xml : X.xml) : typ IdMap.t = match xml with
     with Not_found ->
       fold_left (IdMapExt.join err) IdMap.empty (map t_xml children) 
     end
+
+let parse_xml cin = 
+  try X.parse_in cin
+  with X.Error (msg, pos) ->
+    eprintf "line %d, %s\n" (X.line pos) (X.error_msg msg);
+    raise (X.Error (msg, pos))
+
       
 let env_of_html cin = 
   let f x t env = Env.bind_id x t env in 
-    IdMap.fold f (t_xml (X.parse_in cin)) Env.empty_env
+    IdMap.fold f (t_xml (parse_xml cin)) Env.empty_env
 
-let env_of_strings cin = match X.parse_in cin with
+let env_of_strings cin = match parse_xml cin with
   | X.Element ("strings", _, children) ->
       let f env x = match x with
         | X.Element (str_id, _, _) -> 

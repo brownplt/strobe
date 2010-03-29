@@ -2,6 +2,79 @@
 
 var tetris = null;
 
+var X = 0;
+var Y = 0;
+var curPiece = 0;
+
+
+
+// PARAMETERS
+var nSquares = 4;
+var nTypes = 7;
+var boardHeight = 16;
+var boardWidth = 10;
+var Level = 1;
+var speed0 = 700;
+var speedK = 60;
+var speed = speed0 - speedK * Level;
+var nLines = 0;
+
+
+// GLOBAL VARIABLES
+var curX = 1;
+var curY = 1;
+var skyline = boardHeight - 1;
+var serialN = 0;
+
+var boardLoaded = 1;
+var gamePaused = 0;
+var gameStarted = 0;
+var sayingBye = 0;
+var timerID = null;
+
+var tetrisMusic = null;
+var tetrisMusicSrc = gadget.storage.extract("music/Korobeiniki.mid");
+
+// ARRAYS
+var f = []; // new Array();
+for (var i = 0; i < 20; i++) {
+    f[i] = [];
+    for (var j = 0; j < 20; j++) {
+        f[i][j] = 0;
+    }
+}
+
+var xToErase = [0,0,0,0]; // new Array(0, 0, 0, 0);
+var yToErase = [0,0,0,0]; //new Array(0, 0, 0, 0);
+var dx = [0,0,0,0]; //new Array(0, 0, 0, 0);
+var dy = [0,0,0,0];//new Array(0, 0, 0, 0);
+var dx_ = [0,0,0,0]; // new Array(0, 0, 0, 0);
+var dy_ = [0,0,0,0]; //new Array(0, 0, 0, 0);
+var dxBank = []; //new Array();
+var dyBank = []; // new Array();
+dxBank[1] = [0,1,-1,0]; // new Array(0, 1, - 1, 0);
+dyBank[1] = [0,0,0,1]; //new Array(0, 0, 0, 1);
+dxBank[2] = [0,1,-1,-1]; //new Array(0, 1, - 1, - 1);
+dyBank[2] = [0,0,0,1];//new Array(0, 0, 0, 1);
+dxBank[3] = [0,1,-1,1]; //new Array(0, 1, - 1, 1);
+dyBank[3] = [0, 0, 0, 1];
+dxBank[4] = [0, - 1, 1, 0];
+dyBank[4] = [0, 0, 1, 1];
+dxBank[5] = [0, 1, - 1, 0];
+dyBank[5] = [0, 0, 1, 1];
+dxBank[6] = [0, 1, - 1, - 2];
+dyBank[6] = [0, 0, 0, 0];
+dxBank[7] = [0, 1, 1, 0];
+dyBank[7] = [0, 0, 1, 1];
+
+
+// FUNCTIONS
+
+function init() /*: -> Void */ {
+    resetGame();
+}
+
+
 function view_onOpen() /*: -> Void */ {
 
     options.putDefaultValue("keyLeftHR", "Left");
@@ -18,8 +91,8 @@ function view_onOpen() /*: -> Void */ {
 
     plugin.onAddCustomMenuItems = AddCustomMenuItems;
 
-    for (x = 0; x < 10; x++) {
-        for (y = 0; y < 16; y++) {
+    for (var x = 0; x < 10; x++) {
+        for (var y = 0; y < 16; y++) {
             divBackground.appendElement("<div name=\"s" + y + "_" + x + "\" x=\"" + (x * 15) + "\" y=\"" + (y * 15) + "\" height=\"15\" width=\"15\" background=\"#FFC000\" />");
         }
     }
@@ -85,72 +158,10 @@ function gameKeyDown() /*: -> Void */ {
     }
 }
 
-function gameKeyUp() {
+function gameKeyUp() /*: -> Void */ {
     //gadget.debug.trace("KeyUp: "+event.keyCode);
 }
 
-
-// PARAMETERS
-var nSquares = 4;
-var nTypes = 7;
-var boardHeight = 16;
-var boardWidth = 10;
-var Level = 1;
-var speed0 = 700;
-var speedK = 60;
-var speed = speed0 - speedK * Level;
-var nLines = 0;
-
-
-// GLOBAL VARIABLES
-var curX = 1;
-var curY = 1;
-var skyline = boardHeight - 1;
-var serialN = 0;
-
-var boardLoaded = 1;
-var gamePaused = 0;
-var gameStarted = 0;
-var sayingBye = 0;
-var timerID = null;
-
-var tetrisMusic = null;
-var tetrisMusicSrc = storage.extract("music/Korobeiniki.mid");
-
-// ARRAYS
-var f = new Array();
-for (i = 0; i < 20; i++) {
-    f[i] = new Array();
-    for (j = 0; j < 20; j++) {
-        f[i][j] = 0;
-    }
-}
-
-var xToErase = new Array(0, 0, 0, 0);
-var yToErase = new Array(0, 0, 0, 0);
-var dx = new Array(0, 0, 0, 0);
-var dy = new Array(0, 0, 0, 0);
-var dx_ = new Array(0, 0, 0, 0);
-var dy_ = new Array(0, 0, 0, 0);
-var dxBank = new Array();
-var dyBank = new Array();
-dxBank[1] = new Array(0, 1, - 1, 0);
-dyBank[1] = new Array(0, 0, 0, 1);
-dxBank[2] = new Array(0, 1, - 1, - 1);
-dyBank[2] = new Array(0, 0, 0, 1);
-dxBank[3] = new Array(0, 1, - 1, 1);
-dyBank[3] = new Array(0, 0, 0, 1);
-dxBank[4] = new Array(0, - 1, 1, 0);
-dyBank[4] = new Array(0, 0, 1, 1);
-dxBank[5] = new Array(0, 1, - 1, 0);
-dyBank[5] = new Array(0, 0, 1, 1);
-dxBank[6] = new Array(0, 1, - 1, - 2);
-dyBank[6] = new Array(0, 0, 0, 0);
-dxBank[7] = new Array(0, 1, 1, 0);
-dyBank[7] = new Array(0, 0, 1, 1);
-
-
-// FUNCTIONS
 
 function resetGame() /*: -> Void */ {
     for (var i = 0; i < boardHeight; i++) {
@@ -169,10 +180,6 @@ function resetGame() /*: -> Void */ {
     infoLevel.innerText = Level;
     serialN = 0;
     skyline = boardHeight - 1;
-}
-
-function init() /*: -> Void */ {
-    resetGame();
 }
 
 function start() /*: -> Void */ {
@@ -247,10 +254,10 @@ function play() /*: -> Void */ {
             return;
         }
         else {
-            activeL_ = 0;
+            /*            activeL_ = 0;
             activeU_ = 0;
             activeR_ = 0;
-            activeD_ = 0;
+            activeD_ = 0;*/
             gameStarted = 0;
             labelStatus.innerText = strGameOver;
             labelStatus.visible = true;
@@ -275,7 +282,7 @@ function fillMatrix() /*: -> Void */ {
 
 function removeLines() /*: -> Void */ {
     for (var i = 0; i < boardHeight; i++) {
-        gapFound = 0;
+        var gapFound = 0;
         for (var j = 0; j < boardWidth; j++) {
             if (f[i][j] == 0) {
                 gapFound = 1;
@@ -341,10 +348,10 @@ function erasePiece() /*: -> Void */ {
     }
 }
 
-function pieceFits(X, Y) /*: Int * Int - Void */ {
+function pieceFits(X, Y) /*: Int * Int -> Void */ {
     for (var k = 0; k < nSquares; k++) {
-        theX = X + dx_[k];
-        theY = Y + dy_[k];
+        var theX = X + dx_[k];
+        var theY = Y + dy_[k];
         if (theX < 0 || theX >= boardWidth || theY >= boardHeight) return 0;
         if (theY > - 1 && f[theY][theX] > 0) return 0;
     }
@@ -419,7 +426,7 @@ function fall() /*: -> Void */ {
     timerID = setTimeout("play()", speed);
 }
 
-function getPiece(N) /*: -> Void */ {
+function getPiece(N) /*: Int -> Void */ {
     curPiece = (getPiece.arguments.length == 0) ? 1 + Math.floor(nTypes * Math.random()) : N;
     curX = 5;
     curY = 0;

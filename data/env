@@ -10,6 +10,9 @@ class Int prototype {} {
   toString : -> String
 }
 
+class Array prototype {} {
+}
+
 // HTMLWindow is the type of the global object. All its fields are added to the
 // initial environment.
 class HTMLWindow prototype {} {
@@ -17,10 +20,14 @@ class HTMLWindow prototype {} {
   setTimeout : (-> Void) * Int -> Int,
   setInterval : ( -> Void) * Int -> Int,
   clearInterval : Int -> Void,
+  clearTimeout : Int -> Void,
   parseInt : String + Number * Int + Void -> Int,
   parseFloat : String + Number -> Double,
   window : HTMLWindow,
-  undefined: Void
+  undefined: Void,
+  Math: {
+    floor : Number -> Int
+  }
 }
 
 class HTMLElement prototype {} {

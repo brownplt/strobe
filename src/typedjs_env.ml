@@ -76,11 +76,20 @@ module Env = struct
 
 end
 
+open Lexing
+
 let parse_env (cin : in_channel) (name : string) : env_decl list =
   let lexbuf = Lexing.from_channel cin in
-    lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with 
-                                   Lexing.pos_fname = name };
-    Typedjs_parser.env Typedjs_lexer.token lexbuf
+    try
+      lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with 
+                                      Lexing.pos_fname = name };
+      Typedjs_parser.env Typedjs_lexer.token lexbuf
+    with
+      | Failure "lexing: empty token" ->
+          failwith (sprintf "error lexing environment at %s"
+                      (string_of_position 
+                         (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+
 
 let rec add_methods (lst : (id * typ) list) (class_name : id) (env : Env.env) = 
   match lst with
