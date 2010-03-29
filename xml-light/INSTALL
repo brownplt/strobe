@@ -1,0 +1,12 @@
+Installation Instructions
+=========================
+
+This distribution of XML-Light 2.2 is packaged for ocamlfind. 
+
+
+Steps to build:
+
+make all # you will get an error!
+make all # no errors
+sudo make install
+ocamlfind query xmllight
