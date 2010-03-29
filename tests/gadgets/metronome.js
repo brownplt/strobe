@@ -8,7 +8,7 @@ var AUDIO_CLIP_URI = "tick.wav";
 function on_viewOpen() /*: -> Void */ {
   options.putDefaultValue("bpm",100);
   // ARJUN: Int bpm = /*:downcast Int */options.getValue("bpm");
-  bpm_display.innerText = bpm;
+  bpm_display.innerText = bpm.toString();
 	//pluginHelper.onAddCustomMenuItems = onAddCustomMenuItems;
 }
 
@@ -50,7 +50,7 @@ function incr() /*: -> Void */ {
   if(280 > bpm) {
     bpm++;
     options.putValue("bpm",bpm);
-    bpm_display.innerText = bpm;
+    bpm_display.innerText = bpm.toString();
     if(flag == 1) {
       flag = 0;
       onStart();
@@ -62,7 +62,7 @@ function decr() /*: -> Void */ {
   if(60 < bpm) {
     bpm-=1;
     options.putValue("bpm",bpm);
-    bpm_display.innerText = bpm;
+    bpm_display.innerText = bpm.toString();
     if(flag == 1) {
       flag = 0;
       onStart();

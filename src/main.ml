@@ -17,6 +17,7 @@ open Typedjs_cftc
 open Lexing
 
 module Lat = Typedjs_lattice
+module ZZZ = Gadget
 
 let cin = ref stdin
 
@@ -120,9 +121,14 @@ let set_action (thunk : unit -> unit) (() : unit) : unit =
 let set_env (fname : string) : unit = 
   env := Env.union !env (mk_env (parse_env (open_in fname) fname))
 
+let set_xml_env (fname : string) : unit =
+  env := Env.union !env (Gadget.env_of_html (open_in fname))
+
 let main () : unit =
   Arg.parse
     [ ("-env", Arg.String set_env, "load the environment from a file");
+      ("-xmlenv", Arg.String set_xml_env, 
+       "load the environment from a file");
       ("-pretty", Arg.Unit (set_action action_pretty),
        "pretty-print JavaScript");
       ("-expr", Arg.Unit (set_action action_expr),

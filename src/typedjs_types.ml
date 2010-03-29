@@ -23,7 +23,10 @@ let rec subtype (classes : typ IdMap.t) (s : typ) (t : typ) : bool =
   let subtype = subtype classes
   and subtypes = subtypes classes in
     match s, t with
-        TApp ("Int", []), TApp ("Number", []) -> true
+      | TApp ("Int", []), TApp ("Number", []) -> true
+(*
+      | TApp ("Number", []), TApp ("String", []) -> true 
+      | TApp ("Int", []), TApp ("String", []) -> true *)
       | TApp (c1, args1), TApp (c2, args2) ->
           if c1 = c2 then subtypes args1 args2 else false
       | TUnion (s1, s2), _ -> 

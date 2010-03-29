@@ -80,6 +80,7 @@ inferred_anns :
 any_id :
   | ID { $1 }
   | STR { "String" }
+  | INT { "Int" }
 
 env_decl
   : CLASS any_id PROTOTYPE typ LBRACE fields RBRACE

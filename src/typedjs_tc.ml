@@ -73,16 +73,21 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
                                  (string_of_typ t)))
     end 
-  | ESetRef (p, e1, e2) -> 
-      let t = tc_exp env e2 in
-      let s = tc_exp env e1 in
-        if subtype (Env.get_classes env) s (TSink t) then
-          t
-        else raise 
-          (Typ_error 
-             (p, sprintf "left-hand side has type %s, but the \
+  | ESetRef (p, e1, e2) -> begin match tc_exp env e1, tc_exp env e2 with
+      | TRef s, t
+      | TSink s, t ->
+          if subtype (Env.get_classes env) t s then 
+            t
+          else raise
+            (Typ_error 
+               (p, sprintf "left-hand side has type %s, but the \
                   right-hand side has type %s"
-                (string_of_typ s) (string_of_typ t)))
+                  (string_of_typ s) (string_of_typ t)))
+      | s, _ -> 
+          raise (Typ_error 
+                   (p, sprintf "cannot write to LHS (type %s)" 
+                      (string_of_typ s)))
+    end
   | ELabel (p, l, t, e) -> 
       let s = tc_exp (Env.bind_lbl l t env) e in
         if subtype (Env.get_classes env) s t then t
