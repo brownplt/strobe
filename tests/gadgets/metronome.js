@@ -105,5 +105,3 @@ function check_key() /*: -> Void */ {
   if(event.keycode == 43)
     incr();
 }
-
-on_viewOpen();

@@ -3,3 +3,8 @@ function foo(obj) /*: { x : Int } -> Int */ {
     return obj.x;
 }
 
+function bar(obj) /*: { func : Int -> Int } -> Int */ {
+    var x = obj.func(10000);
+    return x;
+}
+

@@ -88,7 +88,7 @@ env_decl
           $4 (* prototype type *),
           $6 (* local fields *)) }
   | ID COLON typ
-    { EnvBind ($1, $3) }
+    { EnvBind ($1, TRef $3) }
 
 env_decls
   : { [] }
