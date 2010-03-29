@@ -1,6 +1,8 @@
+//note: took out "getLevel" since it was never used.
+
 var tetris = null;
 
-function view_onOpen() {
+function view_onOpen() /*: -> Void */ {
 
     options.putDefaultValue("keyLeftHR", "Left");
     options.putDefaultValue("keyLeft", 37);
@@ -30,30 +32,30 @@ function view_onOpen() {
 // Adds our plugin specific items to the menu
 
 
-function AddCustomMenuItems(menu) {
+function AddCustomMenuItems(menu) /*: Menu -> Void */ {
     menu.AddItem(strMenuNew, 0, OnMenuClicked);
 }
 
-function OnMenuClicked(itemText) {
+function OnMenuClicked(itemText) /*: {} -> Void */ {
     if (itemText == strMenuNew) {
         gameStart();
     }
 }
 
-function gameLeave() {
+function gameLeave() /*: -> Void */ {
     pause();
     labelStatus.innerText = strPaused;
     labelStatus.visible = true;
 }
 
-function gameFocus() {
+function gameFocus() /*: -> Void */ {
     if (gamePaused) {
         resume();
         labelStatus.visible = false;
     }
 }
 
-function gameStart() {
+function gameStart() /*: -> Void */ {
     init();
     start();
     btnStart.visible = false;
@@ -61,7 +63,7 @@ function gameStart() {
     divBackground.focus();
 }
 
-function gameKeyDown() {
+function gameKeyDown() /*: -> Void */ {
     if (!gameStarted || gamePaused) return;
     //gadget.debug.trace("KeyDown: "+event.keyCode);
     switch (event.keyCode) {
@@ -85,31 +87,8 @@ function gameKeyDown() {
 
 function gameKeyUp() {
     //gadget.debug.trace("KeyUp: "+event.keyCode);
-}// *** TYPES FOR gadgets/TetraminoGame_cc/tetris.js *** 
-/*::
-  function resetGame : ( -> Void)
-  function init : ( -> Void)
-  function start : ( -> Void)
-  function playMusic : ( -> Void)
-    function tetrisMusic.onstatechange : (Dom * Int -> Void)
-  function ClipStateChange : (Dom * Int -> Void)
-  function pause : ( -> Void)
-  function resume : ( -> Void)
-  function play : ( -> Void)
-  function fillMatrix : ( -> Void)
-  function removeLines : ( -> Void)
-  function drawPiece : ( -> Void)
-  function erasePiece : ( -> Void)
-  function pieceFits : (Int * Int -> Int)
-  function moveleft : ( -> Void)
-  function moveright : ( -> Void)
-  function rotate : ( -> Void)
-  function movedown : ( -> Int)
-  function fall : ( -> Void)
-  function getPiece : ( -> Int)
-  function getBackground : (Int -> String)
-*/
-//note: took out "getLevel" since it was never used.
+}
+
 
 // PARAMETERS
 var nSquares = 4;
@@ -173,7 +152,7 @@ dyBank[7] = new Array(0, 0, 1, 1);
 
 // FUNCTIONS
 
-function resetGame() {
+function resetGame() /*: -> Void */ {
     for (var i = 0; i < boardHeight; i++) {
         for (var j = 0; j < boardWidth; j++) {
             f[i][j] = 0;
@@ -192,11 +171,11 @@ function resetGame() {
     skyline = boardHeight - 1;
 }
 
-function init() {
+function init() /*: -> Void */ {
     resetGame();
 }
 
-function start() {
+function start() /*: -> Void */ {
     if (gameStarted) {
         if (!boardLoaded) return;
         if (gamePaused) resume();
@@ -211,16 +190,16 @@ function start() {
     playMusic();
 }
 
-function playMusic() {
+function playMusic() /*: -> Void */ {
     if (options.getValue("tetrisMusic")) {
         tetrisMusic = framework.audio.play(tetrisMusicSrc);
-        tetrisMusic.onstatechange = function (clip, new_state) {
+        tetrisMusic.onstatechange = function (clip, new_state) /*: {} * Int -> Void */ {
             ClipStateChange(clip, new_state);
         };
     }
 }
 
-function ClipStateChange(clip, new_state) {
+function ClipStateChange(clip, new_state) /*: {} * Int -> Void */ {
     gadget.debug.trace("State changed to " + new_state);
     if (new_state == gddSoundStateStopped) {
         gadget.debug.trace("Restart Music");
@@ -229,7 +208,7 @@ function ClipStateChange(clip, new_state) {
     }
 }
 
-function pause() {
+function pause() /*: -> Void  */ {
     if (boardLoaded && gameStarted) {
         if (gamePaused) {
             //resume(); 
@@ -244,7 +223,7 @@ function pause() {
     }
 }
 
-function resume() {
+function resume() /*: -> Void */ {
     if (boardLoaded && gameStarted && gamePaused) {
         play();
         gamePaused = 0;
@@ -255,7 +234,7 @@ function resume() {
     }
 }
 
-function play() {
+function play() /*: -> Void */ {
     if (movedown()) {
         timerID = setTimeout("play()", speed);
         return;
@@ -283,7 +262,7 @@ function play() {
     }
 }
 
-function fillMatrix() {
+function fillMatrix() /*: -> Void */ {
     for (var k = 0; k < nSquares; k++) {
         X = curX + dx[k];
         Y = curY + dy[k];
@@ -294,7 +273,7 @@ function fillMatrix() {
     }
 }
 
-function removeLines() {
+function removeLines() /*: -> Void */ {
     for (var i = 0; i < boardHeight; i++) {
         gapFound = 0;
         for (var j = 0; j < boardWidth; j++) {
@@ -328,7 +307,7 @@ function removeLines() {
     }
 }
 
-function drawPiece() {
+function drawPiece() /*: -> Void */ {
     if (boardLoaded) {
         for (var k = 0; k < nSquares; k++) {
             X = curX + dx[k];
@@ -348,7 +327,7 @@ function drawPiece() {
     }
 }
 
-function erasePiece() {
+function erasePiece() /*: -> Void */ {
     if (boardLoaded) {
         for (var k = 0; k < nSquares; k++) {
             X = curX + dx[k];
@@ -362,7 +341,7 @@ function erasePiece() {
     }
 }
 
-function pieceFits(X, Y) {
+function pieceFits(X, Y) /*: Int * Int - Void */ {
     for (var k = 0; k < nSquares; k++) {
         theX = X + dx_[k];
         theY = Y + dy_[k];
@@ -372,7 +351,7 @@ function pieceFits(X, Y) {
     return 1;
 }
 
-function moveleft() {
+function moveleft() /*: -> Void */ {
     for (var k = 0; k < nSquares; k++) {
         dx_[k] = dx[k];
         dy_[k] = dy[k];
@@ -384,7 +363,7 @@ function moveleft() {
     }
 }
 
-function moveright() {
+function moveright() /*: -> Void */ {
     for (var k = 0; k < nSquares; k++) {
         dx_[k] = dx[k];
         dy_[k] = dy[k];
@@ -396,7 +375,7 @@ function moveright() {
     }
 }
 
-function rotate() {
+function rotate() /*: -> Void */ {
     for (var k = 0; k < nSquares; k++) {
         dx_[k] = dy[k];
         dy_[k] = -dx[k];
@@ -411,7 +390,7 @@ function rotate() {
     }
 }
 
-function movedown() {
+function movedown() /*: -> Void */ {
     for (var k = 0; k < nSquares; k++) {
         dx_[k] = dx[k];
         dy_[k] = dy[k];
@@ -425,7 +404,7 @@ function movedown() {
     return 0;
 }
 
-function fall() {
+function fall() /*: -> Void */ {
     for (var k = 0; k < nSquares; k++) {
         dx_[k] = dx[k];
         dy_[k] = dy[k];
@@ -440,7 +419,7 @@ function fall() {
     timerID = setTimeout("play()", speed);
 }
 
-function getPiece(N) {
+function getPiece(N) /*: -> Void */ {
     curPiece = (getPiece.arguments.length == 0) ? 1 + Math.floor(nTypes * Math.random()) : N;
     curX = 5;
     curY = 0;
@@ -459,7 +438,7 @@ function getPiece(N) {
     return 0;
 }
 
-function getBackground(index) {
+function getBackground(index) /*: Int -> String */ {
     if (index == 0) {
         return "";
     }
