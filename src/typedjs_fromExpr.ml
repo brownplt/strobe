@@ -61,7 +61,13 @@ let is_empty lst = match lst with
 type env = bool IdMap.t
 
 let rec exp (env : env) expr = match expr with
-    ConstExpr (a, c) -> EConst (a, c)
+  | ConstExpr (a, c) -> EConst (a, c)
+  | HintExpr (p, txt, ArrayExpr (p', [])) -> 
+      begin match parse_annotation p txt with
+        | ATyp t -> EEmptyArray (p, t)
+        | _ -> 
+            raise (Not_well_formed (p, "expected the type of array elemtns" ))
+      end
   | ArrayExpr (a, es) -> EArray (a, map (exp env) es)
   | ObjectExpr (a, ps) -> 
       if List.length ps != List.length (nub (map (fun (_, p, _) -> p) ps)) then

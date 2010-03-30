@@ -120,6 +120,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
         TBot
   | ETypecast (p, rt, e) -> 
       Typedjs_lattice.static (Env.get_classes env) rt (tc_exp env e)
+  | EEmptyArray (p, elt_typ) -> 
+      TApp ("Array", [ Env.check_typ p env elt_typ ])
   | EArray (p, []) -> 
       raise (Typ_error (p, "an empty array literal requires a type annotation"))
   | EArray (_, e :: es) -> 

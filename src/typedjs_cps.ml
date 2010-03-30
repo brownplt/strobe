@@ -81,8 +81,7 @@ let bind_cont cont fn = match cont with
       let r = new_name () in
         Fix (new_node (), 
              [k', [r], TArrow (TTop, [TTop], TTop), k (mk_id r)],
-             fn k')
-      
+             fn k')      
 
 let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
   | EConst (_, c) -> ret k (Const c)
@@ -92,6 +91,9 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
         (fun vs ->
            let x = new_name () in
              Bind (new_node (), x, Array vs, ret k (mk_id x)))
+  | EEmptyArray _ ->
+      let x = new_name () in
+        Bind (new_node (), x, Array [], ret k (mk_id x))
   | EObject (_, ps) ->
       cps_exp_list (map snd2 ps) throw
         (fun vs -> 
