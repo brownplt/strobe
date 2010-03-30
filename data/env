@@ -2,6 +2,9 @@
 // HTMLWindow (the global object's type) are automatically added to the
 // initial environment.
 
+class Number prototype {} {
+}
+
 class String prototype {} {
   charCodeAt : Int -> Double
 }
@@ -11,6 +14,9 @@ class Int prototype {} {
 }
 
 class Array prototype {} {
+}
+
+class Undefined prototype {} {
 }
 
 // HTMLWindow is the type of the global object. All its fields are added to the

@@ -89,12 +89,3 @@ let typ_union cs s t = match subtype cs s t, subtype cs t s with
   | true, false -> t (* s <: t *)
   | false, true -> s (* t <: s *)
   | false, false -> TUnion (s, t)
-
-let rec typ_permute (obj_typ : typ) : typ = match obj_typ with
-    TObject fs -> 
-      TObject
-        (List.fast_sort (fun (k1, _) (k2, _) ->  Pervasives.compare k1 k2) fs)
-  | TApp (c, typs) -> TApp (c, map typ_permute typs)
-  | TUnion (t1,t2) -> TUnion (typ_permute t1, typ_permute t2)
-  | TRef t -> TRef (typ_permute t)
-  | typ -> typ

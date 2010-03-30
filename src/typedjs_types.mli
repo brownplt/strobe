@@ -31,8 +31,3 @@ val subtypes : typ IdMap.t -> typ list -> typ list -> bool
 (**[0]Normal Form for Types *)
 
 val typ_union : typ IdMap.t -> typ -> typ -> typ
-
-(** [typ_permute obj_typ] sorts the fields of [obj_typ], returning them in their
-    normal order (i.e. ascending by [Pervasives.compare]). [typ_permute] is the
-    identity on non-object types. *)
-val typ_permute : typ -> typ

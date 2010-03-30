@@ -1,6 +1,8 @@
 open Prelude
 open Typedjs_syntax
 
+exception Not_wf_typ of string
+
 module Env = struct
 
   type env = { id_typs : typ IdMap.t; 
@@ -39,6 +41,38 @@ module Env = struct
 
   let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)
 
+  let cmp_props (k1, _) (k2, _) = match String.compare k1 k2 with
+    | 0 -> raise (Not_wf_typ ("the field " ^ k1 ^ " is repeated"))
+    | n -> n
+
+        
+  let rec normalize_typ env typ = match typ with
+    | TUnion (s, t) -> 
+        Typedjs_types.typ_union env.classes
+          (normalize_typ env s) (normalize_typ env t)
+    | TObject fs ->
+        let fs = List.fast_sort cmp_props fs in
+          TObject (map (second2 (normalize_typ env)) fs)
+    | TApp ("Array", [t]) -> TApp ("Array", [normalize_typ env t])
+    | TApp (constr, []) ->
+        if IdMap.mem constr env.classes then typ
+        else raise (Not_wf_typ (constr ^ " is not a type constructor"))
+    | TApp (constr, _) ->
+        raise (Not_wf_typ (constr ^ " does not take arguments"))
+    | TArrow (this, args, result) ->
+        TArrow (normalize_typ env this, map (normalize_typ env) args,
+                normalize_typ env result)
+    | TRef t -> TRef (normalize_typ env t)
+    | TSource t -> TSource (normalize_typ env t)
+    | TSink t -> TSink (normalize_typ env t)
+    | TTop -> TTop
+    | TBot -> TBot
+
+  let check_typ p env t = 
+    try normalize_typ env t 
+    with Not_wf_typ s -> raise (Typ_error (p, s))
+
+
   let new_class class_name env = 
     if IdMap.mem class_name env.classes then
       raise (Invalid_argument ("class already exists: " ^ class_name))
@@ -57,7 +91,7 @@ module Env = struct
             else
               let class_typ' = TObject ((method_name, method_typ) :: fields) in
                 { env with classes = IdMap.add class_name 
-                    (Typedjs_types.typ_permute class_typ') env.classes }
+                    (normalize_typ env class_typ') env.classes }
         | _ ->
             failwith ("class type is not an object: " ^ class_name)
 
@@ -73,6 +107,8 @@ module Env = struct
     | TObject fs -> 
         List.fold_left (fun env (x, t) -> bind_id x t env) env fs
     | _ -> failwith "set_global_object: got a class that is not an object"
+
+
 
 end
 
@@ -98,6 +134,10 @@ let rec add_methods (lst : (id * typ) list) (class_name : id) (env : Env.env) =
         add_methods rest class_name
           (Env.add_method class_name method_name method_typ env)
 
+let rec add_classes (lst : env_decl list) (env : Env.env) = match lst with
+  | [] -> env
+  | EnvClass (cname, _, _) :: rest -> add_classes rest (Env.new_class cname env)
+  | _ :: rest -> add_classes rest env
 
 (* [mk_env'] ensures that a type declaration is  well-formed and well-kinded.
    For these checks, it needs the existing environment. *)
@@ -107,12 +147,11 @@ let rec mk_env' (lst : env_decl list) (env : Env.env) : Env.env =
     | EnvBind (x, typ) :: rest ->
         mk_env' rest (Env.bind_id x typ env)
     | EnvClass (class_name, proto_typ, methods) :: rest ->
-        let env = Env.new_class class_name env in
         let env = add_methods methods class_name env in
           (* TODO account for prototype *)
           mk_env' rest env
 
-let mk_env (lst : env_decl list) : Env.env = mk_env' lst Env.empty_env
+let mk_env (lst : env_decl list) = mk_env' lst (add_classes lst Env.empty_env)
 
 module L = Typedjs_lattice
 

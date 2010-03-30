@@ -49,7 +49,7 @@ arg_typ
   | BOOL { typ_bool }
   | UNDEF { typ_undef }
   | arg_typ UNION arg_typ { typ_union IdMap.empty $1 $3 }
-  | LBRACE fields RBRACE { typ_permute (TObject $2) }
+  | LBRACE fields RBRACE { TObject $2 }
   | LPAREN typ RPAREN { $2 }
   | ID { TApp ( $1, [] ) }
   | ID LANGLE typs RANGLE { TApp ($1, $3) }

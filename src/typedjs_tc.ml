@@ -87,7 +87,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
                       (string_of_typ s)))
     end
   | ELabel (p, l, t, e) -> 
-      let s = tc_exp (Env.bind_lbl l t env) e in
+      let s = tc_exp (Env.bind_lbl l (Env.check_typ p env t) env) e in
         if subtype (Env.get_classes env) s t then t
         else raise (Typ_error (p, "label type mismatch"))
   | EBreak (p, l, e) ->
@@ -132,7 +132,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
         | t, _, _ -> raise (Typ_error (p, "expected a boolean"))
     end
   | EObject (p, fields) ->
-      typ_permute (TObject (map (second2 (tc_exp env)) fields))
+      Env.check_typ p env (TObject (map (second2 (tc_exp env)) fields))
   | EBracket (p, obj, field) -> begin match tc_exp env obj, field with
         TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
           (try
@@ -274,6 +274,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | _ -> raise (Typ_error (p, "expected a function"))
     end
   | ERec (binds, body) -> 
+      (* TODO: use check_typ here *)
       let f env (x, t, _) = Env.bind_id x t env in
       let env = fold_left f env binds in
       let tc_bind (x, t, e)=
@@ -286,7 +287,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
                         (string_of_typ s)) in
         List.iter tc_bind binds;
         tc_exp env body
-  | EFunc (p, args, fn_typ, body) -> begin match fn_typ with
+  | EFunc (p, args, fn_typ, body) -> begin match Env.check_typ p env fn_typ with
         TArrow (_, arg_typs, result_typ) ->
           if List.length arg_typs = List.length args then ()
           else raise (Typ_error (p,
@@ -307,13 +308,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
     end
   | ESubsumption (p, t, e) ->
       let s = tc_exp env e in
+      let t = Env.check_typ p env t in
         if subtype (Env.get_classes env) s t then
           t
         else 
           raise (Typ_error (p, "subsumption error"))
-  | EDowncast (p, t, e) -> 
-      let _ = tc_exp env e in
-        t
+  | EDowncast (p, t, e) ->  ignore (tc_exp env e); Env.check_typ p env t
+        
 
 and tc_exps env es = map (tc_exp env) es
 

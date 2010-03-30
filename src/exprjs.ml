@@ -23,7 +23,8 @@ module Pretty = struct
     | FuncExpr (_, args, body) ->
         parens (vert [ text "fun"; parens (horz (map text args)); expr body ])
     | LetExpr (_, x, e1, e2) ->
-        parens (vert [ horz [ text "let"; text x; text "="; expr e1; text "in" ];
+        parens (vert [ horz [ text "let"; text x; text "="; expr e1; 
+                              text "in" ];
                        expr e2 ])
     | SeqExpr (_, e1, e2) -> parens (vert [ text "seq"; expr e1; expr e2 ])
     | VarDeclExpr (_, x, e) ->  horz [ text "var"; text x; text "="; expr e ]
@@ -51,7 +52,8 @@ module Pretty = struct
     | InfixExpr (_, op, e1, e2) ->
         parens (horz [ JavaScript.Pretty.p_infixOp op; expr e1; expr e2 ])
     | AssignExpr (_, lv, e) -> parens (horz [ text "set"; lvalue lv; expr e ])
-    | HintExpr (_, txt, e) -> parens (horz [ text ("/**" ^ txt ^ "*/"); expr e ])
+    | HintExpr (_, txt, e) -> 
+        parens (horz [ text ("/**" ^ txt ^ "*/"); expr e ])
 
   and lvalue lv = match lv with
       VarLValue (_, x) -> text x

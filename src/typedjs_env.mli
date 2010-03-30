@@ -40,6 +40,8 @@ module Env : sig
       to the environment. *)
   val set_global_object : env -> string -> env
 
+  val check_typ : pos -> env -> typ -> typ
+
 end
 
 
