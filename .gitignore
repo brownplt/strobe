@@ -3,3 +3,10 @@ build
 javascript-trace/dist
 src/*.conflicts
 TAGS
+*.cmx
+*.cmxa
+*.cma
+*.cmo
+*.a
+*.o
+*.cmi
