@@ -8,7 +8,7 @@ open Typedjs_types
 
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
-       UNDEF BOOL LBRACE RBRACE COMMA FUNCTION
+       UNDEF BOOL LBRACE RBRACE COMMA FUNCTION VAL
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE
 
 %right UNION
@@ -94,8 +94,8 @@ env_decl
         ( $2 (* name *) , 
           $4 (* prototype type *),
           $6 (* local fields *)) }
-  | ID COLON typ
-    { EnvBind ($1, TRef $3) }
+  | VAL ID COLON typ { EnvBind ($2, $4) }
+  | ID COLON typ { EnvBind ($1, TRef $3) }
 
 env_decls
   : { [] }

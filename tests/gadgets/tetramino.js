@@ -36,9 +36,9 @@ var tetrisMusic = null;
 var tetrisMusicSrc = gadget.storage.extract("music/Korobeiniki.mid");
 
 // ARRAYS
-var f = []; // new Array();
+var f = /*: Array<Int> */ []; // new Array();
 for (var i = 0; i < 20; i++) {
-    f[i] = [];
+    f[i] = /*: Int */ [];
     for (var j = 0; j < 20; j++) {
         f[i][j] = 0;
     }
@@ -50,8 +50,8 @@ var dx = [0,0,0,0]; //new Array(0, 0, 0, 0);
 var dy = [0,0,0,0];//new Array(0, 0, 0, 0);
 var dx_ = [0,0,0,0]; // new Array(0, 0, 0, 0);
 var dy_ = [0,0,0,0]; //new Array(0, 0, 0, 0);
-var dxBank = []; //new Array();
-var dyBank = []; // new Array();
+var dxBank = /*: Array<Int> */ []; //new Array();
+var dyBank = /*: Array<Int> */ []; // new Array();
 dxBank[1] = [0,1,-1,0]; // new Array(0, 1, - 1, 0);
 dyBank[1] = [0,0,0,1]; //new Array(0, 0, 0, 1);
 dxBank[2] = [0,1,-1,-1]; //new Array(0, 1, - 1, - 1);

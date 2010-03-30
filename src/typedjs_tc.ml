@@ -273,7 +273,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
                           (p, sprintf "arity-mismatch: the function expects %d \
                                 arguments, but %d arguments given"
                              (List.length expected_typs) (List.length args)))
-      | _ -> raise (Typ_error (p, "expected a function"))
+      | t -> 
+          raise 
+            (Typ_error 
+               (p, "expected a function, but expression has type " ^
+                  (string_of_typ t)))
     end
   | ERec (binds, body) -> 
       (* TODO: use check_typ here *)

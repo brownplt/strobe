@@ -21,6 +21,14 @@ class Undefined prototype {} {
 
 class Boolean prototype {} { }
 
+class Date prototype {} {
+  setDate : Number -> Date,
+  getDate : -> Number,
+  valueOf : -> Number
+ }
+
+val Date : String + Date + Void-> Date
+
 // HTMLWindow is the type of the global object. All its fields are added to the
 // initial environment.
 class HTMLWindow prototype {} {

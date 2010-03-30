@@ -1,35 +1,13 @@
-/*::
-  function update : (  -> Void)
-  function makeTomorrow : ( Date -> Date)
-  function getDateDiff : ( Date * Date -> {isPassed : Bool, msec : Int, seconds : Int, minutes : Int, hours : Int, days : Int})
-*/
-
-/*
-Copyright (C) 2007 Google Inc.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 // Change this to the date of the event.
 var CONFIG_EVENT_DATE = new Date('1/1/3000');
 
 // Updates the gadget.
-function update() {
-  var now = new Date(); 
+function update() /*: -> Void */ {
+  var now = new Date(undefined); 
   var diff = getDateDiff(now, CONFIG_EVENT_DATE);
   
   if (diff.isPassed) {
-    debug.trace('Event has passed, go to end state.');
+    gadget.debug.trace('Event has passed, go to end state.');
     complete();
     return;
   }
@@ -43,20 +21,20 @@ function update() {
         strings.UNTIL;
         
     // Determine next update.
-    var nextUpdateMs;
+    var nextUpdateMs = /*:upcast Number + Void */ undefined;
     
     if (diff.days == 1) {
       var dayBefore = new Date(CONFIG_EVENT_DATE);
       dayBefore.setDate(dayBefore.getDate() - 1);
-      nextUpdateMs = dayBefore - now;
+      nextUpdateMs = dayBefore.valueOf() - now.valueOf();
     } else {
       // Update tomorrow midnight.
       var tomorrow = makeTomorrow(now);
-      nextUpdateMs = tomorrow - now;
+      nextUpdateMs = tomorrow.valueOf() - now.valueOf();
     }
 
-    debug.trace('Next update in ' + nextUpdateMs + ' ms.');
     view.setTimeout(update, nextUpdateMs);
+    gadget.debug.trace('Next update in ' + nextUpdateMs + ' ms.');
   } else {
     // Start the countdown!
     var s = '';
@@ -82,7 +60,7 @@ function update() {
 }
 
 // Creates a date object for tomorrow midnight.
-function makeTomorrow(d) {
+function makeTomorrow(d) /*:  Date -> Date */ {
   var tomorrow = new Date((d.getMonth() + 1) + '/' + 
                           d.getDate() + '/' +
                           d.getYear());
@@ -105,7 +83,10 @@ function makeTomorrow(d) {
 //
 // All data will be non-negative. Use "isPassed" to determine the relation
 // between the dates.
-function getDateDiff(start, end) {
+function getDateDiff(start, end) 
+  /*: Date * Date -> { isPassed : Bool, msec : Int, seconds : Int,
+                       minutes : Int, hours : Int, days : Int } */
+{
   var ret = {};
 
   var diff = end - start;
@@ -137,7 +118,7 @@ function getDateDiff(start, end) {
 
 // Called when date has passed.
 // Displays the "completed" message.
-function complete() {
+function complete() /*: -> Void */ {
   timeLeftLabel.innerText = '';
   eventNameLabel.innerText = '';
   completedLabel.innerText = strings.CONFIG_COMPLETED;

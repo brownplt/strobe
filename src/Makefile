@@ -13,6 +13,9 @@ builddir:
 debug: builddir
 	$(OCAMLBUILD) main.d.byte
 
+prof: builddir
+	$(OCAMLBUILD) main.p.native
+
 cfa: builddir
 	$(OCAMLBUILD) cfa.d.byte
 
