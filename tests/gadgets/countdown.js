@@ -21,7 +21,7 @@ function update() /*: -> Void */ {
         strings.UNTIL;
         
     // Determine next update.
-    var nextUpdateMs = /*:upcast Number + Void */ undefined;
+    var nextUpdateMs = 0;
     
     if (diff.days == 1) {
       var dayBefore = new Date(CONFIG_EVENT_DATE);
@@ -87,33 +87,32 @@ function getDateDiff(start, end)
   /*: Date * Date -> { isPassed : Bool, msec : Int, seconds : Int,
                        minutes : Int, hours : Int, days : Int } */
 {
-  var ret = {};
-
-  var diff = end - start;
+    var diff = /*:upcast Number */ (end.valueOf() - start.valueOf());
  
-  ret.isPassed = diff <= 0;
+  var isPassed = diff <= 0;
   
   diff = Math.abs(diff);
   
-  ret.msec = diff % 1000;       
+  var msec = /*:downcast Int */(diff % 1000);       
 
   // Seconds.  
   diff = diff / 1000;  
-  ret.seconds = Math.floor(diff % 60);    
+  var seconds = Math.floor(diff % 60);    
   
   // Minutes.  
   diff = diff / 60;  
-  ret.minutes = Math.floor(diff % 60);    
+  var minutes = Math.floor(diff % 60);    
 
   // Hours.  
   diff = diff / 60;  
-  ret.hours = Math.floor(diff % 24);
+  var hours = Math.floor(diff % 24);
 
   // Days.
   diff = diff / 24;  
-  ret.days = Math.floor(diff);
+  var days = Math.floor(diff);
   
-  return ret;
+  return { isPassed: isPassed, msec: msec, seconds: seconds, 
+          minutes : minutes, hours: hours, days: days };
 }
 
 // Called when date has passed.

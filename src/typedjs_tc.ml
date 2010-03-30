@@ -87,6 +87,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
                       (string_of_typ s)))
     end
   | ELabel (p, l, t, e) -> 
+      let t = Env.check_typ p env t in
       let s = tc_exp (Env.bind_lbl l (Env.check_typ p env t) env) e in
         if subtype (Env.get_classes env) s t then t
         else raise (Typ_error (p, "label type mismatch"))
@@ -305,11 +306,12 @@ let rec tc_exp (env : Env.env) exp = match exp with
           let env = Env.clear_labels env in
           let body_typ = tc_exp env body in
             if subtype (Env.get_classes env) body_typ result_typ then fn_typ
-            else raise (Typ_error
-                          (p,
-                           sprintf "function body has type %s, but the \
-                             return type is %s" (string_of_typ body_typ)
-                             (string_of_typ result_typ)))
+            else raise 
+              (Typ_error
+                 (p,
+                  sprintf "function body has type\n%s\n, but the \
+                             return type is\n%s" (string_of_typ body_typ)
+                    (string_of_typ result_typ)))
       | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
     end
   | ESubsumption (p, t, e) ->

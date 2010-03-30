@@ -24,8 +24,10 @@ class Boolean prototype {} { }
 class Date prototype {} {
   setDate : Number -> Date,
   getDate : -> Number,
-  valueOf : -> Number
- }
+  valueOf : -> Int,
+  getMonth : -> Int,
+  getYear : -> Int
+}
 
 val Date : String + Date + Void-> Date
 
@@ -42,7 +44,8 @@ class HTMLWindow prototype {} {
   window : HTMLWindow,
   undefined: Void,
   Math: {
-    floor : Number -> Int
+    floor : Number -> Int,
+    abs : Number -> Number
   }
 }
 

@@ -3,6 +3,6 @@ function expectInt(x) /*: Int -> Int */ {
 }
 
 var x = /*:upcast Void + Int */ undefined;
-x = expectInt(200);
-expectInt(x);
+var y = expectInt(200);
+expectInt(y);
   
