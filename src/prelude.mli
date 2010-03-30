@@ -83,10 +83,5 @@ val match_while : ( 'a -> 'b option) -> 'a list -> 'b list * 'a list
     structural equality. *)
 val nub : 'a list -> 'a list
 
-(** [pretty_string f x] takes a function [f] that prints [x] to the given
-    formatter. [pretty_print] applies [f] with [Format.str_formatter] and
-    returns the pretty-printed string. *)
-val pretty_string : (Format.formatter -> 'a -> unit) -> 'a -> string
-
 (** [iota n] returns the list of integers [0] through [n-1], inclusive. *)
 val iota : int -> int list
