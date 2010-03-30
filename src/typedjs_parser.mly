@@ -9,7 +9,7 @@ open Typedjs_types
 %token <string> ID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA FUNCTION
-       PROTOTYPE CLASS UPCAST DOWNCAST
+       PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE
 
 %right UNION
 
@@ -52,10 +52,16 @@ arg_typ
   | LBRACE fields RBRACE { typ_permute (TObject $2) }
   | LPAREN typ RPAREN { $2 }
   | ID { TApp ( $1, [] ) }
+  | ID LANGLE typs RANGLE { TApp ($1, $3) }
 
 typ 
   : arg_typ { $1 }
   | args ARROW typ { TArrow (TTop, $1, $3) }
+
+typs :
+  | { [] }
+  | typ { [$1] }
+  | typ COMMA typs { $1 :: $3 }
 
 annotation :
   | typ { ATyp $1 }

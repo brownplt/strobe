@@ -40,6 +40,8 @@ rule token = parse
    | "class" { CLASS }
    | "upcast" { UPCAST }
    | "downcast" { DOWNCAST }
+   | "<" { LANGLE }
+   | ">" { RANGLE }
    | eof { EOF }
    | ident as x { ID x }
 
