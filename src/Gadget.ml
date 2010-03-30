@@ -32,15 +32,5 @@ let parse_xml cin =
 
       
 let env_of_html cin = 
-  let f x t env = Env.bind_id x t env in 
-    IdMap.fold f (t_xml (parse_xml cin)) Env.empty_env
-
-let env_of_strings cin = match parse_xml cin with
-  | X.Element ("strings", _, children) ->
-      let f env x = match x with
-        | X.Element (str_id, _, _) -> 
-            Env.bind_id str_id (TSource (TApp ("String", []))) env
-        | _ -> env in
-        fold_left f Env.empty_env children
-  | _ -> 
-      failwith "expected <strings>"
+  let f x t env = EnvBind (x, t) :: env in 
+    IdMap.fold f (t_xml (parse_xml cin)) []

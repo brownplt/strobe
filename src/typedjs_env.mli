@@ -33,9 +33,6 @@ module Env : sig
   (** Adds a method to a class. *)
   val add_method : id -> id -> typ -> env -> env
 
- (** Used to load environments from multiple files. *)
-  val union : env -> env -> env
-
   (** [set_global_object env class_name] adds all the fields of [class_name]
       to the environment. *)
   val set_global_object : env -> string -> env
@@ -47,6 +44,6 @@ end
 
 val parse_env : in_channel -> string -> env_decl list
 
-val mk_env : env_decl list -> Env.env
+val extend_global_env : Env.env -> env_decl list -> Env.env
 
 val cf_env_of_tc_env : Env.env -> Typedjs_lattice.env

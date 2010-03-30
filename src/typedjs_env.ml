@@ -95,14 +95,6 @@ module Env = struct
         | _ ->
             failwith ("class type is not an object: " ^ class_name)
 
-  let union env1 env2 = 
-    let err k _ _ = 
-      failwith (k ^ " is defined multiple times in the environment") in
-      { id_typs = IdMapExt.join err env1.id_typs env2.id_typs;
-        lbl_typs = IdMapExt.join err env1.lbl_typs env2.lbl_typs;
-        classes = IdMapExt.join err env1.classes env2.classes
-      }
-
   let set_global_object env cname = match lookup_class cname env with
     | TObject fs -> 
         List.fold_left (fun env (x, t) -> bind_id x t env) env fs
@@ -145,13 +137,19 @@ let rec mk_env' (lst : env_decl list) (env : Env.env) : Env.env =
   match lst with
       [] -> env
     | EnvBind (x, typ) :: rest ->
-        mk_env' rest (Env.bind_id x typ env)
+        if IdMap.mem x env.Env.id_typs then
+          raise (Not_wf_typ (x ^ " is already bound in the environment"))
+        else
+          mk_env' rest (Env.bind_id x typ env)
     | EnvClass (class_name, proto_typ, methods) :: rest ->
-        let env = add_methods methods class_name env in
+        let env = try 
+          add_methods methods class_name env 
+        with Not_wf_typ s ->
+          raise (Not_wf_typ ("error adding class " ^ class_name ^ "; " ^ s)) in
           (* TODO account for prototype *)
           mk_env' rest env
 
-let mk_env (lst : env_decl list) = mk_env' lst (add_classes lst Env.empty_env)
+let extend_global_env env lst = mk_env' lst (add_classes lst env)
 
 module L = Typedjs_lattice
 

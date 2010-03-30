@@ -118,21 +118,16 @@ let set_action (thunk : unit -> unit) (() : unit) : unit =
     (is_action_set := true; action := thunk)
 
 let set_env (fname : string) : unit = 
-  env := Env.union !env (mk_env (parse_env (open_in fname) fname))
+  env := extend_global_env !env (parse_env (open_in fname) fname)
 
 let set_xml_env (fname : string) : unit =
-  env := Env.union !env (Gadget.env_of_html (open_in fname))
-
-let set_string_env (fname : string) : unit =
-  env := Env.union !env (Gadget.env_of_strings (open_in fname))
+  env := extend_global_env !env (Gadget.env_of_html (open_in fname))
 
 let main () : unit =
   Arg.parse
     [ ("-env", Arg.String set_env, "load the environment from a file");
       ("-xmlenv", Arg.String set_xml_env, 
        "load the environment from a file");
-      ("-stringenv", Arg.String set_string_env,
-       "add strings in a file to the environment");
       ("-pretty", Arg.Unit (set_action action_pretty),
        "pretty-print JavaScript");
       ("-expr", Arg.Unit (set_action action_expr),
