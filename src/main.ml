@@ -53,13 +53,13 @@ let action_load_inferred name =
 
 let action_pretty () : unit = 
   let prog = parse_javascript !cin !cin_name in
-    print_string (JavaScript_pretty.render_prog prog);
+    JavaScript.Pretty.p_prog prog std_formatter;
     print_newline ()
 
 let action_contracts () : unit = 
   let prog = parse_javascript !cin !cin_name in
   let prog' = Typedjs_contracts.types_to_contracts prog in
-    print_string (JavaScript_pretty.render_prog prog');
+    JavaScript.Pretty.p_prog prog' std_formatter;
     print_newline ()
 
 let action_expr () : unit =

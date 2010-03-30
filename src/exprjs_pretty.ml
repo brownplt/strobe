@@ -1,11 +1,10 @@
 open Prelude
 open Exprjs_syntax
-open JavaScript_pretty
 open Format
 open FormatExt
 
 let rec expr e = match e with
-  | ConstExpr (_, c) -> p_const c
+  | ConstExpr (_, c) -> JavaScript.Pretty.p_const c
   | ArrayExpr (_, es) -> parens (horz (map expr es))
   | ObjectExpr (_, ps) -> brackets (vert (map prop ps))
   | ThisExpr _ -> text "#this"
@@ -42,9 +41,10 @@ let rec expr e = match e with
   | FuncStmtExpr (_, f, args, body) ->
       parens (horz [ text "function"; text f; 
                      parens (horz (map text args)); expr body ])
-  | PrefixExpr (_, op, e) -> parens (horz [ text (render_prefixOp op); expr e ])
+  | PrefixExpr (_, op, e) -> parens (horz [ JavaScript.Pretty.p_prefixOp op;
+                                            expr e ])
   | InfixExpr (_, op, e1, e2) ->
-      parens (horz [ text (render_infixOp op); expr e1; expr e2 ])
+      parens (horz [ JavaScript.Pretty.p_infixOp op; expr e1; expr e2 ])
   | AssignExpr (_, lv, e) -> parens (horz [ text "set"; lvalue lv; expr e ])
   | HintExpr (_, txt, e) -> parens (horz [ text ("/**" ^ txt ^ "*/"); expr e ])
 

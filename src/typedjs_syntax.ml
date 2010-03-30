@@ -136,7 +136,7 @@ module Exp = struct
 end
 
 module Pretty = struct
-  open JavaScript_pretty
+
   open Format
   open FormatExt
 
@@ -164,7 +164,7 @@ module Pretty = struct
     | TSink s -> horz [ text "sink"; parens (typ s) ]
 
   let rec exp e = match e with
-    | EConst (_, c) -> JavaScript_pretty.p_const c
+    | EConst (_, c) -> JavaScript.Pretty.p_const c
     | EArray (_, es) -> parens (horz (map exp es))
     | EObject (_, ps) -> brackets (vert (map prop ps))
     | EThis _ -> text "this"
@@ -196,9 +196,10 @@ module Pretty = struct
         parens (vert [ text "try"; exp body;
                        parens (vert [ text "finally"; exp finally ]) ])
     | EThrow (_, e) -> parens (vert [ text "throw"; exp e ])
-    | EPrefixOp (_, op, e) -> parens (vert [ text (render_prefixOp op); exp e ])
+    | EPrefixOp (_, op, e) -> parens (vert [ JavaScript.Pretty.p_prefixOp op;
+                                             exp e ])
     | EInfixOp (_, op, e1, e2) ->
-        parens (vert [ text (render_infixOp op); exp e1; exp e2 ])
+        parens (vert [ JavaScript.Pretty.p_infixOp op; exp e1; exp e2 ])
     | ETypecast (_, t, e) ->
         parens (vert [ text "cast"; RTSetExt.p_set RT.pp t; exp e ])
     | ERef (_, e) -> parens (vert [ text "ref"; exp e ])

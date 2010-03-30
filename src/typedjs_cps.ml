@@ -460,7 +460,7 @@ open Format
 open FormatExt
 
 let rec p_cpsval (cpsval : cpsval) : printer = match cpsval with
-    Const c -> JavaScript_pretty.p_const c
+    Const c -> JavaScript.Pretty.p_const c
   | Id (_, x) -> text x
     
 and p_prop (x, v) : printer = brackets (horz [ text x; p_cpsval v ])
@@ -468,12 +468,12 @@ and p_prop (x, v) : printer = brackets (horz [ text x; p_cpsval v ])
 let numstr i s : printer = text (string_of_int i ^ ":" ^ s)
 
 let p_op1 op = match op with
-  | Op1Prefix o -> text (JavaScript_pretty.render_prefixOp o)
+  | Op1Prefix o -> JavaScript.Pretty.p_prefixOp o
   | Deref -> text "deref"
   | Ref -> text "ref"
 
 let p_op2 op = match op with
-  | Op2Infix o -> text (JavaScript_pretty.render_infixOp o)
+  | Op2Infix o -> JavaScript.Pretty.p_infixOp o
   | GetField -> text "get-field"
   | DeleteField -> text "delete-field"
   | SetRef -> text "set-ref!"
