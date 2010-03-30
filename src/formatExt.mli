@@ -27,18 +27,6 @@ val brackets : printer -> printer
 
 val angles : printer -> printer
 
-val set_html_formatter_tag_functions : unit -> unit
-
-val tag : string -> printer -> printer
-
-(*val mark : string -> printer*)
-
 (** [to_string f x] uses [Format.str_formatter] as the buffer for printing [x]
     with [f]. *)
 val to_string : ('a -> printer) -> 'a -> string
-
-
-val svg_formatter : formatter
-val flush_svg_formatter : unit -> string
-
-val xml_escape : string -> string
