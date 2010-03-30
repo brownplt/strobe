@@ -4,71 +4,55 @@ open JavaScript_pretty
 open Format
 open FormatExt
 
-let rec expr e fmt = match e with
-    ConstExpr (_, c) -> p_const c fmt
-  | ArrayExpr (_, es) -> parens (map expr es) fmt
-  | ObjectExpr (_, ps) -> brackets (map prop ps) fmt
-  | ThisExpr _ -> pp_print_string fmt "#this"
-  | VarExpr (_, x) -> pp_print_string fmt x
-  | BracketExpr (_, e1, e2) ->
-      expr e1 fmt;
-      brackets [expr e2] fmt
+let rec expr e = match e with
+  | ConstExpr (_, c) -> p_const c
+  | ArrayExpr (_, es) -> parens (horz (map expr es))
+  | ObjectExpr (_, ps) -> brackets (vert (map prop ps))
+  | ThisExpr _ -> text "#this"
+  | VarExpr (_, x) -> text x
+  | BracketExpr (_, e1, e2) -> squish [ expr e1; brackets (expr e2) ]
   | NewExpr (_, c, args) -> 
-      parens (text "new" :: expr c :: map expr args) fmt
+      parens (horz (text "new" :: expr c :: map expr args))
   | IfExpr (_, e1, e2, e3) ->
-      parens [text "if"; expr e1; expr e2; expr e3] fmt
-  | AppExpr (_, f, args) ->
-      parens (expr f :: map expr args) fmt
+      parens (vert [ horz [ text "if"; expr e1 ]; expr e2; expr e3 ])
+  | AppExpr (_, f, args) -> parens (horz (expr f :: map expr args))
   | FuncExpr (_, args, body) ->
-      parens [text "fun"; parens (map text args); expr body] fmt
+      parens (vert [ text "fun"; parens (horz (map text args)); expr body ])
   | LetExpr (_, x, e1, e2) ->
-      parens [text "let"; text x; text "="; expr e1; text "in"; expr e2] fmt
-  | SeqExpr (_, e1, e2) ->
-      parens [text "seq"; expr e1; expr e2] fmt
-  | VarDeclExpr (_, x, e) ->
-      text "var" fmt;
-      pp_print_space fmt ();
-      text x fmt;
-      pp_print_space fmt ();
-      text "=" fmt;
-      pp_print_space fmt ();
-      expr e fmt
-  | WhileExpr (_, e1, e2) ->
-      parens [text "while"; expr e1; expr e2] fmt
+      parens (vert [ horz [ text "let"; text x; text "="; expr e1; text "in" ];
+                     expr e2 ])
+  | SeqExpr (_, e1, e2) -> parens (vert [ text "seq"; expr e1; expr e2 ])
+  | VarDeclExpr (_, x, e) ->  horz [ text "var"; text x; text "="; expr e ]
+  | WhileExpr (_, e1, e2) -> parens (vert [ text "while"; expr e1; expr e2 ])
   | DoWhileExpr (_, e1, e2) ->
-      parens [text "do-while"; expr e1; expr e2] fmt
+      parens (vert [ text "do-while"; expr e1; expr e2 ])
   | LabelledExpr (_, x, e) ->
-      parens [text "label"; text x; expr e] fmt
+      parens (vert [ text "label"; text x; expr e ])
   | BreakExpr (_, x, e) ->
-      parens [text "break"; text x; expr e] fmt
+      parens (vert [ text "break"; text x; expr e ])
   | TryCatchExpr (_, body, x, catch) ->
-      parens [text "try"; expr body; 
-              parens [text "catch"; text x; expr body]]
-        fmt
+      parens (vert [ text "try"; expr body; 
+                     parens (vert [text "catch"; text x; expr body ]) ])
   | TryFinallyExpr (_, body, finally) ->
-      parens [text "try"; expr body; parens [text "finally"; expr finally]] fmt
+      parens (vert [ text "try"; expr body; 
+                     parens (vert [ text "finally"; expr finally ])])
   | ForInExpr (_, x, obj, body) -> 
-      parens [text "for"; text x; text "in"; expr obj; expr body] fmt
-  | ThrowExpr (_, e) ->
-      parens [text "throw"; expr e] fmt
+      parens (horz [ text "for"; text x; text "in"; expr obj; expr body ])
+  | ThrowExpr (_, e) ->  parens (horz [ text "throw"; expr e ])
   | FuncStmtExpr (_, f, args, body) ->
-      parens [text "function"; text f; parens (map text args); expr body] fmt
-  | PrefixExpr (_, op, e) ->
-      parens [ text (render_prefixOp op); expr e] fmt
+      parens (horz [ text "function"; text f; 
+                     parens (horz (map text args)); expr body ])
+  | PrefixExpr (_, op, e) -> parens (horz [ text (render_prefixOp op); expr e ])
   | InfixExpr (_, op, e1, e2) ->
-      parens [ text (render_infixOp op); expr e1; expr e2] fmt
-  | AssignExpr (_, lv, e) ->
-      parens [text "set"; lvalue lv; expr e] fmt
-  | HintExpr (_, txt, e) ->
-      parens [ text ("/**" ^ txt ^ "*/"); expr e ] fmt
+      parens (horz [ text (render_infixOp op); expr e1; expr e2 ])
+  | AssignExpr (_, lv, e) -> parens (horz [ text "set"; lvalue lv; expr e ])
+  | HintExpr (_, txt, e) -> parens (horz [ text ("/**" ^ txt ^ "*/"); expr e ])
 
-and lvalue lv fmt = match lv with
-    VarLValue (_, x) -> text x fmt
-  | PropLValue (_, e1, e2) -> 
-      expr e1 fmt;
-      brackets [expr e2] fmt
+and lvalue lv = match lv with
+    VarLValue (_, x) -> text x
+  | PropLValue (_, e1, e2) -> squish [ expr e1; brackets (expr e2) ]
 
-and prop (_, s, e) =  parens [ text s; text ":"; expr e ]
+and prop (_, s, e) =  parens (horz [ text s; text ":"; expr e ])
 
 let pretty_expr fmt e = expr e fmt
 

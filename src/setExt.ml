@@ -8,7 +8,6 @@ module type S = sig
   val unions : t list -> t
   val from_list : elt list -> t
   val to_list : t -> elt list
-  val pretty : formatter -> (formatter -> elt -> unit) -> t -> unit
   val p_set : (elt -> printer) -> t -> printer
 end
 
@@ -27,26 +26,6 @@ module Make (Set : Set.S) = struct
     Set.fold (fun e lst -> e :: lst) set []    
 
   let p_set p_elt set = 
-    braces (List.map p_elt (to_list set))
-
-  let pretty formatter print_elt set =
-    let is_first = ref true in
-    let f elt =
-      if !is_first then 
-        (is_first := false; 
-         print_elt formatter elt)
-      else 
-        (pp_print_string formatter ",";
-         pp_print_space formatter ();
-         print_elt formatter elt) in
-      pp_open_box formatter 0;
-      pp_print_string formatter "{";
-      pp_print_space formatter ();
-      pp_open_box formatter 0;
-      Set.iter f set;
-      pp_close_box formatter ();
-      pp_print_space formatter ();
-      pp_print_string formatter "}";
-      pp_close_box formatter ()
+    braces (horz (List.map p_elt (to_list set)))
 
 end

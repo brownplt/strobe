@@ -39,10 +39,10 @@ let text s fmt = pp_print_string fmt s
  
 let int n fmt = pp_print_int fmt n
  
-let enclose l r (lst : printer list) (fmt : formatter) = 
+let enclose l r (inner : printer) (fmt : formatter) = 
   pp_open_box fmt 2;
   pp_print_string fmt l;
-  sep lst fmt;    
+  inner fmt;
   pp_print_string fmt r;
   pp_close_box fmt ()
  

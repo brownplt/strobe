@@ -56,6 +56,7 @@ type annotation =
 type exp
   = EConst of pos * JavaScript_syntax.const
   | EArray of pos * exp list
+  | EEmptyArray of pos * typ
   | EObject of pos * (string * exp) list
   | EThis of pos
   | EId of pos * id

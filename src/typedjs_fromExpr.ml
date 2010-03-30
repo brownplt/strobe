@@ -161,8 +161,8 @@ and match_func env expr = match expr with
         IdSet.inter lambda_bound_vars locally_defined_vars in
         if not (IdSet.is_empty locally_shadowed_args) then
           begin
-            IdSetExt.pretty Format.str_formatter Format.pp_print_string 
-              locally_shadowed_args;
+            IdSetExt.p_set FormatExt.text
+              locally_shadowed_args Format.str_formatter;
             raise (Not_well_formed 
                      (a, "the following arguments are redefined as local \
                           variables: " ^ Format.flush_str_formatter ()))
@@ -244,8 +244,8 @@ let match_constr_body env expr = match expr with
               IdSet.inter lambda_bound_vars locally_defined_vars in
               if not (IdSet.is_empty locally_shadowed_args) then
                 begin
-                  IdSetExt.pretty Format.str_formatter Format.pp_print_string 
-                    locally_shadowed_args;
+                  IdSetExt.p_set FormatExt.text
+                    locally_shadowed_args Format.str_formatter;
                   raise (Not_well_formed 
                            (p, "the following arguments are redefined as local \
                           variables: " ^ Format.flush_str_formatter ()))

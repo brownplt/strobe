@@ -10,7 +10,6 @@ module type S = sig
   val unions : t list -> t
   val from_list : elt list -> t
   val to_list : t -> elt list
-  val pretty : formatter -> (formatter -> elt -> unit) -> t -> unit
   val p_set : (elt -> printer) -> t -> printer
 
 end

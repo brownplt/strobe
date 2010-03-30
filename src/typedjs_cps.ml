@@ -463,7 +463,7 @@ let rec p_cpsval (cpsval : cpsval) : printer = match cpsval with
     Const c -> JavaScript_pretty.p_const c
   | Id (_, x) -> text x
     
-and p_prop (x, v) : printer = brackets [ text x; p_cpsval v ]
+and p_prop (x, v) : printer = brackets (horz [ text x; p_cpsval v ])
 
 let numstr i s : printer = text (string_of_int i ^ ":" ^ s)
 
@@ -480,33 +480,34 @@ let p_op2 op = match op with
 
 let p_bindexp (exp : bindexp) : printer = match exp with
   | Let v -> p_cpsval v
-  | Op1 (op, v) -> 
-      parens [ p_op1 op; p_cpsval v ]
-  | Op2 (op, v1, v2) -> 
-      parens [ p_op2 op ; p_cpsval v1; p_cpsval v2 ]
-  | Object ps -> parens (text "object" :: (map p_prop ps))
-  | Array vs -> parens (text "array" :: map p_cpsval vs)
+  | Op1 (op, v) ->  parens (horz [ p_op1 op; p_cpsval v ])
+  | Op2 (op, v1, v2) -> parens (horz [ p_op2 op ; p_cpsval v1; p_cpsval v2 ])
+  | Object ps -> parens (vert (text "object" ::  (map p_prop ps)))
+  | Array vs -> parens (horz (text "array" :: map p_cpsval vs))
   | UpdateField (v1, v2, v3) ->
-      parens [ text "update-field"; p_cpsval v1; p_cpsval v2; p_cpsval v3 ]
+      parens (horz [ text "update-field"; p_cpsval v1; p_cpsval v2;
+                     p_cpsval v3 ])
 
 
 let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
     Fix (i, binds, body) ->
-      parens [ 
-        vert [ numstr i "fix"; nest (vert (map p_bind binds)); 
-               p_cpsexp body ] ]
+      parens
+        (vert [ numstr i "fix"; nest (vert (map p_bind binds)); 
+                p_cpsexp body ])
 
   | App (i, f, args ) ->
-      parens ( numstr i "app" :: p_cpsval f :: (map p_cpsval args) )
+      parens (horz (numstr i "app" :: p_cpsval f :: (map p_cpsval args)))
   | If (i, v1, e2, e3) -> 
-      parens [ numstr i"if"; p_cpsval v1; p_cpsexp e2; p_cpsexp e3 ]
+      parens (vert [ numstr i"if"; p_cpsval v1; p_cpsexp e2; p_cpsexp e3 ])
   | Bind (n, x, e, cont) ->
-      parens [ numstr n "let"; text x; p_bindexp e; p_cpsexp cont ]
+      parens (vert [ horz [ numstr n "let"; text x; p_bindexp e ];
+                     p_cpsexp cont ])
 
 and p_bind (f, args, typ, body) : printer =
-  parens [ vert 
+  parens ( vert 
              [ text f;
-               parens [ text "lambda"; parens (map text args);
-                        (fun fmt -> Typedjs_pretty.pretty_typ fmt typ);
-                        p_cpsexp body ] ]
-         ]
+               parens 
+                 (vert 
+                    [ text "lambda"; parens (horz (map text args));
+                      (fun fmt -> Typedjs_pretty.pretty_typ fmt typ);
+                      p_cpsexp body ]) ])

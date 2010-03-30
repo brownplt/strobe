@@ -17,15 +17,15 @@ val text : string -> printer
 
 val int : int -> printer
 
-val enclose : string -> string -> printer list -> printer
+val enclose : string -> string -> printer -> printer
 
-val parens : printer list -> printer
+val parens : printer -> printer
 
-val braces : printer list -> printer
+val braces : printer -> printer
 
-val brackets : printer list -> printer
+val brackets : printer -> printer
 
-val angles : printer list -> printer
+val angles : printer -> printer
 
 val set_html_formatter_tag_functions : unit -> unit
 

@@ -47,7 +47,8 @@ module Make (Ord: Map.OrderedType) (Map : Map.S with type key = Ord.t) = struct
     in Map.fold mk m1 m2 (* m2 is the accumulator *)
 
   let p_map p_key p_val t = 
-    vert (List.map (fun (k, v) -> brackets [ p_key k; p_val v ]) (to_list t))
+    vert (List.map (fun (k, v) -> brackets (horz [ p_key k; p_val v ]))
+            (to_list t))
 
   let diff m1 m2 = 
     let fn key v acc =
