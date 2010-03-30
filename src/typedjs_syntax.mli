@@ -111,3 +111,16 @@ module Exp : sig
   val pos : exp -> pos
 
 end
+
+module Pretty : sig
+
+  open Format
+  open FormatExt
+
+  val p_typ : typ -> printer
+  val p_exp : exp -> printer
+  val p_def : def -> printer
+
+  val pp_typ : formatter -> typ -> unit
+
+end

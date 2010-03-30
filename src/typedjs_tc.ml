@@ -2,13 +2,11 @@ open Prelude
 open Typedjs_syntax
 open Typedjs_env
 open Typedjs_types 
-open Typedjs_pretty
-open FormatExt
 open Format
 
 module JS = JavaScript_syntax (* needed for operators *)
 
-let string_of_typ = pretty_string pretty_typ
+let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
 
 let tc_const (const : JavaScript_syntax.const) = match const with
     JavaScript_syntax.CString _ -> typ_str
@@ -33,16 +31,16 @@ let tc_arith env (p : pos) (t1 : typ) (t2 : typ) (int_args : bool)
       raise
         (Typ_error 
            (p, match int_args with
-                true -> 
-                  sep [ text "operator expects arguments of type Int,";
-                        text "but arguments have type"; p_typ t1; text "and";
-                        p_typ t2 ] Format.str_formatter;
-                  Format.flush_str_formatter ()
+              | true -> 
+                  fprintf str_formatter
+                    "operator expects arguments of type Int, but \
+                     arguments have type %a and %a" Pretty.pp_typ t1
+                     Pretty.pp_typ t2; flush_str_formatter ()
               | false -> 
-                  sep [ text "operator expects Int or Double arguments,";
-                        text "but arguments have type"; p_typ t1; text "and";
-                        p_typ t2 ] Format.str_formatter;
-                  Format.flush_str_formatter ()))
+                  fprintf str_formatter
+                    "operator expects arguments of type Number, but \
+                     arguments have type %a and %a" 
+                    Pretty.pp_typ t1 Pretty.pp_typ t2; flush_str_formatter ()))
 
 let tc_cmp env (p : pos) (lhs : typ) (rhs : typ) : typ = 
   let subtype = subtype (Env.get_classes env) in

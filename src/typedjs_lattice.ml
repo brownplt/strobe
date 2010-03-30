@@ -157,8 +157,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
       | _ -> RTSet.singleton RT.Object
     end
   | Typedjs_syntax.TApp _ -> failwith 
-      (sprintf "unknown type: %s" 
-         (pretty_string Typedjs_pretty.pretty_typ t))
+      (sprintf "unknown type: %s" (to_string Typedjs_syntax.Pretty.p_typ t))
   | Typedjs_syntax.TObject _ -> RTSet.singleton RT.Object
   | Typedjs_syntax.TRef t -> rt_of_typ t
   | Typedjs_syntax.TSource t -> rt_of_typ t

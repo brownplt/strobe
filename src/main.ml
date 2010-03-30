@@ -6,7 +6,6 @@ open Typedjs_types
 open Typedjs_tc
 open Format
 open Typedjs_syntax
-open Typedjs_pretty
 open Typedjs_fromExpr
 open Typedjs_env
 open Exprjs_syntax
@@ -75,7 +74,7 @@ let get_typedjs () =
 
 let action_pretypecheck () : unit = 
   let typedjs = get_typedjs () in
-    Typedjs_pretty.pretty_def std_formatter typedjs
+    Typedjs_syntax.Pretty.p_def typedjs std_formatter
 
 let action_tc () : unit = 
   let typedjs = get_typedjs () in
@@ -105,7 +104,7 @@ let action_df () : unit =
             (cf_env_of_tc_env (get_env ())))) in
     typed_cfa env cpstypedjs;
     let annotated_exp = insert_typecasts typedjs in
-      Typedjs_pretty.pretty_def std_formatter annotated_exp;
+      Typedjs_syntax.Pretty.p_def annotated_exp std_formatter ;
       printf "Dataflow analysis successful.\n"
 
 let action = ref action_tc

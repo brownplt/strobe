@@ -509,5 +509,5 @@ and p_bind (f, args, typ, body) : printer =
                parens 
                  (vert 
                     [ text "lambda"; parens (horz (map text args));
-                      (fun fmt -> Typedjs_pretty.pretty_typ fmt typ);
+                      Typedjs_syntax.Pretty.p_typ typ;
                       p_cpsexp body ]) ])
