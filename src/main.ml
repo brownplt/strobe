@@ -65,7 +65,7 @@ let action_contracts () : unit =
 let action_expr () : unit =
   let prog = parse_javascript !cin !cin_name in
   let e = from_javascript prog in
-    print_expr e
+    Exprjs.Pretty.p_expr e std_formatter
 
 let get_typedjs () =
   Typedjs_fromExpr.from_exprjs (get_env ())
