@@ -2,14 +2,14 @@
 // HTMLWindow (the global object's type) are automatically added to the
 // initial environment.
 
-class Number prototype Object {
+class Int prototype Object {
 }
 
 class String prototype Object {
   charCodeAt : Int -> Double
 }
 
-class Int prototype Number {
+class Number prototype Int {
   toString : -> String
 }
 

@@ -3,6 +3,12 @@ open Typedjs_syntax
 
 exception Not_wf_typ of string
 
+module IdPairSet = Set.Make 
+  (struct
+     type t = id * id
+     let compare = Pervasives.compare
+   end)
+
 module Env = struct
 
   type env = {
@@ -10,9 +16,8 @@ module Env = struct
     lbl_typs : typ IdMap.t;
     (* maps class names to a structural object type *)
     classes : typ IdMap.t;
-    (* reflexive-transitive closure of the subclass relation:
-       if [IdMap.find x = y], then x is a subclass of y *)
-    subclasses : id IdMap.t;
+    (* reflexive-transitive closure of the subclass relation *)
+    subclasses : IdPairSet.t
   }
 
 
@@ -20,7 +25,7 @@ module Env = struct
     id_typs = IdMap.empty;
     lbl_typs = IdMap.empty;
     classes = IdMap.empty;
-    subclasses = IdMap.empty
+    subclasses = IdPairSet.empty
   }
 
   let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
@@ -50,7 +55,8 @@ module Env = struct
     let subtype = subtype env in
     let subtypes = subtypes env in
       match s, t with
-        | TConstr ("Int", []), TConstr ("Number", []) -> true
+        | TConstr (c1, []), TConstr (c2, []) ->
+            IdPairSet.mem  (c1, c2) env.subclasses
         | TConstr (c1, args1), TConstr (c2, args2) ->
             if c1 = c2 then subtypes args1 args2 else false
         | TUnion (s1, s2), _ -> 
@@ -166,9 +172,12 @@ module Env = struct
     else 
       { env with
           classes = IdMap.add class_name (TObject []) env.classes;
-          subclasses = IdMap.add class_name class_name env.subclasses
+          subclasses = IdPairSet.add (class_name, class_name) env.subclasses
       }
 
+  let new_subclass env sub_name sup_name =
+    { env with
+        subclasses = IdPairSet.add (sub_name, sup_name) env.subclasses }
 
   let add_method class_name method_name method_typ env =
     let class_typ = IdMap.find class_name env.classes in
@@ -223,15 +232,18 @@ let rec add_classes (lst : env_decl list) (env : Env.env) = match lst with
    For these checks, it needs the existing environment. *)
 let rec mk_env' (lst : env_decl list) (env : Env.env) : Env.env =  
   match lst with
-      [] -> env
+    | [] -> env
     | EnvBind (x, typ) :: rest ->
         if IdMap.mem x env.Env.id_typs then
           raise (Not_wf_typ (x ^ " is already bound in the environment"))
         else
           mk_env' rest (Env.bind_id x typ env)
-    | EnvClass (class_name, proto_typ, methods) :: rest ->
-        let env = try 
-          add_methods methods class_name env 
+    | EnvClass (class_name, proto, methods) :: rest ->
+        let env = try match proto with
+          | None -> add_methods methods class_name env
+          | Some proto_name ->
+              add_methods methods class_name
+                (Env.new_subclass env proto_name class_name)
         with Not_wf_typ s ->
           raise (Not_wf_typ ("error adding class " ^ class_name ^ "; " ^ s)) in
           (* TODO account for prototype *)
