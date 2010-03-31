@@ -147,7 +147,7 @@ let set_ref loc value heap =
 let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
     Typedjs_syntax.TArrow _ -> RTSet.singleton RT.Function
   | Typedjs_syntax.TUnion (t1, t2) -> RTSet.union (rt_of_typ t1) (rt_of_typ t2)
-  | Typedjs_syntax.TApp (s, []) -> begin match s with
+  | Typedjs_syntax.TConstr (s, []) -> begin match s with
         "String" ->  RTSet.singleton RT.String
       | "RegExp" -> RTSet.singleton RT.Object
       | "Number"  -> RTSet.singleton RT.Number
@@ -156,7 +156,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
       | "Undefined" -> RTSet.singleton RT.Undefined
       | _ -> RTSet.singleton RT.Object
     end
-  | Typedjs_syntax.TApp _ -> failwith 
+  | Typedjs_syntax.TConstr _ -> failwith 
       (sprintf "unknown type: %s" (to_string Typedjs_syntax.Pretty.p_typ t))
   | Typedjs_syntax.TObject _ -> RTSet.singleton RT.Object
   | Typedjs_syntax.TRef t -> rt_of_typ t
@@ -185,14 +185,14 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TTop -> TTop
   | TBot -> TBot (* might change if we allow arbitrary casts *)
   | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
-  | TApp ("String", []) -> if RTSet.mem RT.String rt then typ else TBot
-  | TApp ("RegExp", []) -> if RTSet.mem RT.Object rt then typ else TBot
-  | TApp ("Number", []) -> if RTSet.mem RT.Number rt then typ else TBot
-  | TApp ("Int", []) -> if RTSet.mem RT.Number rt then typ else TBot
-  | TApp ("Boolean", []) -> if RTSet.mem RT.Boolean rt then typ else TBot
-  | TApp ("Undefined", []) -> if RTSet.mem RT.Undefined rt then typ else TBot
+  | TConstr ("String", []) -> if RTSet.mem RT.String rt then typ else TBot
+  | TConstr ("RegExp", []) -> if RTSet.mem RT.Object rt then typ else TBot
+  | TConstr ("Number", []) -> if RTSet.mem RT.Number rt then typ else TBot
+  | TConstr ("Int", []) -> if RTSet.mem RT.Number rt then typ else TBot
+  | TConstr ("Boolean", []) -> if RTSet.mem RT.Boolean rt then typ else TBot
+  | TConstr ("Undefined", []) -> if RTSet.mem RT.Undefined rt then typ else TBot
   (* any other app will be an object from a constructor *)
-  | TApp _ -> if RTSet.mem RT.Object rt then typ else TBot
+  | TConstr _ -> if RTSet.mem RT.Object rt then typ else TBot
   | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
   | TRef t -> TRef t
   | TSource t -> TSource t

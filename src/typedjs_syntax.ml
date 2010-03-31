@@ -31,7 +31,7 @@ module RTSetExt = SetExt.Make (RTSet)
 type constr = string
 
 type typ = 
-    TApp of constr * typ list
+  | TConstr of constr * typ list
   | TUnion of typ * typ
   | TArrow of typ * typ list * typ
   | TObject of (id * typ) list
@@ -152,8 +152,8 @@ module Pretty = struct
                             end) arg_typs));
               text "->";
               typ r_typ ]
-    | TApp (s, []) -> text s
-    | TApp (s, ts) ->
+    | TConstr (s, []) -> text s
+    | TConstr (s, ts) ->
         horz [ text s; 
                angles (horz (intersperse (text ",") (map typ ts))) ]
     | TObject fs ->

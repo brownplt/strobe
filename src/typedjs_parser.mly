@@ -51,8 +51,8 @@ arg_typ
   | arg_typ UNION arg_typ { typ_union IdMap.empty $1 $3 }
   | LBRACE fields RBRACE { TObject $2 }
   | LPAREN typ RPAREN { $2 }
-  | ID { TApp ( $1, [] ) }
-  | ID LANGLE typs RANGLE { TApp ($1, $3) }
+  | ID { TConstr ( $1, [] ) }
+  | ID LANGLE typs RANGLE { TConstr ($1, $3) }
 
 typ 
   : arg_typ { $1 }

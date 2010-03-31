@@ -67,7 +67,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EDeref (p, e) -> begin match tc_exp env e with
       | TRef t -> t
       | TSource t -> t
-      | TApp (constr, _) -> Env.lookup_class constr env
+      | TConstr (constr, _) -> Env.lookup_class constr env
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
                                  (string_of_typ t)))
     end 
@@ -122,16 +122,16 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ETypecast (p, rt, e) -> 
       Typedjs_lattice.static (Env.get_classes env) rt (tc_exp env e)
   | EEmptyArray (p, elt_typ) -> 
-      TApp ("Array", [ Env.check_typ p env elt_typ ])
+      TConstr ("Array", [ Env.check_typ p env elt_typ ])
   | EArray (p, []) -> 
       raise (Typ_error (p, "an empty array literal requires a type annotation"))
   | EArray (_, e :: es) -> 
       let u = fold_left (typ_union (Env.get_classes env)) 
         (tc_exp env e) (tc_exps env es) in
-        TApp ("Array", [u])
+        TConstr ("Array", [u])
   | EIf (p, e1, e2, e3) -> begin
       match tc_exp env e1, tc_exp env e2, tc_exp env e3 with
-          TApp ("Boolean", []), t2, t3 -> typ_union (Env.get_classes env) t2 t3
+          TConstr ("Boolean", []), t2, t3 -> typ_union (Env.get_classes env) t2 t3
         | t, _, _ -> raise (Typ_error (p, "expected a boolean"))
     end
   | EObject (p, fields) ->
@@ -142,7 +142,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
-      | TApp (cname, apps), EConst (_, JavaScript_syntax.CString x) -> begin
+      | TConstr (cname, apps), EConst (_, JavaScript_syntax.CString x) -> begin
           try
             let (TObject fs) = Env.lookup_class cname env in
               begin try
@@ -184,31 +184,31 @@ let rec tc_exp (env : Env.env) exp = match exp with
         let class_typ = Env.lookup_class cid env in
         let arg_typs = tc_exps env args in
         let _ = tc_exp env (EApp (p, EId (p, cid), args)) in
-          TApp (cid, [])
+          TConstr (cid, [])
       with 
           Not_found -> raise (
             Typ_error (p, sprintf "new: class %s does not exist" cid))
       end
   | EPrefixOp (p, op, e) -> begin match op, tc_exp env e with
-      | JS.PrefixLNot, TApp ("Boolean", []) -> typ_bool
+      | JS.PrefixLNot, TConstr ("Boolean", []) -> typ_bool
       | JS.PrefixLNot, t -> 
           raise (Typ_error (p, "! (logical not) expects a number; received " ^
                               (string_of_typ t)))
-      | JS.PrefixBNot, TApp ("Int", []) -> typ_int
-      | JS.PrefixBNot, TApp ("Number", []) ->
+      | JS.PrefixBNot, TConstr ("Int", []) -> typ_int
+      | JS.PrefixBNot, TConstr ("Number", []) ->
           (** JavaScript converts floats to integers before doing a bitwise
               negation. E.g. [~(1.0)], [~1], and [-2] are equivalent. *)
           typ_int 
       | JS.PrefixBNot, t ->
           raise (Typ_error (p, "~ (bitwise not) expects a number; received " ^
                               (string_of_typ t)))
-      | JS.PrefixPlus, TApp ("Int", []) -> typ_int
-      | JS.PrefixPlus, TApp ("Number", []) -> typ_num 
+      | JS.PrefixPlus, TConstr ("Int", []) -> typ_int
+      | JS.PrefixPlus, TConstr ("Number", []) -> typ_num 
       | JS.PrefixPlus, t ->
           raise (Typ_error (p, "+ (plus) expects a number; received " ^
                               (string_of_typ t)))
-      | JS.PrefixMinus, TApp ("Int", []) -> typ_int
-      | JS.PrefixMinus, TApp ("Number", []) -> typ_num 
+      | JS.PrefixMinus, TConstr ("Int", []) -> typ_int
+      | JS.PrefixMinus, TConstr ("Number", []) -> typ_num 
       | JS.PrefixMinus, t -> 
           raise 
             (Typ_error 
@@ -398,7 +398,7 @@ let rec tc_def env def = match def with
       end
   | DExternalMethod (p, cname, mid, me, d) -> 
       try
-        let expenv = Env.bind_id "this" (TApp (cname, [])) env in
+        let expenv = Env.bind_id "this" (TConstr (cname, [])) env in
         let env' = Env.add_method cname mid (TRef (tc_exp expenv me)) env in
           tc_def env' d
       with Not_found -> raise (

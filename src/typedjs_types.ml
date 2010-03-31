@@ -4,30 +4,30 @@ open Typedjs_syntax
 (** Some of these constructor names correspond directly to the object names
     in JavaScript. Good or bad? *)
 
-let typ_str = TApp ("String", [])
+let typ_str = TConstr ("String", [])
 
-let typ_regexp = TApp ("RegExp", [])
+let typ_regexp = TConstr ("RegExp", [])
 
-let typ_num = TApp ("Number", [])
+let typ_num = TConstr ("Number", [])
 
-let typ_int = TApp ("Int", [])
+let typ_int = TConstr ("Int", [])
 
-let typ_bool = TApp ("Boolean", [])
+let typ_bool = TConstr ("Boolean", [])
 
-let typ_null = TApp ("Null", [])
+let typ_null = TConstr ("Null", [])
 
-let typ_undef = TApp ("Undefined", [])
+let typ_undef = TConstr ("Undefined", [])
 
 (* assumes s and t are in normal form *)
 let rec subtype (classes : typ IdMap.t) (s : typ) (t : typ) : bool = 
   let subtype = subtype classes
   and subtypes = subtypes classes in
     match s, t with
-      | TApp ("Int", []), TApp ("Number", []) -> true
+      | TConstr ("Int", []), TConstr ("Number", []) -> true
 (*
-      | TApp ("Number", []), TApp ("String", []) -> true 
-      | TApp ("Int", []), TApp ("String", []) -> true *)
-      | TApp (c1, args1), TApp (c2, args2) ->
+      | TConstr ("Number", []), TConstr ("String", []) -> true 
+      | TConstr ("Int", []), TConstr ("String", []) -> true *)
+      | TConstr (c1, args1), TConstr (c2, args2) ->
           if c1 = c2 then subtypes args1 args2 else false
       | TUnion (s1, s2), _ -> 
           subtype s1 t && subtype s2 t
@@ -37,20 +37,20 @@ let rec subtype (classes : typ IdMap.t) (s : typ) (t : typ) : bool =
           subtypes args2 args1 && subtype r1 r2
       | TObject fs1, TObject fs2 -> subtype_fields classes fs1 fs2
           (* objects vs. constructed objects: *)
-      | TObject fs1, TApp (cid, apps) -> begin try
+      | TObject fs1, TConstr (cid, apps) -> begin try
           match IdMap.find cid classes with
               TObject fs2 -> subtype_fields classes fs1 fs2
         with
             _ -> false
         end
-      | TApp (cid, apps), TObject fs2 -> begin try
+      | TConstr (cid, apps), TObject fs2 -> begin try
           match IdMap.find cid classes with
               TObject fs1 -> subtype_fields classes fs1  fs2
         with
             _ -> false
         end
           (* this will handle inheritance as well: *)
-      | TApp (cid1, apps1), TApp (cid2, apps2) -> begin try
+      | TConstr (cid1, apps1), TConstr (cid2, apps2) -> begin try
           match IdMap.find cid1 classes, IdMap.find cid2 classes with
               TObject fs1, TObject fs2 -> subtype_fields classes fs1 fs2
         with

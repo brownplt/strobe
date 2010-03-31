@@ -16,9 +16,9 @@ module S = struct
   let rec ctc_of_typ p (typ : typ) = match typ with
     | TArrow (_, args, result) -> 
         CArrow (map (ctc_of_typ p) args, ctc_of_typ p result)
-    | TApp ("Int", []) -> flat p "Int"
-    | TApp ("String", []) -> flat p "String"
-    | TApp ("Undefined", []) -> flat p "Undefined"
+    | TConstr ("Int", []) -> flat p "Int"
+    | TConstr ("String", []) -> flat p "String"
+    | TConstr ("Undefined", []) -> flat p "Undefined"
     | _ -> raise (Invalid_argument "ctc_of_typ")
     
   let contract_parser p text = match parse_annotation p text with

@@ -7,7 +7,7 @@ let err key _ _ =
   failwith (key ^ "is a repeated name in the XML")
 
 let default_fields =
-  [ ("innerText", TRef (TApp ("String", []))) ]
+  [ ("innerText", TRef (TConstr ("String", []))) ]
 
 let rec t_xml (xml : X.xml) : typ IdMap.t = match xml with
   | X.PCData _ -> IdMap.empty
@@ -15,7 +15,7 @@ let rec t_xml (xml : X.xml) : typ IdMap.t = match xml with
       let name = List.assoc "name" att in
         (* TODO: remove name from fields *)
       let fields : (string * typ) list = 
-        map (fun (x, _) -> (x, TRef (TApp ("String", [])))) att in
+        map (fun (x, _) -> (x, TRef (TConstr ("String", [])))) att in
       let fields = default_fields @ fields in
       let child_maps  = map t_xml children in
         IdMap.add name (TRef (TObject fields))

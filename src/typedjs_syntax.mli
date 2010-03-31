@@ -27,7 +27,7 @@ module RTSetExt : SetExt.S
 type constr = string
 
 type typ = 
-    TApp of constr * typ list
+    TConstr of constr * typ list
   | TUnion of typ * typ
   | TArrow of typ * typ list * typ      
   | TObject of (id * typ) list
