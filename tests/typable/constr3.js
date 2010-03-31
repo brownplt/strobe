@@ -13,4 +13,4 @@ function sumPoint2(pt) /*: {x : Int, y : Int} -> Int */ {
 
 var p = new Point(10, 20);
 sumPoint(p);
-sumPoint2(p);
+//sumPoint2(p);

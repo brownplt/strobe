@@ -255,8 +255,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
                   (string_of_typ t)))
     end
   | ERec (binds, body) -> 
-      (* TODO: use check_typ here *)
-      let f env (x, t, _) = Env.bind_id x t env in
+      let f env (x, t, e) =
+        Env.bind_id x (Env.check_typ (Exp.pos e) env t) env in
       let env = fold_left f env binds in
       let tc_bind (x, t, e)=
         let s = tc_exp env e in
@@ -307,7 +307,8 @@ let rec tc_def env def = match def with
         tc_def env d
   | DLet (p, x, e1, d2) -> tc_def (Env.bind_id x (tc_exp env e1) env) d2
   | DRec (binds, d) ->
-      let f env (x, t, _) = Env.bind_id x t env in
+      let f env (x, t, e) = 
+        Env.bind_id x (Env.check_typ (Exp.pos e) env t) env in
       let env = fold_left f env binds in
       let tc_bind (x, t, e) =
         let s = tc_exp env e in
@@ -365,7 +366,7 @@ let rec tc_def env def = match def with
                       (* also add the constr itself as a tarrow *)
                       let env = Env.new_root_class env cexp.constr_name in
                       let env = Env.bind_id cexp.constr_name 
-                        cexp.constr_typ env in
+                        (Env.check_typ p env cexp.constr_typ) env in
                       let f (fname, ftype) envacc = Env.add_method
                         cexp.constr_name fname ftype envacc in
                       let env = fold_right f fields env in

@@ -75,13 +75,12 @@ module Env = struct
         | TArrow (_, args1, r1), TArrow (_, args2, r2) ->
             subtypes args2 args1 && subtype r1 r2
         | TObject fs1, TObject fs2 -> subtype_fields env fs1 fs2
-(*
-        | TConstr (cid, apps), TObject fs2 -> begin try
-            match IdMap.find cid env.classes with
-                TObject fs1 -> subtype_fields env fs1 fs2
-          with
-              _ -> false
-          end *)
+        | TConstr (c_name, []), TObject fs2 ->
+            (* Classes can be turned into objects. However, this drops
+               all fields in the prototype. *)
+            let fs1 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
+            let fs1 = List.rev fs1 in
+              subtype_fields env fs1 fs2
         | TRef s', TRef t' -> subtype s' t' && subtype t' s'
         | TSource s, TSource t -> subtype s t
         | TSink s, TSink t -> subtype t s
