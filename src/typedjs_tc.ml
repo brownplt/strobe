@@ -6,6 +6,8 @@ open Format
 
 module JS = JavaScript_syntax (* needed for operators *)
 
+let error p s = raise (Typ_error (p, s))
+
 let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
 
 let tc_const (const : JavaScript_syntax.const) = match const with
@@ -137,7 +139,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EObject (p, fields) ->
       Env.check_typ p env (TObject (map (second2 (tc_exp env)) fields))
   | EBracket (p, obj, field) -> begin match tc_exp env obj, field with
-        TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
+      | TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
           (try
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
@@ -180,15 +182,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ENew (p, cid, args) ->
       (* treat it as a function application, but return the class
          type instead of the return type *)
-      begin try
-        let class_typ = Env.lookup_class cid env in
-        let arg_typs = tc_exps env args in
-        let _ = tc_exp env (EApp (p, EId (p, cid), args)) in
-          TConstr (cid, [])
-      with 
-          Not_found -> raise (
-            Typ_error (p, sprintf "new: class %s does not exist" cid))
-      end
+      let _ = try Env.lookup_class cid env 
+      with Not_found -> 
+        raise (Typ_error (p, sprintf "new: class %s does not exist" cid)) in
+      let _ = tc_exp env (EApp (p, EId (p, cid), args)) in
+        TConstr (cid, [])
   | EPrefixOp (p, op, e) -> begin match op, tc_exp env e with
       | JS.PrefixLNot, TConstr ("Boolean", []) -> typ_bool
       | JS.PrefixLNot, t -> 
@@ -363,21 +361,26 @@ let rec tc_def env def = match def with
                   TObject fields -> 
                     (* first make sure all fields are initialized with
                        the right types in constr_inits. *)
-                    let check_field (name, TRef typ) = begin 
-                      try 
-                        let (_, e) = List.find (fun (n,_) -> n = name) 
-                          cexp.constr_inits in 
-                        let etype = tc_exp env e in
-                          if subtype (Env.get_classes env) etype typ then () 
-                          else raise (
-                            Typ_error (
-                              p,sprintf"for field %s, expected type %s, got %s" 
-                                name (string_of_typ typ) (string_of_typ etype)))
-                      with
-                          Not_found -> raise (
-                            Typ_error (p, "field " ^ name ^ 
-                                         " not initialized in constructor"))
-                    end in
+                    let check_field (name, typ) = match typ with
+                      | TRef t -> begin try 
+                          let (_, e) = List.find (fun (n,_) -> n = name) 
+                            cexp.constr_inits in 
+                          let etype = tc_exp env e in
+                            if subtype (Env.get_classes env) etype typ then () 
+                            else 
+                              raise 
+                                (Typ_error (
+                                   p, sprintf "for field %s, expected type %s, \
+                                               got %s" name (string_of_typ typ)
+                                     (string_of_typ etype)))
+                        with
+                            Not_found -> raise (
+                              Typ_error (p, "field " ^ name ^ 
+                                           " not initialized in constructor"))
+                        end
+                      | _ ->
+                          raise (Typ_error (p, "expected an arrow type for \
+                            the constructor")) in
                       List.iter check_field fields;
                       (* now check the body, with "this" bound to res_type *)
                       ignore (tc_exp (Env.bind_id "this" result_typ env) 

@@ -196,7 +196,7 @@ module Pretty = struct
         horz [ text "/*:"; text txt; text "*/"; expr e ]
 
   and stmt s = match s with
-      BlockStmt (_,ss) -> 
+    | BlockStmt (_,ss) -> 
         vert [ text "{"; nest (vert (List.map stmt ss)); text "}" ]
     | EmptyStmt _ -> text ";"
     | ExprStmt e -> sep [ expr e; text ";" ]
@@ -235,6 +235,9 @@ module Pretty = struct
         sep [text "function"; text name; 
              parens (horz (commas (List.map text args)));
              block body]
+    | HintStmt (_, txt, s) ->
+        vert [ horz [ text "/*:"; text txt; text "*/" ];
+               stmt s ]
 
   let p_expr = expr
 

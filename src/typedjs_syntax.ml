@@ -132,6 +132,8 @@ module Exp = struct
     | EDeref (p, _) -> p
     | ESetRef (p, _, _) -> p
     | ESubsumption (p, _, _) -> p
+    | EDowncast (p, _, _) -> p
+    | EEmptyArray (p, _) -> p
 
 end
 
@@ -165,7 +167,8 @@ module Pretty = struct
 
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
-    | EArray (_, es) -> parens (horz (map exp es))
+    | EEmptyArray _ -> text "[ ]"
+    | EArray (_, es) -> angles (horz (map exp es))
     | EObject (_, ps) -> brackets (vert (map prop ps))
     | EThis _ -> text "this"
     | EId (_, x) -> text x

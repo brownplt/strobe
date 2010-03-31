@@ -9,6 +9,9 @@ module S = JavaScript_syntax
 
 exception Not_well_formed of pos * string
 
+let error (p : pos) (s : string) : 'exn =
+  raise (Not_well_formed (p, s))
+
 let parse_annotation (pos, end_p) str =
   let lexbuf = Lexing.from_string str in
     lexbuf.Lexing.lex_start_p <- pos;
@@ -80,7 +83,7 @@ let rec exp (env : env) expr = match expr with
           EDeref (a, EId (a, x))
         else
           EId (a, x)
-      with Not_found -> raise (Not_well_formed (a, x ^ " is not defined"))
+      with Not_found -> error a (x ^ " is not defined")
     end
   | BracketExpr (a, e1, e2) -> EDeref (a, EBracket (a, exp env e1, exp env e2))
   | NewExpr (a, VarExpr (_, x), args) -> ENew (a, x, map (exp env) args)
@@ -144,6 +147,7 @@ let rec exp (env : env) expr = match expr with
         begin match parse_annotation p text with
           | AUpcast typ -> ESubsumption (p, typ, e')
           | ADowncast typ -> EDowncast (p, typ, e')
+          | _ -> error p "unexpected hint"
         end
   | FuncExpr (p, _, _) -> 
       raise (Not_well_formed (p, "function is missing a type annotation"))
@@ -240,7 +244,9 @@ let match_constr_body env expr = match expr with
     HintExpr (p'', txt, FuncStmtExpr (p, f, args, LabelledExpr (p', l, body)))
       when is_constructor_hint txt ->
         let typ = match parse_annotation p'' txt with
-          | AConstructor typ -> typ in 
+          | AConstructor typ -> typ 
+          | _ -> raise 
+              (Not_well_formed (p'', "expected a constructor annotation")) in 
             let locally_defined_vars = locals body in
             let visible_free_vars = 
               IdSet.diff (IdSetExt.from_list (IdMapExt.keys env))
