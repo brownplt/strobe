@@ -6,7 +6,9 @@ exception Not_wf_typ of string
 module IdPairSet = Set.Make 
   (struct
      type t = id * id
-     let compare = Pervasives.compare
+     let compare (s11, s12) (s21, s22) = match String.compare s11 s21 with
+       | 0 -> String.compare s12 s22
+       | n -> n       
    end)
 
 module Env = struct
@@ -19,8 +21,7 @@ module Env = struct
   type env = {
     id_typs : typ IdMap.t; 
     lbl_typs : typ IdMap.t;
-    (* maps class names to a structural object type *)
-    classes : typ IdMap.t;
+    classes : class_info IdMap.t;
     (* reflexive-transitive closure of the subclass relation *)
     subclasses : IdPairSet.t
   }
@@ -41,11 +42,15 @@ module Env = struct
 
   let lookup_lbl x env = IdMap.find x env.lbl_typs
 
-  let field_typ env cname fname = 
-    try match IdMap.find cname env.classes with
-      | TObject fs -> Some (snd2 (List.find (fun (x, _) -> fname = x) fs))
-      | _ -> failwith "expected TObject in field_typ"
-    with Not_found -> None
+  let rec field_typ env cname fname = try
+    let ci = IdMap.find cname env.classes in
+      if IdMap.mem fname ci.fields then
+        Some (IdMap.find fname ci.fields)
+      else begin match ci.sup with
+        | None -> None
+        | Some cname' -> field_typ env cname' fname
+      end
+  with Not_found -> raise (Not_wf_typ ("undefined class: " ^ cname))
 
   let is_class env cname = IdMap.mem cname env.classes
 
@@ -70,26 +75,13 @@ module Env = struct
         | TArrow (_, args1, r1), TArrow (_, args2, r2) ->
             subtypes args2 args1 && subtype r1 r2
         | TObject fs1, TObject fs2 -> subtype_fields env fs1 fs2
-            (* objects vs. constructed objects: *)
-        | TObject fs1, TConstr (cid, apps) -> begin try
-            match IdMap.find cid env.classes with
-                TObject fs2 -> subtype_fields env fs1 fs2
-          with
-              _ -> false
-          end
+(*
         | TConstr (cid, apps), TObject fs2 -> begin try
             match IdMap.find cid env.classes with
                 TObject fs1 -> subtype_fields env fs1 fs2
           with
               _ -> false
-          end
-            (* this will handle inheritance as well: *)
-        | TConstr (cid1, apps1), TConstr (cid2, apps2) -> begin try
-            match IdMap.find cid1 env.classes, IdMap.find cid2 env.classes with
-                TObject fs1, TObject fs2 -> subtype_fields env fs1 fs2
-          with
-              _ -> false
-          end
+          end *)
         | TRef s', TRef t' -> subtype s' t' && subtype t' s'
         | TSource s, TSource t -> subtype s t
         | TSink s, TSink t -> subtype t s
@@ -170,38 +162,36 @@ module Env = struct
     | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
 
 
-  let new_class class_name env = 
+  let new_root_class env class_name = 
     if IdMap.mem class_name env.classes then
       raise (Invalid_argument ("class already exists: " ^ class_name))
     else 
-      { env with
-          classes = IdMap.add class_name (TObject []) env.classes;
-          subclasses = IdPairSet.add (class_name, class_name) env.subclasses
-      }
+      let c = IdMap.add class_name 
+        { fields = IdMap.empty; sup = None } env.classes in
+        { env with
+            classes = c;
+            subclasses = IdPairSet.add (class_name, class_name) env.subclasses
+        }
 
   let new_subclass env sub_name sup_name =
     { env with
-        subclasses = IdPairSet.add (sub_name, sup_name) env.subclasses }
+        classes = IdMap.add sub_name
+        { fields = IdMap.empty; sup = Some sup_name } env.classes;
+        subclasses = 
+        IdPairSet.add (sub_name, sub_name)
+          (IdPairSet.add (sub_name, sup_name) env.subclasses) }
 
-  let add_method class_name method_name method_typ env =
-    let class_typ = IdMap.find class_name env.classes in
-      match class_typ with
-          TObject fields ->
-            if List.mem_assoc method_name fields then
-              raise (Invalid_argument ("method already exists: " ^ method_name))
-            else
-              let class_typ' = TObject ((method_name, method_typ) :: fields) in
-                { env with classes = IdMap.add class_name 
-                    (normalize_typ env class_typ') env.classes }
-        | _ ->
-            failwith ("class type is not an object: " ^ class_name)
+  let add_method c_name m_name m_typ env =
+    let ci = IdMap.find c_name env.classes in
+      if IdMap.mem m_name ci.fields then
+        raise (Invalid_argument ("method already exists: " ^ m_name))
+      else 
+        let ci' = { ci with fields = IdMap.add m_name m_typ ci.fields } in
+          { env with classes = IdMap.add c_name ci' env.classes }
 
-  let set_global_object env cname = match IdMap.find cname env.classes with
-    | TObject fs -> 
-        List.fold_left (fun env (x, t) -> bind_id x t env) env fs
-    | _ -> failwith "set_global_object: got a class that is not an object"
-
-
+  let set_global_object env cname = 
+    let fs = IdMapExt.to_list (IdMap.find cname env.classes).fields in
+      List.fold_left (fun env (x, t) -> bind_id x t env) env fs
 
 end
 
@@ -229,7 +219,10 @@ let rec add_methods (lst : (id * typ) list) (class_name : id) (env : Env.env) =
 
 let rec add_classes (lst : env_decl list) (env : Env.env) = match lst with
   | [] -> env
-  | EnvClass (cname, _, _) :: rest -> add_classes rest (Env.new_class cname env)
+  | EnvClass (c_name, Some p_name, _) :: rest ->
+      add_classes rest (Env.new_subclass env c_name p_name)
+  | EnvClass (cname, None, _) :: rest ->
+      add_classes rest (Env.new_root_class env cname)
   | _ :: rest -> add_classes rest env
 
 (* [mk_env'] ensures that a type declaration is  well-formed and well-kinded.
@@ -246,8 +239,7 @@ let rec mk_env' (lst : env_decl list) (env : Env.env) : Env.env =
         let env = try match proto with
           | None -> add_methods methods class_name env
           | Some proto_name ->
-              add_methods methods class_name
-                (Env.new_subclass env proto_name class_name)
+              add_methods methods class_name env
         with Not_wf_typ s ->
           raise (Not_wf_typ ("error adding class " ^ class_name ^ "; " ^ s)) in
           (* TODO account for prototype *)

@@ -27,7 +27,7 @@ module Env : sig
   val dom : env -> IdSet.t
 
   (** A new class with no methods. *)
-  val new_class : id -> env -> env
+  val new_root_class : env -> id -> env
 
   (** Adds a method to a class. *)
   val add_method : id -> id -> typ -> env -> env

@@ -363,7 +363,7 @@ let rec tc_def env def = match def with
                         cexp.constr_exp);
                       (* create a new class, add fields as initial methods *)
                       (* also add the constr itself as a tarrow *)
-                      let env = Env.new_class cexp.constr_name env in
+                      let env = Env.new_root_class env cexp.constr_name in
                       let env = Env.bind_id cexp.constr_name 
                         cexp.constr_typ env in
                       let f (fname, ftype) envacc = Env.add_method
