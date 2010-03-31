@@ -8,14 +8,17 @@ module Env = struct
   type env = { id_typs : typ IdMap.t; 
                lbl_typs : typ IdMap.t;
                (* maps class names to a structural object type *)
-               classes : typ IdMap.t 
+               classes : typ IdMap.t;
+               (* If [IdMap.find x = y], then x is a subclass of y *)
+               subclasses : id IdMap.t;
              }
 
 
   let empty_env = { 
     id_typs = IdMap.empty;
     lbl_typs = IdMap.empty;
-    classes = IdMap.empty
+    classes = IdMap.empty;
+    subclasses = IdMap.empty
   }
 
   let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
@@ -41,15 +44,78 @@ module Env = struct
 
   let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)
 
+  let rec subtype env s t = 
+    let subtype = subtype env in
+    let subtypes = subtypes env in
+      match s, t with
+        | TConstr ("Int", []), TConstr ("Number", []) -> true
+        | TConstr (c1, args1), TConstr (c2, args2) ->
+            if c1 = c2 then subtypes args1 args2 else false
+        | TUnion (s1, s2), _ -> 
+            subtype s1 t && subtype s2 t
+        | _, TUnion (t1, t2) ->
+            subtype s t1 || subtype s t2
+        | TArrow (_, args1, r1), TArrow (_, args2, r2) ->
+            subtypes args2 args1 && subtype r1 r2
+        | TObject fs1, TObject fs2 -> subtype_fields env fs1 fs2
+            (* objects vs. constructed objects: *)
+        | TObject fs1, TConstr (cid, apps) -> begin try
+            match IdMap.find cid env.classes with
+                TObject fs2 -> subtype_fields env fs1 fs2
+          with
+              _ -> false
+          end
+        | TConstr (cid, apps), TObject fs2 -> begin try
+            match IdMap.find cid env.classes with
+                TObject fs1 -> subtype_fields env fs1 fs2
+          with
+              _ -> false
+          end
+            (* this will handle inheritance as well: *)
+        | TConstr (cid1, apps1), TConstr (cid2, apps2) -> begin try
+            match IdMap.find cid1 env.classes, IdMap.find cid2 env.classes with
+                TObject fs1, TObject fs2 -> subtype_fields env fs1 fs2
+          with
+              _ -> false
+          end
+        | TRef s', TRef t' -> subtype s' t' && subtype t' s'
+        | TSource s, TSource t -> subtype s t
+        | TSink s, TSink t -> subtype t s
+        | TRef s, TSource t -> subtype s t
+        | TRef s, TSink t -> subtype t s
+        | _, TTop -> true
+        | TBot, _ -> true
+        | _ -> s = t
+
+  (* assumes fs1 and fs2 are ordered *)
+  and subtype_fields env fs1 fs2 = match fs1, fs2 with
+    | [], [] -> true
+    | [], _ -> true
+    | _, [] -> false (* fs1 has fields that fs2 does not *)
+    | (x, s) :: fs1', (y, t) :: fs2' ->
+        let cmp = String.compare x y in
+          if cmp = 0 then subtype env s t && subtype_fields env fs1' fs2'
+          else if cmp < 0 then false (* we will not find x in the supertype *)
+            (* y is an extra field in the supertype *)
+          else subtype_fields env fs1 fs2' 
+
+  and subtypes env (ss : typ list) (ts : typ list) : bool = 
+    try List.for_all2 (subtype env) ss ts
+    with Invalid_argument _ -> false (* unequal lengths *)
+
+  let typ_union cs s t = match subtype cs s t, subtype cs t s with
+      true, true -> s (* t = s *)
+    | true, false -> t (* s <: t *)
+    | false, true -> s (* t <: s *)
+    | false, false -> TUnion (s, t)
+
   let cmp_props (k1, _) (k2, _) = match String.compare k1 k2 with
     | 0 -> raise (Not_wf_typ ("the field " ^ k1 ^ " is repeated"))
     | n -> n
-
         
   let rec normalize_typ env typ = match typ with
     | TUnion (s, t) -> 
-        Typedjs_types.typ_union env.classes
-          (normalize_typ env s) (normalize_typ env t)
+        typ_union env (normalize_typ env s) (normalize_typ env t)
     | TObject fs ->
         let fs = List.fast_sort cmp_props fs in
           TObject (map (second2 (normalize_typ env)) fs)
@@ -71,6 +137,25 @@ module Env = struct
   let check_typ p env t = 
     try normalize_typ env t 
     with Not_wf_typ s -> raise (Typ_error (p, s))
+
+  let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
+    | TTop -> TTop
+    | TBot -> TBot (* might change if we allow arbitrary casts *)
+    | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
+    | TConstr ("String", []) -> if RTSet.mem RT.String rt then typ else TBot
+    | TConstr ("RegExp", []) -> if RTSet.mem RT.Object rt then typ else TBot
+    | TConstr ("Number", []) -> if RTSet.mem RT.Number rt then typ else TBot
+    | TConstr ("Int", []) -> if RTSet.mem RT.Number rt then typ else TBot
+    | TConstr ("Boolean", []) -> if RTSet.mem RT.Boolean rt then typ else TBot
+    | TConstr ("Undefined", []) -> 
+        if RTSet.mem RT.Undefined rt then typ else TBot
+          (* any other app will be an object from a constructor *)
+    | TConstr _ -> if RTSet.mem RT.Object rt then typ else TBot
+    | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
+    | TRef t -> TRef t
+    | TSource t -> TSource t
+    | TSink t -> TSink t
+    | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
 
 
   let new_class class_name env = 

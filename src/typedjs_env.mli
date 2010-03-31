@@ -29,7 +29,6 @@ module Env : sig
   (** A new class with no methods. *)
   val new_class : id -> env -> env
 
-
   (** Adds a method to a class. *)
   val add_method : id -> id -> typ -> env -> env
 
@@ -38,6 +37,18 @@ module Env : sig
   val set_global_object : env -> string -> env
 
   val check_typ : pos -> env -> typ -> typ
+
+  (** [subtype typ1 typ2] assumes that [typ1] and [typ2] are in normal form. *)
+  val subtype : env -> typ -> typ -> bool
+
+  (** [subtypes typs1 typs2] applies [subtype] pairwise to the elements of
+      [typs1] and [typs2]. If the lists have unequal lengths, it returns
+      [false]. *)
+  val subtypes : env -> typ list -> typ list -> bool
+
+  val typ_union : env -> typ -> typ -> typ
+
+  val static : env -> RTSet.t -> typ -> typ
 
 end
 

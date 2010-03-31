@@ -21,7 +21,7 @@ let tc_const (const : JavaScript_syntax.const) = match const with
 
 let tc_arith env (p : pos) (t1 : typ) (t2 : typ) (int_args : bool) 
     (num_result : bool) : typ =
-  let subtype = subtype (Env.get_classes env) in
+  let subtype = Env.subtype env in
   let result_typ = 
     if num_result = true then typ_num
     else if subtype t1 typ_int then t2
@@ -45,7 +45,7 @@ let tc_arith env (p : pos) (t1 : typ) (t2 : typ) (int_args : bool)
                     Pretty.pp_typ t1 Pretty.pp_typ t2; flush_str_formatter ()))
 
 let tc_cmp env (p : pos) (lhs : typ) (rhs : typ) : typ = 
-  let subtype = subtype (Env.get_classes env) in
+  let subtype = Env.subtype env in
     if (subtype lhs typ_str && subtype rhs typ_str) || 
       (subtype lhs typ_num && subtype rhs typ_num) then
         typ_bool
@@ -76,7 +76,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ESetRef (p, e1, e2) -> begin match tc_exp env e1, tc_exp env e2 with
       | TRef s, t
       | TSink s, t ->
-          if subtype (Env.get_classes env) t s then 
+          if Env.subtype env t s then 
             t
           else raise
             (Typ_error 
@@ -91,7 +91,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ELabel (p, l, t, e) -> 
       let t = Env.check_typ p env t in
       let s = tc_exp (Env.bind_lbl l (Env.check_typ p env t) env) e in
-        if subtype (Env.get_classes env) s t then t
+        if Env.subtype env s t then t
         else raise (Typ_error (p, "label type mismatch"))
   | EBreak (p, l, e) ->
       let s = 
@@ -99,7 +99,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
         with Not_found -> 
           raise (Typ_error (p, "label " ^ l ^ " is not defined"))
       and t = tc_exp env e in
-        if subtype (Env.get_classes env) t s then TBot
+        if Env.subtype env t s then TBot
         else raise
           (Typ_error 
              (p,
@@ -114,7 +114,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ETryCatch (_, e1, x, e2) ->
       let t1 = tc_exp env e1
       and t2 = tc_exp (Env.bind_id x TTop env) e2 in
-        typ_union (Env.get_classes env) t1 t2
+        Env.typ_union env t1 t2
   | ETryFinally (_, e1, e2) -> 
       let _ = tc_exp env e1 in
         tc_exp env e2
@@ -122,18 +122,18 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let _ = tc_exp env e in
         TBot
   | ETypecast (p, rt, e) -> 
-      Typedjs_lattice.static (Env.get_classes env) rt (tc_exp env e)
+      Env.static env rt (tc_exp env e)
   | EEmptyArray (p, elt_typ) -> 
       TConstr ("Array", [ Env.check_typ p env elt_typ ])
   | EArray (p, []) -> 
       raise (Typ_error (p, "an empty array literal requires a type annotation"))
   | EArray (_, e :: es) -> 
-      let u = fold_left (typ_union (Env.get_classes env)) 
+      let u = fold_left (Env.typ_union env) 
         (tc_exp env e) (tc_exps env es) in
         TConstr ("Array", [u])
   | EIf (p, e1, e2, e3) -> begin
       match tc_exp env e1, tc_exp env e2, tc_exp env e3 with
-          TConstr ("Boolean", []), t2, t3 -> typ_union (Env.get_classes env) t2 t3
+          TConstr ("Boolean", []), t2, t3 -> Env.typ_union env t2 t3
         | t, _, _ -> raise (Typ_error (p, "expected a boolean"))
     end
   | EObject (p, fields) ->
@@ -230,8 +230,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
          | JS.OpNEq -> typ_bool
          | JS.OpStrictEq -> typ_bool
          | JS.OpStrictNEq -> typ_bool
-         | JS.OpLAnd -> typ_union (Env.get_classes env)t2 typ_bool
-         | JS.OpLOr -> typ_union (Env.get_classes env)t1 t2
+         | JS.OpLAnd -> Env.typ_union env t2 typ_bool
+         | JS.OpLOr -> Env.typ_union env t1 t2
          | JS.OpMul -> tc_arith env p t1 t2 false false
          | JS.OpDiv -> tc_arith env p t1 t2 false true
          | JS.OpMod -> tc_arith env p t1 t2 false true
@@ -242,24 +242,23 @@ let rec tc_exp (env : Env.env) exp = match exp with
          | JS.OpBAnd -> tc_arith env p t1 t2 true false
          | JS.OpBXor -> tc_arith env p t1 t2 true false
          | JS.OpBOr -> tc_arith env p t1 t2 true false
-         | JS.OpAdd -> begin match 
-             subtype (Env.get_classes env) t1 typ_str, 
-             subtype (Env.get_classes env) t2 typ_str with
-               true, _ -> typ_str
-             | _, true -> typ_str
-             | _ -> tc_arith env p t1 t2 false false
+         | JS.OpAdd -> begin match Env.subtype env t1 typ_str,
+             Env.subtype env t2 typ_str with
+                 true, _ -> typ_str
+               | _, true -> typ_str
+               | _ -> tc_arith env p t1 t2 false false
            end
        end
   | EApp (p, f, args) -> begin match tc_exp env f with
         TArrow (_, expected_typs, result_typ) ->
           let arg_typs = tc_exps env args in
-            if subtypes (Env.get_classes env) arg_typs expected_typs 
+            if Env.subtypes env arg_typs expected_typs 
             then result_typ 
             else if List.length args = List.length expected_typs then
               let typ_pairs = List.combine arg_typs expected_typs in
               let arg_ix = ref 1 in
               let find_typ_err (arg_typ, expected_typ) = 
-                if subtype (Env.get_classes env) arg_typ expected_typ 
+                if Env.subtype env arg_typ expected_typ 
                 then (incr arg_ix; false)
                 else true in
               let arg_typ, expected_typ = List.find find_typ_err typ_pairs in
@@ -284,7 +283,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let env = fold_left f env binds in
       let tc_bind (x, t, e)=
         let s = tc_exp env e in
-          if subtype (Env.get_classes env) s t then ()
+          if Env.subtype env s t then ()
           else (* this should not happen; rec-annotation is a copy of the
                   function's type annotation. *)
             failwith (sprintf "%s is declared to have type %s, but the bound \
@@ -303,7 +302,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
           let env = List.fold_left2 bind_arg env args arg_typs in
           let env = Env.clear_labels env in
           let body_typ = tc_exp env body in
-            if subtype (Env.get_classes env) body_typ result_typ then fn_typ
+            if Env.subtype env body_typ result_typ then fn_typ
             else raise 
               (Typ_error
                  (p,
@@ -315,7 +314,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ESubsumption (p, t, e) ->
       let s = tc_exp env e in
       let t = Env.check_typ p env t in
-        if subtype (Env.get_classes env) s t then
+        if Env.subtype env s t then
           t
         else 
           raise (Typ_error (p, "subsumption error"))
@@ -335,7 +334,7 @@ let rec tc_def env def = match def with
       let env = fold_left f env binds in
       let tc_bind (x, t, e) =
         let s = tc_exp env e in
-          if subtype (Env.get_classes env) s t then ()
+          if Env.subtype env s t then ()
           else (* this should not happen; rec-annotation is a copy of the
                   function's type annotation. *)
             failwith (sprintf "%s is declared to have type %s, but the bound \
@@ -366,7 +365,7 @@ let rec tc_def env def = match def with
                           let (_, e) = List.find (fun (n,_) -> n = name) 
                             cexp.constr_inits in 
                           let etype = tc_exp env e in
-                            if subtype (Env.get_classes env) etype t then () 
+                            if Env.subtype env etype t then () 
                             else 
                               raise 
                                 (Typ_error (

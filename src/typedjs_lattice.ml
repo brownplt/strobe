@@ -172,29 +172,6 @@ let union_heap h1 h2 =
 
 let empty_heap = Heap.empty
 
-
-open Typedjs_syntax
-open Typedjs_types
-
-
 let compare_heap = Heap.compare RTSet.compare
 
 let compare_env = IdMap.compare AV.compare
-
-let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
-  | TTop -> TTop
-  | TBot -> TBot (* might change if we allow arbitrary casts *)
-  | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
-  | TConstr ("String", []) -> if RTSet.mem RT.String rt then typ else TBot
-  | TConstr ("RegExp", []) -> if RTSet.mem RT.Object rt then typ else TBot
-  | TConstr ("Number", []) -> if RTSet.mem RT.Number rt then typ else TBot
-  | TConstr ("Int", []) -> if RTSet.mem RT.Number rt then typ else TBot
-  | TConstr ("Boolean", []) -> if RTSet.mem RT.Boolean rt then typ else TBot
-  | TConstr ("Undefined", []) -> if RTSet.mem RT.Undefined rt then typ else TBot
-  (* any other app will be an object from a constructor *)
-  | TConstr _ -> if RTSet.mem RT.Object rt then typ else TBot
-  | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
-  | TRef t -> TRef t
-  | TSource t -> TSource t
-  | TSink t -> TSink t
-  | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
