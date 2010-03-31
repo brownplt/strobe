@@ -42,7 +42,7 @@ type typ =
   | TBot
 
 type env_decl =
-    EnvClass of constr * typ * (id * typ) list
+  | EnvClass of constr * constr option * (id * typ) list
   | EnvBind of id * typ
 
 type annotation =

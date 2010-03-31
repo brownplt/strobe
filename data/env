@@ -2,26 +2,26 @@
 // HTMLWindow (the global object's type) are automatically added to the
 // initial environment.
 
-class Number prototype {} {
+class Number prototype Object {
 }
 
-class String prototype {} {
+class String prototype Object {
   charCodeAt : Int -> Double
 }
 
-class Int prototype {} {
+class Int prototype Number {
   toString : -> String
 }
 
-class Array prototype {} {
+class Array prototype Object {
 }
 
-class Undefined prototype {} {
+class Undefined {
 }
 
-class Boolean prototype {} { }
+class Boolean prototype Object { }
 
-class Date prototype {} {
+class Date prototype Object {
   setDate : Number -> Date,
   getDate : -> Number,
   valueOf : -> Int,
@@ -33,7 +33,7 @@ val Date : String + Date + Void-> Date
 
 // HTMLWindow is the type of the global object. All its fields are added to the
 // initial environment.
-class HTMLWindow prototype {} {
+class HTMLWindow  {
   document : { },
   setTimeout : (-> Void) * Int -> Int,
   setInterval : ( -> Void) * Int -> Int,
@@ -49,6 +49,6 @@ class HTMLWindow prototype {} {
   }
 }
 
-class HTMLElement prototype {} {
+class HTMLElement  {
 }
 

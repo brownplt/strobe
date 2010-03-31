@@ -88,12 +88,13 @@ any_id :
   | STR { "String" }
   | INT { "Int" }
 
-env_decl
-  : CLASS any_id PROTOTYPE typ LBRACE fields RBRACE
+env_decl :
+  | CLASS any_id PROTOTYPE any_id LBRACE fields RBRACE
     { EnvClass
         ( $2 (* name *) , 
-          $4 (* prototype type *),
+          Some $4 (* prototype type *),
           $6 (* local fields *)) }
+  | CLASS any_id LBRACE fields RBRACE { EnvClass ($2, None (* root *), $4) }
   | VAL ID COLON typ { EnvBind ($2, $4) }
   | ID COLON typ { EnvBind ($1, TRef $3) }
 

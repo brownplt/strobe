@@ -5,13 +5,15 @@ exception Not_wf_typ of string
 
 module Env = struct
 
-  type env = { id_typs : typ IdMap.t; 
-               lbl_typs : typ IdMap.t;
-               (* maps class names to a structural object type *)
-               classes : typ IdMap.t;
-               (* If [IdMap.find x = y], then x is a subclass of y *)
-               subclasses : id IdMap.t;
-             }
+  type env = {
+    id_typs : typ IdMap.t; 
+    lbl_typs : typ IdMap.t;
+    (* maps class names to a structural object type *)
+    classes : typ IdMap.t;
+    (* reflexive-transitive closure of the subclass relation:
+       if [IdMap.find x = y], then x is a subclass of y *)
+    subclasses : id IdMap.t;
+  }
 
 
   let empty_env = { 
@@ -163,7 +165,8 @@ module Env = struct
       raise (Invalid_argument ("class already exists: " ^ class_name))
     else 
       { env with
-          classes = IdMap.add class_name (TObject []) env.classes
+          classes = IdMap.add class_name (TObject []) env.classes;
+          subclasses = IdMap.add class_name class_name env.subclasses
       }
 
 
