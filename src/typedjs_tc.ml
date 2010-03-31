@@ -366,12 +366,12 @@ let rec tc_def env def = match def with
                           let (_, e) = List.find (fun (n,_) -> n = name) 
                             cexp.constr_inits in 
                           let etype = tc_exp env e in
-                            if subtype (Env.get_classes env) etype typ then () 
+                            if subtype (Env.get_classes env) etype t then () 
                             else 
                               raise 
                                 (Typ_error (
                                    p, sprintf "for field %s, expected type %s, \
-                                               got %s" name (string_of_typ typ)
+                                               got %s" name (string_of_typ t)
                                      (string_of_typ etype)))
                         with
                             Not_found -> raise (
