@@ -169,7 +169,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       cps' e1 throw
         (fun v1 ->
            Bind (new_node (), x, Let v1, cps_exp e2 throw k))
-  | ERef (_, e) ->
+  | ERef (_, _, e) ->
       cps' e throw
         (fun v ->
            let x = new_name () in

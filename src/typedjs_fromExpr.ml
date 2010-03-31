@@ -75,7 +75,7 @@ let rec exp (env : env) expr = match expr with
   | ObjectExpr (a, ps) -> 
       if List.length ps != List.length (nub (map (fun (_, p, _) -> p) ps)) then
         raise (Not_well_formed (a, "repeated field names"));
-      EObject (a, map (fun (_, x, e) ->  x, ERef (a, exp env e)) ps)
+      EObject (a, map (fun (_, x, e) ->  x, ERef (a, RefCell, exp env e)) ps)
   | ThisExpr a -> EThis a
   | VarExpr (a, x) -> begin
       try
@@ -187,7 +187,7 @@ and match_func env expr = match expr with
         let env' = 
           fold_left (fun acc x -> IdMap.add x true acc) env' args in
         let mutable_arg exp id =
-          ELet (a, id, ERef (a, EId (a, id)), exp) in
+          ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) in
         begin match typ with
             TArrow (_, arg_typs, r) ->
               incr func_index;
@@ -214,7 +214,7 @@ and exp_seq env e = match e with
 and block_intro env (decls, body) = match take_while is_func_decl decls with
     [], [] -> exp_seq env body
   | [], (a, x, e) :: rest ->
-      ELet (a, x, ERef (a, exp env e),
+      ELet (a, x, ERef (a, RefCell, exp env e),
             block_intro (IdMap.add x true env) (rest, body))
   | funcs, rest ->
       let new_ids = map snd3 funcs in
@@ -297,7 +297,7 @@ let match_constr_body env expr = match expr with
                 proc_body !body_exp;
                 (* turn the arguments into mutable ones *)
                 let mutable_arg exp id = 
-                  ELet (p, id, ERef (p, EId (p, id)), exp) in
+                  ELet (p, id, ERef (p, RefCell, EId (p, id)), exp) in
                   Some 
                     { constr_pos = p;
                       constr_name = f;
@@ -356,7 +356,8 @@ let rec defs env lst =
                       end
                     | Some (p, x, expr) -> 
                         let env' = IdMap.add x true env in
-                          DLet (p, x, ERef (p, exp env expr), defs env' lst')
+                          DLet (p, x, ERef (p, RefCell, exp env expr),
+                                defs env' lst')
                   end
                 | func_binds, lst' ->
                     let mk acc (_, f, _) = IdMap.add f false acc in

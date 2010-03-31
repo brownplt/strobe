@@ -51,6 +51,11 @@ type annotation =
   | AUpcast of typ
   | ADowncast of typ
 
+type ref_kind =
+  | RefCell
+  | SourceCell
+  | SinkCell
+
 (** Typed JavaScript expressions. Additional well-formedness criteria are
     inline. *)
 type exp
@@ -76,7 +81,7 @@ type exp
   | ETryFinally of pos * exp * exp
   | EThrow of pos * exp
   | ETypecast of pos * RTSet.t * exp
-  | ERef of pos * exp
+  | ERef of pos * ref_kind * exp
   | EDeref of pos * exp
   | ESetRef of pos * exp * exp
   | ESubsumption of pos * typ * exp
@@ -128,7 +133,7 @@ module Exp = struct
     | ETryFinally (p, _, _) -> p
     | EThrow (p, _) -> p
     | ETypecast (p, _, _) -> p
-    | ERef (p, _) -> p
+    | ERef (p, _, _) -> p
     | EDeref (p, _) -> p
     | ESetRef (p, _, _) -> p
     | ESubsumption (p, _, _) -> p
@@ -205,7 +210,7 @@ module Pretty = struct
         parens (vert [ JavaScript.Pretty.p_infixOp op; exp e1; exp e2 ])
     | ETypecast (_, t, e) ->
         parens (vert [ text "cast"; RTSetExt.p_set RT.pp t; exp e ])
-    | ERef (_, e) -> parens (vert [ text "ref"; exp e ])
+    | ERef (_, _, e) -> parens (vert [ text "ref"; exp e ])
     | EDeref (_, e) -> parens (vert [ text "deref"; exp e ])
     | ESetRef (_, e1, e2) -> parens (vert [ text "set-ref!"; exp e1; exp e2 ])
     | ESubsumption (_, t, e) ->

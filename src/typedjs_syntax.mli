@@ -47,6 +47,11 @@ type annotation =
   | AUpcast of typ
   | ADowncast of typ
 
+type ref_kind =
+  | RefCell
+  | SourceCell
+  | SinkCell
+
 (** Typed JavaScript expressions. Additional well-formedness criteria are
     inline. *)
 type exp
@@ -78,7 +83,7 @@ type exp
   | ETryFinally of pos * exp * exp
   | EThrow of pos * exp
   | ETypecast of pos * RTSet.t * exp
-  | ERef of pos * exp
+  | ERef of pos * ref_kind * exp
   | EDeref of pos * exp
   | ESetRef of pos * exp * exp
   | ESubsumption of pos * typ * exp

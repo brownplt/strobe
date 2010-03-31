@@ -53,7 +53,7 @@ let rec a_exp (exp : exp) : exp = match exp with
   | ETryFinally (p, e1, e2) -> ETryFinally (p, a_exp e1, a_exp e2)
   | EThrow (p, e) -> EThrow (p, a_exp e)
   | ETypecast (p, t, e) -> ETypecast (p, t, a_exp e)
-  | ERef (p, e) -> ERef (p, a_exp e)
+  | ERef (p, k, e) -> ERef (p, k, a_exp e)
   | EDeref (p, e) -> EDeref (p, a_exp e)
   | ESetRef (p, e1, e2) -> ESetRef (p, a_exp e1, a_exp e2)
   | ESubsumption (p, t, e) -> ESubsumption (p, t, a_exp e)

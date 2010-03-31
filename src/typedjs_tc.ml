@@ -65,7 +65,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
           TBot
       | _ -> tc_exp env e2
     end
-  | ERef (p, e) -> TRef (tc_exp env e)
+  | ERef (p, k, e) ->
+      let t = tc_exp env e in
+        begin match k with
+          | SourceCell -> TSource t
+          | SinkCell -> TSink t
+          | RefCell -> TRef t
+        end
   | EDeref (p, e) -> begin match tc_exp env e with
       | TRef t -> t
       | TSource t -> t
