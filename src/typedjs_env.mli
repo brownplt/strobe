@@ -15,9 +15,9 @@ module Env : sig
 
   val lookup_lbl : id -> env -> typ
 
-  val lookup_class : id -> env -> typ
+  val field_typ : env -> constr -> id -> typ option
 
-  val get_classes : env -> typ IdMap.t (* ocaml sucks *)
+  val is_class : env -> id -> bool
 
   (** JavaScript cannot perform a labelled jump across a function. *)
   val clear_labels : env -> env

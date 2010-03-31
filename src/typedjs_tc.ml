@@ -69,7 +69,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EDeref (p, e) -> begin match tc_exp env e with
       | TRef t -> t
       | TSource t -> t
-      | TConstr (constr, _) -> Env.lookup_class constr env
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
                                  (string_of_typ t)))
     end 
@@ -144,35 +143,15 @@ let rec tc_exp (env : Env.env) exp = match exp with
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
-      | TConstr (cname, apps), EConst (_, JavaScript_syntax.CString x) -> begin
-          try
-            let (TObject fs) = Env.lookup_class cname env in
-              begin try
-                snd2 (List.find (fun (x', _) -> x = x') fs)
-              with Not_found ->
-                raise 
-                  (Typ_error (p, sprintf "field %s.%s does not exist" cname x))
-              end
-          with Not_found ->
-            raise (Typ_error (p, "class " ^ cname ^ " does not exist"))
-        end
-      | t, EConst (_, JavaScript_syntax.CString _) ->
-          (* better error messages! *)
-          begin match obj with
-              EId (_, cid) -> begin try
-                ignore (Env.lookup_class cid env);
-                raise (Typ_error (p, "can only add external methods to a " ^
-                                    "class at the top-level"))
-              with Not_found -> raise (
-                Typ_error (
-                  p, "expected an object, received " ^ string_of_typ t))
-              end                
-            | _ -> 
-                raise (Typ_error
-                         (p, "expected an object, received " ^ string_of_typ t))
+      | TConstr (cname, []), EConst (_, JavaScript_syntax.CString fname) ->
+          begin match Env.field_typ env cname fname with
+            | Some t -> t
+            | None -> error p ("object does not have a field " ^ fname)
           end
+      | t, EConst (_, JavaScript_syntax.CString _) ->
+          error p ("expected object, but got " ^ string_of_typ t)
       | _ -> 
-          raise (Typ_error (p, "field-lookup requires a string literal"))
+          error p "field-lookup requires a string literal"
     end
   | EThis p -> begin
       try 
@@ -182,9 +161,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ENew (p, cid, args) ->
       (* treat it as a function application, but return the class
          type instead of the return type *)
-      let _ = try Env.lookup_class cid env 
-      with Not_found -> 
-        raise (Typ_error (p, sprintf "new: class %s does not exist" cid)) in
+      (if not (Env.is_class env cid) then error p ("undefined class: " ^ cid));
       let _ = tc_exp env (EApp (p, EId (p, cid), args)) in
         TConstr (cid, [])
   | EPrefixOp (p, op, e) -> begin match op, tc_exp env e with

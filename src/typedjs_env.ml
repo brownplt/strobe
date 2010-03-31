@@ -11,6 +11,11 @@ module IdPairSet = Set.Make
 
 module Env = struct
 
+  type class_info = {
+    fields : typ IdMap.t;
+    sup : constr option
+  }
+
   type env = {
     id_typs : typ IdMap.t; 
     lbl_typs : typ IdMap.t;
@@ -36,16 +41,15 @@ module Env = struct
 
   let lookup_lbl x env = IdMap.find x env.lbl_typs
 
-  let lookup_class x env = 
-    try 
-      IdMap.find x env.classes
-    with Not_found -> 
-      eprintf "class %s does not exist\n" x;
-      raise Not_found
+  let field_typ env cname fname = 
+    try match IdMap.find cname env.classes with
+      | TObject fs -> Some (snd2 (List.find (fun (x, _) -> fname = x) fs))
+      | _ -> failwith "expected TObject in field_typ"
+    with Not_found -> None
+
+  let is_class env cname = IdMap.mem cname env.classes
 
   let id_env env = env.id_typs
-
-  let get_classes env = env.classes (* ocaml sucks *)
 
   let clear_labels env = { env with lbl_typs = IdMap.empty }
 
@@ -192,7 +196,7 @@ module Env = struct
         | _ ->
             failwith ("class type is not an object: " ^ class_name)
 
-  let set_global_object env cname = match lookup_class cname env with
+  let set_global_object env cname = match IdMap.find cname env.classes with
     | TObject fs -> 
         List.fold_left (fun env (x, t) -> bind_id x t env) env fs
     | _ -> failwith "set_global_object: got a class that is not an object"
