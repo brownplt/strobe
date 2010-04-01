@@ -207,6 +207,11 @@ let parse_env (cin : in_channel) (name : string) : env_decl list =
           failwith (sprintf "error lexing environment at %s"
                       (string_of_position 
                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+      | Typedjs_parser.Error ->
+          failwith (sprintf "error parsing environment at %s"
+                      (string_of_position 
+                         (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+
 
 
 let rec add_methods (lst : (id * typ) list) (class_name : id) (env : Env.env) = 
