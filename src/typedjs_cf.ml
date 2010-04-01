@@ -57,6 +57,7 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
       mk_type_is loc str, heap
   | SetRef, ARef l, v ->
       v, set_ref l (to_set heap v) heap
+  | Op2Infix J.OpAdd, _, _ -> ASet (RTSetExt.from_list [ RT.Number; RT.String ]), heap
   | _ -> any, heap
 
 let mk_closure (env : env) (f, args, typ, body_exp) =
@@ -152,7 +153,6 @@ let typed_cfa (env : env) (cpsexp : cpsexp) : unit =
             let heap = escape_heap (H.find heaps env_node) in
             let env = escape_env heap (H.find envs env_node) in
               H.remove envs node;
-              (* eprintf "%d: restarting flow with this env:\n%s\nand this heap:\n%s\n" node (FormatExt.to_string p_env env) (FormatExt.to_string p_heap heap); *)
               flow (union_env heap arg_env env) heap exp
           end in
         H.iter sub lambdas;
