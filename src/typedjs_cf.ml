@@ -19,10 +19,6 @@ let reached_nodes : (node, bool) H.t = H.create 200
 
 let lambdas : (node, node * env * cpsexp) H.t = H.create 200
 
-let subflows : (node, (bool ref * node * env * cpsexp)) H.t = H.create 200
-
-let global_heap = ref empty_heap
-
 let mk_type_is x s = match s with
   | "string" -> ALocTypeIs (x, RTSet.singleton RT.String)
   | "number" -> ALocTypeIs (x, RTSet.singleton RT.Number)
