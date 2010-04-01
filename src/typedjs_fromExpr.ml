@@ -77,14 +77,14 @@ let rec exp (env : env) expr = match expr with
         raise (Not_well_formed (a, "repeated field names"));
       EObject (a, map (fun (_, x, e) ->  x, ERef (a, RefCell, exp env e)) ps)
   | ThisExpr a -> EThis a
-  | VarExpr (a, x) -> begin
-      try
-        if IdMap.find x env then
-          EDeref (a, EId (a, x))
-        else
-          EId (a, x)
-      with Not_found -> error a (x ^ " is not defined")
+  | VarExpr (a, x) -> begin try
+      if IdMap.find x env then
+        EDeref (a, EId (a, x))
+      else
+        EId (a, x)
+    with Not_found -> error a (x ^ " is not defined")
     end
+  | IdExpr (a, x) -> EId (a, x)
   | BracketExpr (a, e1, e2) -> EDeref (a, EBracket (a, exp env e1, exp env e2))
   | NewExpr (a, VarExpr (_, x), args) -> ENew (a, x, map (exp env) args)
   | NewExpr (p, _, _) ->

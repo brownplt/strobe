@@ -13,7 +13,8 @@ module Pretty = struct
     | ArrayExpr (_, es) -> parens (horz (map expr es))
     | ObjectExpr (_, ps) -> brackets (vert (map prop ps))
     | ThisExpr _ -> text "#this"
-    | VarExpr (_, x) -> text x
+    | IdExpr (_, x) -> text x
+    | VarExpr (_, x) -> text ("scope." ^ x)
     | BracketExpr (_, e1, e2) -> squish [ expr e1; brackets (expr e2) ]
     | NewExpr (_, c, args) -> 
         parens (horz (text "new" :: expr c :: map expr args))

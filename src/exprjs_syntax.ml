@@ -6,6 +6,7 @@ type expr
   | ObjectExpr of pos * (pos * string * expr) list
   | ThisExpr of pos
   | VarExpr of pos * id
+  | IdExpr of pos * id
   | BracketExpr of pos * expr * expr
   | NewExpr of pos * expr * expr list
   | PrefixExpr of pos * JavaScript_syntax.prefixOp * expr
@@ -37,7 +38,7 @@ and lvalue =
 module S = JavaScript_syntax
 
 let infix_of_assignOp op = match op with
-    S.OpAssignAdd -> S.OpAdd
+  | S.OpAssignAdd -> S.OpAdd
   | S.OpAssignSub -> S.OpSub
   | S.OpAssignMul -> S.OpMul
   | S.OpAssignDiv -> S.OpDiv
@@ -113,7 +114,7 @@ let rec expr (e : S.expr) = match e with
                seq a
                  (AssignExpr (a,
                               VarLValue (a,name),anonymous_func))
-                 (VarExpr (a,name)))
+                 (IdExpr (a,name)))
                         
 and lvalue (lv : S.lvalue) = match lv with
     S.VarLValue (a,x) -> VarLValue (a,x)
@@ -219,11 +220,11 @@ and caseClauses p (clauses : S.caseClause list) = match clauses with
   | (S.CaseDefault (a,s)::clauses) -> seq a (stmt s) (caseClauses p clauses)
   | (S.CaseClause (a,e,s)::clauses) ->
       LetExpr (a,"%t",
-               IfExpr (a,VarExpr (a,"%t"), 
+               IfExpr (a,IdExpr (a,"%t"), 
                        (ConstExpr (a, S.CBool true)),
                        (expr e)),
                SeqExpr (a,
-                        IfExpr (a,VarExpr (a,"%t"),
+                        IfExpr (a, IdExpr (a,"%t"),
                                 stmt s,
                                 ConstExpr (a, S.CUndefined)),
                         caseClauses p clauses))
@@ -233,23 +234,22 @@ and prop pr =  match pr with
   | (p, S.PropString s,e) -> (p, s, expr e)
   | (p, S.PropNum n,e) -> (p, string_of_int n, expr e)
 
-
 (** Generates an expression that evaluates and binds lv, then produces the
     the value of body_fn.  body_fn is applied with references to lv as an
     lvalue and lv as an expression. *)
 and eval_lvalue (lv :  S.lvalue) (body_fn : lvalue * expr -> expr) =
   match lv with
-    S.VarLValue (a,x) -> body_fn (VarLValue (a,x),VarExpr (a,x))
-  | S.DotLValue (a,e,x) -> 
+    | S.VarLValue (p, x) -> body_fn (VarLValue (p, x), VarExpr (p, x))
+  | S.DotLValue (a, e, x) -> 
       LetExpr (a,"%lhs",expr e,
         body_fn
-          (PropLValue (a,VarExpr (a,"%lhs"), ConstExpr (a, S.CString x)),
-           BracketExpr (a,VarExpr (a,"%lhs"), ConstExpr (a, S.CString x))))
+          (PropLValue (a, IdExpr (a,"%lhs"), ConstExpr (a, S.CString x)),
+           BracketExpr (a, IdExpr (a,"%lhs"), ConstExpr (a, S.CString x))))
   | S.BracketLValue (a,e1,e2) -> 
       LetExpr (a,"%lhs",expr e1,
       LetExpr (a,"%field",expr e2,
-      body_fn (PropLValue (a,VarExpr (a,"%lhs"),VarExpr (a,"%field")),
-               BracketExpr (a,VarExpr (a,"%lhs"),VarExpr (a,"%field")))))
+      body_fn (PropLValue (a, IdExpr (a,"%lhs"), IdExpr (a,"%field")),
+               BracketExpr (a, IdExpr (a,"%lhs"), IdExpr (a,"%field")))))
 
 let from_javascript (S.Prog (p, stmts)) = 
   let f s e = seq p (stmt s) e
@@ -265,6 +265,7 @@ let rec locals expr = match expr with
   | ObjectExpr (_, ps) -> IdSetExt.unions (map (fun (_, _, e) -> locals e) ps)
   | ThisExpr _ -> IdSet.empty
   | VarExpr _ -> IdSet.empty
+  | IdExpr _ -> IdSet.empty
   | BracketExpr (_, e1, e2) -> IdSet.union (locals e1) (locals e2)
   | NewExpr (_, c, args) -> IdSetExt.unions (map locals (c :: args))
   | PrefixExpr (_, _, e) -> locals e
