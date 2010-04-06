@@ -155,7 +155,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
             begin match tidx with
               | TConstr ("Int", []) -> tarr
               | _ -> error p 
-                  ("array index requires Int, got " ^ string_of_typ tarr)
+                  ("array index requires Int, got " ^ string_of_typ tidx)
             end
       | TConstr (cname, []), EConst (_, JavaScript_syntax.CString fname) ->
           begin match Env.field_typ env cname fname with
