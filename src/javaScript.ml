@@ -160,7 +160,7 @@ module Pretty = struct
         | CUndefined -> text ""
         | c -> p_const c
       end
-    | ArrayExpr (_,es) -> brackets (horz (List.map expr es))
+    | ArrayExpr (_,es) -> brackets (horz (commas (List.map expr es)))
     | ObjectExpr (_,ps) -> 
         let f (_, p, e) = sep [prop p; text ":"; expr e]
         in vert [ text "{"; nest (vert (map f ps)); text "}" ]
