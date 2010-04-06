@@ -1,0 +1,5 @@
+#!/bin/bash
+P=`dirname $0`
+$P/build/main.d.byte -env $P/data/env -env $P/data/gg.env $@
+
+

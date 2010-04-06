@@ -128,6 +128,6 @@ function g(a) /*: Bool -> Void */ {
         _SecondHandFade = beginAnimation(j, SecondHand.opacity, b, Math.abs(SecondHand.opacity - b) * 5);
     }
 }
-function j() {
+function j() /*: -> Void */ {
     SecondHand.opacity = event.value;
 };
