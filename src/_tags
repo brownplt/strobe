@@ -1,4 +1,2 @@
 true : use_menhir
 true : use_str
-<*.ml> or "main.native" or "main.byte" or "main.d.byte" : pkg_xmllight
-
