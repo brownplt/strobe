@@ -19,10 +19,8 @@ module Make ( C : Contracts) = struct
 
   let rec cc p (ctc : contract) : expr = match ctc with
     | CPred (name, expr) -> 
-        CallExpr 
-          (p, CallExpr (p, DotExpr (p, contract_lib, "flat"), 
-                        [ ConstExpr (p, CString name) ]),
-           [ expr ])
+        (* predicates are already wrapped *)
+        expr 
     | CArrow (args, result) ->
         CallExpr
           (p, CallExpr (p, DotExpr (p, contract_lib, "varArityFunc"),
@@ -38,7 +36,19 @@ module Make ( C : Contracts) = struct
     | ThisExpr _ -> expr
     | VarExpr _ -> expr
     | DotExpr (p, e, x) -> DotExpr (p, ic_expr e, x)
-    | BracketExpr (p, e1, e2) -> BracketExpr (p, ic_expr e1, ic_expr e2)
+    | BracketExpr (p, e1, e2) -> 
+        (* wrap array accesses: *)
+        let be = BracketExpr (p, ic_expr e1, ic_expr e2) in
+          begin match e2 with
+            | ConstExpr (p2, CInt i) -> 
+                CallExpr (p, DotExpr (p, contract_lib, "guard"),
+                          [ DotExpr (p, contract_lib, "NotUndefined"); 
+                            be; 
+                            ConstExpr (p, CString "callee");
+                            ConstExpr (p, CString "caller");
+                            ConstExpr (p, CString (string_of_position p)) ])
+            | _ -> be
+          end
     | NewExpr (p, e, es) -> NewExpr (p, ic_expr e, map ic_expr es)
     | PrefixExpr (p, op, e) -> PrefixExpr (p, op, ic_expr e)
     | UnaryAssignExpr (p, op, lv) -> UnaryAssignExpr (p, op, ic_lvalue lv)

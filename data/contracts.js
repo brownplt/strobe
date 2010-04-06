@@ -25,7 +25,7 @@ contracts.zipWith = function(f,arr1,arr2) {
 
 
 contracts.blame = function(guilty,expected,received,message,loc) {
-  var guiltyMsg = typeof(guilty) == "string" 
+  var guiltyMsg = typeof(guilty) == "string"
                     ? guilty : guilty.value;
   var msg = "contract violation: expected " + expected + ", but received "
     + received + "\n" + loc;
@@ -35,24 +35,24 @@ contracts.blame = function(guilty,expected,received,message,loc) {
   err.expected = expected;
   err.received = received;
   err.guardLoc = loc;
-  try { 
-    console.log(err); 
-  } 
-  catch(_) { 
+  try {
+    console.log(err);
+  }
+  catch(_) {
 
   };
   throw err;
 };
- 
+
 contracts.flat = function(name) {
   return function(pred) {
     return {
       server: function(s,loc) {
         return function(val) {
-          if (pred(val)) { 
-            return val; 
+          if (pred(val)) {
+            return val;
             }
-          else { 
+          else {
             contracts.blame(s,name,val,"does not satisfy the predicate",loc);
          }
         };
@@ -106,17 +106,21 @@ contracts.varArityFunc = function(name) {
 };
 
 
-contracts.Undefined = contracts.flat("undefined", function(val) { 
+contracts.Undefined = contracts.flat("Undefined")(function(val) {
   return val === undefined;
 });
 
-contracts.String = function(v) {
-    return typeof v === "string";
-};
+contracts.NotUndefined = contracts.flat("NotUndefined")(function(val) {
+  return val !== undefined;
+});
 
-contracts.Int = function(v) {
-    return typeof v === "number";
-};
+contracts.String = contracts.flat("String")(function(v) {
+    return typeof v === "string";
+});
+
+contracts.Int = contracts.flat("Int")(function(v) {
+    return typeof v === "number" && (Math.round(v) == v);
+})
 
 // pos is the name of val.  neg should be the name of the calling context.
 // loc is the location where the contract is declared.
