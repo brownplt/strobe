@@ -173,7 +173,7 @@ module Pretty = struct
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
     | EEmptyArray _ -> text "[ ]"
-    | EArray (_, es) -> angles (horz (map exp es))
+    | EArray (_, es) -> brackets (horz (map exp es))
     | EObject (_, ps) -> brackets (vert (map prop ps))
     | EThis _ -> text "this"
     | EId (_, x) -> text x
@@ -210,16 +210,16 @@ module Pretty = struct
         parens (vert [ JavaScript.Pretty.p_infixOp op; exp e1; exp e2 ])
     | ETypecast (_, t, e) ->
         parens (vert [ text "cast"; RTSetExt.p_set RT.pp t; exp e ])
-    | ERef (_, _, e) -> parens (vert [ text "ref"; exp e ])
-    | EDeref (_, e) -> parens (vert [ text "deref"; exp e ])
-    | ESetRef (_, e1, e2) -> parens (vert [ text "set-ref!"; exp e1; exp e2 ])
+    | ERef (_, _, e) -> parens (horz [ text "ref"; exp e ])
+    | EDeref (_, e) -> parens (horz [ text "deref"; exp e ])
+    | ESetRef (_, e1, e2) -> parens (horz [ text "set-ref!"; exp e1; exp e2 ])
     | ESubsumption (_, t, e) ->
         parens (vert [ text "upcast"; parens (typ t); exp e ])
     | EDowncast (_, t, e) ->
         parens (vert [ text "downcast"; parens (typ t); exp e ])
 
   and prop (s, e) =
-    parens (vert [ text s; text ":"; exp e ])
+    parens (horz [ text s; text ":"; exp e ])
 
   and bind (x, e) = 
     parens (vert [text x; text "="; exp e])

@@ -71,7 +71,8 @@ let rec exp (env : env) expr = match expr with
         | _ -> 
             raise (Not_well_formed (p, "expected the type of array elemtns" ))
       end
-  | ArrayExpr (a, es) -> EArray (a, map (exp env) es)
+  | ArrayExpr (a, es) -> EArray (
+      a, map (fun e -> ERef (a, RefCell, exp env e)) es)
   | ObjectExpr (a, ps) -> 
       if List.length ps != List.length (nub (map (fun (_, p, _) -> p) ps)) then
         raise (Not_well_formed (a, "repeated field names"));

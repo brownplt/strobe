@@ -150,6 +150,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
+      | TConstr ("Array", [tarr]), eidx ->
+          let tidx = tc_exp env eidx in
+            begin match tidx with
+              | TConstr ("Int", []) -> tarr
+              | _ -> error p 
+                  ("array index requires Int, got " ^ string_of_typ tarr)
+            end
       | TConstr (cname, []), EConst (_, JavaScript_syntax.CString fname) ->
           begin match Env.field_typ env cname fname with
             | Some t -> t
