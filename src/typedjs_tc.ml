@@ -132,10 +132,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
       TConstr ("Array", [ Env.check_typ p env elt_typ ])
   | EArray (p, []) -> 
       raise (Typ_error (p, "an empty array literal requires a type annotation"))
-  | EArray (_, e :: es) -> 
+  | EArray (p, e :: es) -> 
       let u = fold_left (Env.typ_union env) 
         (tc_exp env e) (tc_exps env es) in
-        TConstr ("Array", [u])
+        (* hack to make arrays not have undefined elements: *)
+        Env.check_typ p env (TConstr ("Array", [u]))
   | EIf (p, e1, e2, e3) -> begin
       match tc_exp env e1, tc_exp env e2, tc_exp env e3 with
           TConstr ("Boolean", []), t2, t3 -> Env.typ_union env t2 t3

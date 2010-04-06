@@ -138,7 +138,14 @@ module Env = struct
     | TBot -> TBot
 
   let check_typ p env t = 
-    try normalize_typ env t 
+    try
+      match t with
+        | TConstr ("Array", [tarr]) -> 
+            if subtype env Typedjs_types.typ_undef tarr 
+            then raise (Typ_error (
+                          p, "array type can't be supertype of undefined"))
+            else normalize_typ env t
+        | _ -> normalize_typ env t
     with Not_wf_typ s -> raise (Typ_error (p, s))
 
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
