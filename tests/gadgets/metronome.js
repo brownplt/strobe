@@ -1,4 +1,3 @@
-// *** TYPES FOR gadgets/Metronome_cc/main.js *** 
 var curAudioClip_ = /*:upcast Audioclip + Bool*/ false;
 var timer = 0; // ARJUN
 var flag = 0;
@@ -73,7 +72,7 @@ function decr() /*: -> Void */ {
 function onPlay() /*: -> Void */ {
     /*
   if (typeof curAudioClip_ === "boolean") {      // Not playing anything
-    curAudioClip_ = framework.audio.play(AUDIO_CLIP_URI, onAudioStateChange); 
+    curAudioClip_ = framework.audio.play(AUDIO_CLIP_URI, onAudioStateChange);
     startedAudio();
   } else {                  // Already playing something
     curAudioClip_.stop();
