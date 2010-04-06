@@ -9,15 +9,15 @@ cat ../../data/contracts.js > $DEST
 ../../build/main.d.byte -contracts $SRC >> $DEST
 
 if [[ $(head -n1 $SRC) == "// succeeds" ]]; then
-  OUTPUT=`java -jar rhino-1_5R5.jar -f $DEST 2>&1`
+  OUTPUT=`./v8 -f $DEST 2>&1`
   if [ $? -ne 0 ]; then
     echo -e "[ FAILED ] $SRC aborted with exit code $?\nResult was $OUTPUT"
     exit 0
   fi
 else
-  OUTPUT=$(java -jar rhino-1_5R5.jar -f $DEST 2>&1 | head -n1)
+  OUTPUT=$(./v8 -f $DEST 2>&1 | head -n1)
   EXITCODE=$?
-  if [ $EXITCODE -ne 3 ]; then
+  if [ $EXITCODE -ne 1 ]; then
     echo "[ FAILED ] $SRC aborted with exit code $EXITCODE"
     echo $OUTPUT
     exit 0
