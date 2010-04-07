@@ -13,7 +13,6 @@ open Typedjs_types
 
 %right UNION
 
-%start typ
 %start typ_ann
 %start env
 
