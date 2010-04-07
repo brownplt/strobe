@@ -16,13 +16,10 @@ open Typedjs_types
 %start typ
 %start typ_ann
 %start env
-%start inferred
 
 %type <Typedjs_syntax.typ> typ
 
 %type <Typedjs_syntax.annotation> typ_ann
-
-%type <Typedjs_syntax.annotation list> inferred
 
 %type <Typedjs_syntax.env_decl list> env
 
@@ -71,17 +68,6 @@ annotation :
 
 typ_ann :
   | annotation EOF { $1 }
-
-inferred :
-  | inferred_anns EOF { $1 }
-
-inferred_anns : 
-  | { [] }
-  | FUNCTION ID COLON typ inferred_anns { ATyp $4 :: $5 }
-  | FUNCTION COLON typ inferred_anns { ATyp $3 :: $4 }
-  | CONSTRUCTOR ID COLON typ inferred_anns { ATyp $4 :: $5 }
-  | CONSTRUCTOR COLON typ inferred_anns { ATyp $3 :: $4 }
-  
 
 any_id :
   | ID { $1 }

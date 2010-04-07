@@ -30,26 +30,6 @@ let action_load_file path =
   cin := open_in path;
   cin_name := path
 
-let inferred_annotations = ref []
-
-let action_load_inferred name = 
-  let lexbuf = Lexing.from_channel (open_in name) in
-    try 
-      lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = name };
-      inferred_annotations := 
-        Typedjs_parser.inferred Typedjs_lexer.token lexbuf
-    with
-      |  Failure "lexing: empty token" ->
-           failwith (sprintf "lexical error at %s"
-                       (string_of_position 
-                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
-      | Typedjs_parser.Error ->
-           failwith (sprintf "parse error at %s"
-                       (string_of_position 
-                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
-
-
-
 let action_pretty () : unit = 
   let prog = parse_javascript !cin !cin_name in
     JavaScript.Pretty.p_prog prog std_formatter;
@@ -69,7 +49,6 @@ let action_expr () : unit =
 let get_typedjs () =
   Typedjs_fromExpr.from_exprjs (get_env ())
     (from_javascript (parse_javascript !cin !cin_name))
-    !inferred_annotations
 
 let action_pretypecheck () : unit = 
   let typedjs = get_typedjs () in
@@ -134,8 +113,6 @@ let main () : unit =
        "convert program to ANF, then apply dataflow analysis");
       ("-tc", Arg.Unit (set_action action_tc),
        "type-check (default action)");
-      ("-inferred", Arg.String action_load_inferred,
-       "load inferred annotations");
       ("-contracts", Arg.Unit (set_action action_contracts),
        "insert contracts") ]
     (fun s -> action_load_file s)

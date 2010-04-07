@@ -28,10 +28,6 @@ let parse_annotation (pos, end_p) str =
                        (string_of_position
                           (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
 
-let func_index = ref 0
-
-let inferred_array : annotation array ref = ref (Array.make 0 (ATyp TBot))
-
 (******************************************************************************)
 
 
@@ -191,7 +187,6 @@ and match_func env expr = match expr with
           ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) in
         begin match typ with
             TArrow (_, arg_typs, r) ->
-              incr func_index;
               if List.length args != List.length arg_typs then
                 raise (Not_well_formed (
                          a, sprintf "given %d args but %d arg types"
@@ -371,8 +366,7 @@ let rec defs env lst =
         end
   end
 
-let from_exprjs env expr inferred = 
-  inferred_array := Array.of_list inferred;
+let from_exprjs env expr = 
   let exp = defs 
     (IdSet.fold (fun x env -> IdMap.add x true env) (Env.dom env) IdMap.empty)
     (flatten_seq expr) in

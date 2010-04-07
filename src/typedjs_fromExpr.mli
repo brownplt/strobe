@@ -92,5 +92,5 @@ val parse_annotation : pos -> string -> annotation
 (** @raise Not_well_formed if any of the well-formed criteria are
    violated (see above).
 *)
-val from_exprjs : Env.env -> Exprjs_syntax.expr -> annotation list -> def
+val from_exprjs : Env.env -> Exprjs_syntax.expr -> def
 
