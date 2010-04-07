@@ -1,7 +1,5 @@
 (** Splices a list of type annotations onto JavaScript functions, turning it
     into Typed JavaScript! *)
-
-open Prelude
 open Str
 
 module Main = struct
@@ -9,6 +7,7 @@ module Main = struct
 let rec output_rest cin cout = 
   try
     output_string cout (input_line cin);
+    output_char cout '\n';
     output_rest cin cout
   with End_of_file -> ()
 
@@ -17,15 +16,13 @@ let rec input_strings cin : string list =
     s :: (input_strings cin)
   with End_of_file -> []
 
-(** Group \1 is the whitespace beween the close-paren of the argument list and
-    the open-bracket of the function body. *)
-let function_re : regexp = regexp "function.*(.*)\\([ ]*\\)"
+let function_re : regexp = regexp "function.*(.*)"
 
 let rec splice_typ (cin : in_channel) (cout : out_channel) (typ : string) = 
   let line = input_line cin in
     if string_match function_re line 0 then
       begin
-        let p = group_beginning 1 in (* first character after close-paren *)
+        let p = match_end () in (* first character after argument list *)
           output cout line 0 p;
           output_string cout " /*: ";
           output_string cout typ;
