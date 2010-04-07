@@ -41,16 +41,8 @@ let splice_typs cin cout typs =
   List.iter (splice_typ cin cout) typs;
   output_rest cin cout
 
-let typs = ref []
-
-let read_typs typ_file = 
-  typs := input_strings (open_in typ_file)
-
 let main () : unit =
-  Arg.parse [ ("-typs", Arg.String read_typs, "type annotation file") ]
-    (fun _ -> failwith "extraneous arguments")
-    "jst-insinf -typ PATH < SRC > DEST";
-  splice_typs stdin stdout !typs
+  splice_typs stdin stdout (input_strings (open_in (Sys.argv.(1))))
 
 end;;
 
