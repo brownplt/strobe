@@ -297,3 +297,41 @@ let rec typ_subst x s typ = match typ with
         TForall (y, typ_subst x s t1, t2)
       else 
         failwith "TODO: capture-free substitution"
+
+let apply_subst subst typ = IdMap.fold typ_subst subst typ
+
+ (* TODO: occurs check *)
+let rec unify subst s t : typ IdMap.t = match s, t with
+  | TId x, TId y -> 
+      if x = y then subst 
+      else failwith ("cannot unify bound variables " ^ x ^ " and " ^ y)
+  | TId x, t -> IdMap.add x (apply_subst subst t) subst
+  | s, TId y -> IdMap.add y (apply_subst subst s) subst
+
+  | TConstr (c1, ss), TConstr (c2, ts) ->
+      if c1 = c2 then
+        List.fold_left2 unify subst ss ts
+      else 
+        failwith ("cannot unify constructors " ^ c1 ^ " and " ^ c2)
+
+
+  | TUnion (s1, s2), TUnion (t1, t2) -> unify (unify subst s1 t1) s2 t2
+
+  | TArrow (s1, s2s, s3), TArrow (t1, t2s, t3) ->
+      List.fold_left2 unify subst (s1 :: s3 :: s2s) (t1 :: t3 :: t2s)
+  | TObject fs1, TObject fs2 ->
+      let f subst (x, s) (y, t) = 
+        if x = y then unify subst s t
+        else failwith "cannot unify objects with distinct field names" in
+      List.fold_left2 f subst fs1 fs2
+  | TRef s, TRef t -> unify subst s t
+  | TSource s, TSource t -> unify subst s t
+  | TSink s, TSink t -> unify subst s t
+  | TTop, TTop -> subst
+  | TBot, TBot -> subst
+  | TForall _, TForall _ -> failwith "cannot unify quantified types"
+  | _ -> failwith "unification failure"
+
+
+let unify_typ (s : typ) (t : typ) : typ IdMap.t = 
+  unify IdMap.empty s t
