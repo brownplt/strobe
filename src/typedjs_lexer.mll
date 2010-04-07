@@ -35,7 +35,6 @@ rule token = parse
    | "+" { UNION }
    | "Void" { UNDEF }
    | "constructor" { CONSTRUCTOR }
-   | "function" { FUNCTION }
    | "prototype" { PROTOTYPE }
    | "class" { CLASS }
    | "upcast" { UPCAST }
