@@ -241,7 +241,18 @@ let rec tc_exp (env : Env.env) exp = match exp with
            end
        end
   | EApp (p, f, args) -> begin match tc_exp env f with
-        TArrow (_, expected_typs, result_typ) ->
+      | TForall (x, _, TArrow (obj_typ, expected_typ, result_typ)) ->
+          let subst = unify_typ (TArrow (obj_typ, expected_typ, result_typ))
+            (TArrow (obj_typ, map (tc_exp env) args, result_typ)) in
+            begin try
+              let u = IdMap.find x subst in
+                tc_exp env (EApp (p, ETypApp (p, f, u), args))
+            with Not_found ->
+              let t = TArrow (obj_typ, expected_typ, result_typ) in
+              error p (sprintf "could not determine \'%s in the function type \
+                                %s" x (string_of_typ t))
+            end
+      | TArrow (_, expected_typs, result_typ) ->
           let arg_typs = tc_exps env args in
             if Env.subtypes env arg_typs expected_typs 
             then result_typ 
