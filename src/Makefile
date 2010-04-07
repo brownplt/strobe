@@ -2,7 +2,7 @@
 
 OCAMLBUILD = ocamlbuild -build-dir ../build -quiet
 
-all: debug
+all: debug insinf
 
 clean:
 	rm -rf ../build
@@ -12,6 +12,9 @@ builddir:
 
 debug: builddir
 	$(OCAMLBUILD) main.d.byte
+
+insinf: builddir
+	$(OCAMLBUILD) insinf.d.byte
 
 prof: builddir
 	$(OCAMLBUILD) main.p.native
