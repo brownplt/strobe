@@ -23,7 +23,8 @@ module Env = struct
     lbl_typs : typ IdMap.t;
     classes : class_info IdMap.t;
     (* reflexive-transitive closure of the subclass relation *)
-    subclasses : IdPairSet.t
+    subclasses : IdPairSet.t;
+    typ_ids: typ IdMap.t; (* bounded type variables *)
   }
 
 
@@ -31,12 +32,15 @@ module Env = struct
     id_typs = IdMap.empty;
     lbl_typs = IdMap.empty;
     classes = IdMap.empty;
-    subclasses = IdPairSet.empty
+    subclasses = IdPairSet.empty;
+    typ_ids = IdMap.empty;
   }
 
   let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
 
   let bind_lbl x t env = { env with lbl_typs = IdMap.add x t env.lbl_typs }
+
+  let bind_typ_id x t env = { env with typ_ids = IdMap.add x t env.typ_ids }
 
   let lookup_id x env = IdMap.find x env.id_typs
 
@@ -64,6 +68,10 @@ module Env = struct
     let subtype = subtype env in
     let subtypes = subtypes env in
       match s, t with
+        | TId x, TId y -> x = y
+        | TId x, t ->
+            let s = IdMap.find x env.typ_ids in (* S-TVar *)
+              subtype s t (* S-Trans *)
         | TConstr (c1, []), TConstr (c2, []) ->
             IdPairSet.mem  (c1, c2) env.subclasses
         | TConstr (c1, args1), TConstr (c2, args2) ->
@@ -136,6 +144,12 @@ module Env = struct
     | TSink t -> TSink (normalize_typ env t)
     | TTop -> TTop
     | TBot -> TBot
+    | TId x ->
+        if IdMap.mem x env.typ_ids then typ
+        else raise (Not_wf_typ ("the type variable " ^ x ^ " is unbound"))
+    | TForall (x, s, t) -> 
+        let s = normalize_typ env s in
+          TForall (x, s, normalize_typ (bind_typ_id x s env) t)
 
   let check_typ p env t = 
     try
@@ -166,6 +180,8 @@ module Env = struct
     | TSource t -> TSource t
     | TSink t -> TSink t
     | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
+    | TForall _ -> typ
+    | TId _ -> typ
 
 
   let new_root_class env class_name = 
@@ -263,3 +279,21 @@ module L = Typedjs_lattice
 let cf_env_of_tc_env tc_env = 
   let fn x typ cf_env = L.bind x (L.runtime typ) cf_env in
     IdMap.fold fn (Env.id_env tc_env) L.empty_env
+
+let rec typ_subst x s typ = match typ with
+  | TId y -> if x = y then s else typ
+  | TConstr (c, ts) -> TConstr (c, map (typ_subst x s) ts)
+  | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
+  | TArrow (t1, t2s, t3)  ->
+      TArrow (typ_subst x s t1, map (typ_subst x s) t2s, typ_subst x s t3)
+  | TObject fs -> TObject (map (second2 (typ_subst x s)) fs)
+  | TRef t -> TRef (typ_subst x s t)
+  | TSource t -> TSource (typ_subst x s t)
+  | TSink t -> TSink (typ_subst x s t)
+  | TTop -> TTop
+  | TBot -> TBot
+  | TForall (y, t1, t2) -> 
+      if x = y then 
+        TForall (y, typ_subst x s t1, t2)
+      else 
+        failwith "TODO: capture-free substitution"

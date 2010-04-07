@@ -144,6 +144,8 @@ let rec exp (env : env) expr = match expr with
         begin match parse_annotation p text with
           | AUpcast typ -> ESubsumption (p, typ, e')
           | ADowncast typ -> EDowncast (p, typ, e')
+          | ATypAbs (x, t) -> ETypAbs (p, x, t, e')
+          | ATypApp t -> ETypApp (p, e', t)
           | _ -> error p "unexpected hint"
         end
   | FuncExpr (p, _, _) -> 

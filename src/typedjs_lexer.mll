@@ -24,6 +24,8 @@ rule token = parse
    | ")" { RPAREN }
    | "{" { LBRACE }
    | "}" { RBRACE }
+   | "[" { LBRACK }
+   | "]" { RBRACK }
    | "," { COMMA }
    | "Any" { ANY }
    | "Int" { INT }
@@ -42,8 +44,12 @@ rule token = parse
    | "val" { VAL }
    | "<" { LANGLE }
    | ">" { RANGLE }
+   | "forall" { FORALL }
+   | "<:" { LTCOLON }
    | eof { EOF }
    | ident as x { ID x }
+   | '\''(ident as x) { TID x }
+
 
 and block_comment = parse
   | "*/" { token lexbuf }

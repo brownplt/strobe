@@ -310,6 +310,22 @@ let rec tc_exp (env : Env.env) exp = match exp with
         else 
           raise (Typ_error (p, "subsumption error"))
   | EDowncast (p, t, e) ->  ignore (tc_exp env e); Env.check_typ p env t
+  | ETypAbs (p, x, t, e) ->
+      let t = Env.check_typ p env t in
+      let env = Env.bind_typ_id x t env in
+      TForall (x, t, tc_exp env e)
+  | ETypApp (p, e, u) ->
+      let u = Env.check_typ p env u in
+        begin match tc_exp env e with
+          | TForall (x, s, t) ->
+              if Env.subtype env u s then
+                typ_subst x u t
+              else 
+                error p (sprintf "invalid type application (bound mismatch)")
+          | t ->
+              error p (sprintf "expected a quantified type (got %s)"
+                         (string_of_typ t))
+        end
         
 
 and tc_exps env es = map (tc_exp env) es

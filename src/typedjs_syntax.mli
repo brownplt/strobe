@@ -27,7 +27,7 @@ module RTSetExt : SetExt.S
 type constr = string
 
 type typ = 
-    TConstr of constr * typ list
+  | TConstr of constr * typ list
   | TUnion of typ * typ
   | TArrow of typ * typ list * typ      
   | TObject of (id * typ) list
@@ -36,6 +36,8 @@ type typ =
   | TSink of typ
   | TTop
   | TBot
+  | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
+  | TId of id
 
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list
@@ -46,6 +48,8 @@ type annotation =
   | AConstructor of typ 
   | AUpcast of typ
   | ADowncast of typ
+  | ATypAbs of id * typ
+  | ATypApp of typ
 
 type ref_kind =
   | RefCell
@@ -88,6 +92,10 @@ type exp
   | ESetRef of pos * exp * exp
   | ESubsumption of pos * typ * exp
   | EDowncast of pos * typ * exp
+  | ETypAbs of pos * id * typ * exp 
+      (** [ETypAbs (_, x, t, e)] Lambda x <: t . e *)
+  | ETypApp of pos * exp * typ
+      (** [ETypApp (_, e, t)] e t *)
 
 type constr_exp = { 
   constr_pos : pos;

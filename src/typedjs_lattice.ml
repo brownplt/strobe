@@ -18,9 +18,7 @@ module Loc = struct
     | Loc n -> int n
     | LocField (n, f) -> sep [ int n; text f ]
 
-
 end
-
 
 module Heap = Map.Make (Loc)
 module HeapExt = MapExt.Make (Loc) (Heap)
@@ -164,6 +162,8 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
   | Typedjs_syntax.TSink t -> rt_of_typ t
   | Typedjs_syntax.TTop -> rtany
   | Typedjs_syntax.TBot -> RTSet.empty
+  | Typedjs_syntax.TForall _ -> rtany
+  | Typedjs_syntax.TId _ -> rtany (* TODO: should be empty!!! *)
 
 let runtime t : av = ASet (rt_of_typ t)
 

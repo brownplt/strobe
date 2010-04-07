@@ -6,10 +6,10 @@ open Typedjs_types
 
 %}
 
-%token <string> ID
+%token <string> ID TID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
-       UNDEF BOOL LBRACE RBRACE COMMA VAL
-       PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE
+       UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK
+       PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON
 
 %right UNION
 
@@ -49,6 +49,8 @@ arg_typ
   | LPAREN typ RPAREN { $2 }
   | ID { TConstr ( $1, [] ) }
   | ID LANGLE typs RANGLE { TConstr ($1, $3) }
+  | TID { TId $1 }
+
 
 typ 
   : arg_typ { $1 }
@@ -64,6 +66,9 @@ annotation :
   | UPCAST typ { AUpcast $2 }
   | DOWNCAST typ { ADowncast $2 }
   | CONSTRUCTOR typ { AConstructor $2 }
+  | FORALL ID LTCOLON typ { ATypAbs ($2, $4) }
+  | FORALL ID { ATypAbs ($2, TTop) }
+  | LBRACK typ RBRACK { ATypApp $2 }
 
 typ_ann :
   | annotation EOF { $1 }

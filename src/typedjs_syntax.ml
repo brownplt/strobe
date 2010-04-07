@@ -40,6 +40,8 @@ type typ =
   | TSink of typ
   | TTop
   | TBot
+  | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
+  | TId of id
 
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list
@@ -50,6 +52,8 @@ type annotation =
   | AConstructor of typ 
   | AUpcast of typ
   | ADowncast of typ
+  | ATypAbs of id * typ
+  | ATypApp of typ
 
 type ref_kind =
   | RefCell
@@ -86,6 +90,8 @@ type exp
   | ESetRef of pos * exp * exp
   | ESubsumption of pos * typ * exp
   | EDowncast of pos * typ * exp
+  | ETypAbs of pos * id * typ * exp 
+  | ETypApp of pos * exp * typ
 
 type constr_exp = { 
   constr_pos : pos;
@@ -139,6 +145,8 @@ module Exp = struct
     | ESubsumption (p, _, _) -> p
     | EDowncast (p, _, _) -> p
     | EEmptyArray (p, _) -> p
+    | ETypApp (p, _, _) -> p
+    | ETypAbs (p, _, _, _) -> p
 
 end
 
@@ -148,7 +156,7 @@ module Pretty = struct
   open FormatExt
 
   let rec typ t  = match t with
-    |  TTop -> text "Any"
+    | TTop -> text "Any"
     | TBot -> text "DoesNotReturn"
     | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
     | TArrow (_, arg_typs, r_typ) ->
@@ -169,6 +177,9 @@ module Pretty = struct
     | TRef s -> horz [ text "ref"; parens (typ s) ]
     | TSource s -> horz [ text "source"; parens (typ s) ]
     | TSink s -> horz [ text "sink"; parens (typ s) ]
+    | TForall (x, s, t) -> 
+        horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
+    | TId x -> text x        
 
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
@@ -217,6 +228,9 @@ module Pretty = struct
         parens (vert [ text "upcast"; parens (typ t); exp e ])
     | EDowncast (_, t, e) ->
         parens (vert [ text "downcast"; parens (typ t); exp e ])
+    | ETypApp (_, e, t) -> parens (horz [ text "typ-app"; exp e; typ t ])
+    | ETypAbs (_, x, t, e) -> 
+        parens (horz [ text "typ-abs"; text x; text "<:"; typ t; exp e ])
 
   and prop (s, e) =
     parens (horz [ text s; text ":"; exp e ])

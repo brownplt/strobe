@@ -11,6 +11,8 @@ module Env : sig
 
   val bind_lbl : id -> typ -> env -> env
 
+  val bind_typ_id : id -> typ -> env -> env
+
   val lookup_id : id -> env -> typ
 
   val lookup_lbl : id -> env -> typ
@@ -58,3 +60,7 @@ val parse_env : in_channel -> string -> env_decl list
 val extend_global_env : Env.env -> env_decl list -> Env.env
 
 val cf_env_of_tc_env : Env.env -> Typedjs_lattice.env
+
+(** [typ_subst x s t] is capture-free substitution of the type variable [x]
+    for the type [s] in the type [t]. *)
+val typ_subst : id -> typ -> typ -> typ
