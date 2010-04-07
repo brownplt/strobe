@@ -8,7 +8,7 @@ open Typedjs_types
 
 %token <string> ID TID
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
-       UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK
+       UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON
 
 %right UNION
@@ -16,10 +16,7 @@ open Typedjs_types
 %start typ_ann
 %start env
 
-%type <Typedjs_syntax.typ> typ
-
 %type <Typedjs_syntax.annotation> typ_ann
-
 %type <Typedjs_syntax.env_decl list> env
 
 %%
@@ -55,6 +52,9 @@ arg_typ
 typ 
   : arg_typ { $1 }
   | args ARROW typ { TArrow (TTop, $1, $3) }
+  | FORALL ID LTCOLON typ DOT typ { TForall ($2, $4, $6) }
+  | FORALL ID DOT typ { TForall ($2, TTop, $4) }
+
 
 typs :
   | { [] }

@@ -245,7 +245,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
           let subst = unify_typ (TArrow (obj_typ, expected_typ, result_typ))
             (TArrow (obj_typ, map (tc_exp env) args, result_typ)) in
             begin try
-              let u = IdMap.find x subst in
+              let u = IdMap.find x subst in (* TODO: needless recomputation *)
                 tc_exp env (EApp (p, ETypApp (p, f, u), args))
             with Not_found ->
               let t = TArrow (obj_typ, expected_typ, result_typ) in

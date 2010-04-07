@@ -35,6 +35,7 @@ rule token = parse
    | "*" { STAR }
    | ":" { COLON }
    | "+" { UNION }
+   | "." { DOT }
    | "Void" { UNDEF }
    | "constructor" { CONSTRUCTOR }
    | "prototype" { PROTOTYPE }

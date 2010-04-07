@@ -44,8 +44,34 @@ class HTMLWindow  {
   window : HTMLWindow,
   undefined: Void,
   Math: {
+    E : Number,
+    LN10 : Number,
+    LN2 : Number,
+    LOG2E : Number,
+    LOG10E : Number,
+    PI : Number,
+    SQRT1_2 : Number,
+    SQRT2 : Number,
+    abs : forall a <: Number . 'a -> 'a,
+    acos : Number -> Number,
+    asin : Number -> Number,
+    atan : Number -> Number,
+    atan2 : Number -> Number,
+    ceil : Number -> Int,
+    cos : Number -> Number,
+    exp : Number -> Number,
     floor : Number -> Int,
-    abs : Number -> Number
+    log : Number -> Number,
+    max : forall a <: Number . 'a * 'a -> 'a,
+    min : forall a <: Number . 'a * 'a -> 'a,
+     // See page 128 of ECMA262-3 .pdf. What is going on with Math.pow?!
+    pow : forall a <: Number . 'a * 'a -> 'a,
+    random : -> Number,
+    // round(NaN) === NaN ...
+    round : Number -> Number,
+    sin : Number -> Number,
+    sqrt : Number -> Number,
+    tan : Number -> Number
   }
 }
 
