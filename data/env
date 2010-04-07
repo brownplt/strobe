@@ -2,6 +2,43 @@
 // HTMLWindow (the global object's type) are automatically added to the
 // initial environment.
 
+// The type of comparisons may seem unnecessarily restrictive. However, these
+// types ensure that .toString() and .valueOf() are not called.
+operator "<" : forall a <: Number + String . 'a * 'a -> Boolean
+operator "<=" : forall a <: Number + String . 'a * 'a -> Boolean
+operator ">" : forall a <: Number + String . 'a * 'a -> Boolean
+operator ">=" : forall a <: Number + String . 'a * 'a -> Boolean
+operator "==" : forall a . 'a * 'a -> Boolean
+operator "!=" : forall a . 'a * 'a -> Boolean
+
+// TODO: verify these are safe, like other comparisons
+operator "&&" : forall a . forall b . 'a * 'b -> Boolean + 'b
+operator "||" : forall a . forall b . 'a * 'b -> 'a + 'b
+
+// int args, num result
+operator "*" : forall a <: Number . 'a * 'a -> 'a
+operator "/" : Number * Number -> Number
+operator "%" : forall a <: Number . 'a * 'a -> 'a // might restrict to Int
+operator "-" : forall a <: Number . 'a * 'a -> 'a
+operator "<<" : Int * Int -> Int
+operator ">>" : Int * Int -> Int
+operator ">>>" : Int * Int -> Int
+operator "&" : Int * Int -> Int
+operator "^" : Int * Int -> Int
+operator "|" : Int * Int -> Int
+// type-system win
+operator "+" : forall a <: Number + String . 'a * 'a -> 'a
+
+operator "===" : forall a . 'a * 'a -> Boolean
+operator "!==" : forall a . 'a * 'a -> Boolean
+
+operator "prefix:!" : Boolean -> Boolean
+operator "prefix:~" : Number -> Int
+operator "prefix:+" : forall a <: Number . 'a -> 'a
+operator "prefix:-" : forall a <: Number . 'a -> 'a
+operator "prefix:typeof" : forall a . 'a -> String
+operator "prefix:void" : forall a . 'a -> Void
+
 class Number prototype Object {
 }
 

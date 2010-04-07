@@ -48,16 +48,16 @@ let calc_op1 node env heap (op : op1)  v = match op, v with
         ARef loc, set_ref loc (to_set heap v) heap
   | Deref, ARef loc ->
       ADeref loc, heap
-  | Op1Prefix J.PrefixTypeof, ADeref loc -> 
-      ALocTypeof loc, heap
+  | Op1Prefix "prefix:typeof", ADeref loc -> ALocTypeof loc, heap
   | _ -> any, heap
 
 let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
-  | Op2Infix J.OpStrictEq, ALocTypeof loc, AString str ->
+  | Op2Infix "===", ALocTypeof loc, AString str ->
       mk_type_is loc str, heap
   | SetRef, ARef l, v ->
       v, set_ref l (to_set heap v) heap
-  | Op2Infix J.OpAdd, _, _ -> ASet (RTSetExt.from_list [ RT.Number; RT.String ]), heap
+  | Op2Infix "+", _, _ -> 
+      ASet (RTSetExt.from_list [ RT.Number; RT.String ]), heap
   | _ -> any, heap
 
 let mk_closure (env : env) (f, args, typ, body_exp) =

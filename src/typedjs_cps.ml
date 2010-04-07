@@ -8,12 +8,12 @@ type cpsval =
 type node = int
 
 type op1 = 
-  | Op1Prefix of JavaScript_syntax.prefixOp
+  | Op1Prefix of id
   | Deref
   | Ref
 
 type op2 =
-  | Op2Infix of JavaScript_syntax.infixOp
+  | Op2Infix of id
   | GetField
   | DeleteField
   | SetRef
@@ -343,12 +343,12 @@ and p_prop (x, v) : printer = brackets (horz [ text x; p_cpsval v ])
 let numstr i s : printer = text (string_of_int i ^ ":" ^ s)
 
 let p_op1 op = match op with
-  | Op1Prefix o -> JavaScript.Pretty.p_prefixOp o
+  | Op1Prefix o -> text o
   | Deref -> text "deref"
   | Ref -> text "ref"
 
 let p_op2 op = match op with
-  | Op2Infix o -> JavaScript.Pretty.p_infixOp o
+  | Op2Infix o -> text o
   | GetField -> text "get-field"
   | DeleteField -> text "delete-field"
   | SetRef -> text "set-ref!"

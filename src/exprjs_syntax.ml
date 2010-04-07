@@ -9,8 +9,8 @@ type expr
   | IdExpr of pos * id
   | BracketExpr of pos * expr * expr
   | NewExpr of pos * expr * expr list
-  | PrefixExpr of pos * JavaScript_syntax.prefixOp * expr
-  | InfixExpr of pos * JavaScript_syntax.infixOp * expr * expr
+  | PrefixExpr of pos * id * expr
+  | InfixExpr of pos * id * expr * expr
   | IfExpr of pos * expr * expr * expr
   | AssignExpr of pos * lvalue * expr
   | AppExpr of pos * expr * expr list
@@ -51,6 +51,8 @@ let infix_of_assignOp op = match op with
   | S.OpAssignBOr -> S.OpBOr
   | S.OpAssign -> failwith "infix_of_assignOp applied to OpAssign"
 
+let string_of_infixOp = FormatExt.to_string JavaScript.Pretty.p_infixOp
+
 let rec seq a e1 e2 = match e1 with
   | SeqExpr (a', e11, e12) -> SeqExpr (a, e11, seq a' e12 e2)
   | _ -> SeqExpr (a, e1, e2)
@@ -64,38 +66,42 @@ let rec expr (e : S.expr) = match e with
   | S.DotExpr (a,e,x) -> BracketExpr (a, expr e, ConstExpr (a, S.CString x))
   | S.BracketExpr (a,e1,e2) -> BracketExpr (a,expr e1,expr e2)
   | S.NewExpr (a,e,es) -> NewExpr (a,expr e,map expr es)
-  | S.PrefixExpr (a,op,e) -> PrefixExpr (a,op,expr e)
+  | S.PrefixExpr (a,op,e) -> 
+      PrefixExpr (a, "prefix:" ^ FormatExt.to_string JavaScript.Pretty.p_prefixOp op,expr e)
   | S.UnaryAssignExpr (a, op, lv) ->
       let func (lv, e) = 
         match op with
              S.PrefixInc ->
                seq a
                  (AssignExpr 
-                    (a, lv, InfixExpr (a, S.OpAdd, e, ConstExpr (a, S.CInt 1))))
+                    (a, lv, InfixExpr (a, "+", e, ConstExpr (a, S.CInt 1))))
                  e
            | S.PrefixDec ->
                seq
                  a
                  (AssignExpr 
-                    (a, lv, InfixExpr (a, S.OpSub, e, ConstExpr (a, S.CInt 1))))
+                    (a, lv, InfixExpr (a, "-", e, ConstExpr (a, S.CInt 1))))
                   e
            | S.PostfixInc ->
                seq a
                  (AssignExpr 
-                    (a, lv, InfixExpr (a, S.OpAdd, e, ConstExpr (a, S.CInt 1))))
-                 (InfixExpr (a, S.OpSub, e, ConstExpr (a, S.CInt 1)))
+                    (a, lv, InfixExpr (a, "+", e, ConstExpr (a, S.CInt 1))))
+                 (InfixExpr (a, "-", e, ConstExpr (a, S.CInt 1)))
            | S.PostfixDec ->
                seq a
                  (AssignExpr 
-                    (a, lv, InfixExpr (a, S.OpSub, e, ConstExpr (a, S.CInt 1))))
-                 (InfixExpr (a, S.OpAdd, e, ConstExpr (a, S.CInt 1)))
+                    (a, lv, InfixExpr (a, "-", e, ConstExpr (a, S.CInt 1))))
+                 (InfixExpr (a, "+", e, ConstExpr (a, S.CInt 1)))
       in eval_lvalue lv func
-  | S.InfixExpr (a,op,e1,e2) -> InfixExpr (a,op,expr e1,expr e2)
+  | S.InfixExpr (a,op,e1,e2) -> 
+      InfixExpr (a, string_of_infixOp op,expr e1,expr e2)
   | S.IfExpr (a,e1,e2,e3) -> IfExpr (a,expr e1,expr e2,expr e3)
   | S.AssignExpr (a,S.OpAssign,lv,e) -> AssignExpr (a,lvalue lv,expr e)
   | S.AssignExpr (a,op,lv,e) -> 
       let body_fn (lv,lv_e) = 
-        AssignExpr (a,lv,InfixExpr (a,infix_of_assignOp op,lv_e,expr e))
+        AssignExpr 
+          (a, lv,
+           InfixExpr (a,string_of_infixOp (infix_of_assignOp op),lv_e,expr e))
       in eval_lvalue lv body_fn
   | S.ParenExpr (_, e) -> expr e
   | S.ListExpr (a,e1,e2) -> seq a (expr e1) (expr e2)

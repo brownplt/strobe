@@ -71,8 +71,8 @@ type exp
   | EId of pos * id
   | EBracket of pos * exp * exp
   | ENew of pos * id * exp list
-  | EPrefixOp of pos * JavaScript_syntax.prefixOp * exp
-  | EInfixOp of pos * JavaScript_syntax.infixOp * exp * exp
+  | EPrefixOp of pos * id * exp
+  | EInfixOp of pos * id * exp * exp
   | EIf of pos * exp * exp * exp
   | EApp of pos * exp * exp list
   | EFunc of pos * id list * typ * exp
@@ -215,10 +215,8 @@ module Pretty = struct
         parens (vert [ text "try"; exp body;
                        parens (vert [ text "finally"; exp finally ]) ])
     | EThrow (_, e) -> parens (vert [ text "throw"; exp e ])
-    | EPrefixOp (_, op, e) -> parens (vert [ JavaScript.Pretty.p_prefixOp op;
-                                             exp e ])
-    | EInfixOp (_, op, e1, e2) ->
-        parens (vert [ JavaScript.Pretty.p_infixOp op; exp e1; exp e2 ])
+    | EPrefixOp (_, op, e) -> parens (vert [ text op; exp e ])
+    | EInfixOp (_, op, e1, e2) -> parens (vert [ text op; exp e1; exp e2 ])
     | ETypecast (_, t, e) ->
         parens (vert [ text "cast"; RTSetExt.p_set RT.pp t; exp e ])
     | ERef (_, _, e) -> parens (horz [ text "ref"; exp e ])

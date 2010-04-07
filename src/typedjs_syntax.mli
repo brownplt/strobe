@@ -68,8 +68,8 @@ type exp
   | EId of pos * id
   | EBracket of pos * exp * exp
   | ENew of pos * id * exp list
-  | EPrefixOp of pos * JavaScript_syntax.prefixOp * exp
-  | EInfixOp of pos * JavaScript_syntax.infixOp * exp * exp
+  | EPrefixOp of pos * id * exp
+  | EInfixOp of pos * id * exp * exp
   | EIf of pos * exp * exp * exp
   | EApp of pos * exp * exp list
   | EFunc of pos * id list * typ * exp

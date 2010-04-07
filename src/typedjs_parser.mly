@@ -6,9 +6,9 @@ open Typedjs_types
 
 %}
 
-%token <string> ID TID
+%token <string> ID TID STRING
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
-       UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT
+       UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON
 
 %right UNION
@@ -87,6 +87,7 @@ env_decl :
   | CLASS any_id LBRACE fields RBRACE { EnvClass ($2, None (* root *), $4) }
   | VAL ID COLON typ { EnvBind ($2, $4) }
   | ID COLON typ { EnvBind ($1, TRef $3) }
+  | OPERATOR STRING COLON typ { EnvBind ($2, $4) }
 
 env_decls
   : { [] }

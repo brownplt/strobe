@@ -48,10 +48,8 @@ module Pretty = struct
     | FuncStmtExpr (_, f, args, body) ->
         parens (horz [ text "function"; text f; 
                        parens (horz (map text args)); expr body ])
-    | PrefixExpr (_, op, e) -> parens (horz [ JavaScript.Pretty.p_prefixOp op;
-                                              expr e ])
-    | InfixExpr (_, op, e1, e2) ->
-        parens (horz [ JavaScript.Pretty.p_infixOp op; expr e1; expr e2 ])
+    | PrefixExpr (_, op, e) -> parens (horz [ text op; expr e ])
+    | InfixExpr (_, op, e1, e2) -> parens (horz [ text op; expr e1; expr e2 ])
     | AssignExpr (_, lv, e) -> parens (horz [ text "set"; lvalue lv; expr e ])
     | HintExpr (_, txt, e) -> 
         parens (horz [ text ("/**" ^ txt ^ "*/"); expr e ])

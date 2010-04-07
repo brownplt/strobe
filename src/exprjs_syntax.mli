@@ -21,8 +21,8 @@ type expr
   | IdExpr of pos * id (** let-bound identifiers *)
   | BracketExpr of pos * expr * expr
   | NewExpr of pos * expr * expr list
-  | PrefixExpr of pos * JavaScript_syntax.prefixOp * expr
-  | InfixExpr of pos * JavaScript_syntax.infixOp * expr * expr
+  | PrefixExpr of pos * id * expr
+  | InfixExpr of pos * id * expr * expr
   | IfExpr of pos * expr * expr * expr
   | AssignExpr of pos * lvalue * expr
   | AppExpr of pos * expr * expr list

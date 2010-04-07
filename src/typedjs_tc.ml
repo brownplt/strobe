@@ -18,39 +18,6 @@ let tc_const (const : JavaScript_syntax.const) = match const with
   | JavaScript_syntax.CBool _ -> typ_bool
   | JavaScript_syntax.CNull -> typ_bool
   | JavaScript_syntax.CUndefined -> typ_undef
-
-let tc_arith env (p : pos) (t1 : typ) (t2 : typ) (int_args : bool) 
-    (num_result : bool) : typ =
-  let subtype = Env.subtype env in
-  let result_typ = 
-    if num_result = true then typ_num
-    else if subtype t1 typ_int then t2
-    else t1 in
-    if (int_args && subtype t1 typ_int && subtype t2 typ_int) ||
-      (not int_args && subtype t1 typ_num && subtype t2 typ_num) then
-      result_typ
-    else 
-      raise
-        (Typ_error 
-           (p, match int_args with
-              | true -> 
-                  fprintf str_formatter
-                    "operator expects arguments of type Int, but \
-                     arguments have type %a and %a" Pretty.pp_typ t1
-                     Pretty.pp_typ t2; flush_str_formatter ()
-              | false -> 
-                  fprintf str_formatter
-                    "operator expects arguments of type Number, but \
-                     arguments have type %a and %a" 
-                    Pretty.pp_typ t1 Pretty.pp_typ t2; flush_str_formatter ()))
-
-let tc_cmp env (p : pos) (lhs : typ) (rhs : typ) : typ = 
-  let subtype = Env.subtype env in
-    if (subtype lhs typ_str && subtype rhs typ_str) || 
-      (subtype lhs typ_num && subtype rhs typ_num) then
-        typ_bool
-    else
-      raise (Typ_error (p, "comparision type error"))
       
 let rec tc_exp (env : Env.env) exp = match exp with
     EConst (_, c) -> tc_const c
@@ -178,68 +145,14 @@ let rec tc_exp (env : Env.env) exp = match exp with
       (if not (Env.is_class env cid) then error p ("undefined class: " ^ cid));
       let _ = tc_exp env (EApp (p, EId (p, cid), args)) in
         TConstr (cid, [])
-  | EPrefixOp (p, op, e) -> begin match op, tc_exp env e with
-      | JS.PrefixLNot, TConstr ("Boolean", []) -> typ_bool
-      | JS.PrefixLNot, t -> 
-          raise (Typ_error (p, "! (logical not) expects a number; received " ^
-                              (string_of_typ t)))
-      | JS.PrefixBNot, TConstr ("Int", []) -> typ_int
-      | JS.PrefixBNot, TConstr ("Number", []) ->
-          (** JavaScript converts floats to integers before doing a bitwise
-              negation. E.g. [~(1.0)], [~1], and [-2] are equivalent. *)
-          typ_int 
-      | JS.PrefixBNot, t ->
-          raise (Typ_error (p, "~ (bitwise not) expects a number; received " ^
-                              (string_of_typ t)))
-      | JS.PrefixPlus, TConstr ("Int", []) -> typ_int
-      | JS.PrefixPlus, TConstr ("Number", []) -> typ_num 
-      | JS.PrefixPlus, t ->
-          raise (Typ_error (p, "+ (plus) expects a number; received " ^
-                              (string_of_typ t)))
-      | JS.PrefixMinus, TConstr ("Int", []) -> typ_int
-      | JS.PrefixMinus, TConstr ("Number", []) -> typ_num 
-      | JS.PrefixMinus, t -> 
-          raise 
-            (Typ_error 
-               (p, "- (minus) expects an Int/Double operand; received " ^
-                  string_of_typ t))
-      | JS.PrefixTypeof, _ -> typ_str
-      | JS.PrefixVoid, _ -> typ_undef
-      | JS.PrefixDelete, _ -> failwith "PrefixDelete NYI"
-    end
-   | EInfixOp (p, op, e1, e2) -> 
-       let t1 = tc_exp env e1
-       and t2 = tc_exp env e2 in
-       begin match op with
-           JS.OpLT -> tc_cmp env p t1 t2
-         | JS.OpLEq -> tc_cmp env p t1 t2
-         | JS.OpGT -> tc_cmp env p t1 t2
-         | JS.OpGEq -> tc_cmp env p t1 t2
-         | JS.OpIn -> failwith "OpIn NYI"
-         | JS.OpInstanceof -> failwith "instanceof NYI"
-         | JS.OpEq -> typ_bool
-         | JS.OpNEq -> typ_bool
-         | JS.OpStrictEq -> typ_bool
-         | JS.OpStrictNEq -> typ_bool
-         | JS.OpLAnd -> Env.typ_union env t2 typ_bool
-         | JS.OpLOr -> Env.typ_union env t1 t2
-         | JS.OpMul -> tc_arith env p t1 t2 false false
-         | JS.OpDiv -> tc_arith env p t1 t2 false true
-         | JS.OpMod -> tc_arith env p t1 t2 false true
-         | JS.OpSub -> tc_arith env p t1 t2 false false
-         | JS.OpLShift -> tc_arith env p t1 t2 true false
-         | JS.OpSpRShift -> tc_arith env p t1 t2 true false
-         | JS.OpZfRShift -> tc_arith env p t1 t2 true false
-         | JS.OpBAnd -> tc_arith env p t1 t2 true false
-         | JS.OpBXor -> tc_arith env p t1 t2 true false
-         | JS.OpBOr -> tc_arith env p t1 t2 true false
-         | JS.OpAdd -> begin match Env.subtype env t1 typ_str,
-             Env.subtype env t2 typ_str with
-                 true, _ -> typ_str
-               | _, true -> typ_str
-               | _ -> tc_arith env p t1 t2 false false
-           end
-       end
+  | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
+  | EInfixOp (p, "+", e1, e2) -> 
+      let t = tc_exp env (EApp (p, EId (p, "+"), [e1; e2])) in
+        if Env.subtype env t typ_str then
+          typ_str
+        else
+          t
+  | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> begin match tc_exp env f with
       | TForall (x, _, TArrow (obj_typ, expected_typ, result_typ)) ->
           let subst = unify_typ (TArrow (obj_typ, expected_typ, result_typ))

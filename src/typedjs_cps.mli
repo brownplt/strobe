@@ -8,12 +8,12 @@ type cpsval =
 type node = int
 
 type op1 = 
-  | Op1Prefix of JavaScript_syntax.prefixOp
+  | Op1Prefix of id
   | Deref
   | Ref
 
 type op2 =
-  | Op2Infix of JavaScript_syntax.infixOp
+  | Op2Infix of id
   | GetField
   | DeleteField
   | SetRef
