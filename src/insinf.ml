@@ -19,7 +19,7 @@ let rec input_strings cin : string list =
 
 (** Group \1 is the whitespace beween the close-paren of the argument list and
     the open-bracket of the function body. *)
-let function_re : regexp = regexp "function.*(.*)\\([ ]*\\){"
+let function_re : regexp = regexp "function.*(.*)\\([ ]*\\)"
 
 let rec splice_typ (cin : in_channel) (cout : out_channel) (typ : string) = 
   let line = input_line cin in
