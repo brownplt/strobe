@@ -1,4 +1,0 @@
-{ "bar" : "hello", alp : 3 } @@ { alp : Int, bar : String }
-
-; { "bar" : /*: mutable */ "hello", alp : 3 } @@ { alp : Int, bar : mutable String }
-;

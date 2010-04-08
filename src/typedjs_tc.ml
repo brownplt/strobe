@@ -4,8 +4,6 @@ open Typedjs_env
 open Typedjs_types 
 open Format
 
-module JS = JavaScript_syntax (* needed for operators *)
-
 let error p s = raise (Typ_error (p, s))
 
 let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
