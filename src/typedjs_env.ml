@@ -211,9 +211,15 @@ module Env = struct
         let ci' = { ci with fields = IdMap.add m_name m_typ ci.fields } in
           { env with classes = IdMap.add c_name ci' env.classes }
 
-  let set_global_object env cname = 
-    let fs = IdMapExt.to_list (IdMap.find cname env.classes).fields in
-      List.fold_left (fun env (x, t) -> bind_id x t env) env fs
+  let rec set_global_object env cname =
+    let ci = IdMap.find cname env.classes in
+    let fs = IdMapExt.to_list ci.fields in
+    let add_field env (x, t) = bind_id x t env in
+    let env = List.fold_left add_field env fs in
+      match ci.sup with
+        | None -> env
+        | Some cname' -> set_global_object env cname'
+
 
 end
 

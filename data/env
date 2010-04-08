@@ -68,17 +68,9 @@ class Date prototype Object {
 
 val Date : String + Date + Void-> Date
 
-// HTMLWindow is the type of the global object. All its fields are added to the
-// initial environment.
-class HTMLWindow  {
-  document : { },
-  setTimeout : (-> Void) * Int -> Int,
-  setInterval : ( -> Void) * Int -> Int,
-  clearInterval : Int -> Void,
-  clearTimeout : Int -> Void,
+class Global { 
   parseInt : String + Number * Int + Void -> Int,
   parseFloat : String + Number -> Double,
-  window : HTMLWindow,
   undefined: Void,
   Math: {
     E : Number,
@@ -110,6 +102,17 @@ class HTMLWindow  {
     sqrt : Number -> Number,
     tan : Number -> Number
   }
+}
+
+// HTMLWindow is the type of the global object. All its fields are added to the
+// initial environment.
+class HTMLWindow prototype Global {
+  document : { },
+  setTimeout : (-> Void) * Int -> Int,
+  setInterval : ( -> Void) * Int -> Int,
+  clearInterval : Int -> Void,
+  clearTimeout : Int -> Void,
+  window : HTMLWindow,
 }
 
 class HTMLElement  {
