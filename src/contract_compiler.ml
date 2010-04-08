@@ -40,14 +40,14 @@ module Make ( C : Contracts) = struct
         (* wrap array accesses: *)
         let be = BracketExpr (p, ic_expr e1, ic_expr e2) in
           begin match e2 with
-            | ConstExpr (p2, CInt i) -> 
-                CallExpr (p, DotExpr (p, contract_lib, "guard"),
-                          [ DotExpr (p, contract_lib, "NotUndefined"); 
-                            be; 
-                            ConstExpr (p, CString "callee");
-                            ConstExpr (p, CString "caller");
-                            ConstExpr (p, CString (string_of_position p)) ])
-            | _ -> be
+              (* a["foo"] is prop-ref, but anything else is array access *)
+            | ConstExpr (_, CString _) -> be
+            | _ -> CallExpr (p, DotExpr (p, contract_lib, "guard"),
+                             [ DotExpr (p, contract_lib, "NotUndefined"); 
+                               be; 
+                               ConstExpr (p, CString "callee");
+                               ConstExpr (p, CString "caller");
+                               ConstExpr (p, CString (string_of_position p)) ])
           end
     | NewExpr (p, e, es) -> NewExpr (p, ic_expr e, map ic_expr es)
     | PrefixExpr (p, op, e) -> PrefixExpr (p, op, ic_expr e)

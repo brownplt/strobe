@@ -1,6 +1,3 @@
-/*::
-  function onTextClick : ( -> Int)
-*/
 /*
 Copyright (C) 2007 Google Inc.
 
@@ -17,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-function onTextClick() {
+function onTextClick() /*: -> Int */ {
   view.alert(HELLO_WORLD);
   return 200;
 }

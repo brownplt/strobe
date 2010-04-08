@@ -22,7 +22,7 @@ function onMoreGadgetsClick(_ /* Arjun: ignored arg */) /*: { } -> Void */ {
 function onStart() /*: -> Void */ {
   if(flag == 0) {
     onStop();
-    var time = parseInt((60/bpm)*1000, undefined);
+    var time = parseInt((60/bpm)*1000.0, undefined);
     timer = setInterval(onPlay,time);
     btn.image = "stop.png";
     btn.overImage = "stop_over.png";
