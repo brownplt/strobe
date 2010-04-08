@@ -1,0 +1,17 @@
+<strings>
+
+<GADGET_NAME>Metronome</GADGET_NAME>
+<GADGET_DESCRIPTION>A practice tool that produces a steady pulse (or beat) to help musicians play rhythms accurately.</GADGET_DESCRIPTION>
+<GADGET_COPYRIGHT>Developed by Bijoy Thangaraj</GADGET_COPYRIGHT>
+<GADGET_WEBSITE>http://gadgets.jsplash.com/</GADGET_WEBSITE>
+<GADGET_ABOUT>Metronome
+Developed by Bijoy Thangaraj
+
+A metronome is a practice tool that produces a steady pulse (or beat) to help musicians play rhythms accurately. Common uses of the metronome are helping you to maintain an established tempo while practicing, and learning difficult passages.
+Use the (+) and (-) keys to increase/decrease tempo.
+
+For other Google Desktop Gadgets, visit
+http://gadgets.jsplash.com
+</GADGET_ABOUT>
+<bpm_str>BPM</bpm_str>
+</strings>

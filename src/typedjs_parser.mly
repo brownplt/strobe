@@ -33,6 +33,7 @@ fields
   : { [] }
   | field { [$1] }
   | field COMMA fields { $1 :: $3 }
+  | COMMA { [] }
 
 arg_typ
   : ANY { TTop }

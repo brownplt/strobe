@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 for file in ../tests/not-well-formed/*.js
 do
@@ -69,4 +69,7 @@ do
 done
 
 cd ../gadgets
-./test
+for FILE in *.js
+do
+  ./runtest.sh $FILE
+done

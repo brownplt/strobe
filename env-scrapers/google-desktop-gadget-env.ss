@@ -39,8 +39,11 @@
 (define (xml->binds xml)
   (xml-everywhere combine-hash content->bind xml))
 
+(define (string-capitalize s)
+  (string-append (string-upcase (substring s 0 1)) (string-downcase (substring s 1))))
+
 (define (print-env env)
   (for ([(x t) (in-hash env)])
-    (printf "~a : ~a~n" x t)))
+    (printf "~a : ~a~n" x (string-capitalize (symbol->string t)))))
 
 (print-env (xml->binds (document-element (read-xml))))
