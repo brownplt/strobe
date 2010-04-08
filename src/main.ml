@@ -17,38 +17,55 @@ open Lexing
 
 module Lat = Typedjs_lattice
 
-let cin = ref stdin
+module Input : sig
+  val get_cin : unit -> in_channel
+  val get_cin_name : unit -> string
+  val set_cin : in_channel -> string -> unit
+end = struct
 
-let cin_name = ref "stdin"
+  let c = ref None
 
+  let cname = ref "no input specified"
+
+  let get_cin () = match !c with
+    | None -> failwith "jst: no input files"
+    | Some cin -> cin
+
+  let get_cin_name () = !cname
+
+  let set_cin cin name = match !c with
+    | None -> c := Some cin; cname := name
+    | Some _ -> failwith "invalid arguments" 
+
+end
+
+open Input
+    
 let env = ref Env.empty_env
 
 let get_env () = 
   Env.set_global_object !env "HTMLWindow"
 
-let action_load_file path =
-  cin := open_in path;
-  cin_name := path
 
 let action_pretty () : unit = 
-  let prog = parse_javascript !cin !cin_name in
+  let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
     JavaScript.Pretty.p_prog prog std_formatter;
     print_newline ()
 
 let action_contracts () : unit = 
-  let prog = parse_javascript !cin !cin_name in
+  let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
   let prog' = Typedjs_contracts.types_to_contracts prog in
     JavaScript.Pretty.p_prog prog' std_formatter;
     print_newline ()
 
 let action_expr () : unit =
-  let prog = parse_javascript !cin !cin_name in
+  let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
   let e = from_javascript prog in
     Exprjs.Pretty.p_expr e std_formatter
 
 let get_typedjs () =
   Typedjs_fromExpr.from_exprjs (get_env ())
-    (from_javascript (parse_javascript !cin !cin_name))
+    (from_javascript (parse_javascript (get_cin ()) (get_cin_name ())))
 
 let action_pretypecheck () : unit = 
   let typedjs = get_typedjs () in
@@ -100,7 +117,13 @@ let set_env (fname : string) : unit =
 
 let main () : unit =
   Arg.parse
-    [ ("-env", Arg.String set_env, "load the environment from a file");
+    [ ("-tc", Arg.Unit (set_action action_tc),
+       "type-check the source program (default when no options are given)");
+      ("-contracts", Arg.Unit (set_action action_contracts),
+       "insert contracts into the source program") ;
+      ("-stdin", Arg.Unit (fun () -> set_cin stdin "<stdin>"),
+       "read from stdin instead of a file");
+      ("-env", Arg.String set_env, "<file> read environment types from <file>");
       ("-pretty", Arg.Unit (set_action action_pretty),
        "pretty-print JavaScript");
       ("-expr", Arg.Unit (set_action action_expr),
@@ -110,13 +133,10 @@ let main () : unit =
       ("-cps", Arg.Unit (set_action action_cps),
        "convert program to CPS");
       ("-df", Arg.Unit (set_action action_df),
-       "convert program to ANF, then apply dataflow analysis");
-      ("-tc", Arg.Unit (set_action action_tc),
-       "type-check (default action)");
-      ("-contracts", Arg.Unit (set_action action_contracts),
-       "insert contracts") ]
-    (fun s -> action_load_file s)
-    "Typed JavaScript [action] [path]";;
+       "convert program to ANF, then apply dataflow analysis")
+    ]
+    (fun s -> set_cin (open_in s) s)
+    "Usage: jst [options] [file]\noptions are:\n";;
 
 Printexc.print main ();
 let exitcode = begin
