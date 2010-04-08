@@ -133,6 +133,8 @@ let main () : unit =
        "read from stdin instead of a file");
       ("-env", Arg.String (fun s -> load_env s),
        "<file> read environment types from <file>");
+      ("-global", Arg.String (fun s -> set_global_object s),
+       "<class> use <class> as the global object");
       ("-pretty", Arg.Unit (set_action action_pretty),
        "pretty-print JavaScript");
       ("-expr", Arg.Unit (set_action action_expr),
