@@ -2,7 +2,7 @@
 
 for file in ../tests/not-well-formed/*.js
 do
-  result=`../build/main.d.byte -env ../data/env -pretc $file 2>&1`
+  result=`../build/main.d.byte -env ../data/javascript.env -pretc $file 2>&1`
   exitcode=$?
   if [ $exitcode -ne 2 ]; then
       echo "$file: expected a well-formedness error; exit code was $exitcode\n"
@@ -16,7 +16,7 @@ done
 
 for file in ../tests/well-formed/*.js
 do
-  result=`../build/main.d.byte -env ../data/env -pretc $file 2>&1`
+  result=`../build/main.d.byte -env ../data/javascript.env -pretc $file 2>&1`
   if [ $? -ne 0 ]; then
       echo "$file: aborted with exit code $?; output was:\n$result\n"
   fi
@@ -25,7 +25,7 @@ done
 
 for file in ../tests/untypable/*.js
 do
-  result=`../build/main.d.byte -env ../data/env -tc $file 2>&1`
+  result=`../build/main.d.byte -env ../data/javascript.env -tc $file 2>&1`
   exitcode=$?
   if [ $exitcode -ne 2 ]; then
       echo "$file: expected a type-error error; exit code was $exitcode\n"
@@ -39,7 +39,7 @@ done
 
 for file in ../tests/typable/*.js
 do
-  result=`../build/main.d.byte -env ../data/env -tc $file 2>&1`
+  result=`../build/main.d.byte -env ../data/javascript.env -tc $file 2>&1`
   if [ $? -ne 0 ]; then
       echo "$file: aborted with exit code $?; output was:\n$result\n"
   fi
@@ -48,7 +48,7 @@ done
 
 for file in ../tests/parsing/*.js
 do
-  result=`../build/main.d.byte -env ../data/env -pretty $file 2>&1`
+  result=`../build/main.d.byte -env ../data/javascript.env -pretty $file 2>&1`
   if [ $? -ne 0 ]; then
       echo "$file: aborted with exit code $?; output was:\n$result\n"
   fi

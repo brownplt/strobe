@@ -21,7 +21,13 @@ module Input : sig
   val get_cin : unit -> in_channel
   val get_cin_name : unit -> string
   val set_cin : in_channel -> string -> unit
+  val get_env : unit -> Env.env
+  val load_env : string -> unit
+  val set_global_object : string -> unit
 end = struct
+
+  let env = ref Env.empty_env
+  let global_object = ref None
 
   let c = ref None
 
@@ -37,15 +43,20 @@ end = struct
     | None -> c := Some cin; cname := name
     | Some _ -> failwith "invalid arguments" 
 
+  let load_env (fname : string) : unit = 
+    env := extend_global_env !env (parse_env (open_in fname) fname)
+
+  let set_global_object cname = match !global_object with
+    | None -> global_object := Some cname
+    | Some _ -> failwith "jst: global object already specified"
+
+  let get_env () = match !global_object with
+    | None -> Env.set_global_object !env "Global"
+    | Some c -> Env.set_global_object !env c
+
 end
 
 open Input
-    
-let env = ref Env.empty_env
-
-let get_env () = 
-  Env.set_global_object !env "HTMLWindow"
-
 
 let action_pretty () : unit = 
   let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
@@ -112,9 +123,6 @@ let set_action (thunk : unit -> unit) (() : unit) : unit =
   else 
     (is_action_set := true; action := thunk)
 
-let set_env (fname : string) : unit = 
-  env := extend_global_env !env (parse_env (open_in fname) fname)
-
 let main () : unit =
   Arg.parse
     [ ("-tc", Arg.Unit (set_action action_tc),
@@ -123,7 +131,8 @@ let main () : unit =
        "insert contracts into the source program") ;
       ("-stdin", Arg.Unit (fun () -> set_cin stdin "<stdin>"),
        "read from stdin instead of a file");
-      ("-env", Arg.String set_env, "<file> read environment types from <file>");
+      ("-env", Arg.String (fun s -> load_env s),
+       "<file> read environment types from <file>");
       ("-pretty", Arg.Unit (set_action action_pretty),
        "pretty-print JavaScript");
       ("-expr", Arg.Unit (set_action action_expr),
