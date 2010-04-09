@@ -19,8 +19,5 @@ insinf: builddir
 prof: builddir
 	$(OCAMLBUILD) main.p.native
 
-cfa: builddir
-	$(OCAMLBUILD) cfa.d.byte
-
 doc: builddir
 	$(OCAMLBUILD) doc.docdir/index.html
