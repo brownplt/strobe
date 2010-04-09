@@ -1,15 +1,17 @@
+/* Eval: required 1 upcast, 1 downcast, changing null to false/0 (other
+ *   sentinel values), and just some function annotations. not bad!
+ */
 var curAudioClip_ = /*:upcast Audioclip + Bool*/ false;
-var timer = 0; // ARJUN
+var timer = 0; // Arjun: null --> 0
 var flag = 0;
 var bpm = 0;
 var AUDIO_CLIP_URI = "tick.wav";
 
 function on_viewOpen() /*: -> Void */ {
   options.putDefaultValue("bpm",100);
-  // ARJUN: Int
   bpm = /*:downcast Int */(options.getValue("bpm"));
   bpm_display.innerText = bpm.toString();
-	//pluginHelper.onAddCustomMenuItems = onAddCustomMenuItems;
+  //pluginHelper.onAddCustomMenuItems = onAddCustomMenuItems;
 }
 
 function onAddCustomMenuItems(menu) /*: Menu -> Void */ {
@@ -40,7 +42,7 @@ function onStart() /*: -> Void */ {
 }
 
 function onStop() /*: -> Void */ {
-  if(timer != 0) {
+  if(timer != 0) { // Arjun: null --> 0
     clearInterval(timer);
     timer = 0;
   }
@@ -76,7 +78,7 @@ function onPlay() /*: -> Void */ {
     startedAudio();
   } else {                  // Already playing something
     curAudioClip_.stop();
-    curAudioClip_ = false; // Claudiu: changed from null
+    curAudioClip_ = false; // Claudiu: null -> false
     stoppedAudio();
   }
 }
@@ -84,7 +86,7 @@ function onPlay() /*: -> Void */ {
 function onAudioStateChange(audioClip, state) /*: Audioclip * Int -> Void */ {
   if (state == gddSoundStateStopped) {
     stoppedAudio();
-    curAudioClip_ = false; // Claudiu: changed from null
+    curAudioClip_ = false; // Claudiu: null -> false
   } else if (state == gddSoundStatePlaying) {
     startedAudio();
   }
