@@ -1,11 +1,17 @@
+/* Changes:
+ * in getDateDiff, a bunch of casts, and have to
+ *   add ".0" to the int literals to make them floats.
+ * Otherwise, just had to insert some .toString()s
+ */
+
 // Change this to the date of the event.
 var CONFIG_EVENT_DATE = new Date('1/1/3000');
 
 // Updates the gadget.
 function update() /*: -> Void */ {
-  var now = new Date(undefined); 
+  var now = new Date(undefined);
   var diff = getDateDiff(now, CONFIG_EVENT_DATE);
-  
+
   if (diff.isPassed) {
     gadget.debug.trace('Event has passed, go to end state.');
     complete();
@@ -15,14 +21,15 @@ function update() /*: -> Void */ {
   if (diff.days >= 1) {
     // Days until the event.
     var daysUntil = diff.days + 1;
-    
-    timeLeftLabel.innerText = daysUntil + ' ' +
+
+    //Claudiu: daysUntil --> daysUntil.toString()
+    timeLeftLabel.innerText = daysUntil.toString() + ' ' +
         (daysUntil > 1 ? strings.DAYS : strings.DAY) + ' ' +
         strings.UNTIL;
-        
+
     // Determine next update.
     var nextUpdateMs = 0;
-    
+
     if (diff.days == 1) {
       var dayBefore = new Date(CONFIG_EVENT_DATE);
       dayBefore.setDate(dayBefore.getDate() - 1);
@@ -34,26 +41,27 @@ function update() /*: -> Void */ {
     }
 
     view.setTimeout(update, nextUpdateMs);
-    gadget.debug.trace('Next update in ' + nextUpdateMs + ' ms.');
+    //Claudiu: .toString()
+    gadget.debug.trace('Next update in ' + nextUpdateMs.toString() + ' ms.');
   } else {
     // Start the countdown!
     var s = '';
 
     if (diff.hours > 0) {
-      s += diff.hours + ' ';
+      s += diff.hours.toString() + ' ';
       s += (diff.hours > 1 ? strings.HOURS : strings.HOUR) + ' ';
     }
     if (diff.minutes > 0) {
-      s += diff.minutes + ' ';
+      s += diff.minutes.toString() + ' ';
       s += (diff.minutes > 1 ? strings.MINUTES : strings.MINUTE) + ' ';
     }
-    s += diff.seconds + ' ';
+    s += diff.seconds.toString() + ' ';
     s += (diff.seconds > 1 ? strings.SECONDS : strings.SECOND) + ' ';
-        
+
     s += strings.UNTIL;
-        
+
     timeLeftLabel.innerText = s;
-        
+
     // Update again in one second.
     view.setTimeout(update, 1000);
   }
@@ -61,11 +69,11 @@ function update() /*: -> Void */ {
 
 // Creates a date object for tomorrow midnight.
 function makeTomorrow(d) /*:  Date -> Date */ {
-  var tomorrow = new Date((d.getMonth() + 1) + '/' + 
-                          d.getDate() + '/' +
-                          d.getYear());
+  var tomorrow = new Date((d.getMonth() + 1).toString() + '/' +
+                          d.getDate().toString() + '/' +
+                          d.getYear().toString());
   tomorrow.setDate(tomorrow.getDate() + 1);
-  
+
   return tomorrow;
 }
 
@@ -83,35 +91,35 @@ function makeTomorrow(d) /*:  Date -> Date */ {
 //
 // All data will be non-negative. Use "isPassed" to determine the relation
 // between the dates.
-function getDateDiff(start, end) 
+function getDateDiff(start, end)
   /*: Date * Date -> { isPassed : Bool, msec : Int, seconds : Int,
                        minutes : Int, hours : Int, days : Int } */
 {
     var diff = /*:upcast Number */ (end.valueOf() - start.valueOf());
- 
-  var isPassed = diff <= 0;
-  
+
+  var isPassed = diff <= 0.0; //Claudiu: 0 --> 0.0
+
   diff = Math.abs(diff);
-  
-  var msec = /*:downcast Int */(diff % 1000);       
 
-  // Seconds.  
-  diff = diff / 1000;  
-  var seconds = Math.floor(diff % 60);    
-  
-  // Minutes.  
-  diff = diff / 60;  
-  var minutes = Math.floor(diff % 60);    
+  var msec = /*:downcast Int */(diff % 1000.0);
 
-  // Hours.  
-  diff = diff / 60;  
-  var hours = Math.floor(diff % 24);
+  // Seconds.
+  diff = diff / 1000;
+  var seconds = Math.floor(diff % 60.0);
+
+  // Minutes.
+  diff = diff / 60;
+  var minutes = Math.floor(diff % 60.0);
+
+  // Hours.
+  diff = diff / 60;
+  var hours = Math.floor(diff % 24.0);
 
   // Days.
-  diff = diff / 24;  
+  diff = diff / 24;
   var days = Math.floor(diff);
-  
-  return { isPassed: isPassed, msec: msec, seconds: seconds, 
+
+  return { isPassed: isPassed, msec: msec, seconds: seconds,
           minutes : minutes, hours: hours, days: days };
 }
 
