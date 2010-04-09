@@ -46,7 +46,7 @@ arg_typ
   | LBRACE fields RBRACE { TObject $2 }
   | LPAREN typ RPAREN { $2 }
   | ID { TConstr ( $1, [] ) }
-  | ID LANGLE typs RANGLE { TConstr ($1, $3) }
+  | ID LANGLE typs RANGLE { TConstr ($1, map (fun t -> TRef t) $3) }
   | TID { TId $1 }
 
 
