@@ -6,7 +6,7 @@ var _SecondHandFade = 0;
 
 var _UpdateSecondHandInterval = 0,
     _BounceRotationIncrement = 1.8,
-    _NewRotation = 0;
+    _NewRotation = 0.0; // Claudiu: changed to number
 
 function _view_onopen() /*:  -> Void */ {
     f();
@@ -35,11 +35,10 @@ function _view_onpopout() /*:  -> Void */ {
 }
 
 function d() /*:  -> Void */ {
-  var a = new Date(undefined); // Claudiu : added undefined
+  /*var a = new Date(undefined); // Claudiu : added undefined
     if (_minimized) {
-        var b = /*:upcast String + Int */0; // Claudiu: init
-        b = (a.getHours());
-        if (b > 12) b -= 12;
+        var b = /*:upcast String + Int *//*(a.getHours());
+        if (b > 12) b = b - 12;
         if (b < 10) b = "0" + b;
         var c = a.getMinutes();
         if (c < 10) c = "0" + c;
@@ -49,11 +48,11 @@ function d() /*:  -> Void */ {
         k(a);
     }
     var i = (61 - a.getSeconds()) * 1000;
-    setTimeout(d, i);
+    setTimeout(d, i);*/
 }
 
 function e() /*:  -> Void */ {
-    var a = new Date;
+    var a = new Date(undefined);
     l(a);
     h(a);
 }
@@ -86,7 +85,9 @@ function f() /*:  -> Void */ {
         clearInterval(_SecondInterval);
         _SecondInterval = 0;
     }
-    switch (options("SecondHand")) {
+    //switch (options("SecondHand")) {
+    //Claudiu : options is callable?? or a bug
+    /*switch (options.getValue("SecondHand")) {
     case 0:
         g(false);
         //break;
@@ -100,7 +101,7 @@ function f() /*:  -> Void */ {
         e();
         _SecondInterval = setInterval(e, 1000);
         //break;
-    }
+    }*/
 }
 
 function g(a) /*: Bool -> Void */ {
