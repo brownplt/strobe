@@ -87,6 +87,13 @@ let rec exp (env : env) expr = match expr with
   | NewExpr (p, _, _) ->
       raise (Not_well_formed (p, "new expressions much name the constructor"))
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
+  | InfixExpr (p, "&&", e1, e2) -> 
+      EIf (p, exp env e1, exp env e2, EConst (p, S.CBool false))
+  | InfixExpr (p, "||", e1, e2) ->
+      ELet (p, "%or-left", exp env e1,
+            EIf (p, EId (p, "%or-left"),
+                 EId (p, "%or-left"),
+                 exp env e2))
   | InfixExpr (a, op, e1, e2) -> EInfixOp (a, op, exp env e1, exp env e2)
   | IfExpr (a, e1, e2, e3) -> EIf (a, exp env e1, exp env e2, exp env e3)
   | AssignExpr (a, VarLValue (p', x), e) -> ESetRef (a, EId (p', x), exp env e)
