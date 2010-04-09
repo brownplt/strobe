@@ -1,4 +1,3 @@
-
 #!/bin/bash
 P=`dirname $0`
 $P/build/insinf.d.byte $@

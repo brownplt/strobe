@@ -313,8 +313,15 @@ let rec unify subst s t : typ IdMap.t = match s, t with
   | TId x, TId y -> 
       if x = y then subst 
       else failwith ("cannot unify bound variables " ^ x ^ " and " ^ y)
-  | TId x, t -> IdMap.add x (apply_subst subst t) subst
-  | s, TId y -> IdMap.add y (apply_subst subst s) subst
+  | TId x, t -> 
+      if IdMap.mem x subst then
+        begin
+          let s = IdMap.find x subst in
+            IdMap.add x (apply_subst subst (TUnion (s, t))) subst
+        end
+      else
+        IdMap.add x (apply_subst subst t) subst
+  | s, TId y -> unify subst (TId y) s
 
   | TConstr (c1, ss), TConstr (c2, ts) ->
       if c1 = c2 then
