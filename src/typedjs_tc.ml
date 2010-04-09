@@ -3,6 +3,9 @@ open Typedjs_syntax
 open Typedjs_env
 open Typedjs_types 
 open Format
+open Typedjs_dyn
+
+let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
 
 let rec skip n l = if n == 0 then l else (skip (n-1) (List.tl l))
 let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
@@ -251,7 +254,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
           t
         else 
           raise (Typ_error (p, "subsumption error"))
-  | EDowncast (p, t, e) ->  ignore (tc_exp env e); Env.check_typ p env t
+  | EDowncast (p, t, e) -> 
+      let t = Env.check_typ p env t in
+      let (p1, p2) = Exp.pos e in 
+        contracts := IntMap.add p1.Lexing.pos_cnum (p2.Lexing.pos_cnum, t)
+          !contracts;
+        ignore (tc_exp env e);
+        t
   | ETypAbs (p, x, t, e) ->
       let t = Env.check_typ p env t in
       let env = Env.bind_typ_id x t env in

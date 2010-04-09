@@ -2,6 +2,7 @@ open Prelude
 open Contract_compiler
 open Typedjs_syntax
 open JavaScript_syntax
+open Typedjs_tc
 
 exception Typ_to_contract of pos * string
 
@@ -35,8 +36,3 @@ end
 module M = Make (S)
 
 let types_to_contracts = M.insert_contracts
-
-
-
-
-     

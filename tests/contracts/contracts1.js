@@ -1,3 +1,3 @@
 // succeeds
 var x = 900;
-var t = /*:downcast Int */x;
+var t = /*:downcast Int */(x + 2);
