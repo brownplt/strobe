@@ -6,7 +6,8 @@ var AUDIO_CLIP_URI = "tick.wav";
 
 function on_viewOpen() /*: -> Void */ {
   options.putDefaultValue("bpm",100);
-  // ARJUN: Int bpm = /*:downcast Int */options.getValue("bpm");
+  // ARJUN: Int
+  bpm = /*:downcast Int */(options.getValue("bpm"));
   bpm_display.innerText = bpm.toString();
 	//pluginHelper.onAddCustomMenuItems = onAddCustomMenuItems;
 }
@@ -70,21 +71,20 @@ function decr() /*: -> Void */ {
 }
 
 function onPlay() /*: -> Void */ {
-    /*
   if (typeof curAudioClip_ === "boolean") {      // Not playing anything
     curAudioClip_ = framework.audio.play(AUDIO_CLIP_URI, onAudioStateChange);
     startedAudio();
   } else {                  // Already playing something
     curAudioClip_.stop();
-    curAudioClip_ = null;
+    curAudioClip_ = false; // Claudiu: changed from null
     stoppedAudio();
-    } */
+  }
 }
 
-function onAudioStateChange(audioClip, state) /*: {} * Int -> Void */ {
+function onAudioStateChange(audioClip, state) /*: Audioclip * Int -> Void */ {
   if (state == gddSoundStateStopped) {
     stoppedAudio();
-    curAudioClip_ = null;
+    curAudioClip_ = false; // Claudiu: changed from null
   } else if (state == gddSoundStatePlaying) {
     startedAudio();
   }

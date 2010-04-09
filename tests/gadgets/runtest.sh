@@ -15,6 +15,7 @@ then
   trap 'rm -f $ENV' EXIT
   $P/../../env-scrapers/google-desktop-gadget-env.ss < $XML > $ENV
   ENVCMD="-env $ENV"
+  cat $ENV
 fi
 
 STRXML="$BASE.strings.xml"
@@ -26,7 +27,6 @@ then
   $P/../../env-scrapers/google-desktop-gadget-strings.ss < $STRXML > $STRENV
   STRENVCMD="-env $STRENV"
 fi
-
 RESULT=`$P/../../tcg $ENVCMD $STRENVCMD -tc $FILE 2>&1`
 if [ $? -ne 0 ]; then
     echo "$FILE: aborted with exit code $?; output was:\n$RESULT\n"

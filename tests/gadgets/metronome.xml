@@ -1,0 +1,25 @@
+<view height="200" width="150" onkeypress="check_key()" onopen="on_viewOpen()"
+ >
+  <script src="jstrace.js" />
+  <script src="main_cc.js" />
+  <script src="hookggmenu.js" />
+  <img src="background.png"/>
+  <label enabled="true" height="57" hitTest="htclient" name="bpm_display"
+    width="100%" y="34" align="center" bold="true" font="LCD2"
+    size="45">60
+  </label>
+  <img name="status_image" x="-1" src="red.png"/>
+  <button cursor="hand" name="btn" x="17" y="92" onclick="onStart()" downImage="play_over.png"
+    image="play.png" overImage="play_over.png"/>
+  <a height="54" width="100%" y="7" onclick="incr()" onkeypress="check_key()"
+    align="center" bold="true" color="#000000" font="Arial"
+    size="30" underline="false" overColor="#006600">^
+  </a>
+  <a height="54" rotation="180" width="100%" x="150" y="113" onclick="decr()"
+    align="center" bold="true" color="#000000" font="Arial"
+    size="30" underline="false" overColor="#CC0000">^
+  </a>
+  <label height="16" width="40" x="108" y="13" bold="true" font="LCD2"
+   >&bpm;
+  </label>
+</view>
