@@ -1,11 +1,4 @@
-/*::
-  function View_onOpen : (  -> Void)
-  function fadeImages : (  -> Void)
-    function  : (  -> Void)
-    function  : (  -> Void)
-  function setElementOpacity : ( Dom -> Void)
-*/
-
+// Claudiu: no modifications required except for function annotations!
 /*
 Copyright (C) 2007 Google Inc.
 
@@ -24,18 +17,18 @@ limitations under the License.
 
 /**
  * @fileoverview Image Fading Sample
- * 
+ *
  * Fading one image or between images is quite a popular effect.
  * It's a subtle and attractive way to draw attention to your gadget.
- * 
+ *
  * This effect is typically achieved by employing
  * the "view.beginAnimation" function
- * to call a function that changes the "opacity" property 
+ * to call a function that changes the "opacity" property
  * of an element over time.
- * 
- * Though this example uses the "img" (image) element, 
+ *
+ * Though this example uses the "img" (image) element,
  * any other gadget element that has "opacity" should suffice.
- * 
+ *
  * Please refer to the API documentation for more details.
  */
 
@@ -57,44 +50,44 @@ var isPuppyTurn = true;
 /**
  * view "onopen" handler
  */
-function View_onOpen() {
+function View_onOpen() /*: -> Void */ {
   // Must call initial fade effect ourselves.
   // "view.setInterval" does not perform an initial call.
   fadeImages();
   // Create run forever timer
   view.setInterval(fadeImages, FADE_INTERVAL);
-}  
+}
 
 /**
  * Fade the next image in and the previous image out
  */
-function fadeImages() {
+function fadeImages() /*: -> Void */ {
   var outImage = kitty;
   var inImage = kitty;
-  
+
   // Determine which image is out and which image is in
   if (isPuppyTurn) {
     outImage = kitty;
-    inImage = puppy;    
+    inImage = puppy;
   } else {
     outImage = puppy;
     inImage = kitty;
   }
-  
+
   // Anonymous closures for the callbacks
-  
-  view.beginAnimation(function() { setElementOpacity(outImage); }, // callback
+
+  view.beginAnimation(function() /*: -> Void */ { setElementOpacity(outImage); }, // callback
                       255, // start value, 255 = full opacity
                       0, // end value, 0 = no opacity or "hidden"
                       FADE_DURATION); // duration in milliseconds
 
-  view.beginAnimation(function() { setElementOpacity(inImage); }, // callback
+  view.beginAnimation(function() /*: -> Void */ { setElementOpacity(inImage); }, // callback
                       0, // start value 0 = no opacity or "hidden"
                       255, // end value, 255 = full opacity
-                      FADE_DURATION); // duration in milliseconds  
-                      
-  // Setup the next turn                    
-  isPuppyTurn = !isPuppyTurn;                   
+                      FADE_DURATION); // duration in milliseconds
+
+  // Setup the next turn
+  isPuppyTurn = !isPuppyTurn;
 }
 
 /**
@@ -103,7 +96,7 @@ function fadeImages() {
  * "view.beginAnimation"'s start value and end value parameters.
  * @param {view.BasicElement}
  */
-function setElementOpacity(element) {
+function setElementOpacity(element) /*: BasicElement -> Void */ {
   element.opacity = event.value;
 }
 
