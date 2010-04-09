@@ -130,7 +130,9 @@ module Env = struct
     | TObject fs ->
         let fs = List.fast_sort cmp_props fs in
           TObject (map (second2 (normalize_typ env)) fs)
-    | TConstr ("Array", [t]) -> TConstr ("Array", [normalize_typ env t])
+    | TConstr ("Array", [t]) -> TConstr ("Array", [TRef (normalize_typ env t)])
+    | TConstr ("Array", (t:_)) -> 
+        raise (Not_wf_typ ("Array only takes one argument"))
     | TConstr (constr, []) ->
         if IdMap.mem constr env.classes then typ
         else raise (Not_wf_typ (constr ^ " is not a type constructor"))

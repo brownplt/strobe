@@ -4,6 +4,9 @@ open Typedjs_env
 open Typedjs_types 
 open Format
 
+let rec skip n l = if n == 0 then l else (skip (n-1) (List.tl l))
+let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
+
 let error p s = raise (Typ_error (p, s))
 
 let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
@@ -164,10 +167,22 @@ let rec tc_exp (env : Env.env) exp = match exp with
                                 %s" x (string_of_typ t))
             end
       | TArrow (_, expected_typs, result_typ) ->
-          let arg_typs = tc_exps env args in
+          let arg_typs' = tc_exps env args in
+          let arg_typs = 
+            fill (List.length expected_typs - List.length args) 
+              typ_undef arg_typs' in
             if Env.subtypes env arg_typs expected_typs 
             then result_typ 
-            else if List.length args = List.length expected_typs then
+            else if List.length args = List.length expected_typs (* || 
+                 dont need to supply undefined arguments =) 
+              (List.length args < List.length expected_typs && 
+                 (List.iter (
+                    fun t -> if Env.subtype env typ_undef t then () else
+                      raise (
+                        Typ_error (
+                          p, "argument that can't be undefined not given")))
+                    (skip (List.length args) expected_typs);true)) *)
+            then
               let typ_pairs = List.combine arg_typs expected_typs in
               let arg_ix = ref 1 in
               let find_typ_err (arg_typ, expected_typ) = 
