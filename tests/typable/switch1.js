@@ -1,5 +1,7 @@
-switch (0) {
-    case 0:
+switch (666) {
+    case 999:
+      121212;
+        
 }
 
 
