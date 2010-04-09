@@ -15,7 +15,6 @@ then
   trap 'rm -f $ENV' EXIT
   $P/../../env-scrapers/google-desktop-gadget-env.ss < $XML > $ENV
   ENVCMD="-env $ENV"
-  cat $ENV
 fi
 
 STRXML="$BASE.strings.xml"

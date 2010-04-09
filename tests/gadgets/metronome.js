@@ -101,8 +101,9 @@ function stoppedAudio() /*: -> Void */ {
 }
 
 function check_key() /*: -> Void */ {
-  if(event.keycode == 45)
+  // Claudiu: keycode --> keyCode
+  if(event.keyCode == 45)
     decr();
-  if(event.keycode == 43)
+  if(event.keyCode == 43)
     incr();
 }
