@@ -122,6 +122,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
           let tidx = tc_exp env eidx in
             begin match tidx with
               | TConstr ("Int", []) -> tarr
+              | TConstr ("String", []) -> begin match eidx with
+                  | EConst (_, JavaScript_syntax.CString "length") -> 
+                      TRef typ_int
+                  | _ -> error p ("only property of arrays is .length")
+                end
               | _ -> error p 
                   ("array index requires Int, got " ^ string_of_typ tidx)
             end
