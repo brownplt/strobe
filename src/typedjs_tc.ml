@@ -122,6 +122,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
       | TConstr ("Array", [tarr]), eidx ->
+          let (p1, p2) = p in 
+            contracts := IntMap.add p1.Lexing.pos_cnum 
+              (* TODO: NotUndefined is not a type, but just a contract *)
+              (p2.Lexing.pos_cnum, TConstr ("NotUndefined", []))
+              !contracts;
           let tidx = tc_exp env eidx in
             begin match tidx with
               | TConstr ("Int", []) -> tarr

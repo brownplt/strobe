@@ -43,6 +43,7 @@ let rec ctc_of_typ p (typ : typ) = match typ with
   | TConstr ("Int", []) -> flat p "Int"
   | TConstr ("String", []) -> flat p "String"
   | TConstr ("Undefined", []) -> flat p "Undefined"
+  | TConstr ("NotUndefined", []) -> flat p "NotUndefined"
   | _ -> raise (Invalid_argument "ctc_of_typ")
 
 let rec cc p (ctc : contract) : expr = match ctc with

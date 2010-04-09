@@ -73,12 +73,6 @@ let action_pretty () : unit =
     JavaScript.Pretty.p_prog prog std_formatter;
     print_newline ()
 
-let action_contracts () : unit = 
-  let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
-  let prog' = Typedjs_contracts.types_to_contracts prog in
-    JavaScript.Pretty.p_prog prog' std_formatter;
-    print_newline ()
-
 let action_expr () : unit =
   let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
   let e = from_javascript prog in
@@ -138,8 +132,6 @@ let main () : unit =
   Arg.parse
     [ ("-tc", Arg.Unit (set_action action_tc),
        "type-check the source program (default when no options are given)");
-      ("-contracts", Arg.Unit (set_action action_contracts),
-       "insert contracts into the source program") ;
       ("-stdin", Arg.Unit (fun () -> set_cin stdin "<stdin>"),
        "read from stdin instead of a file");
       ("-env", Arg.String (fun s -> load_env s),
