@@ -1,0 +1,16 @@
+<gadget minimumGoogleDesktopVersion="4.2006.505.0">
+  <about>
+    <id>CDF3606C-63B5-4ba1-BA14-6158F36756C2</id>
+    <version>2.0.0.1</version>
+    <author>Google</author>
+    <authorEmail>calendar@google.com</authorEmail>
+    <authorWebsite>http://www.google.com/googlecalendar/gd_help_0_9_8.html</authorWebsite>
+    <copyright>Copyright (c) 2006 Google</copyright>
+    <name>&MSG_NAME;</name>
+    <description>&MSG_DESC;</description>
+    <aboutText>&MSG_ABOUT;</aboutText>
+    <smallIcon>plugin_small.png</smallIcon>
+    <icon>calendar-32x32.gif</icon>
+    <displayAPI usesNotifier="true" />
+  </about>
+</gadget>
