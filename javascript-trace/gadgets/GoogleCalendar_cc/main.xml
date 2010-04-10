@@ -1,0 +1,6 @@
+<view width="200" height="200" onopen="Main()" resizable="true" showCaptionAlways="true">
+  <contentArea name="contentArea" width="100%" height="100%" />
+  <script src="jstrace.js" />
+  <script src="plugin_cc.js" />
+  <script src="hookggmenu.js" />
+</view>
