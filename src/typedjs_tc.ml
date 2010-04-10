@@ -162,7 +162,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
   | EInfixOp (p, "+", e1, e2) -> 
       let t = tc_exp env (EApp (p, EId (p, "+"), [e1; e2])) in
-        if Env.subtype env t typ_str then
+        if Env.subtype env typ_str t then
           typ_str
         else
           t
