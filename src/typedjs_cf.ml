@@ -60,7 +60,7 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
       ASet (RTSetExt.from_list [ RT.Number; RT.String ]), heap
   | _ -> any, heap
 
-let mk_closure (env : env) (f, args, typ, body_exp) =
+let mk_closure (env : env) (_, f, args, typ, body_exp) =
   let node = node_of_cpsexp body_exp in
     try ignore (H.find envs node)
     with Not_found -> H.replace envs node env
@@ -89,7 +89,8 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         flow env heap3 false_cont
   | Fix (n, binds, cont) ->
       let esc_set = esc_cpsexp cpsexp in
-      let is_escaping (f, _, _, _) = IdSet.mem f esc_set in
+      let is_escaping (boundary, f, _, _, _) = 
+        boundary || IdSet.mem f esc_set in
       let (esc_binds, nonesc_binds) = List.partition is_escaping binds in
       let env' = fold_left bind_lambda env nonesc_binds in
       let env' = fold_left bind_esc_lambda env' esc_binds in
@@ -104,13 +105,13 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         | _ -> ()
       end
 
-and bind_lambda env (f, args, typ, body_exp) =
+and bind_lambda env (_, f, args, typ, body_exp) =
   bind f (AClosure (node_of_cpsexp body_exp, args, body_exp)) env
 
-and bind_esc_lambda env (f, _,_, _) =
+and bind_esc_lambda env (_, f, _,_, _) =
   bind f (singleton RT.Function) env
 
-and sub_flow (env_node : node) (f, args, typ, body_exp) =  match typ with
+and sub_flow (env_node : node) (_, f, args, typ, body_exp) =  match typ with
   | Typedjs_syntax.TArrow (_, arg_typs, _) -> begin try
       ignore (H.find lambdas (node_of_cpsexp body_exp))
     with Not_found ->
