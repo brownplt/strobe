@@ -1,0 +1,91 @@
+<view height="30" showCaptionAlways="true" width="150" onclose="onUnload()"
+  onminimize="dispInCaption()" onopen="viewOnOpen()" onrestore="dispFull()"
+  onsizing="sizeBar()">
+    <label height="13" name="bcount" width="80" x="95" y="15" bold="true"
+      size="8"/>
+    <contentarea height="44" name="cnArea" x="197" y="3"/>
+    <label height="13" name="mcount" width="80" x="95" bold="true" size="8"
+     />
+    <label height="12" name="nextmicrobreak" width="90" size="8">Next microbreak in
+    </label>
+    <label height="12" name="nextfullbreak" width="90" y="15" size="8"
+     >Next full break in
+    </label>
+    <button height="24" width="32" x="162" y="4" onclick="stop()" downImage="stock_images\btn_down.png"
+      image="stock_images\btn_normal.png" overImage="stock_images\btn_over.png"/>
+    <progressbar height="30" hitTest="htclient" name="progbar" width="135" visible="false"
+      emptyImage="empty.gif" fullImage="full.gif"/>
+    <label height="30" name="breakcount" width="135" visible="false" align="center"
+      size="17"/>
+    <button height="15" name="rnowbutton" width="95" onclick="earlyBreak(1)"
+      onmouseout="mouseOverNow(1,0)" onmouseover="mouseOverNow(1,1)"
+      downImage="stock_images\btn_down.png" image="stock_images\btn_over_clr.png"
+      overImage="stock_images\btn_normal.png"/>
+    <button height="15" name="mnowbutton" width="95" y="15" onclick="earlyBreak(2)"
+      onmouseout="mouseOverNow(2,0)" onmouseover="mouseOverNow(2,1)"
+      downImage="stock_images\btn_down.png" image="stock_images\btn_over_clr.png"
+      overImage="stock_images\btn_normal.png"/>
+    <label height="15" name="rnowbuttontext" width="95" visible="false"
+      onmouseout="mouseOverNow(1,0)" onmouseover="mouseOverNow(1,1)"
+      align="center" size="8">take it now
+    </label>
+    <label height="15" name="mnowbuttontext" width="95" visible="false"
+      y="16" onmouseout="mouseOverNow(1,0)" onmouseover="mouseOverNow(1,1)"
+      align="center" size="8">take it now
+    </label>
+    <script src="main.js" />
+    <div height="60" width="191" x="5" y="15" background="#CCCCCC"/>
+    <div height="60" width="191" x="4" y="80" background="#CCCCCC"/>
+    <edit height="16" name="mTime" width="25" x="150" y="37"/>
+    <label height="16" name="microtimelbl" width="134" x="16" y="34">Time between breaks
+    </label>
+    <label height="16" name="resttimelbl" width="133" x="17" y="99">Time between breaks
+    </label>
+    <edit height="16" name="bTime" width="25" x="150" y="99"/>
+    <label height="16" name="microdurationlbl" width="93" x="17" y="56"
+     >Break duration
+    </label>
+    <edit height="16" name="mDuration" width="25" x="150" y="56"/>
+    <label height="16" name="restdurationlbl" width="90" x="17" y="118"
+     >Break duration
+    </label>
+    <edit height="16" name="bDuration" width="25" x="150" y="118"/>
+    <label height="16" name="microtitlelbl" width="90" x="9" y="16" bold="true"
+      underline="true">Micro Breaks
+    </label>
+    <label height="16" name="resttitlelbl" width="90" x="10" y="79" bold="true"
+      underline="true">Rest Breaks
+    </label>
+    <checkbox height="14" name="usetimeout" width="14" x="7" y="145" downImage="stock_images\chk_down.png"
+      image="stock_images\chk_normal.png" overImage="stock_images\chk_over.png"
+      checkedDownImage="stock_images\chk_chk_down.png" checkedImage="stock_images\chk_chk_normal.png"
+      checkedOverImage="stock_images\chk_chk_over.png"/>
+    <label height="16" name="dontcountlbl" width="162" x="21" y="146" size="7"
+     >Don't count time when I'm idle
+    </label>
+    <checkbox height="14" name="allowpostpone" width="14" x="7" y="160" downImage="stock_images\chk_down.png"
+      image="stock_images\chk_normal.png" overImage="stock_images\chk_over.png"
+      checkedDownImage="stock_images\chk_chk_down.png" checkedImage="stock_images\chk_chk_normal.png"
+      checkedOverImage="stock_images\chk_chk_over.png" onchange="toggleAllowPostpone()"/>
+    <label height="16" name="allowpostponelbl" width="151" x="21" y="161"
+      size="7">Allow me to postpone rest breaks for
+    </label>
+    <edit height="16" name="postponetime" width="10" x="173" y="160" size="8"
+      value="2"/>
+    <label height="16" name="mintxt3" width="17" x="183" y="161" size="7"
+     >min
+    </label>
+    <label height="16" name="mintxt1" width="22" x="175" y="38" size="8"
+     >min
+    </label>
+    <label height="16" name="mintxt2" width="22" x="175" y="98" size="8"
+     >min
+    </label>
+    <label height="16" name="sectxt2" width="22" x="175" y="118" size="8"
+     >sec
+    </label>
+    <label height="16" name="sectxt1" width="22" x="175" y="56" size="8"
+     >sec
+    </label>
+
+</view>

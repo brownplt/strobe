@@ -27,8 +27,8 @@ var skyline = boardHeight - 1;
 var serialN = 0;
 
 var boardLoaded = 1;
-var gamePaused = 0;
-var gameStarted = 0;
+var gamePaused = false;
+var gameStarted = false;
 var sayingBye = 0;
 var timerID = null;
 
@@ -172,8 +172,8 @@ function resetGame() /*: -> Void */ {
             }
         }
     }
-    gameStarted = 0;
-    gamePaused = 0;
+    gameStarted = false;
+    gamePaused = false;
     nLines = 0;
     Level = 1;
     infoLines.innerText = nLines;
@@ -190,8 +190,8 @@ function start() /*: -> Void */ {
     }
     getPiece();
     drawPiece();
-    gameStarted = 1;
-    gamePaused = 0;
+    gameStarted = true;
+    gamePaused = false;
     timerID = setTimeout("play()", speed);
     view.caption = GADGET_NAME;
     playMusic();
@@ -222,7 +222,7 @@ function pause() /*: -> Void  */ {
             return;
         }
         clearTimeout(timerID);
-        gamePaused = 1;
+        gamePaused = true;
         view.caption = GADGET_NAME + " (" + strPaused + ")";
         if (options.getValue("tetrisMusic")) {
             tetrisMusic.pause();
@@ -233,7 +233,7 @@ function pause() /*: -> Void  */ {
 function resume() /*: -> Void */ {
     if (boardLoaded && gameStarted && gamePaused) {
         play();
-        gamePaused = 0;
+        gamePaused = false;
         view.caption = GADGET_NAME;
         if (options.getValue("tetrisMusic")) {
             tetrisMusic.play();
@@ -258,7 +258,7 @@ function play() /*: -> Void */ {
             activeU_ = 0;
             activeR_ = 0;
             activeD_ = 0;*/
-            gameStarted = 0;
+            gameStarted = false;
             labelStatus.innerText = strGameOver;
             labelStatus.visible = true;
             btnStart.visible = true;
