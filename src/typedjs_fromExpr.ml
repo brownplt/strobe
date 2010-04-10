@@ -63,7 +63,7 @@ let rec exp (env : env) expr = match expr with
   | ConstExpr (a, c) -> EConst (a, c)
   | HintExpr (p, txt, ArrayExpr (p', [])) -> 
       begin match parse_annotation p txt with
-        | ATyp t -> EEmptyArray (p, t)
+        | ATyp t -> EEmptyArray (p, TRef t)
         | _ -> 
             raise (Not_well_formed (p, "expected the type of array elemtns" ))
       end
