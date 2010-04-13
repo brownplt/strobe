@@ -1,0 +1,52 @@
+<strings>
+  <GADGET_NAME>RSI reminder</GADGET_NAME>
+  <GADGET_DESCRIPTION>Save yourself from the perils of RSI (Repetitive Strain Injuries) by taking breaks!</GADGET_DESCRIPTION>
+  <GADGET_ABOUT_TEXT>RSI reminder
+Give yourself a break (or several)!
+Save yourself from the perils of RSI (Repetitive Strain Injuries) by taking breaks!
+© 2006 Rob Nebeker</GADGET_ABOUT_TEXT>
+<minText> min</minText>
+<secText> sec</secText>
+<takeMBreak>Time for a micro Break! 
+Strech, look around.</takeMBreak>
+<takeRBreak>Time for a Rest Break!
+Get up and walk around.  Move your legs, go get a drink, get up and go somewhere.</takeRBreak>
+<relaxText>Rest for:</relaxText>
+<backToWorkText>Back to Work!</backToWorkText>
+<MBreak>Micro Break</MBreak>
+<RBreak>Rest Break</RBreak>
+<breakText>BREAK!</breakText>
+<willTakeBreak>It's time for a Rest Break!
+Take it now? (No will postpone break </willTakeBreak>
+<takeitnow>Take it now</takeitnow>
+<nextmicrobreakin>Next microbreak in</nextmicrobreakin>
+<nextfullbreakin>Next full break in</nextfullbreakin>
+<microtitletxt>Micro Breaks</microtitletxt>
+<resttitletxt>Rest Breaks</resttitletxt>
+<durationtxt>Break duration</durationtxt>
+<dontcounttxt>Don't count time while I'm idle</dontcounttxt>
+<allowpostponetxt>Allow me to postpone rest breaks for</allowpostponetxt>
+<breaktimetxt>Time between breaks</breaktimetxt>
+
+<tiprest1>Extended full body stretch
+Take your arms out to the sides with the palms facing down. Extend your fingers and  stretch through the elbows. On an exhale rotate your shoulders back and bring the palms facing up. </tiprest1>
+<tiprest2>Releasing the neck
+Shrug the shoulders high up to the ears and then release and drop. Repeat at least 3 times.</tiprest2>
+<tiprest3>Releasing the side of the neck
+Sit forward on the seat of your chair with your feet planted firmly in the floor.  With your right hand reach back to the seat back or the  rear of the seat itself. Extend the torso and drop the chin into the chest. Pull diagonally to the left and place your left hand on the right side of your head, gently pulling the head away from the right shoulder. Hold and breath, stretching from the base of the skull to the shoulder. Repeat to the other side.</tiprest3>
+<tiprest4>Stretching forearms
+Bring your palms together in front of your chest in a prayer position stretching all the fingers fully. Relax your shoulders. Slowly stretch the  heel of your palms down until they are the level of your wrists. If you can do this stretch without discomfort you can increase the stretch by moving the hands over to the right and holding for a few breaths. Repeat to the left. Stretch slowly and carefully, observing the sensations of your forearm and wrist.</tiprest4>
+<tiprest5>Stretching the wrist
+Make fists of your hands and place them, thumb up, on the desk top . Support your lower arm on the desk. Slowly stretch the fist to the right, without  moving your lower arm, and then to the left.</tiprest5>
+<tiprest6>Wrist circles
+Lift your arms off the desk top and make slow circles with your wrist, keeping your hands in closed fists. Circle both directions.</tiprest6>
+<tiprest7>Stretching the fingers
+Place the index finger on the edge of your desk, keeping your wrists straight. Gently push into the desk and hold for a few breaths. Repeat with all the fingers except the thumb.</tiprest7>
+<tiprest8>Stretching the thumb
+Place your right palm on the desk top with your wrist straight. Relax all your fingers. With your left hand slowly stretch the right thumb away from  the forefinger. Hold for a few breaths and then release and do the other hand.</tiprest8>
+<tiprest9>Shaking out tension
+Shake out your wrists and arms, letting them dangle from your shoulders.
+Rotate your shoulders forward and back. </tiprest9>
+<tiprest10>Relax the eyes and breathe
+Turn your head right and left, looking into the far distance with your eye gaze. Close your eyes and take some deep, slow breaths with your belly soft.</tiprest10>
+</strings>
