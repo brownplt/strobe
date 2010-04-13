@@ -1,3 +1,102 @@
+__initnumargs("gadgets/WikipediaSearch_cc/wikipedia_all.js",
+              [3,
+               1,
+               0,
+               0,
+               3,
+               1,
+               1,
+               0,
+               0,
+               2,
+               0,
+               0,
+               0,
+               1,
+               1,
+               1,
+               1,
+               1,
+               0,
+               0,
+               0,
+               1,
+               0,
+               1,
+               0,
+               1,
+               0,
+               0,
+               1,
+               0,
+               0,
+               0,
+               0,
+               0,
+               0,
+               0,
+               3,
+               1,
+               0,
+               0,
+               1,
+               5,
+               0,
+               0,
+               0,
+               0,
+               0,
+               3,
+               0,
+               0,
+               5,
+               1,
+               0,
+               0,
+               0,
+               0,
+               6,
+               3,
+               1,
+               0,
+               1,
+               0,
+               0,
+               0,
+               1,
+               0,
+               0,
+               5,
+               0,
+               0,
+               1,
+               0,
+               0,
+               0,
+               0,
+               1,
+               1,
+               0,
+               1,
+               0,
+               2,
+               0,
+               1,
+               1,
+               0,
+               1,
+               0,
+               1,
+               0,
+               0,
+               2,
+               1,
+               0,
+               0,
+               0,
+               0,
+               1,
+               1]);
 var ExpiringTimer = __typedjs(function  (interval_,
                                          expireAfter_,
                                          callback_)
@@ -23,18 +122,18 @@ var ExpiringTimer = __typedjs(function  (interval_,
                                                        if (callbackNow)
                                                        callback_();
                                                      },
-                                                     arguments.callee,
+                                                     1,
                                                      "ping",
-                                                     "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                     0);
+                                                     "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                     1);
                                 var onTimer = __typedjs(function  ()
                                                         {
                                                           callback_();
                                                         },
-                                                        arguments.callee,
+                                                        1,
                                                         "onTimer",
-                                                        "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                        1);
+                                                        "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                        2);
                                 var onExpireTimer = __typedjs(function  ()
                                                               {
                                                                 expireTimer_ = null;
@@ -44,15 +143,15 @@ var ExpiringTimer = __typedjs(function  (interval_,
                                                                   timer_ = null;
                                                                 };
                                                               },
-                                                              arguments.callee,
+                                                              1,
                                                               "onExpireTimer",
-                                                              "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                              2);
+                                                              "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                              3);
                                 __thisref(this,arguments.callee).ping = ping;
                               },
-                              undefined,
+                              0,
                               "ExpiringTimer",
-                              "gadgets/WikipediaSearch/wikipedia_all.js",
+                              "gadgets/WikipediaSearch_cc/wikipedia_all.js",
                               0);
 var AREA_IMAGE = "images/results_default.png";
 var AREA_LEFT_BORDER = 3;
@@ -87,10 +186,10 @@ var ListBox = __typedjs(function  (parentDivElement_,
                                                     newItem.labelElement = null;
                                                     items_.push(newItem);
                                                   },
-                                                  arguments.callee,
+                                                  1,
                                                   "addItem",
-                                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                  0);
+                                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                  5);
                           var show = __typedjs(function  (selectItem)
                                                {
                                                  shown_ = true;
@@ -106,10 +205,10 @@ var ListBox = __typedjs(function  (parentDivElement_,
                                                  showSelectedItem();
                                                  drawAllVisibleItems();
                                                },
-                                               arguments.callee,
+                                               1,
                                                "show",
-                                               "gadgets/WikipediaSearch/wikipedia_all.js",
-                                               1);
+                                               "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                               6);
                           var hide = __typedjs(function  ()
                                                {
                                                  if (! shown_)
@@ -119,10 +218,10 @@ var ListBox = __typedjs(function  (parentDivElement_,
                                                  parentDivElement_.removeElement(divElement_);
                                                  items_ = [];
                                                },
-                                               arguments.callee,
+                                               1,
                                                "hide",
-                                               "gadgets/WikipediaSearch/wikipedia_all.js",
-                                               2);
+                                               "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                               7);
                           var drawAllVisibleItems = __typedjs(function  ()
                                                               {
                                                                 for (var i = 0; i <= items_.length - 1; i++)
@@ -140,67 +239,67 @@ var ListBox = __typedjs(function  (parentDivElement_,
                                                                   };
                                                                 };
                                                               },
-                                                              arguments.callee,
+                                                              1,
                                                               "drawAllVisibleItems",
-                                                              "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                              3);
+                                                              "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                              8);
                           var setMouseEventsForLabel = __typedjs(function  (element,index)
                                                                  {
                                                                    element.onmouseover = __typedjs(function  ()
                                                                                                    {
                                                                                                      onMouseOverItem(index);
                                                                                                    },
-                                                                                                   arguments.callee,
+                                                                                                   2,
                                                                                                    "element.onmouseover",
-                                                                                                   "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                                                   0);
+                                                                                                   "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                                                   10);
                                                                    element.onmouseout = __typedjs(function  ()
                                                                                                   {
                                                                                                     onMouseOffItem(index);
                                                                                                   },
-                                                                                                  arguments.callee,
+                                                                                                  2,
                                                                                                   "element.onmouseout",
-                                                                                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                                                  1);
+                                                                                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                                                  11);
                                                                    element.onclick = __typedjs(function  ()
                                                                                                {
                                                                                                  onMouseClickItem(index);
                                                                                                },
-                                                                                               arguments.callee,
+                                                                                               2,
                                                                                                "element.onclick",
-                                                                                               "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                                               2);
+                                                                                               "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                                               12);
                                                                  },
-                                                                 arguments.callee,
+                                                                 1,
                                                                  "setMouseEventsForLabel",
-                                                                 "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                 4);
+                                                                 "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                 9);
                           var onMouseOverItem = __typedjs(function  (index)
                                                           {
                                                             hoveredItem_ = index;
                                                             showHoveredItem();
                                                           },
-                                                          arguments.callee,
+                                                          1,
                                                           "onMouseOverItem",
-                                                          "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                          5);
+                                                          "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                          13);
                           var onMouseOffItem = __typedjs(function  (index)
                                                          {
                                                            hoveredItem_ = null;
                                                            hideHoveredItem();
                                                          },
-                                                         arguments.callee,
+                                                         1,
                                                          "onMouseOffItem",
-                                                         "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                         6);
+                                                         "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                         14);
                           var onMouseClickItem = __typedjs(function  (index)
                                                            {
                                                              acceptedCallback_(items_[index].displayValue);
                                                            },
-                                                           arguments.callee,
+                                                           1,
                                                            "onMouseClickItem",
-                                                           "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                           7);
+                                                           "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                           15);
                           var getYPositionOfItem = __typedjs(function  (index)
                                                              {
                                                                var indexPosition = index - firstVisibleItem_;
@@ -208,18 +307,18 @@ var ListBox = __typedjs(function  (parentDivElement_,
                                                                return null;
                                                                return indexPosition * ITEM_HEIGHT;
                                                              },
-                                                             arguments.callee,
+                                                             1,
                                                              "getYPositionOfItem",
-                                                             "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                             8);
+                                                             "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                             16);
                           var getXPositionOfItem = __typedjs(function  (index)
                                                              {
                                                                return 0;
                                                              },
-                                                             arguments.callee,
+                                                             1,
                                                              "getXPositionOfItem",
-                                                             "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                             9);
+                                                             "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                             17);
                           var showSelectedItem = __typedjs(function  ()
                                                            {
                                                              if (selectedItem_ == null)
@@ -242,28 +341,28 @@ var ListBox = __typedjs(function  (parentDivElement_,
                                                              selectorElement_.y = getYPositionOfItem(selectedItem_);
                                                              selectorElement_.visible = true;
                                                            },
-                                                           arguments.callee,
+                                                           1,
                                                            "showSelectedItem",
-                                                           "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                           10);
+                                                           "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                           18);
                           var showHoveredItem = __typedjs(function  ()
                                                           {
                                                             hoverElement_.x = 0;
                                                             hoverElement_.y = getYPositionOfItem(hoveredItem_);
                                                             hoverElement_.visible = true;
                                                           },
-                                                          arguments.callee,
+                                                          1,
                                                           "showHoveredItem",
-                                                          "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                          11);
+                                                          "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                          19);
                           var hideHoveredItem = __typedjs(function  ()
                                                           {
                                                             hoverElement_.visible = false;
                                                           },
-                                                          arguments.callee,
+                                                          1,
                                                           "hideHoveredItem",
-                                                          "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                          12);
+                                                          "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                          20);
                           var notifyKeyPress = __typedjs(function  (keyCode)
                                                          {
                                                            if (! shown_)
@@ -311,19 +410,19 @@ var ListBox = __typedjs(function  (parentDivElement_,
                                                                                                    };
                                                            return true;
                                                          },
-                                                         arguments.callee,
+                                                         1,
                                                          "notifyKeyPress",
-                                                         "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                         13);
+                                                         "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                         21);
                           __thisref(this,arguments.callee).addItem = addItem;
                           __thisref(this,arguments.callee).notifyKeyPress = notifyKeyPress;
                           __thisref(this,arguments.callee).show = show;
                           __thisref(this,arguments.callee).hide = hide;
                         },
-                        undefined,
+                        0,
                         "ListBox",
-                        "gadgets/WikipediaSearch/wikipedia_all.js",
-                        1);
+                        "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                        4);
 var FIELD_COLOR_FOCUS = "#F7F7F7";
 var FIELD_COLOR_NOFOCUS = "#F2F2F2";
 var FIELD_IMAGE_FOCUS = "images/field_focus.png";
@@ -357,10 +456,10 @@ var onOpen = __typedjs(function  ()
                                                         SAYT_INTERVAL_THROTTLE,
                                                         onNewQuery]);
                        },
-                       undefined,
+                       0,
                        "onOpen",
-                       "gadgets/WikipediaSearch/wikipedia_all.js",
-                       2);
+                       "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                       22);
 var onDisplayTargetChange = __typedjs(function  (displayTarget)
                                       {
                                         if (displayTarget == gddTargetSidebar)
@@ -386,10 +485,10 @@ var onDisplayTargetChange = __typedjs(function  (displayTarget)
                                                                            view.height = resultsdivparent.y + resultsdivparent.height;
                                                                          };
                                                                   },
-                                                                  arguments.callee,
+                                                                  1,
                                                                   "",
-                                                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                  0),
+                                                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                  24),
                                                         1);
                                         if (throbber_ != null)
                                         {
@@ -443,10 +542,10 @@ var onDisplayTargetChange = __typedjs(function  (displayTarget)
                                           onNewQuery();
                                         };
                                       },
-                                      undefined,
+                                      0,
                                       "onDisplayTargetChange",
-                                      "gadgets/WikipediaSearch/wikipedia_all.js",
-                                      3);
+                                      "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                      23);
 var updateFieldFocus = __typedjs(function  (hasFocus)
                                  {
                                    if (hasFocus)
@@ -463,20 +562,20 @@ var updateFieldFocus = __typedjs(function  (hasFocus)
                                           textbox_sidebar.background = FIELD_COLOR_NOFOCUS_SIDEBAR;
                                         };
                                  },
-                                 undefined,
+                                 0,
                                  "updateFieldFocus",
-                                 "gadgets/WikipediaSearch/wikipedia_all.js",
-                                 4);
+                                 "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                 25);
 var showArticleDetails = __typedjs(function  ()
                                    {
                                      if (articleURL_ == null)
                                      return;
                                      openURL(articleURL_);
                                    },
-                                   undefined,
+                                   0,
                                    "showArticleDetails",
-                                   "gadgets/WikipediaSearch/wikipedia_all.js",
-                                   5);
+                                   "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                   26);
 var onSearchDropClick = __typedjs(function  ()
                                   {
                                     if (! historyShown_)
@@ -489,10 +588,10 @@ var onSearchDropClick = __typedjs(function  ()
                                            historyShown_ = false;
                                          };
                                   },
-                                  undefined,
+                                  0,
                                   "onSearchDropClick",
-                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                  6);
+                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                  27);
 var onSelectedHistory = __typedjs(function  (text)
                                   {
                                     historyShown_ = false;
@@ -505,19 +604,19 @@ var onSelectedHistory = __typedjs(function  (text)
                                            textbox.value = text;
                                          };
                                   },
-                                  undefined,
+                                  0,
                                   "onSelectedHistory",
-                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                  7);
+                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                  28);
 var onTextBoxChange = __typedjs(function  ()
                                 {
                                   if (! inSidebar_)
                                   searchAsYouTypeTimer_.ping(false);
                                 },
-                                undefined,
+                                0,
                                 "onTextBoxChange",
-                                "gadgets/WikipediaSearch/wikipedia_all.js",
-                                8);
+                                "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                29);
 var onTextBoxKeyPress = __typedjs(function  ()
                                   {
                                     if (event.keyCode == 27)
@@ -536,10 +635,10 @@ var onTextBoxKeyPress = __typedjs(function  ()
                                            };
                                     };
                                   },
-                                  undefined,
+                                  0,
                                   "onTextBoxKeyPress",
-                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                  9);
+                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                  30);
 var onTextBoxClick = __typedjs(function  ()
                                {
                                  if (historyShown_)
@@ -548,26 +647,26 @@ var onTextBoxClick = __typedjs(function  ()
                                    historyShown_ = false;
                                  };
                                },
-                               undefined,
+                               0,
                                "onTextBoxClick",
-                               "gadgets/WikipediaSearch/wikipedia_all.js",
-                               10);
+                               "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                               31);
 var onTextBoxFocusIn = __typedjs(function  ()
                                  {
                                    updateFieldFocus(true);
                                  },
-                                 undefined,
+                                 0,
                                  "onTextBoxFocusIn",
-                                 "gadgets/WikipediaSearch/wikipedia_all.js",
-                                 11);
+                                 "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                 32);
 var onTextBoxFocusOut = __typedjs(function  ()
                                   {
                                     updateFieldFocus(false);
                                   },
-                                  undefined,
+                                  0,
                                   "onTextBoxFocusOut",
-                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                  12);
+                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                  33);
 var onNewQuery = __typedjs(function  ()
                            {
                              var searchText = inSidebar_ ? textbox_sidebar.value : textbox.value;
@@ -598,19 +697,19 @@ var onNewQuery = __typedjs(function  ()
                              curQuery_ = __new(WikipediaQuery,[]);
                              articleURL_ = curQuery_.query(lastQueryText_,onQueryReceived);
                            },
-                           undefined,
+                           0,
                            "onNewQuery",
-                           "gadgets/WikipediaSearch/wikipedia_all.js",
-                           13);
+                           "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                           34);
 var setNoResults = __typedjs(function  ()
                              {
                                articleDetails_.hide();
                                throbber_.hide();
                              },
-                             undefined,
+                             0,
                              "setNoResults",
-                             "gadgets/WikipediaSearch/wikipedia_all.js",
-                             14);
+                             "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                             35);
 var onQueryReceived = __typedjs(function  (text,
                                            imageURL,
                                            articleURL)
@@ -652,10 +751,10 @@ var onQueryReceived = __typedjs(function  (text,
                                   history_.addHistoryItem(lastQueryText_);
                                   articleDetails_.show(text,imageURL,lastQueryText_);
                                 },
-                                undefined,
+                                0,
                                 "onQueryReceived",
-                                "gadgets/WikipediaSearch/wikipedia_all.js",
-                                15);
+                                "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                36);
 var onSelectedDisambiguation = __typedjs(function  (value)
                                          {
                                            if (value != null)
@@ -671,26 +770,26 @@ var onSelectedDisambiguation = __typedjs(function  (value)
                                            };
                                            disambiguation_ = null;
                                          },
-                                         undefined,
+                                         0,
                                          "onSelectedDisambiguation",
-                                         "gadgets/WikipediaSearch/wikipedia_all.js",
-                                         16);
+                                         "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                         37);
 var onDetailsLoaded = __typedjs(function  ()
                                 {
                                   throbber_.hide();
                                 },
-                                undefined,
+                                0,
                                 "onDetailsLoaded",
-                                "gadgets/WikipediaSearch/wikipedia_all.js",
-                                17);
+                                "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                38);
 var onShowArticle = __typedjs(function  ()
                               {
                                 showArticleDetails();
                               },
-                              undefined,
+                              0,
                               "onShowArticle",
-                              "gadgets/WikipediaSearch/wikipedia_all.js",
-                              18);
+                              "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                              39);
 var openURL = __typedjs(function  (url)
                         {
                           try
@@ -702,10 +801,10 @@ var openURL = __typedjs(function  (url)
                                       return;
                                     };
                         },
-                        undefined,
+                        0,
                         "openURL",
-                        "gadgets/WikipediaSearch/wikipedia_all.js",
-                        19);
+                        "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                        40);
 var SimpleAnimation = __typedjs(function  (animateCallback_,
                                            startValue_,
                                            endValue_,
@@ -723,10 +822,10 @@ var SimpleAnimation = __typedjs(function  (animateCallback_,
                                                           timer_ = setTimeout(onAnimationComplete,
                                                                               duration_);
                                                         },
-                                                        arguments.callee,
+                                                        1,
                                                         "start",
-                                                        "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                        0);
+                                                        "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                        42);
                                   var stop = __typedjs(function  ()
                                                        {
                                                          if (animation_ != null)
@@ -734,36 +833,36 @@ var SimpleAnimation = __typedjs(function  (animateCallback_,
                                                          if (timer_ != null)
                                                          view.clearInterval(timer_);
                                                        },
-                                                       arguments.callee,
+                                                       1,
                                                        "stop",
-                                                       "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                       1);
+                                                       "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                       43);
                                   var onAnimate = __typedjs(function  ()
                                                             {
                                                               if (timer_ == null)
                                                               return;
                                                               animateCallback_(event.value);
                                                             },
-                                                            arguments.callee,
+                                                            1,
                                                             "onAnimate",
-                                                            "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                            2);
+                                                            "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                            44);
                                   var onAnimationComplete = __typedjs(function  ()
                                                                       {
                                                                         stop();
                                                                         completedCallback_();
                                                                       },
-                                                                      arguments.callee,
+                                                                      1,
                                                                       "onAnimationComplete",
-                                                                      "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                      3);
+                                                                      "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                      45);
                                   __thisref(this,arguments.callee).start = start;
                                   __thisref(this,arguments.callee).stop = stop;
                                 },
-                                undefined,
+                                0,
                                 "SimpleAnimation",
-                                "gadgets/WikipediaSearch/wikipedia_all.js",
-                                20);
+                                "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                41);
 var SimpleHTTPRequest = __typedjs(function  ()
                                   {
                                     var getStream_ = false;
@@ -810,10 +909,10 @@ var SimpleHTTPRequest = __typedjs(function  ()
                                                                           return;
                                                                         };
                                                             },
-                                                            arguments.callee,
+                                                            1,
                                                             "request",
-                                                            "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                            0);
+                                                            "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                            47);
                                     var stop = __typedjs(function  ()
                                                          {
                                                            if (request_ == null)
@@ -822,10 +921,10 @@ var SimpleHTTPRequest = __typedjs(function  ()
                                                            request_.abort();
                                                            request_ = null;
                                                          },
-                                                         arguments.callee,
+                                                         1,
                                                          "stop",
-                                                         "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                         1);
+                                                         "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                         48);
                                     var onData = __typedjs(function  ()
                                                            {
                                                              if (stop_)
@@ -848,17 +947,17 @@ var SimpleHTTPRequest = __typedjs(function  ()
                                                                   };
                                                              request_ = null;
                                                            },
-                                                           arguments.callee,
+                                                           1,
                                                            "onData",
-                                                           "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                           2);
+                                                           "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                           49);
                                     __thisref(this,arguments.callee).request = request;
                                     __thisref(this,arguments.callee).stop = stop;
                                   },
-                                  undefined,
+                                  0,
                                   "SimpleHTTPRequest",
-                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                  21);
+                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                  46);
 var Throbber = __typedjs(function  (ownerDiv,
                                     imagePrefix,
                                     imageSuffix,
@@ -876,10 +975,10 @@ var Throbber = __typedjs(function  (ownerDiv,
                                                             {
                                                               return imagePrefix_ + frame + imageSuffix_;
                                                             },
-                                                            arguments.callee,
+                                                            1,
                                                             "getImageFilename",
-                                                            "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                            0);
+                                                            "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                            51);
                            var getNextFrame = __typedjs(function  ()
                                                         {
                                                           curFrame_++;
@@ -887,10 +986,10 @@ var Throbber = __typedjs(function  (ownerDiv,
                                                           curFrame_ = 1;
                                                           return curFrame_;
                                                         },
-                                                        arguments.callee,
+                                                        1,
                                                         "getNextFrame",
-                                                        "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                        1);
+                                                        "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                        52);
                            var show = __typedjs(function  ()
                                                 {
                                                   curFrame_ = 0;
@@ -901,10 +1000,10 @@ var Throbber = __typedjs(function  (ownerDiv,
                                                     onAnimate();
                                                   };
                                                 },
-                                                arguments.callee,
+                                                1,
                                                 "show",
-                                                "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                2);
+                                                "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                53);
                            var hide = __typedjs(function  ()
                                                 {
                                                   element_.visible = false;
@@ -914,25 +1013,25 @@ var Throbber = __typedjs(function  (ownerDiv,
                                                     timer_ = null;
                                                   };
                                                 },
-                                                arguments.callee,
+                                                1,
                                                 "hide",
-                                                "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                3);
+                                                "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                54);
                            var onAnimate = __typedjs(function  ()
                                                      {
                                                        element_.src = getImageFilename(getNextFrame());
                                                      },
-                                                     arguments.callee,
+                                                     1,
                                                      "onAnimate",
-                                                     "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                     4);
+                                                     "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                     55);
                            __thisref(this,arguments.callee).show = show;
                            __thisref(this,arguments.callee).hide = hide;
                          },
-                         undefined,
+                         0,
                          "Throbber",
-                         "gadgets/WikipediaSearch/wikipedia_all.js",
-                         22);
+                         "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                         50);
 var ANIMATION_SLIDE_TIME = 200;
 var DETAILS_IMAGE_WIDTH_MAX = 82;
 var DETAILS_IMAGE_HEIGHT_MAX = 150;
@@ -1020,19 +1119,19 @@ var DetailsController = __typedjs(function  (mainDivElement_,
                                                                   detailsLoadedCallback_();
                                                                 };
                                                          },
-                                                         arguments.callee,
+                                                         1,
                                                          "show",
-                                                         "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                         0);
+                                                         "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                         57);
                                     var onDetailsViewFeedback = __typedjs(function  (detailsViewFlags)
                                                                           {
                                                                             if (detailsViewFlags == gddDetailsViewFlagToolbarOpen)
                                                                             showArticleCallback_();
                                                                           },
-                                                                          arguments.callee,
+                                                                          1,
                                                                           "onDetailsViewFeedback",
-                                                                          "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                          1);
+                                                                          "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                          58);
                                     var hide = __typedjs(function  ()
                                                          {
                                                            curArticleText_ = null;
@@ -1057,18 +1156,18 @@ var DetailsController = __typedjs(function  (mainDivElement_,
                                                            else {
                                                                 };
                                                          },
-                                                         arguments.callee,
+                                                         1,
                                                          "hide",
-                                                         "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                         2);
+                                                         "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                         59);
                                     var onAnimateSlide = __typedjs(function  (value)
                                                                    {
                                                                      mainDivElement_.y = value;
                                                                    },
-                                                                   arguments.callee,
+                                                                   1,
                                                                    "onAnimateSlide",
-                                                                   "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                   3);
+                                                                   "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                   60);
                                     var resizeImageElement = __typedjs(function  ()
                                                                        {
                                                                          var heightRatio = imageElement_.srcHeight / DETAILS_IMAGE_HEIGHT_MAX;
@@ -1097,18 +1196,18 @@ var DetailsController = __typedjs(function  (mainDivElement_,
                                                                                 imageElement_.height = newHeight;
                                                                               };
                                                                        },
-                                                                       arguments.callee,
+                                                                       1,
                                                                        "resizeImageElement",
-                                                                       "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                       4);
+                                                                       "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                       61);
                                     var onOpenAnimationCompleted = __typedjs(function  ()
                                                                              {
                                                                                animation_ = null;
                                                                              },
-                                                                             arguments.callee,
+                                                                             1,
                                                                              "onOpenAnimationCompleted",
-                                                                             "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                             5);
+                                                                             "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                             62);
                                     var onCloseAnimationCompleted = __typedjs(function  ()
                                                                               {
                                                                                 animation_ = null;
@@ -1116,10 +1215,10 @@ var DetailsController = __typedjs(function  (mainDivElement_,
                                                                                 textElement_.innerText = "";
                                                                                 mainDivElement_.visible = false;
                                                                               },
-                                                                              arguments.callee,
+                                                                              1,
                                                                               "onCloseAnimationCompleted",
-                                                                              "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                              6);
+                                                                              "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                              63);
                                     var onImageReceived = __typedjs(function  (data)
                                                                     {
                                                                       imageRequest_ = null;
@@ -1132,33 +1231,33 @@ var DetailsController = __typedjs(function  (mainDivElement_,
                                                                       resizeImageElement();
                                                                       imageElement_.visible = true;
                                                                     },
-                                                                    arguments.callee,
+                                                                    1,
                                                                     "onImageReceived",
-                                                                    "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                    7);
+                                                                    "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                    64);
                                     var onPopoutClick = __typedjs(function  ()
                                                                   {
                                                                     showArticleCallback_();
                                                                   },
-                                                                  arguments.callee,
+                                                                  1,
                                                                   "onPopoutClick",
-                                                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                  8);
+                                                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                  65);
                                     var onDetailsViewTitleClick = __typedjs(function  ()
                                                                             {
                                                                               showArticleCallback_();
                                                                             },
-                                                                            arguments.callee,
+                                                                            1,
                                                                             "onDetailsViewTitleClick",
-                                                                            "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                            9);
+                                                                            "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                            66);
                                     __thisref(this,arguments.callee).show = show;
                                     __thisref(this,arguments.callee).hide = hide;
                                   },
-                                  undefined,
+                                  0,
                                   "DetailsController",
-                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                  23);
+                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                  56);
 var DISAMBIGUATION_DETAILS_HTML = DEFAULT_HTML_STYLE + "<style type=\"text/css\">" + "#vertmenu {" + "  font-family: Verdana, Arial, Helvetica, sans-serif;" + "  font-size: 11px;" + "  color: #666666;" + "  width: 100%;" + "  padding: 0px;" + "  margin: 0px;" + "}" + "#vertmenu ul {" + "  list-style: none;" + "  margin: 0px;" + "  padding: 0px;" + "  border: none;" + "}" + "#vertmenu ul li {" + "  margin: 0px;" + "  padding: 0px;" + "}" + "#vertmenu ul li a {" + "  font-size: 80%;" + "  display: block;" + "  padding: 2px 0px 2px 7px;" + "  text-decoration: none;" + "  color: #008800;" + "  width:100%;" + "}" + "#vertmenu ul li a:hover, #vertmenu ul li a:focus {" + "  color: #000000;" + "  background-color: #eeeeee;" + "}" + "</style>" + "<body>" + "<div align=\"center\">" + "<div id=\"vertmenu\" align=\"left\">" + DISAMBIGUATION + "<ul>" + "[MENUITEMS]";
 "</ul>" + "</div>" + "</div>" + "</body>";
 var DISAMBIGUATION_DETAILS_HTML_ITEM = "<li><a href=\"\" onclick=\"window.external.selectedItem(\'[TEXT]\'); return false;\">&raquo; [TEXT]</a></li>";
@@ -1176,20 +1275,20 @@ var WikipediaDisambiguation = __typedjs(function  (disambiguationDiv_,
                                             textboxOnKeyDown_ = __typedjs(function  ()
                                                                           {
                                                                           },
-                                                                          arguments.callee,
+                                                                          1,
                                                                           "textboxOnKeyDown_",
-                                                                          "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                          0);
+                                                                          "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                          68);
                                           };
                                           if (textboxOnKeyPress_ == null)
                                           {
                                             textboxOnKeyPress_ = __typedjs(function  ()
                                                                            {
                                                                            },
-                                                                           arguments.callee,
+                                                                           1,
                                                                            "textboxOnKeyPress_",
-                                                                           "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                           1);
+                                                                           "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                           69);
                                           };
                                           var show = __typedjs(function  (arrayOfItems)
                                                                {
@@ -1208,10 +1307,10 @@ var WikipediaDisambiguation = __typedjs(function  (disambiguationDiv_,
                                                                                           textboxElement_.onKeyPress = __typedjs(function  ()
                                                                                                                                  {
                                                                                                                                  },
-                                                                                                                                 arguments.callee,
+                                                                                                                                 3,
                                                                                                                                  "textboxElement_.onKeyPress",
-                                                                                                                                 "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                                                                                 0);
+                                                                                                                                 "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                                                                                 72);
                                                                                         }
                                                                                         else {
                                                                                                var itemsHtml = "";
@@ -1240,16 +1339,16 @@ var WikipediaDisambiguation = __typedjs(function  (disambiguationDiv_,
                                                                                                                             onDisambiguationDetailsViewFeedback);
                                                                                              };
                                                                                       },
-                                                                                      arguments.callee,
+                                                                                      2,
                                                                                       "",
-                                                                                      "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                                      0),
+                                                                                      "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                                      71),
                                                                             1);
                                                                },
-                                                               arguments.callee,
+                                                               1,
                                                                "show",
-                                                               "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                               2);
+                                                               "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                               70);
                                           var hide = __typedjs(function  ()
                                                                {
                                                                  setTimeout(__typedjs(function  ()
@@ -1262,67 +1361,67 @@ var WikipediaDisambiguation = __typedjs(function  (disambiguationDiv_,
                                                                                         textboxElement_.onKeyDown = textboxOnKeyDown_;
                                                                                         textboxElement_.onKeyPress = textboxOnKeyPress_;
                                                                                       },
-                                                                                      arguments.callee,
+                                                                                      2,
                                                                                       "",
-                                                                                      "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                                      0),
+                                                                                      "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                                      74),
                                                                             1);
                                                                },
-                                                               arguments.callee,
+                                                               1,
                                                                "hide",
-                                                               "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                               3);
+                                                               "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                               73);
                                           var onSelectedItem = __typedjs(function  (itemText)
                                                                          {
                                                                            selectedDisambiguationItemCallback_(itemText);
                                                                          },
-                                                                         arguments.callee,
+                                                                         1,
                                                                          "onSelectedItem",
-                                                                         "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                         4);
+                                                                         "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                         75);
                                           var onDisambiguationDetailsViewFeedback = __typedjs(function  (detailsViewFlags)
                                                                                               {
                                                                                                 if (detailsViewFlags == 0)
                                                                                                 selectedDisambiguationItemCallback_(null);
                                                                                               },
-                                                                                              arguments.callee,
+                                                                                              1,
                                                                                               "onDisambiguationDetailsViewFeedback",
-                                                                                              "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                                              5);
+                                                                                              "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                                              76);
                                           var onTextBoxKeyDown = __typedjs(function  ()
                                                                            {
                                                                              if (listbox_.notifyKeyPress(event.keyCode))
                                                                              event.returnValue = false;
                                                                            },
-                                                                           arguments.callee,
+                                                                           1,
                                                                            "onTextBoxKeyDown",
-                                                                           "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                           6);
+                                                                           "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                           77);
                                           var onAcceptedDisambiguation = __typedjs(function  (value)
                                                                                    {
                                                                                      hide();
                                                                                      selectedDisambiguationItemCallback_(value);
                                                                                    },
-                                                                                   arguments.callee,
+                                                                                   1,
                                                                                    "onAcceptedDisambiguation",
-                                                                                   "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                                   7);
+                                                                                   "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                                   78);
                                           var onCancelledDisambiguation = __typedjs(function  ()
                                                                                     {
                                                                                       hide();
                                                                                       selectedDisambiguationItemCallback_(null);
                                                                                     },
-                                                                                    arguments.callee,
+                                                                                    1,
                                                                                     "onCancelledDisambiguation",
-                                                                                    "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                                    8);
+                                                                                    "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                                    79);
                                           __thisref(this,arguments.callee).show = show;
                                           __thisref(this,arguments.callee).hide = hide;
                                         },
-                                        undefined,
+                                        0,
                                         "WikipediaDisambiguation",
-                                        "gadgets/WikipediaSearch/wikipedia_all.js",
-                                        24);
+                                        "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                        67);
 var HISTORY_OPTIONS_NAME = "history";
 var MAX_HISTORY_ENTRIES = 5;
 var HISTORY_DETAILS_HTML = DEFAULT_HTML_STYLE + "<style type=\"text/css\">" + "#vertmenu {" + "  font-family: Verdana, Arial, Helvetica, sans-serif;" + "  font-size: 11px;" + "  color: #666666;" + "  width: 100%;" + "  padding: 0px;" + "  margin: 0px;" + "}" + "#vertmenu ul {" + "  list-style: none;" + "  margin: 0px;" + "  padding: 0px;" + "  border: none;" + "}" + "#vertmenu ul li {" + "  margin: 0px;" + "  padding: 0px;" + "}" + "#vertmenu ul li a {" + "  font-size: 80%;" + "  display: block;" + "  padding: 2px 0px 2px 7px;" + "  text-decoration: none;" + "  color: #008800;" + "  width:100%;" + "}" + "#vertmenu ul li a:hover, #vertmenu ul li a:focus {" + "  color: #000000;" + "  background-color: #eeeeee;" + "}" + "</style>" + "<body>" + "<div id=\"vertmenu\">" + RECENT_SEARCHES + "<ul>" + "[MENUITEMS]";
@@ -1385,25 +1484,25 @@ var WikipediaHistory = __typedjs(function  (historyDiv_,
                                                                                               onHistoryDetailsViewFeedback);
                                                                };
                                                         },
-                                                        arguments.callee,
+                                                        1,
                                                         "show",
-                                                        "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                        0);
+                                                        "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                        81);
                                    var onSelectedItem = __typedjs(function  (itemText)
                                                                   {
                                                                     selectedHistoryItemCallback_(itemText);
                                                                   },
-                                                                  arguments.callee,
+                                                                  1,
                                                                   "onSelectedItem",
-                                                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                  1);
+                                                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                  82);
                                    var onHistoryDetailsViewFeedback = __typedjs(function  (detailsViewFlags)
                                                                                 {
                                                                                 },
-                                                                                arguments.callee,
+                                                                                1,
                                                                                 "onHistoryDetailsViewFeedback",
-                                                                                "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                                2);
+                                                                                "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                                83);
                                    var hide = __typedjs(function  ()
                                                         {
                                                           if (! inSidebar_)
@@ -1415,27 +1514,27 @@ var WikipediaHistory = __typedjs(function  (historyDiv_,
                                                             };
                                                           };
                                                         },
-                                                        arguments.callee,
+                                                        1,
                                                         "hide",
-                                                        "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                        3);
+                                                        "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                        84);
                                    var onAcceptedEntry = __typedjs(function  (text)
                                                                    {
                                                                      hide();
                                                                      selectedHistoryItemCallback_(text);
                                                                    },
-                                                                   arguments.callee,
+                                                                   1,
                                                                    "onAcceptedEntry",
-                                                                   "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                   4);
+                                                                   "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                   85);
                                    var onCancelledEntry = __typedjs(function  ()
                                                                     {
                                                                       hide();
                                                                     },
-                                                                    arguments.callee,
+                                                                    1,
                                                                     "onCancelledEntry",
-                                                                    "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                    5);
+                                                                    "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                    86);
                                    var addHistoryItem = __typedjs(function  (text)
                                                                   {
                                                                     text = text.replace(/\|/g," ");
@@ -1449,27 +1548,27 @@ var WikipediaHistory = __typedjs(function  (historyDiv_,
                                                                     items_.push(text);
                                                                     saveHistoryItems();
                                                                   },
-                                                                  arguments.callee,
+                                                                  1,
                                                                   "addHistoryItem",
-                                                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                  6);
+                                                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                  87);
                                    var saveHistoryItems = __typedjs(function  ()
                                                                     {
                                                                       options.putValue(HISTORY_OPTIONS_NAME,
                                                                                        items_.join("|"));
                                                                     },
-                                                                    arguments.callee,
+                                                                    1,
                                                                     "saveHistoryItems",
-                                                                    "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                    7);
+                                                                    "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                    88);
                                    __thisref(this,arguments.callee).show = show;
                                    __thisref(this,arguments.callee).hide = hide;
                                    __thisref(this,arguments.callee).addHistoryItem = addHistoryItem;
                                  },
-                                 undefined,
+                                 0,
                                  "WikipediaHistory",
-                                 "gadgets/WikipediaSearch/wikipedia_all.js",
-                                 25);
+                                 "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                 80);
 var WikipediaQuery = __typedjs(function  ()
                                {
                                  var QUERY_URL = "http://en.wikipedia.org/wiki/Special:Search/";
@@ -1510,10 +1609,10 @@ var WikipediaQuery = __typedjs(function  ()
                                                          articleURL_ = QUERY_URL + safeName;
                                                          return articleURL_;
                                                        },
-                                                       arguments.callee,
+                                                       1,
                                                        "query",
-                                                       "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                       0);
+                                                       "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                       90);
                                  var onReceivedWebpage = __typedjs(function  (text)
                                                                    {
                                                                      request_ = null;
@@ -1567,10 +1666,10 @@ var WikipediaQuery = __typedjs(function  ()
                                                                                              imageURL,
                                                                                              articleURL_);
                                                                    },
-                                                                   arguments.callee,
+                                                                   1,
                                                                    "onReceivedWebpage",
-                                                                   "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                   1);
+                                                                   "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                   91);
                                  var getArticleFirstParagraph = __typedjs(function  ()
                                                                           {
                                                                             var result = null;
@@ -1606,10 +1705,10 @@ var WikipediaQuery = __typedjs(function  ()
                                                                             };
                                                                             return "";
                                                                           },
-                                                                          arguments.callee,
+                                                                          1,
                                                                           "getArticleFirstParagraph",
-                                                                          "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                          2);
+                                                                          "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                          92);
                                  var getFirstImageURL = __typedjs(function  ()
                                                                   {
                                                                     var result = null;
@@ -1638,19 +1737,19 @@ var WikipediaQuery = __typedjs(function  ()
                                                                     };
                                                                     return null;
                                                                   },
-                                                                  arguments.callee,
+                                                                  1,
                                                                   "getFirstImageURL",
-                                                                  "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                  3);
+                                                                  "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                  93);
                                  var stop = __typedjs(function  ()
                                                       {
                                                         if (request_ != null)
                                                         request_.stop();
                                                       },
-                                                      arguments.callee,
+                                                      1,
                                                       "stop",
-                                                      "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                      4);
+                                                      "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                      94);
                                  var getDisambiguationArray = __typedjs(function  ()
                                                                         {
                                                                           var articleTitles = [];
@@ -1685,10 +1784,10 @@ var WikipediaQuery = __typedjs(function  ()
                                                                           };
                                                                           return articleTitles.sort();
                                                                         },
-                                                                        arguments.callee,
+                                                                        1,
                                                                         "getDisambiguationArray",
-                                                                        "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                        5);
+                                                                        "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                        95);
                                  var htmlToPlainText = __typedjs(function  (item)
                                                                  {
                                                                    if (item)
@@ -1713,19 +1812,19 @@ var WikipediaQuery = __typedjs(function  ()
                                                                           return "";
                                                                         };
                                                                  },
-                                                                 arguments.callee,
+                                                                 1,
                                                                  "htmlToPlainText",
-                                                                 "gadgets/WikipediaSearch/wikipedia_all.js",
-                                                                 6);
+                                                                 "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                                                                 96);
                                  __thisref(this,arguments.callee).query = query;
                                  __thisref(this,arguments.callee).stop = stop;
                                  __thisref(this,
                                            arguments.callee).getDisambiguationArray = getDisambiguationArray;
                                },
-                               undefined,
+                               0,
                                "WikipediaQuery",
-                               "gadgets/WikipediaSearch/wikipedia_all.js",
-                               26);
+                               "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                               89);
 var assert = __typedjs(function  (cond)
                        {
                          if (! cond)
@@ -1733,7 +1832,7 @@ var assert = __typedjs(function  (cond)
                            throw 0;
                          };
                        },
-                       undefined,
+                       0,
                        "assert",
-                       "gadgets/WikipediaSearch/wikipedia_all.js",
-                       27);
+                       "gadgets/WikipediaSearch_cc/wikipedia_all.js",
+                       97);

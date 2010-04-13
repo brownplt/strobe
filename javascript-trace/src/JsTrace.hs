@@ -4,20 +4,22 @@ import BrownPLT.JavaScript
 import System.Console.GetOpt
 import System.IO
 import System.Environment
-import Text.ParserCombinators.Parsec.Pos (SourcePos)
+import Text.ParserCombinators.Parsec.Pos (SourcePos, initialPos)
 
 import Control.Monad.State
 
 
 --state is: (current position, whether we're in a function,
 --           a hint for the name of a function,
---           filename of the code we're compiling)        
-type CounterM a = State (Int, Bool, String, String) a
+--           filename of the code we're compiling)      
+--           an array representing the # of named args in each function  
+type CounterM a = State (Int, Int, String, String, [Int]) a
 
 
 funcWrapperName = "__typedjs"
 newWrapperName = "__new"
 thisWrapperName = "__thisref"
+initNumArgsName = "__initnumargs"
 
 prop :: (Prop SourcePos, Expression SourcePos) 
      -> CounterM (Prop SourcePos, Expression SourcePos) 
@@ -56,11 +58,11 @@ caseClause (CaseDefault p ss) = do
 varDecl :: VarDecl SourcePos -> CounterM (VarDecl SourcePos)
 varDecl v@(VarDecl p name mEx) = case mEx of
   Just e -> do
-    (a, b, nameHint, fn) <- get
-    put (a, b, unId name, fn)
+    (a, b, nameHint, fn, numArgsList) <- get
+    put (a, b, unId name, fn, numArgsList)
     e' <- expr e
-    (a', b', _, fn) <- get
-    put (a', b', nameHint, fn)
+    (a', b', _, fn, numArgsList) <- get
+    put (a', b', nameHint, fn, numArgsList)
     return $ VarDecl p name (Just e')
   Nothing -> return v
   
@@ -130,11 +132,11 @@ expr e = case e of
     return $ CondExpr p c' t' f'
   AssignExpr p op lval e -> do
     lval' <- lvalue lval
-    (a,b,nameHint, fn) <- get
-    put (a,b,lvalue2str lval, fn)
+    (a,b,nameHint, fn, numArgsList) <- get
+    put (a,b,lvalue2str lval, fn, numArgsList)
     e' <- expr e
-    (a',b',_, fn) <- get
-    put (a',b',nameHint, fn)
+    (a',b',_, fn, numArgsList) <- get
+    put (a',b',nameHint, fn, numArgsList)
     return $ AssignExpr p op lval' e'
   ParenExpr a e -> do
     e' <- expr e
@@ -147,14 +149,18 @@ expr e = case e of
     es' <- mapM expr es
     return $ CallExpr a func' es'
   FuncExpr p mname argNames body -> do
-    (n, isNested, nameHint, fn) <- get
-    put (n + 1, isNested, nameHint, fn)
+    (n, nestingLevel, nameHint, fn, numArgsList) <- get
+    --this func is position n
+    --eval its insides starting from n+1, and set our state to that
+
+    let (newExpr, (newN,_,_,_,newNAL)) = runState (stmt body) (n+1, nestingLevel+1, "", fn, [])
+
+    put (newN, nestingLevel, nameHint, fn, 
+         numArgsList ++ [length argNames] ++ newNAL)
+
     return $ CallExpr p (VarRef p (Id p funcWrapperName))
-               [FuncExpr p mname argNames (evalState (stmt body) (0, True, "", fn)),
-                if isNested
-                  then DotRef p (VarRef p (Id p "arguments"))  
-                                (Id p "callee")
-                  else VarRef p (Id p "undefined"),
+               [FuncExpr p mname argNames newExpr,
+                IntLit p nestingLevel,
                 StringLit p $ maybe nameHint unId mname, 
                 StringLit p $ fn,
                 IntLit p n]
@@ -252,5 +258,11 @@ main :: IO ()
 main = do
   args <- getArgs
   script <- parseJavaScriptFromFile (head args)
-  let script' = evalState (mapM stmt script) (0, False, "", head args)
+  let p = initialPos ""
+  let (script', (_,_,_,_,numArgsList)) = runState (mapM stmt script) (0, 0, "", head args, [])
+  putStrLn (renderStatements [
+    ExprStmt p (CallExpr p
+      (VarRef p (Id p initNumArgsName))
+      [StringLit p (head args), (ArrayLit p (map (IntLit p) numArgsList))])])
   putStrLn (renderStatements script')
+

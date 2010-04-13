@@ -15,7 +15,7 @@ var $jstraceid = "Global"; //mark the global object so we don't deeply inspect i
 //  {args: an array of union-rttypes indicating the rttypes of the arguments
 //   ret: the union-rttype of the ret type
 ///  thist: the union-rttype of the 'this' type,
-//   nested: an array of named rttypes representing local vars/local funcs in order of appearance}
+//   nestingLevel: nesting level the func appears in, for prettier output}
 //
 //objects and functions also have a 'seen' field which is true if we've seen the object while
 //  trying to find out its type (meaning we have a recursive type)
@@ -506,13 +506,15 @@ var holder = (function() {  //lambda to hide all these local funcs
     if (rt.kind === "function_ref") {
       rt = __typedJsTypes[rt.type];
     }
-
     if (rt.kind === "function") {
       var corf = rt.type.constrOrFunc;
       if (foroutput) {
         if (corf === "constructor") line += corf + " ";
       }
       else {
+        for (var nlev=0;nlev<rt.type.nestingLevel;nlev++) {
+          line += "  ";
+        }
         line += corf + " " + n + " : ";
       }
     }
@@ -540,19 +542,25 @@ var holder = (function() {  //lambda to hide all these local funcs
       isFunc = __typedJsTypes[rt.type].type;
     }
 
-    if (isFunc === false || isFunc.nested.length === 0) {
+    /*if (isFunc === false || isFunc.nested.length === 0) {
       return {answer: [line], typesSeen: typesSeen};
+    }*/
+    //cut off parens if it's for output
+    if (foroutput) {
+      if (line.charAt(0) == "(") {
+        line = line.substring(1,line.length-1);
+      }
     }
-
+      
     var res = [line];
 
-    for (var i=0; i < isFunc.nested.length; i++) {
+    /*for (var i=0; i < isFunc.nested.length; i++) {
       var innerRes = strNestedNamedRttype(isFunc.nested[i], dbg, foroutput);
       for (var j = 0; j < innerRes.answer.length; j++) {
         res.push((foroutput ? "" : "  ") + innerRes.answer[j]);
       }
       copyFrom(innerRes.typesSeen, typesSeen);
-    }
+    }*/
 
     return {answer: res, typesSeen: typesSeen};
   };
@@ -653,7 +661,7 @@ var holder = (function() {  //lambda to hide all these local funcs
         var strs = res.answer;
         copyFrom(res.typesSeen, typesSeen);
         for (var j = 0; j < strs.length; j++) {
-          println(__outwin, "  " + strs[j]);
+          println(__outwin, strs[j]);
         }
       }
     }
@@ -680,15 +688,15 @@ var holder = (function() {  //lambda to hide all these local funcs
   //-----------------------------------------------------
   //wrap every function with this function. it makes
   //every function call add trace information.
-  //nester is the function this function is nested in.
+  //nestingLevel is how nested into other funcs this func is
   //undefined if top-level. otherwise it should be wrapped
   //name is the name, if any
   //position is what position it occupies in the nester, e.g.
   //0 if the first position, 1 if the 2nd, etc.
-  var tracefunction = function(fn, nester, name, filename, position) {
+  var tracefunction = function(fn, nestingLevel, name, filename, position) {
     var dbg = false;
     
-    if (arguments.length != 5) {
+    if (arguments.length != 5 || typeof nestingLevel != "number") {
       alert("Please re-compile this code!");
       return;
     }
@@ -701,7 +709,7 @@ var holder = (function() {  //lambda to hide all these local funcs
         args: undefined,       
         ret: undefined,
         thist: undefined,
-        nested: [],
+        nestingLevel: nestingLevel, //strictly for pretty output
         constrOrFunc: "unknown",
         namehint: name,
         refsthis: false}, //true if "this" is ever referenced inside this function
@@ -711,20 +719,10 @@ var holder = (function() {  //lambda to hide all these local funcs
       kind: "function_ref",
       type: traceid};
 
-    if (nester !== undefined) {
-      //insert the func in the proper position in the nester
-      /*alert("trace id of nester is " + nester.$jstraceid);
-      alert("len of nested: " +
-            __typedJsTypes[nester.$jstraceid].type.nested.length);*/
-      __typedJsTypes[nester.$jstraceid].type.nested[position] = {
-        name: name, rttype: ref};
-    }
-    else {
-      //insert it in the right place in the global
-      if (!(filename in __orderedVars))
-        __orderedVars[filename] = [];
-      __orderedVars[filename][position] = {name: name, rttype: ref};
-    }
+    //insert it in the right place in the global
+    if (!(filename in __orderedVars))
+      __orderedVars[filename] = [];
+    __orderedVars[filename][position] = {name: name, rttype: ref};
 
     var res = function() {
       //since all calls to 'new' are wrapped, $callingAsNew will be set
@@ -792,6 +790,39 @@ var holder = (function() {  //lambda to hide all these local funcs
     return res;
   };
 
+  //this fills out the orderedvars array with initial values, so if
+  //a function never gets called, we can put in the right number
+  //of Anys.
+  var initnumargs = function(filename, argsarray) {
+    if (!(filename in __orderedVars))
+      __orderedVars[filename] = [];
+    else
+      alert("initnumargs called twice for no good reason");
+
+    for (var i=0; i < argsarray.length; i++) {
+      var traceid = gensym("shellfunc");
+      var func_rttype = {
+        kind: "function",
+        type: {
+          numNamedArgs: argsarray[i],
+          args: undefined,       
+          ret: undefined,
+          thist: undefined,
+          nestingLevel: 0, 
+          constrOrFunc: "shellfunc",
+          namehint: "",
+          refsthis: false},
+        seen: false};
+      var tjstype = func_rttype.type;
+      var ref = {
+        kind: "function_ref",
+        type: traceid};
+  
+      __orderedVars[filename][i] = {name: "SHILL", rttype: ref};    
+      __typedJsTypes[traceid] = func_rttype;
+    }
+  }
+
   //wrap every call to "new" with this function
   //if the constructor has a $jstraceid, then the newly
   //created object will have a $constrby field to indicate
@@ -847,14 +878,15 @@ var holder = (function() {  //lambda to hide all these local funcs
           __windows[i].title, 0, 
           (function (w) { return function(){showwin(w);} })(__windows[i]));
       }
-    };
+    };    
   
   return {
     __typedjs: tracefunction,
     __new: newwrapper,
     __thisref: thisref,
     showTypes: function () { return showwin(__tracewin); },
-    addMenuItems: addMenuItems
+    addMenuItems: addMenuItems,
+    initnumargs: initnumargs
   };
 })();
 
@@ -863,3 +895,4 @@ var __new = holder.__new;
 var showTypes = holder.showTypes;
 var __thisref = holder.__thisref;
 var __ADDMENUITEMS = holder.addMenuItems;
+var __initnumargs = holder.initnumargs;
