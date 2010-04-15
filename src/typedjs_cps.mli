@@ -27,7 +27,7 @@ type bindexp =
   | UpdateField of cpsval * cpsval * cpsval
 
 type cpsexp =
-    Fix of node * (id * id list * typ * cpsexp) list * cpsexp
+    Fix of node * (bool * id * id list * typ * cpsexp) list * cpsexp
   | App of node * cpsval * cpsval list
   | If of node * cpsval * cpsexp * cpsexp
   | Bind of node * id * bindexp * cpsexp

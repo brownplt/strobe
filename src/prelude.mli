@@ -44,7 +44,6 @@ module IdMapExt : MapExt.S
   with type key = id
   with type +'a t = 'a IdMap.t
 
-
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 
 val fold_right : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b

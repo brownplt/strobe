@@ -1,0 +1,19 @@
+<strings>
+
+<ABOUT_TEXT>Wikipedia Search
+Copyright 2007 Google Inc. All Rights Reserved.
+Search Wikipedia from your desktop without opening a web browser. If multiple entries match your query,a list is displayed for picking the desired entry. Click the magnifying glass to see recent search terms so that you can quickly reference information.
+</ABOUT_TEXT>
+<AUTHOR_NAME>Google</AUTHOR_NAME>
+<AUTHOR_EMAIL></AUTHOR_EMAIL>
+<AUTHOR_WEBSITE>http://desktop.google.com/plugins.html</AUTHOR_WEBSITE>
+<COPYRIGHT>Copyright 2007 Google Inc. All Rights Reserved.</COPYRIGHT>
+<DESCRIPTION>Search Wikipedia from your desktop.</DESCRIPTION>
+<PLUGIN_NAME>Wikipedia Search</PLUGIN_NAME>
+
+<VIEW_ON_WIKIPEDIA>View article on wikipedia.org</VIEW_ON_WIKIPEDIA>
+<WIKIPEDIA_SEARCH>Wikipedia Search</WIKIPEDIA_SEARCH>
+<RECENT_SEARCHES>Recent Searches</RECENT_SEARCHES>
+<DISAMBIGUATION>We've found more than one match. Please refine your search or choose from the list below.</DISAMBIGUATION>
+
+</strings>

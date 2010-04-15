@@ -3,6 +3,9 @@ open Typedjs_syntax
 open Typedjs_env
 open Typedjs_types 
 open Format
+open Typedjs_dyn
+
+let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
 
 let rec skip n l = if n == 0 then l else (skip (n-1) (List.tl l))
 let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
@@ -119,6 +122,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
       | TConstr ("Array", [tarr]), eidx ->
+          let (p1, p2) = p in 
+            contracts := IntMap.add p1.Lexing.pos_cnum 
+              (* TODO: NotUndefined is not a type, but just a contract *)
+              (p2.Lexing.pos_cnum, TConstr ("NotUndefined", []))
+              !contracts;
           let tidx = tc_exp env eidx in
             begin match tidx with
               | TConstr ("Int", []) -> tarr
@@ -154,7 +162,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
   | EInfixOp (p, "+", e1, e2) -> 
       let t = tc_exp env (EApp (p, EId (p, "+"), [e1; e2])) in
-        if Env.subtype env t typ_str then
+        if Env.subtype env typ_str t then
           typ_str
         else
           t
@@ -251,7 +259,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
           t
         else 
           raise (Typ_error (p, "subsumption error"))
-  | EDowncast (p, t, e) ->  ignore (tc_exp env e); Env.check_typ p env t
+  | EDowncast (p, t, e) -> 
+      let t = Env.check_typ p env t in
+      let (p1, p2) = Exp.pos e in 
+        contracts := IntMap.add p1.Lexing.pos_cnum (p2.Lexing.pos_cnum, t)
+          !contracts;
+        ignore (tc_exp env e);
+        t
   | ETypAbs (p, x, t, e) ->
       let t = Env.check_typ p env t in
       let env = Env.bind_typ_id x t env in

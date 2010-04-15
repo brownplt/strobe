@@ -1,0 +1,40 @@
+<strings>
+  <GADGET_NAME>Tetramino Game</GADGET_NAME>
+  <GADGET_DESCRIPTION>Play Tetramino Game in your sidebar or on your desktop</GADGET_DESCRIPTION>
+  <GADGET_ABOUT_TEXT>Tetramino Game
+Copyright 2007 Benjamin Schirmer
+Play Tetris in your sidebar or on your desktop.
+
+http://www.desktop-gadgets.net/tetris/
+
+Instructions:
+Move Left: left Cursor
+Move Right: right Cursor
+Rotate: up Cursor
+Fast fall: down Cursor
+
+Gamecode based on "JavaScript Tetris" by Alexei Kourbatov.
+http://www.javascripter.net/games/tetris/game.htm
+
+Block graphics by Bijoy Thangaraj. Thanks a lot!
+
+Tetris Music by Nikolai Alekseevich Nekrasov. Aquired from wikipedia at
+http://upload.wikimedia.org/wikipedia/en/f/fe/Korobeiniki.mid
+</GADGET_ABOUT_TEXT>
+
+  <strOptionControls>Game Controls:</strOptionControls>
+  <strOptionLeft>Left</strOptionLeft>
+  <strOptionRight>Right</strOptionRight>
+  <strOptionRotate>Rotate</strOptionRotate>
+  <strOptionDown>Down</strOptionDown>
+  <strOptionFall>Fall</strOptionFall>
+  <strOptionMusic>Play Tetris Music</strOptionMusic>
+
+  <strGameOver>Game Over</strGameOver>
+  <strMenuNew>New Game</strMenuNew>
+  <strStart>Start</strStart>
+  <strPaused>Paused</strPaused>
+  <strLevel>Level</strLevel>
+  <strLines>Lines</strLines>
+
+</strings>

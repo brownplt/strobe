@@ -1,0 +1,98 @@
+constructor (Int * Int * ( -> Void) -> {ping : (Any -> Any)})
+Any -> Any
+ -> Any
+ -> Any
+Any * Any * Any -> Any
+Any -> Any
+Any -> Any
+ -> Any
+ -> Any
+Any * Any -> Any
+ -> Any
+ -> Any
+ -> Any
+Any -> Any
+Any -> Any
+Any -> Any
+Any -> Any
+Any -> Any
+ -> Any
+ -> Any
+ -> Any
+Any -> Any
+ -> Void
+Int -> Void
+ -> Void
+Bool -> Void
+ -> Void
+ -> Any
+Any -> Any
+ -> Void
+ -> Void
+ -> Any
+ -> Void
+ -> Void
+ -> Void
+ -> Void
+String * null * String -> Void
+Any -> Any
+ -> Void
+ -> Void
+String -> Void
+Any * Any * Any * Any * Any -> Any
+ -> Any
+ -> Any
+ -> Any
+ -> Any
+constructor ( -> {request : (String * (String -> Void) -> Void), stop : ( -> Any)})
+String * (String -> Void) -> Void
+ -> Any
+ -> Void
+constructor (Dom * String * String * Int * Int -> {show : ( -> Void), hide : ( -> Void)})
+Int -> String
+ -> Int
+ -> Void
+ -> Void
+ -> Void
+constructor (null * null * null * null * ( -> Void) * ( -> Void) -> {show : (String * null * String -> Void), hide : ( -> Void)})
+String * null * String -> Void
+Int -> Void
+ -> Void
+Any -> Any
+ -> Any
+ -> Any
+ -> Any
+Any -> Any
+ -> Any
+ -> Any
+Any * Any * Any * Any * Any -> Any
+ -> Any
+ -> Any
+Any -> Any
+ -> Any
+ -> Any
+ -> Any
+ -> Any
+Any -> Any
+Any -> Any
+ -> Any
+Any -> Any
+ -> Any
+constructor (null * (Any -> Any) -> {show : ( -> Any), hide : ( -> Any), addHistoryItem : (String -> Void)})
+ -> Any
+Any -> Any
+Any -> Any
+ -> Any
+Any -> Any
+ -> Any
+String -> Void
+ -> Void
+constructor ( -> {query : (String * (String * null * String -> Void) -> String), stop : ( -> Any), getDisambiguationArray : ( -> Any)})
+String * (String * null * String -> Void) -> String
+String -> Void
+ -> String
+ -> null
+ -> Any
+ -> Any
+String -> String
+Bool -> Void

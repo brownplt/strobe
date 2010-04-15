@@ -14,11 +14,20 @@ open FormatExt
 open Typedjs_cf
 open Typedjs_cftc
 open Lexing
+open Typedjs_dyn
+
 
 module Lat = Typedjs_lattice
 
+let string_of_cin cin =
+  let buf = Buffer.create 5000 in
+    Buffer.add_channel buf cin (in_channel_length cin);
+    Buffer.contents buf
+  
+  
+
 module Input : sig
-  val get_cin : unit -> in_channel
+  val get_cin : unit -> string
   val get_cin_name : unit -> string
   val set_cin : in_channel -> string -> unit
   val get_env : unit -> Env.env
@@ -30,6 +39,7 @@ end = struct
   let global_object = ref None
 
   let c = ref None
+  let str = ref None
 
   let cname = ref "no input specified"
 
@@ -40,7 +50,7 @@ end = struct
   let get_cin_name () = !cname
 
   let set_cin cin name = match !c with
-    | None -> c := Some cin; cname := name
+    | None -> c := Some (string_of_cin cin); cname := name
     | Some _ -> failwith "invalid arguments" 
 
   let load_env (fname : string) : unit = 
@@ -61,12 +71,6 @@ open Input
 let action_pretty () : unit = 
   let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
     JavaScript.Pretty.p_prog prog std_formatter;
-    print_newline ()
-
-let action_contracts () : unit = 
-  let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
-  let prog' = Typedjs_contracts.types_to_contracts prog in
-    JavaScript.Pretty.p_prog prog' std_formatter;
     print_newline ()
 
 let action_expr () : unit =
@@ -93,7 +97,8 @@ let action_tc () : unit =
     typed_cfa cf_env cpstypedjs;
     let annotated_typedjs = insert_typecasts typedjs in
     let _ = Typedjs_tc.typecheck (get_env ()) annotated_typedjs in
-    ()
+    let tr_map = mk_contract_transformers !contracts in
+      transform_exprs tr_map (get_cin ()) stdout
 
 let action_cps () : unit =
   let typedjs = get_typedjs () in
@@ -127,8 +132,6 @@ let main () : unit =
   Arg.parse
     [ ("-tc", Arg.Unit (set_action action_tc),
        "type-check the source program (default when no options are given)");
-      ("-contracts", Arg.Unit (set_action action_contracts),
-       "insert contracts into the source program") ;
       ("-stdin", Arg.Unit (fun () -> set_cin stdin "<stdin>"),
        "read from stdin instead of a file");
       ("-env", Arg.String (fun s -> load_env s),

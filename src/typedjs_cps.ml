@@ -27,7 +27,7 @@ type bindexp =
   | UpdateField of cpsval * cpsval * cpsval
 
 type cpsexp =
-    Fix of node * (id * id list * typ * cpsexp) list * cpsexp
+    Fix of node * (bool * id * id list * typ * cpsexp) list * cpsexp
   | App of node * cpsval * cpsval list
   | If of node * cpsval * cpsexp * cpsexp
   | Bind of node * id * bindexp * cpsexp
@@ -80,7 +80,7 @@ let bind_cont cont fn = match cont with
       let k' = new_name () in
       let r = new_name () in
         Fix (new_node (), 
-             [k', [r], TArrow (TTop, [TTop], TTop), k (mk_id r)],
+             [false, k', [r], TArrow (TTop, [TTop], TTop), k (mk_id r)],
              fn k')      
 
 let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
@@ -162,7 +162,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       and k' = new_name () 
       and throw' = new_name () in
         Fix (new_node (),
-             [(f, k' :: throw' :: "%this" :: args, ext_typ typ, 
+             [(true, f, k' :: throw' :: "%this" :: args, ext_typ typ, 
                cps_exp body throw' (Jmp k'))],
              ret k (mk_id f))
   | ELet (_, x, e1, e2) ->
@@ -194,7 +194,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
   | ELabel (_, l, _, e) ->
       let r = new_name () in
         Fix (new_node (),
-             [(l, [r], TArrow (TTop, [TTop], TTop), ret k (mk_id r))],
+             [(false, l, [r], TArrow (TTop, [TTop], TTop), ret k (mk_id r))],
              cps_exp e throw (Jmp l))
   | EBreak (_, l, e) -> (* drops its own continuation *)
       cps_exp e throw (Jmp l)
@@ -206,7 +206,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       and obj = new_name () in
         Bind (new_node (), obj, Object [],
               Fix (new_node (),
-                   [(k', [new_name ()], TArrow (TTop, [TTop], TTop), 
+                   [(false, k', [new_name ()], TArrow (TTop, [TTop], TTop), 
                      ret k (mk_id obj))],
                    cps_exp_list args throw
                      (fun argvs ->
@@ -223,7 +223,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
         bind_cont k
           (fun cont ->
              Fix (new_node (),
-                  [throw', [exn], TArrow (TTop, [TTop], TBot),
+                  [false, throw', [exn], TArrow (TTop, [TTop], TBot),
                    cps_exp catch_body throw (Jmp cont)],
                   cps_exp body throw' (Jmp cont)))
 
@@ -231,7 +231,7 @@ and cps_bind ((name, typ, e) : id * typ * exp) = match e with
     EFunc (_, args, _, body) ->
       let k = new_name () 
       and throw = new_name () in
-        (name, k :: throw :: "%this" :: args,
+        (true, name, k :: throw :: "%this" :: args,
          ext_typ typ, cps_exp body throw (Jmp k))
   | _ -> failwith "cps_bind : expected a function"
 
@@ -311,7 +311,7 @@ let rec fv_cpsexp (cpsexp : cpsexp) : IdSet.t = match cpsexp with
   | Bind (_, x, e, k) -> 
       IdSet.union (fv_bindexp e) (IdSet.remove x (fv_cpsexp k))
 
-and fv_bind (_, args, _, e) =
+and fv_bind (_, _, args, _, e) =
   IdSet.diff (fv_cpsexp e) (IdSetExt.from_list args)
 
 let rec esc_cpsexp (cpsexp : cpsexp) : IdSet.t = match cpsexp with
@@ -324,7 +324,7 @@ let rec esc_cpsexp (cpsexp : cpsexp) : IdSet.t = match cpsexp with
   | Bind (_, x, e, k) -> 
       IdSet.union (fv_bindexp e) (IdSet.remove x (esc_cpsexp k))
 
-and esc_bind (_, args, _, e) = 
+and esc_bind (_, _, args, _, e) = 
   IdSet.diff (esc_cpsexp e) (IdSetExt.from_list args)
 
 
@@ -378,7 +378,7 @@ let rec p_cpsexp (cpsexp : cpsexp) : printer = match cpsexp with
       parens (vert [ horz [ numstr n "let"; text x; p_bindexp e ];
                      p_cpsexp cont ])
 
-and p_bind (f, args, typ, body) : printer =
+and p_bind (_, f, args, typ, body) : printer =
   parens ( vert 
              [ text f;
                parens 
