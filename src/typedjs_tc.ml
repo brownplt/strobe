@@ -20,7 +20,7 @@ let tc_const (const : JavaScript_syntax.const) = match const with
   | JavaScript_syntax.CNum _ -> typ_num
   | JavaScript_syntax.CInt _ -> typ_int
   | JavaScript_syntax.CBool _ -> typ_bool
-  | JavaScript_syntax.CNull -> typ_bool
+  | JavaScript_syntax.CNull -> typ_null
   | JavaScript_syntax.CUndefined -> typ_undef
       
 let rec tc_exp (env : Env.env) exp = match exp with
