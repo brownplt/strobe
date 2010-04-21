@@ -632,8 +632,7 @@ function openURL(url) {
 
 // This class simply wraps around the framework's animation methods, but adds
 // a callback for when the animation is completed
-function SimpleAnimation(animateCallback_, startValue_, endValue_, duration_,
-    completedCallback_) {
+function SimpleAnimation(animateCallback_, startValue_, endValue_, duration_, completedCallback_) {
   var animation_ = null;
   var timer_ = null;
 
@@ -876,8 +875,7 @@ var IMAGE_SRC = "<img src=\"[IMAGEURL]\" class=\"articleimg\">";
 
 // This class controls the article details panel. This class controls showing
 // and hiding of the panel with animations and also displays the text inside.
-function DetailsController(mainDivElement_, textElement_, imageElement_,
-    popoutElement_, detailsLoadedCallback_, showArticleCallback_) {
+function DetailsController(mainDivElement_, textElement_, imageElement_, popoutElement_, detailsLoadedCallback_, showArticleCallback_) {
   var curArticleText_ = null;
   var curImageURL_ = null;
   var curKeywords_ = null;
@@ -1116,8 +1114,7 @@ var DISAMBIGUATION_DETAILS_HTML_ITEM =
   "<li><a href=\"\" onclick=\"window.external.selectedItem('[TEXT]'); return false;\">&raquo; [TEXT]</a></li>";
 
 // This class takes care of managing disambiguation using a listbox
-function WikipediaDisambiguation(disambiguationDiv_, textboxElement_,
-    textboxOnKeyDown_, textboxOnKeyPress_, selectedDisambiguationItemCallback_) {
+function WikipediaDisambiguation(disambiguationDiv_, textboxElement_, textboxOnKeyDown_, textboxOnKeyPress_, selectedDisambiguationItemCallback_) {
   var listbox_ = null;
   var ieDetailsView_ = null;
 

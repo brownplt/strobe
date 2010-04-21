@@ -16,7 +16,7 @@ let rec input_strings cin : string list =
     s :: (input_strings cin)
   with End_of_file -> []
 
-let function_re : regexp = regexp "function.*(.*)"
+let function_re : regexp = regexp ".*function[^(]*([^)]*)"
 
 let rec splice_typ (cin : in_channel) (cout : out_channel) (typ : string) = 
   let line = input_line cin in
