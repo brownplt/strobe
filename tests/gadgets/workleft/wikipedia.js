@@ -8,98 +8,9 @@ var assert = function(cond) /*: Bool -> Void */ {
 
 // A general function to simplify downloading data from a website and also
 // handle errors gracefully.
-function SimpleHTTPRequest() /*: constructor (-> {request : (String * (String -> Void) * (Boolean + Void) -> Void), stop : ( -> Any)}) */ {
+function SimpleHTTPRequest() /*: constructor (-> {request : (String * (Null + String -> Void) * (Boolean + Void) -> Void), stop : ( -> Any)}) */ {
   this.request = function(url, receivedResultCallback, opt_getStream) /*: String * (String -> Void) * (Boolean + Void) -> Void */ {};
   this.stop = function() /*:  -> Any */ {};
-
-  var getStream_ = false;
-  var request_ = null;
-  var stop_ = false;
-  var receivedResultCallback_ = /*:upcast (Null + (String -> Void)) */null;
-
-  // Do a request to get a webpage. If getText is true, a text version of the
-  // output will be returned. If false, the response stream will be returned
-  // (useful for getting image data).
-  function request(url, receivedResultCallback, opt_getStream) /*: String * (String -> Void) * (Boolean + Void) -> Void */ {
-    assert(receivedResultCallback != null);
-    if (receivedResultCallback == null)
-      return;
-    receivedResultCallback_ = receivedResultCallback;
-    assert(request_ == null);
-    if (request_ != null) {
-      receivedResultCallback_(null);
-      return;
-    }
-
-    request_ = new XMLHttpRequest();
-
-    // Catch any URL errors
-    try {
-      request_.open("GET", url, true);
-    } catch (e) {
-      request_ = null;
-      receivedResultCallback_(null);
-      return;
-    }
-
-    request_.onreadystatechange = onData;
-    stop_ = false;
-
-    var getStream = false;
-    if ((opt_getStream !== undefined) && (opt_getStream === true))
-      getStream = true;
-    getStream_ = getStream;
-
-    // Send the request
-    try {
-      request_.send();
-    } catch(e) {
-      request_ = null;
-      receivedResultCallback_(null);
-      return;
-    }
-  }
-
-  // Stop the current transfer. No data callbacks will be made for this request.
-  function stop() /*:  -> Any */ {
-    if (request_ == null)
-      return;
-
-    stop_ = true;
-    request_.abort();
-    request_ = null;
-  }
-
-  // Called when data is received from the website
-  function onData() /*:  -> Void */ {
-    // If the download has been stopped, do not continue
-    if (stop_)
-      return;
-
-    // If the data is not ready (still downloading), do not continue
-    assert(request_ != null);
-    if (request_.readyState != 4)
-      return;
-
-    // If there was an http error, do not continue
-    if (request_.status != 200) {
-      receivedResultCallback_(null);
-      request_ = null;
-      return;
-    }
-
-    // Return the requested data
-    if (getStream_) {
-      receivedResultCallback_(request_.responseStream);
-    } else {
-      receivedResultCallback_(request_.responseText);
-    }
-
-    request_ = null;
-  }
-
-  this.request = request;
-  this.stop = stop;
 }
 
 // ****************************** throbber.js ***********************
@@ -107,15 +18,17 @@ function SimpleHTTPRequest() /*: constructor (-> {request : (String * (String ->
 // Creates a throbber with elements. A throbber is a 'spinning thing' that
 // normally symbolizes waiting. Firefox has one in the top right animated when
 // loading a webpage.
-function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) /*: constructor (Dom * String * String * Int * Int -> {show : ( -> Void), hide : ( -> Void)}) */ {
+function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) /*: constructor (Div * String * String * Int * Int -> {show : ( -> Void), hide : ( -> Void)}) */ {
+  this.show = function() /*: -> Void */ {};
+  this.hide = function() /*: -> Void */ {};
   var imagePrefix_ = imagePrefix;
   var imageSuffix_ = imageSuffix;
   var totalFrames_ = totalFrames;
   var frameDelay_ = frameDelay;
 
-  var element_ = ownerDiv.appendElement("<img visible=\"false\" />");
+  var element_ = /*:downcast Img*/(ownerDiv.appendElement("<img visible=\"false\" />"));
   var curFrame_ = 0;
-  var timer_ = null;
+  var timer_ = /*:upcast Null + Int*/null;
 
   // Returns a frame's filename
   function getImageFilename(frame) /*: Int -> String */ {
@@ -148,7 +61,7 @@ function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) /
     element_.visible = false;
 
     // Stop the animation only if it is running
-    if (timer_ != null) {
+    if (typeof timer_ === "number") { //timer_ != null) {
       clearInterval(timer_);
       timer_ = null;
     }
@@ -170,7 +83,12 @@ function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) /
 // This class will query Google for Wikipedia pages. It uses the Google cached
 // pages to scrape from since the Wikipedia official servers are known to be
 // very slow. Also, this makes it easier for us to control the server load.
-function WikipediaQuery() /*: constructor ( -> {query : (String * (String * null * String -> Void) -> String), stop : ( -> Any), getDisambiguationArray : ( -> Any)}) */ {
+function WikipediaQuery() /*: constructor ( -> {query : (String * (String * Null * String -> Void) -> (String + Void)), stop : ( -> Any), getDisambiguationArray : ( -> Any)}) */ {
+
+  this.query = function(name, receivedResultCallback) /*: String * (String * Null * String -> Void) -> (String + Void) */ { return "tmp"; };
+  this.stop = function() /*: -> Any */ {};
+  this.getDisambiguationArray = function() /*: -> Any */ {};
+
   var QUERY_URL =
     //"http://www.google.com/search?q=cache%3Aen.wikipedia.org%2Fwiki%2F";
     //"http://en.wikipedia.org/wiki/";
@@ -190,14 +108,14 @@ function WikipediaQuery() /*: constructor ( -> {query : (String * (String * null
 
   var MINIMUM_PARAGRAPH_LENGTH = 15;
 
-  var receivedResultCallback_ = null; // (paragraph, imageURL, articleURL)
+  var receivedResultCallback_ = /*:upcast Null + (String * Null * String -> Void)*/null; // (paragraph, imageURL, articleURL)
   var request_ = null;
   var articleURL_ = null;
 
   var pageText_ = null;
-  var originalQuery_ = null;
+  var originalQuery_ = /*:upcast Null + String*/null;
 
-  function query(name, receivedResultCallback) /*: String * (String * null * String -> Void) -> String */ {
+  function query(name, receivedResultCallback) /*: String * (String * Null * String -> Void) -> (String + Void) */ {
     assert(request_ == null);
     if (request_ != null)
       return;
@@ -320,7 +238,7 @@ function WikipediaQuery() /*: constructor ( -> {query : (String * (String * null
   }
 
   // Parses the page text to find the first image's URL
-  function getFirstImageURL() /*:  -> null */ {
+  function getFirstImageURL() /*:  -> Null */ {
     var result = null;
     var imageURL = "";
 
