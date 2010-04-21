@@ -6,14 +6,14 @@
 // not pinged. When both interval and expireAfter are the same, this can be
 // used as a method of preventing "too-fast" situations. This forces the
 // callback to happen at most once every interval.
-function ExpiringTimer(interval_, expireAfter_, callback_) {
+function ExpiringTimer(interval_, expireAfter_, callback_) /*: constructor (Int * Int * ( -> Void) -> {ping : (Any -> Any)}) */ {
   var expireTimer_ = null;
   var timer_ = null;
 
   // Resets all the expiry timer and ensure the main timer is running.
   // opt_callbackNow, if true, will callback immediately if the expiry timer is
   // not already running.
-  function ping(opt_callbackNow) {
+  function ping(opt_callbackNow) /*: Any -> Any */ {
     var callbackNow = false;
 
     // Restart the main timer if it is not already running
@@ -34,11 +34,11 @@ function ExpiringTimer(interval_, expireAfter_, callback_) {
       callback_();
   }
 
-  function onTimer() {
+  function onTimer() /*:  -> Any */ {
     callback_();
   }
 
-  function onExpireTimer() {
+  function onExpireTimer() /*:  -> Any */ {
     expireTimer_ = null;
 
     // Kill the main timer since we have expired
@@ -68,7 +68,7 @@ var ITEM_HOVER_SELECTOR_OPACITY = "20";
 
 // This class creates and shows a ListBox which can be used to display multiple
 // items. Scrolling is implemented too so feel free to overpopulate the list.
-function ListBox(parentDivElement_, acceptedCallback_, cancelledCallback_) {
+function ListBox(parentDivElement_, acceptedCallback_, cancelledCallback_) /*: Any * Any * Any -> Any */ {
   var shown_ = false;
   var divElement_ = null;
   var backgroundElement_ = null;
@@ -81,7 +81,7 @@ function ListBox(parentDivElement_, acceptedCallback_, cancelledCallback_) {
   var totalVisibleItems_ = null;
 
   // Add an item to the end of the listbox
-  function addItem(displayValue) {
+  function addItem(displayValue) /*: Any -> Any */ {
     var newItem = new Object();
     newItem.displayValue = displayValue;
     newItem.labelElement = null;
@@ -89,7 +89,7 @@ function ListBox(parentDivElement_, acceptedCallback_, cancelledCallback_) {
     items_.push(newItem);
   }
 
-  function show(selectItem) {
+  function show(selectItem) /*: Any -> Any */ {
     shown_ = true;
 
     // If a background image was specified, draw it at the top left
@@ -129,7 +129,7 @@ function ListBox(parentDivElement_, acceptedCallback_, cancelledCallback_) {
   }
 
   // Removes all elements in the main div and resets the state
-  function hide() {
+  function hide() /*:  -> Any */ {
     if (!shown_)
       return;
     shown_ = false;
@@ -137,10 +137,10 @@ function ListBox(parentDivElement_, acceptedCallback_, cancelledCallback_) {
     parentDivElement_.removeElement(backgroundElement_);
     parentDivElement_.removeElement(divElement_);
 
-    items_ = []
+    items_ = [];
   }
 
-  function drawAllVisibleItems() {
+  function drawAllVisibleItems() /*:  -> Any */ {
     for (var i = 0; i <= items_.length - 1; i++) {
       // If the item exists, remove it
       if (items_[i].labelElement != null)
@@ -165,31 +165,31 @@ function ListBox(parentDivElement_, acceptedCallback_, cancelledCallback_) {
   }
 
   // Used to set the mouse events for a certain item element
-  function setMouseEventsForLabel(element, index) {
-    element.onmouseover = function () { onMouseOverItem(index); };
-    element.onmouseout = function () { onMouseOffItem(index); };
-    element.onclick = function () { onMouseClickItem(index); };
+  function setMouseEventsForLabel(element, index) /*: Any * Any -> Any */ {
+    element.onmouseover = function () /*:  -> Any */ { onMouseOverItem(index); };
+    element.onmouseout = function () /*:  -> Any */ { onMouseOffItem(index); };
+    element.onclick = function () /*:  -> Any */ { onMouseClickItem(index); };
   }
 
   // Called when the mouse goes over an item
-  function onMouseOverItem(index) {
+  function onMouseOverItem(index) /*: Any -> Any */ {
     hoveredItem_ = index;
     showHoveredItem();
   }
 
   // Called when the mouse leaves an item
-  function onMouseOffItem(index) {
+  function onMouseOffItem(index) /*: Any -> Any */ {
     hoveredItem_ = null;
     hideHoveredItem();
   }
 
   // Called when the user clicks on an item
-  function onMouseClickItem(index) {
+  function onMouseClickItem(index) /*: Any -> Any */ {
     acceptedCallback_(items_[index].displayValue);
   }
 
   // Returns the y position of an item (if visible)
-  function getYPositionOfItem(index) {
+  function getYPositionOfItem(index) /*: Any -> Any */ {
     var indexPosition = index - firstVisibleItem_;
 
     if ((indexPosition < 0) || (indexPosition >= totalVisibleItems_))
@@ -199,11 +199,11 @@ function ListBox(parentDivElement_, acceptedCallback_, cancelledCallback_) {
   }
 
   // Returns the x position of an item
-  function getXPositionOfItem(index) {
+  function getXPositionOfItem(index) /*: Any -> Any */ {
     return 0;
   }
 
-  function showSelectedItem() {
+  function showSelectedItem() /*:  -> Any */ {
     if (selectedItem_ == null)
       return;
 
@@ -231,20 +231,20 @@ function ListBox(parentDivElement_, acceptedCallback_, cancelledCallback_) {
     selectorElement_.visible = true;
   }
 
-  function showHoveredItem() {
+  function showHoveredItem() /*:  -> Any */ {
     // Place the hovered selector
     hoverElement_.x = 0;
     hoverElement_.y = getYPositionOfItem(hoveredItem_);
     hoverElement_.visible = true;
   }
 
-  function hideHoveredItem() {
+  function hideHoveredItem() /*:  -> Any */ {
     // Place the hovered selector
     hoverElement_.visible = false;
   }
 
   // Does the action associated with a certain key
-  function notifyKeyPress(keyCode) {
+  function notifyKeyPress(keyCode) /*: Any -> Any */ {
     if (!shown_)
       return false;
 
@@ -279,7 +279,7 @@ function ListBox(parentDivElement_, acceptedCallback_, cancelledCallback_) {
       showSelectedItem();
 
     } else {
-      return false
+      return false;
     }
 
     return true;
@@ -321,7 +321,7 @@ var disambiguation_ = null;
 pluginHelper.onDisplayTargetChange = onDisplayTargetChange;
 
 // Called when the gadget first starts up
-function onOpen() {
+function onOpen() /*:  -> Void */ {
   onDisplayTargetChange(gddTargetSidebar);
 
   // Show the search box as not having focus since it will not on by default
@@ -333,7 +333,7 @@ function onOpen() {
 }
 
 // Called when the gadget enters/leaves the sidebar
-function onDisplayTargetChange(displayTarget) {
+function onDisplayTargetChange(displayTarget) /*: Int -> Void */ {
   // Find out the new display mode
   if (displayTarget == gddTargetSidebar) {
     inSidebar_ = true;
@@ -348,7 +348,7 @@ function onDisplayTargetChange(displayTarget) {
 
   // Resize the view depending on the display mode. We use a timer here because
   // the gadget cannot be resized when calling onDisplayTargetChange.
-  view.setTimeout(function () {
+  view.setTimeout(function () /*:  -> Void */ {
     if (inSidebar_) {
       view.width = bardiv_sidebar.width;
       view.height = bardiv_sidebar.height;
@@ -400,7 +400,7 @@ function onDisplayTargetChange(displayTarget) {
 }
 
 // Set the search field's focus picture and also textbox background color
-function updateFieldFocus(hasFocus) {
+function updateFieldFocus(hasFocus) /*: Bool -> Void */ {
   if (hasFocus) {
     field.src = FIELD_IMAGE_FOCUS;
     textbox.background = FIELD_COLOR_FOCUS;
@@ -415,7 +415,7 @@ function updateFieldFocus(hasFocus) {
 }
 
 // Goes to the current article's URL in the webbrowser
-function showArticleDetails() {
+function showArticleDetails() /*:  -> Void */ {
   if (articleURL_ == null)
     return;
 
@@ -424,7 +424,7 @@ function showArticleDetails() {
 
 // Called when a user clicks the search history drop down or details view
 // depending on if the gadget is in the sidebar or not
-function onSearchDropClick() {
+function onSearchDropClick() /*:  -> Any */ {
   if (!historyShown_) {
     historyShown_ = true;
     history_.show();
@@ -435,7 +435,7 @@ function onSearchDropClick() {
 }
 
 // Called when a user selects an item in the history
-function onSelectedHistory(text) {
+function onSelectedHistory(text) /*: Any -> Any */ {
   historyShown_ = false;
 
   if (inSidebar_) {
@@ -449,13 +449,13 @@ function onSelectedHistory(text) {
 }
 
 // Called when a user types something in the textbox
-function onTextBoxChange() {
+function onTextBoxChange() /*:  -> Void */ {
   if (!inSidebar_)
     searchAsYouTypeTimer_.ping(false);
 }
 
 // Called when a user types text into the textbox
-function onTextBoxKeyPress() {
+function onTextBoxKeyPress() /*:  -> Void */ {
   // Clear the search box if the escape key is pressed
   if (event.keyCode == 27) {
     textbox.value = "";
@@ -475,7 +475,7 @@ function onTextBoxKeyPress() {
 
 // Called when the textbox is clicked on. This is a good time to hide the
 // history if it is displayed
-function onTextBoxClick() {
+function onTextBoxClick() /*:  -> Any */ {
   if (historyShown_) {
     history_.hide();
     historyShown_ = false;
@@ -483,18 +483,18 @@ function onTextBoxClick() {
 }
 
 // Called when the textbox received keyboard focus
-function onTextBoxFocusIn() {
+function onTextBoxFocusIn() /*:  -> Void */ {
   updateFieldFocus(true);
 }
 
 // Called when the textbox loses keyboard focus
-function onTextBoxFocusOut() {
+function onTextBoxFocusOut() /*:  -> Void */ {
   updateFieldFocus(false);
 }
 
 // Called when the text changed in the textbox. This call is throttled by using
 // an expiring timer.
-function onNewQuery() {
+function onNewQuery() /*:  -> Void */ {
   // Only take this as a new query if the query text has actually changed
   var searchText = inSidebar_ ? textbox_sidebar.value : textbox.value;
 
@@ -545,13 +545,13 @@ function onNewQuery() {
 }
 
 // Hide the results panel if it is shown.
-function setNoResults() {
+function setNoResults() /*:  -> Void */ {
   articleDetails_.hide();
   throbber_.hide();
 }
 
 // Called when the Wikipedia search completes (success or failure)
-function onQueryReceived(text, imageURL, articleURL) {
+function onQueryReceived(text, imageURL, articleURL) /*: String * null * String -> Void */ {
   // No results found
   if (text == null) {
     curQuery_ = null;
@@ -595,7 +595,7 @@ function onQueryReceived(text, imageURL, articleURL) {
 }
 
 // Called when the user has selected an item in the disambiguation dropdown
-function onSelectedDisambiguation(value) {
+function onSelectedDisambiguation(value) /*: Any -> Any */ {
   if (value != null) {
     if (!inSidebar_) {
       textbox.value = value;
@@ -609,17 +609,17 @@ function onSelectedDisambiguation(value) {
 }
 
 // Called when the details view is open and all images/data are downloaded
-function onDetailsLoaded() {
+function onDetailsLoaded() /*:  -> Void */ {
   throbber_.hide();
 }
 
 // Called when the user clicks the popout button in the details view
-function onShowArticle() {
+function onShowArticle() /*:  -> Void */ {
   showArticleDetails();
 }
 
 // Opens the requested URL using the user's default web browser
-function openURL(url) {
+function openURL(url) /*: String -> Void */ {
   try {
     var shell = new ActiveXObject("Shell.Application");
     shell.Open(url);
@@ -632,23 +632,23 @@ function openURL(url) {
 
 // This class simply wraps around the framework's animation methods, but adds
 // a callback for when the animation is completed
-function SimpleAnimation(animateCallback_, startValue_, endValue_, duration_, completedCallback_) {
+function SimpleAnimation(animateCallback_, startValue_, endValue_, duration_, completedCallback_) /*: Any * Any * Any * Any * Any -> Any */ {
   var animation_ = null;
   var timer_ = null;
 
-  function start() {
+  function start() /*:  -> Any */ {
     animation_ = beginAnimation(onAnimate, startValue_, endValue_, duration_);
     timer_ = setTimeout(onAnimationComplete, duration_);
   }
 
-  function stop() {
+  function stop() /*:  -> Any */ {
     if (animation_ != null)
       view.cancelAnimation(animation_);
     if (timer_ != null)
       view.clearInterval(timer_);
   }
 
-  function onAnimate() {
+  function onAnimate() /*:  -> Any */ {
     // Do not animate if stopped
     if (timer_ == null)
       return;
@@ -656,7 +656,7 @@ function SimpleAnimation(animateCallback_, startValue_, endValue_, duration_, co
     animateCallback_(event.value);
   }
 
-  function onAnimationComplete() {
+  function onAnimationComplete() /*:  -> Any */ {
     // Kill the timer/animation
     stop();
 
@@ -671,7 +671,7 @@ function SimpleAnimation(animateCallback_, startValue_, endValue_, duration_, co
 
 // A general function to simplify downloading data from a website and also
 // handle errors gracefully.
-function SimpleHTTPRequest() {
+function SimpleHTTPRequest() /*: constructor ( -> {request : (String * (String -> Void) -> Void), stop : ( -> Any)}) */ {
   var getStream_ = false;
   var request_ = null;
   var stop_ = false;
@@ -680,7 +680,7 @@ function SimpleHTTPRequest() {
   // Do a request to get a webpage. If getText is true, a text version of the
   // output will be returned. If false, the response stream will be returned
   // (useful for getting image data).
-  function request(url, receivedResultCallback, opt_getStream) {
+  function request(url, receivedResultCallback, opt_getStream) /*: String * (String -> Void) -> Void */ {
     assert(receivedResultCallback != null);
     if (receivedResultCallback == null)
       return;
@@ -721,7 +721,7 @@ function SimpleHTTPRequest() {
   }
 
   // Stop the current transfer. No data callbacks will be made for this request.
-  function stop() {
+  function stop() /*:  -> Any */ {
     if (request_ == null)
       return;
 
@@ -731,7 +731,7 @@ function SimpleHTTPRequest() {
   }
 
   // Called when data is received from the website
-  function onData() {
+  function onData() /*:  -> Void */ {
     // If the download has been stopped, do not continue
     if (stop_)
       return;
@@ -767,7 +767,7 @@ function SimpleHTTPRequest() {
 // Creates a throbber with elements. A throbber is a 'spinning thing' that
 // normally symbolizes waiting. Firefox has one in the top right animated when
 // loading a webpage.
-function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) {
+function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) /*: constructor (Dom * String * String * Int * Int -> {show : ( -> Void), hide : ( -> Void)}) */ {
   var imagePrefix_ = imagePrefix;
   var imageSuffix_ = imageSuffix;
   var totalFrames_ = totalFrames;
@@ -778,24 +778,24 @@ function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) {
   var timer_ = null;
 
   // Returns a frame's filename
-  function getImageFilename(frame) {
+  function getImageFilename(frame) /*: Int -> String */ {
     return imagePrefix_ + frame + imageSuffix_;
   }
 
   // Returns the next frame number in the animation
-  function getNextFrame() {
+  function getNextFrame() /*:  -> Int */ {
     curFrame_++;
     if (curFrame_ == totalFrames_ + 1)
       curFrame_ = 1;
 
     return curFrame_;
   }
-  
+
   // Show the throbber and animate it
-  function show() {
+  function show() /*:  -> Void */ {
     curFrame_ = 0;
     element_.visible = true;
-    
+
     // Start the animation if it is not already running
     if (timer_ == null) {
       timer_ = setInterval(onAnimate, frameDelay_);
@@ -804,7 +804,7 @@ function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) {
   }
 
   // Hide the throbber
-  function hide() {
+  function hide() /*:  -> Void */ {
     element_.visible = false;
 
     // Stop the animation only if it is running
@@ -815,7 +815,7 @@ function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) {
   }
 
   // Called whenever a frame needs to be drawn
-  function onAnimate() {
+  function onAnimate() /*:  -> Void */ {
     element_.src = getImageFilename(getNextFrame());
   }
 
@@ -875,7 +875,7 @@ var IMAGE_SRC = "<img src=\"[IMAGEURL]\" class=\"articleimg\">";
 
 // This class controls the article details panel. This class controls showing
 // and hiding of the panel with animations and also displays the text inside.
-function DetailsController(mainDivElement_, textElement_, imageElement_, popoutElement_, detailsLoadedCallback_, showArticleCallback_) {
+function DetailsController(mainDivElement_, textElement_, imageElement_, popoutElement_, detailsLoadedCallback_, showArticleCallback_) /*: constructor (null * null * null * null * ( -> Void) * ( -> Void) -> {show : (String * null * String -> Void), hide : ( -> Void)}) */ {
   var curArticleText_ = null;
   var curImageURL_ = null;
   var curKeywords_ = null;
@@ -888,7 +888,7 @@ function DetailsController(mainDivElement_, textElement_, imageElement_, popoutE
     popoutElement_.onclick = onPopoutClick;
 
   // Show the panel (details of the article)
-  function show(articleText, imageURL, keywords) {
+  function show(articleText, imageURL, keywords) /*: String * null * String -> Void */ {
     curArticleText_ = articleText;
     curImageURL_ = imageURL;
     curKeywords_ = keywords;
@@ -941,13 +941,13 @@ function DetailsController(mainDivElement_, textElement_, imageElement_, popoutE
   }
 
   // Called when the user clicks on the wikipedia details view
-  function onDetailsViewFeedback(detailsViewFlags) {
+  function onDetailsViewFeedback(detailsViewFlags) /*: Int -> Void */ {
     if (detailsViewFlags == gddDetailsViewFlagToolbarOpen)
       showArticleCallback_();
   }
 
   // Remove the details panel
-  function hide() {
+  function hide() /*:  -> Void */ {
     curArticleText_ = null;
     curImageURL_ = null;
 
@@ -969,13 +969,13 @@ function DetailsController(mainDivElement_, textElement_, imageElement_, popoutE
   }
 
   // Called when the next animation frame is to be drawn
-  function onAnimateSlide(value) {
+  function onAnimateSlide(value) /*: Any -> Any */ {
     mainDivElement_.y = value;
   }
 
   // Resizes the image element to use the correct aspect ratio when displaying
   // the image
-  function resizeImageElement() {
+  function resizeImageElement() /*:  -> Any */ {
     // Calculate sizes such that the image can occupy as much space as possible
     // and also keep the same aspect ratio
     var heightRatio = imageElement_.srcHeight / DETAILS_IMAGE_HEIGHT_MAX;
@@ -1015,12 +1015,12 @@ function DetailsController(mainDivElement_, textElement_, imageElement_, popoutE
   }
 
   // Called when the animation of the details opening is completed
-  function onOpenAnimationCompleted() {
+  function onOpenAnimationCompleted() /*:  -> Any */ {
     animation_ = null;
   }
 
   // Called when the animation of the details closing is completed
-  function onCloseAnimationCompleted() {
+  function onCloseAnimationCompleted() /*:  -> Any */ {
     animation_ = null;
     imageElement_.src = "";
     textElement_.innerText = "";
@@ -1028,7 +1028,7 @@ function DetailsController(mainDivElement_, textElement_, imageElement_, popoutE
   }
 
   // Called when the current article's image finishes downloading (or errors)
-  function onImageReceived(data) {
+  function onImageReceived(data) /*: Any -> Any */ {
     imageRequest_ = null;
 
     if (detailsLoadedCallback_ != null)
@@ -1045,12 +1045,12 @@ function DetailsController(mainDivElement_, textElement_, imageElement_, popoutE
   }
 
   // Called when the popout button is clicked on
-  function onPopoutClick() {
+  function onPopoutClick() /*:  -> Any */ {
     showArticleCallback_();
   }
 
   // Called when the user click the title of the details view popup
-  function onDetailsViewTitleClick() {
+  function onDetailsViewTitleClick() /*:  -> Any */ {
     showArticleCallback_();
   }
 
@@ -1114,7 +1114,7 @@ var DISAMBIGUATION_DETAILS_HTML_ITEM =
   "<li><a href=\"\" onclick=\"window.external.selectedItem('[TEXT]'); return false;\">&raquo; [TEXT]</a></li>";
 
 // This class takes care of managing disambiguation using a listbox
-function WikipediaDisambiguation(disambiguationDiv_, textboxElement_, textboxOnKeyDown_, textboxOnKeyPress_, selectedDisambiguationItemCallback_) {
+function WikipediaDisambiguation(disambiguationDiv_, textboxElement_, textboxOnKeyDown_, textboxOnKeyPress_, selectedDisambiguationItemCallback_) /*: Any * Any * Any * Any * Any -> Any */ {
   var listbox_ = null;
   var ieDetailsView_ = null;
 
@@ -1123,14 +1123,14 @@ function WikipediaDisambiguation(disambiguationDiv_, textboxElement_, textboxOnK
   var inSidebar_ = (textboxOnKeyPress_ == null);
 
   // Verify that valid callbacks are given
-  if (textboxOnKeyDown_ == null) { textboxOnKeyDown_ = function () {} };
-  if (textboxOnKeyPress_ == null) { textboxOnKeyPress_ = function () {} };
+  if (textboxOnKeyDown_ == null) { textboxOnKeyDown_ = function () /*:  -> Any */ {}; };
+  if (textboxOnKeyPress_ == null) { textboxOnKeyPress_ = function () /*:  -> Any */ {}; };
 
   // Show the disambiguation dropdown
-  function show(arrayOfItems) {
+  function show(arrayOfItems) /*: Any -> Any */ {
     // We are creating a timer here to avoid a bug that does a slow redraw when
     // show() is called from an onData callback from XMLHttpRequest.
-    setTimeout(function () {
+    setTimeout(function () /*:  -> Any */ {
       if (!inSidebar_) {
         // Create the listbox and show all the items
         listbox_ = new ListBox(historydiv, onAcceptedDisambiguation,
@@ -1141,7 +1141,7 @@ function WikipediaDisambiguation(disambiguationDiv_, textboxElement_, textboxOnK
 
         // Bind to the textbox control to be able to use the up and down arrow keys
         textboxElement_.onKeyDown = onTextBoxKeyDown;
-        textboxElement_.onKeyPress = function () {};
+        textboxElement_.onKeyPress = function () /*:  -> Any */ {};
       } else {
          // Generate the list of items
         var itemsHtml = "";
@@ -1168,12 +1168,12 @@ function WikipediaDisambiguation(disambiguationDiv_, textboxElement_, textboxOnK
   }
 
   // Hide the disambiguation dropdown
-  function hide() {
+  function hide() /*:  -> Any */ {
     // Only destroy everything once the current event is completed (this usually
     // is because hide() is called on a keyboard event and not all keyboard
     // events are completed, so if we were to reset callbacks, the remaining
     // callbacks would be wrongly called!)
-    setTimeout(function () {
+    setTimeout(function () /*:  -> Any */ {
       // Remove the listbox
       if (listbox_ != null) {
         listbox_.hide();
@@ -1186,7 +1186,7 @@ function WikipediaDisambiguation(disambiguationDiv_, textboxElement_, textboxOnK
     }, 1);
   }
 
-  function onSelectedItem(itemText) {
+  function onSelectedItem(itemText) /*: Any -> Any */ {
     // Callback to the parent. Note that if the parent does a hide() on this
     // object nothing will happen since the details view windows cannot be
     // closed.
@@ -1194,26 +1194,26 @@ function WikipediaDisambiguation(disambiguationDiv_, textboxElement_, textboxOnK
   }
 
   // Called when the disambiguation details view of the IE gets clicked on
-  function onDisambiguationDetailsViewFeedback(detailsViewFlags) {
+  function onDisambiguationDetailsViewFeedback(detailsViewFlags) /*: Any -> Any */ {
     if (detailsViewFlags == 0)
       selectedDisambiguationItemCallback_(null);
   }
 
 
   // Called when the user types anything into the textbox
-  function onTextBoxKeyDown() {
+  function onTextBoxKeyDown() /*:  -> Any */ {
     if (listbox_.notifyKeyPress(event.keyCode))
       event.returnValue = false;
   }
 
   // Called when the user accepts a certain disambiguation entry
-  function onAcceptedDisambiguation(value) {
+  function onAcceptedDisambiguation(value) /*: Any -> Any */ {
     hide();
     selectedDisambiguationItemCallback_(value);
   }
 
   // Called when the user cancels disambiguation entry
-  function onCancelledDisambiguation() {
+  function onCancelledDisambiguation() /*:  -> Any */ {
     hide();
     selectedDisambiguationItemCallback_(null);
   }
@@ -1276,7 +1276,7 @@ var MAX_HISTORY_ITEMS = 5;
 
 // This class takes care of tracking the wikipedia history. This includes
 // storing/loading keywords and showing the history in sidebar or not
-function WikipediaHistory(historyDiv_, selectedHistoryItemCallback_) {
+function WikipediaHistory(historyDiv_, selectedHistoryItemCallback_) /*: constructor (null * (Any -> Any) -> {show : ( -> Any), hide : ( -> Any), addHistoryItem : (String -> Void)}) */ {
   var historyListbox_ = null;
   var items_ = [];
   var inSidebar_ = (historyDiv_ == null);
@@ -1290,7 +1290,7 @@ function WikipediaHistory(historyDiv_, selectedHistoryItemCallback_) {
   }
 
   // Show the history box with all history items
-  function show() {
+  function show() /*:  -> Any */ {
     // If there are no items, do not show
     if (items_.length == 0)
       return;
@@ -1331,7 +1331,7 @@ function WikipediaHistory(historyDiv_, selectedHistoryItemCallback_) {
     }
   }
 
-  function onSelectedItem(itemText) {
+  function onSelectedItem(itemText) /*: Any -> Any */ {
     // Callback to the parent. Note that if the parent does a hide() on this
     // object nothing will happen since the details view windows cannot be
     // closed.
@@ -1339,11 +1339,11 @@ function WikipediaHistory(historyDiv_, selectedHistoryItemCallback_) {
   }
 
   // Called when the history details view of the IE gets clicked on
-  function onHistoryDetailsViewFeedback(detailsViewFlags) {
+  function onHistoryDetailsViewFeedback(detailsViewFlags) /*: Any -> Any */ {
   }
 
   // Hide the history box if it's open
-  function hide() {
+  function hide() /*:  -> Any */ {
     if (!inSidebar_) {
       if (historyListbox_ != null) {
         historyListbox_.hide();
@@ -1353,18 +1353,18 @@ function WikipediaHistory(historyDiv_, selectedHistoryItemCallback_) {
   }
 
   // Called when the user accepts a selection in the listbox
-  function onAcceptedEntry(text) {
+  function onAcceptedEntry(text) /*: Any -> Any */ {
     hide();
     selectedHistoryItemCallback_(text);
   }
 
   // Called when the user cancels a selection in the listbox
-  function onCancelledEntry() {
+  function onCancelledEntry() /*:  -> Any */ {
     hide();
   }
 
   // Add an item to the history options object
-  function addHistoryItem(text) {
+  function addHistoryItem(text) /*: String -> Void */ {
     text = text.replace(/\|/g, " ");
 
     // If the item is already the most recent, do not add it again
@@ -1382,7 +1382,7 @@ function WikipediaHistory(historyDiv_, selectedHistoryItemCallback_) {
   }
 
   // Save the current items list to the history options object
-  function saveHistoryItems() {
+  function saveHistoryItems() /*:  -> Void */ {
     //options(HISTORY_OPTIONS_NAME) = items_.join("|");
     options.putValue(HISTORY_OPTIONS_NAME, items_.join("|"));
   }
@@ -1398,7 +1398,7 @@ function WikipediaHistory(historyDiv_, selectedHistoryItemCallback_) {
 // This class will query Google for Wikipedia pages. It uses the Google cached
 // pages to scrape from since the Wikipedia official servers are known to be
 // very slow. Also, this makes it easier for us to control the server load.
-function WikipediaQuery() {
+function WikipediaQuery() /*: constructor ( -> {query : (String * (String * null * String -> Void) -> String), stop : ( -> Any), getDisambiguationArray : ( -> Any)}) */ {
   var QUERY_URL =
     //"http://www.google.com/search?q=cache%3Aen.wikipedia.org%2Fwiki%2F";
     //"http://en.wikipedia.org/wiki/";
@@ -1425,7 +1425,7 @@ function WikipediaQuery() {
   var pageText_ = null;
   var originalQuery_ = null;
 
-  function query(name, receivedResultCallback) {
+  function query(name, receivedResultCallback) /*: String * (String * null * String -> Void) -> String */ {
     assert(request_ == null);
     if (request_ != null)
       return;
@@ -1447,7 +1447,7 @@ function WikipediaQuery() {
     return articleURL_;
   }
 
-  function onReceivedWebpage(text) {
+  function onReceivedWebpage(text) /*: String -> Void */ {
     request_ = null;
     pageText_ = text;
 
@@ -1506,7 +1506,7 @@ function WikipediaQuery() {
 
   // Parses the page text that should already be set in pageText_ and retrieves
   // the text of the first paragraph.
-  function getArticleFirstParagraph() {
+  function getArticleFirstParagraph() /*:  -> String */ {
     // Loop through all paragraph tags in the article until one is found that is
     // suitable for the description
     var result = null;
@@ -1548,7 +1548,7 @@ function WikipediaQuery() {
   }
 
   // Parses the page text to find the first image's URL
-  function getFirstImageURL() {
+  function getFirstImageURL() /*:  -> null */ {
     var result = null;
     var imageURL = "";
 
@@ -1584,13 +1584,13 @@ function WikipediaQuery() {
   }
 
   // Stop a query, if it exists
-  function stop() {
+  function stop() /*:  -> Any */ {
     if (request_ != null)
       request_.stop();
   }
 
   // Get an array of article titles of articles similar to the last query name
-  function getDisambiguationArray() {
+  function getDisambiguationArray() /*:  -> Any */ {
     var articleTitles = [];
 
     var result = null;
@@ -1632,7 +1632,7 @@ function WikipediaQuery() {
 
   // A simple function to get only the text from a webpage. Some small
   // conversions are done to convert some html elements to symbols.
-  function htmlToPlainText(item) {
+  function htmlToPlainText(item) /*: String -> String */ {
     if (item) {
       // Remove html tags
       item = item.replace(/<([^>]|\n)*>/g, '');
@@ -1655,7 +1655,7 @@ function WikipediaQuery() {
   this.getDisambiguationArray = getDisambiguationArray;
 }
 
-function assert(cond) {
+function assert(cond) /*: Bool -> Void */ {
   if (!cond) {
     throw 0;
   }
