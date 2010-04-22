@@ -20,7 +20,7 @@ let tc_const (const : JavaScript_syntax.const) = match const with
   | JavaScript_syntax.CNum _ -> typ_num
   | JavaScript_syntax.CInt _ -> typ_int
   | JavaScript_syntax.CBool _ -> typ_bool
-  | JavaScript_syntax.CNull -> typ_bool
+  | JavaScript_syntax.CNull -> typ_null
   | JavaScript_syntax.CUndefined -> typ_undef
       
 let rec tc_exp (env : Env.env) exp = match exp with
@@ -179,7 +179,15 @@ let rec tc_exp (env : Env.env) exp = match exp with
               error p (sprintf "could not determine \'%s in the function type \
                                 %s" x (string_of_typ t))
             end
-      | TArrow (_, expected_typs, result_typ) ->
+      | TArrow (expected_thist, expected_typs, result_typ) ->
+          let _ = (
+            let this_typ = tc_thist env f in
+              if not (Env.subtype env this_typ expected_thist) then
+                raise (Typ_error 
+                         (p, sprintf "expected this type %s, got %s"
+                            (string_of_typ expected_thist)
+                            (string_of_typ this_typ)))
+              else this_typ) in
           let arg_typs' = tc_exps env args in
           let arg_typs = 
             fill (List.length expected_typs - List.length args) 
@@ -233,7 +241,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
         List.iter tc_bind binds;
         tc_exp env body
   | EFunc (p, args, fn_typ, body) -> begin match Env.check_typ p env fn_typ with
-        TArrow (_, arg_typs, result_typ) ->
+        TArrow (this_t, arg_typs, result_typ) ->
           if List.length arg_typs = List.length args then ()
           else raise (Typ_error (p,
             "given " ^ (string_of_int (List.length args)) ^ " arg names but "
@@ -242,6 +250,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
           let bind_arg env x t = Env.bind_id x t env in
           let env = List.fold_left2 bind_arg env args arg_typs in
           let env = Env.clear_labels env in
+          let env = Env.bind_id "this" this_t env in
           let body_typ = tc_exp env body in
             if Env.subtype env body_typ result_typ then fn_typ
             else raise 
@@ -285,6 +294,22 @@ let rec tc_exp (env : Env.env) exp = match exp with
         
 
 and tc_exps env es = map (tc_exp env) es
+
+(* find the first bracketref, return type of lhs, or none otherwise 
+obj.foo() --> (deref (deref obj)["foo"]), so we look for this pattern *)
+and tc_thist env e = match e with 
+  | EDeref (_, EBracket (_, obj, prop)) -> tc_exp env obj
+  (* let falls through, same w/ seq, labels, etc *)
+  | ELet (_, x, e1, e2) -> tc_thist (Env.bind_id x (tc_exp env e1) env) e2
+  | ESeq (_, e1, e2) -> begin match tc_exp env e1 with
+        TBot -> TObject []
+      | _ -> tc_thist env e2
+    end
+  | ELabel (_, _, _, e1) -> tc_thist env e1
+  | ETryCatch (_, exp, _, _) -> tc_thist env exp
+  | ETryFinally (_, e1, e2) -> tc_thist env e1
+  (*what would etypecast, subsumption, typecast do? probably be none....*)
+  | _ -> TObject []
 
 let rec tc_def env def = match def with
     DEnd -> ()

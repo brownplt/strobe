@@ -89,6 +89,11 @@ module Env = struct
             let fs1 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
             let fs1 = List.rev fs1 in
               subtype_fields env fs1 fs2
+        | TObject fs1, TConstr (c_name, []) ->
+            (* Same for the other direction. This must be double-checked. *)
+            let fs2 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
+            let fs2 = List.rev fs2 in
+              subtype_fields env fs1 fs2
         | TRef s', TRef t' -> subtype s' t' && subtype t' s'
         | TSource s, TSource t -> subtype s t
         | TSink s, TSink t -> subtype t s
@@ -98,18 +103,22 @@ module Env = struct
         | TBot, _ -> true
         | _ -> s = t
 
-  (* assumes fs1 and fs2 are ordered *)
+  (* assumes fs1 and fs2 are ordered 
+     fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
   and subtype_fields env fs1 fs2 = match fs1, fs2 with
     | [], [] -> true
-    | [], _ -> true
-    | _, [] -> false (* fs1 has fields that fs2 does not *)
+    | [], _ -> false (* fs1 is missing some things fs2 has *)
+    | _, [] -> true (* can have many extra fields, doesn't matter *)
     | (x, s) :: fs1', (y, t) :: fs2' ->
         let cmp = String.compare x y in
           if cmp = 0 then subtype env s t && subtype_fields env fs1' fs2'
-          else if cmp < 0 then false (* we will not find x in the supertype *)
-            (* y is an extra field in the supertype *)
-          else subtype_fields env fs1 fs2' 
-
+            (* if cmp < 0, x is an extra field, so just move on *)
+          else (if cmp < 0 then 
+                  (printf "%s is extra field" x; 
+                   subtype_fields env fs1' fs2)
+                    (* otherwise, y is a field that x does not have *)
+                else (printf "lhs doesnt have %s" y; false))
+            
   and subtypes env (ss : typ list) (ts : typ list) : bool = 
     try List.for_all2 (subtype env) ss ts
     with Invalid_argument _ -> false (* unequal lengths *)

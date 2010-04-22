@@ -35,12 +35,12 @@ function _view_onpopout() /*:  -> Void */ {
 }
 
 function d() /*:  -> Void */ {
-  /*var a = new Date(undefined); // Claudiu : added undefined
+  var a = new Date(undefined); // Claudiu : added undefined
     if (_minimized) {
-        var b = /*:upcast String + Int *//*(a.getHours());
+        var b = /*:upcast String + Int */(a.getHours());
         if (b > 12) b = b - 12;
         if (b < 10) b = "0" + b;
-        var c = a.getMinutes();
+        var c = /*:upcast String + Int */(a.getMinutes());
         if (c < 10) c = "0" + c;
         view.caption = b + ":" + c;
     } else {
@@ -48,7 +48,7 @@ function d() /*:  -> Void */ {
         k(a);
     }
     var i = (61 - a.getSeconds()) * 1000;
-    setTimeout(d, i);*/
+    setTimeout(d, i);
 }
 
 function e() /*:  -> Void */ {

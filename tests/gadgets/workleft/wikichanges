@@ -1,0 +1,13 @@
+WIKI CHANGES NEEDED:
+- few parse errors (dont count)
+- move a function up
+- ondisplaytargetchange func lift
+- function request(url, receivedResultCallback, opt_getStream) /*: String * (String -> Void) * (Boolean + Void) -> Void */ {
+- "new Object()" --> {}
+- downcast from activexobject to shellapplication
+- add constructors to envs
+  - fix new, function typing w/ this
+- move vars around to make it work
+- add unbound id checking in new exprs
+- allow vars and functions before setting this. in constructors
+- query can return void

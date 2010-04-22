@@ -5,7 +5,7 @@ function Point(x, y) /*: constructor (Int * Int -> {x : Int, y : Int}) */ {
 
 var p = new Point(10, 20);
 
-Point.prototype.sum = function() /*: -> Int */ { return this.x + this.y; };
+Point.prototype.sum = function() /*: [Point] -> Int */ { return this.x + this.y; };
 Point.prototype.RANDOMVALUE = "hi";
 //the same point can now be used to sum:
 p.sum();

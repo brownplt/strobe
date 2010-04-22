@@ -226,6 +226,8 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                   [false, throw', [exn], TArrow (TTop, [TTop], TBot),
                    cps_exp catch_body throw (Jmp cont)],
                   cps_exp body throw' (Jmp cont)))
+  | ETryFinally (_, e1, e2) -> (*TODO: make this not drop the finally *)
+      cps_exp e1 throw k
 
 and cps_bind ((name, typ, e) : id * typ * exp) = match e with
     EFunc (_, args, _, body) ->

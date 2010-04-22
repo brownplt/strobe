@@ -95,29 +95,30 @@ function getDateDiff(start, end)
   /*: Date * Date -> { isPassed : Bool, msec : Int, seconds : Int,
                        minutes : Int, hours : Int, days : Int } */
 {
-    var diff = /*:upcast Number */ (end.valueOf() - start.valueOf());
+  var diff = (end.valueOf() - start.valueOf());
 
-  var isPassed = diff <= 0.0; //Claudiu: 0 --> 0.0
+  var isPassed = diff <= 0;
 
   diff = Math.abs(diff);
 
-  var msec = /*:downcast Int */(diff % 1000.0);
+  var msec = (diff % 1000);
 
   // Seconds.
-  diff = diff / 1000;
-  var seconds = Math.floor(diff % 60.0);
+  // Claudiu: put the Math.floor around the div, not around the mod.
+  diff = Math.floor(diff / 1000);
+  var seconds = diff % 60;
 
   // Minutes.
-  diff = diff / 60;
-  var minutes = Math.floor(diff % 60.0);
+  diff = Math.floor(diff / 60);
+  var minutes = diff % 60;
 
   // Hours.
-  diff = diff / 60;
-  var hours = Math.floor(diff % 24.0);
+  diff = Math.floor(diff / 60);
+  var hours = diff % 24;
 
   // Days.
-  diff = diff / 24;
-  var days = Math.floor(diff);
+  diff = Math.floor(diff / 24);
+  var days = diff;
 
   return { isPassed: isPassed, msec: msec, seconds: seconds,
           minutes : minutes, hours: hours, days: days };

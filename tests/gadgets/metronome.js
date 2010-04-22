@@ -1,7 +1,7 @@
 /* Eval: required 1 upcast, 1 downcast, changing null to false/0 (other
  *   sentinel values), and just some function annotations. not bad!
  */
-var curAudioClip_ = /*:upcast Audioclip + Bool*/ false;
+var curAudioClip_ = /*:upcast Audioclip + Void*/ undefined;
 var timer = 0; // Arjun: null --> 0
 var flag = 0;
 var bpm = 0;
@@ -73,12 +73,12 @@ function decr() /*: -> Void */ {
 }
 
 function onPlay() /*: -> Void */ {
-  if (typeof curAudioClip_ === "boolean") {      // Not playing anything
+  if (typeof curAudioClip_ === "undefined") {      // Not playing anything
     curAudioClip_ = framework.audio.play(AUDIO_CLIP_URI, onAudioStateChange);
     startedAudio();
   } else {                  // Already playing something
     curAudioClip_.stop();
-    curAudioClip_ = false; // Claudiu: null -> false
+    curAudioClip_ = undefined; // Claudiu: null -> undefined
     stoppedAudio();
   }
 }
@@ -86,7 +86,7 @@ function onPlay() /*: -> Void */ {
 function onAudioStateChange(audioClip, state) /*: Audioclip * Int -> Void */ {
   if (state == gddSoundStateStopped) {
     stoppedAudio();
-    curAudioClip_ = false; // Claudiu: null -> false
+    curAudioClip_ = undefined; // Claudiu: null -> undefined
   } else if (state == gddSoundStatePlaying) {
     startedAudio();
   }

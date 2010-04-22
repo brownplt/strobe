@@ -53,6 +53,7 @@ arg_typ
 typ 
   : arg_typ { $1 }
   | args ARROW typ { TArrow (TTop, $1, $3) }
+  | LBRACK typ RBRACK args ARROW typ { TArrow ($2, $4, $6) }
   | FORALL ID LTCOLON typ DOT typ { TForall ($2, $4, $6) }
   | FORALL ID DOT typ { TForall ($2, TTop, $4) }
 
