@@ -98,17 +98,19 @@ module Env = struct
         | TBot, _ -> true
         | _ -> s = t
 
-  (* assumes fs1 and fs2 are ordered *)
+  (* assumes fs1 and fs2 are ordered 
+     fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
   and subtype_fields env fs1 fs2 = match fs1, fs2 with
     | [], [] -> true
-    | [], _ -> true
-    | _, [] -> false (* fs1 has fields that fs2 does not *)
+    | [], _ -> false (* fs1 is missing some things fs2 has *)
+    | _, [] -> true (* can have many extra fields, doesn't matter *)
     | (x, s) :: fs1', (y, t) :: fs2' ->
         let cmp = String.compare x y in
           if cmp = 0 then subtype env s t && subtype_fields env fs1' fs2'
-          else if cmp < 0 then false (* we will not find x in the supertype *)
-            (* y is an extra field in the supertype *)
-          else subtype_fields env fs1 fs2' 
+            (* if cmp < 0, x is an extra field, so just move on *)
+          else if cmp < 0 then subtype_fields env fs1' fs2           
+            (* otherwise, y is a field that x does not have *)
+          else false
 
   and subtypes env (ss : typ list) (ts : typ list) : bool = 
     try List.for_all2 (subtype env) ss ts
