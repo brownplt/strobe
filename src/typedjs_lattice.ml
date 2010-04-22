@@ -154,6 +154,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
       | "Undefined" -> RTSet.singleton RT.Undefined
       | _ -> RTSet.singleton RT.Object
     end
+  | Typedjs_syntax.TConstr ("Array", [arrayt]) -> RTSet.singleton RT.Object
   | Typedjs_syntax.TConstr _ -> failwith 
       (sprintf "unknown type: %s" (to_string Typedjs_syntax.Pretty.p_typ t))
   | Typedjs_syntax.TObject _ -> RTSet.singleton RT.Object
