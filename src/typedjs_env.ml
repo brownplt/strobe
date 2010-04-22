@@ -89,6 +89,11 @@ module Env = struct
             let fs1 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
             let fs1 = List.rev fs1 in
               subtype_fields env fs1 fs2
+        | TObject fs1, TConstr (c_name, []) ->
+            (* Same for the other direction. This must be double-checked. *)
+            let fs2 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
+            let fs2 = List.rev fs2 in
+              subtype_fields env fs1 fs2
         | TRef s', TRef t' -> subtype s' t' && subtype t' s'
         | TSource s, TSource t -> subtype s t
         | TSink s, TSink t -> subtype t s
@@ -108,10 +113,12 @@ module Env = struct
         let cmp = String.compare x y in
           if cmp = 0 then subtype env s t && subtype_fields env fs1' fs2'
             (* if cmp < 0, x is an extra field, so just move on *)
-          else if cmp < 0 then subtype_fields env fs1' fs2           
-            (* otherwise, y is a field that x does not have *)
-          else false
-
+          else (if cmp < 0 then 
+                  (printf "%s is extra field" x; 
+                   subtype_fields env fs1' fs2)
+                    (* otherwise, y is a field that x does not have *)
+                else (printf "lhs doesnt have %s" y; false))
+            
   and subtypes env (ss : typ list) (ts : typ list) : bool = 
     try List.for_all2 (subtype env) ss ts
     with Invalid_argument _ -> false (* unequal lengths *)
