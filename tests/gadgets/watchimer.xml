@@ -79,7 +79,7 @@
   </div>
   <div background="#0000CCEE" height="200" name="mainmenu" visible="false"
      width="200" x="0" y="0">
-    <button image="orbappicon.png" name="img1" x="18" y="15"/>
+    <button image="orbappicon.png" name="img1_2" x="18" y="15"/>
   </div>
   <script src="jstrace.js"/>
   <script src="main_cc.js"/>

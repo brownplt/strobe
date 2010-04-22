@@ -1,30 +1,58 @@
-var h = 0;        
+/* Changes:
+- found a bug - img1 was declared twice in the xml
+- added 2 intervals as global variable
+- added alarming as global, initialized it to audioclip
+- change the Unknown to Audioclip
+- changed correctOutput to always return String
+- changed 8 setTimeouts to use functions, not eval strings
+- added upcast to a timer to be undefined + Int, guarded
+  call to clearInterval to make sure it is Int
+- initialized an int to 0
+- 3x: parsed a string to int explicitly
+- 6x: found bug - used & instead of &&.
+
+Infer evaluation: (events - annotations found)
+0 events - 5
+1 event  - 13 (moving it around)
+2 events - 18 (press start)
+3 events - 21 (press stop)
+4 events - 22 reset
+6 events - 25 - click on different view and back
+12 events- 33 - click on up + down buttons
+18 events -36 - press keyboard, hms, etc
+21 events -42 - start timer, let alarm go off, stop it
+  */
+
+var h = 0;
 var m = 0;
 var s = 0;
-var tmr;
+var tmr = /*:upcast Undefined + Int*/undefined;
 var pause = 0;
 var done = 0;
 var prevSelect = 0;
 var confirmed = 0;
 var controlAltPressed = 0;
 
-function startCount(){
+var t = 0, r = 0; //interval has to be a global
+var alarming = framework.audio.open("alarm.mp3"); ///*:upcast Undefined + Audioclip*/undefined;
+
+function startCount() /*:  -> Void */{
 	hours.enabled = false;
 	minutes.enabled = false;
 	seconds.enabled = false;
 
 	if(done == 0){
-		
+
 		view.beginAnimation(startOff, 255, 0, 500);
 		view.beginAnimation(stopOn, 0, 255, 500);
 		if(clear.opacity == 255)
 		{
-			view.beginAnimation(clearOff, 255, 0, 500);	
+			view.beginAnimation(clearOff, 255, 0, 500);
 		}
 		view.beginAnimation(moveStop,196, 99, 750);
 		done = 1;
 	}
-	stop.enabled = true; 
+	stop.enabled = true;
 	modeSwitch.enabled = false;
 	clear.enabled = false;
 	start.enabled = false;
@@ -45,14 +73,14 @@ function startCount(){
 			if(m == 60){
 			   m = 0;
 			   h++;
-			}	
+			}
 		}
 		hours.innerText = correctOutput(h);
 		seconds.innerText = correctOutput(s);
 		minutes.innerText = correctOutput(m);
 		blink();
 		stop.focus();
-		t = setTimeout("startCount()", 1000);
+		t = setTimeout(startCount, 1000);
 	}
 	else{
 		if(s != 0 || h != 0 || m != 0){
@@ -62,16 +90,16 @@ function startCount(){
 			minutes.innerText = correctOutput(m);
 			blink();
 			stop.focus();
-			t = setTimeout("startCount()", 1000);
+			t = setTimeout(startCount, 1000);
 		}
-		else{			
+		else{
 			stopCount();
 			alarm();
 		}
 	}
-	stop.focus();	
+	stop.focus();
 }
-function blink(){	
+function blink() /*:  -> Void */{
 	if(blinky.visible == true){
 		blinky.visible = false;
 		blinky2.visible = false;
@@ -83,37 +111,37 @@ function blink(){
 	}
 	pause++;
 }
-function correctOutput(h){
+function correctOutput(h) /*: (Int + String) -> String */{
 	if(h < 10 && h > 0){
 		h = "0" + h;
 	}
 	else if(h == 0){
-		h = "00"
+		h = "00";
 	}
-	return h;
+	return ""+h;
 }
-function clearCount(){
+function clearCount() /*:  -> Void */{
 	h = 0;
 	s = 0;
 	m = 0;
   	hours.innerText = correctOutput(h);
 	seconds.innerText = correctOutput(s);
 	minutes.innerText = correctOutput(m);
-	
+
 	clear.enabled = false;
-	
+
 	view.beginAnimation(moveGreenBack,196, 99, 750);
 	view.beginAnimation(clearOff, 255, 0, 500);
 
 	if(modeSwitch.image == "timerTAB.png"){
 		start.enabled = false;
 		view.beginAnimation(startOff, 255, 0, 500);
-		view.resizeTo(284, 80); 
-		
+		view.resizeTo(284, 80);
+
 	}
 	modeSwitch.focus();
 }
-function stopCount(){	
+function stopCount() /*:  -> Void */{
 	hours.enabled = true;
 	minutes.enabled = true;
 	seconds.enabled = true;
@@ -122,19 +150,19 @@ function stopCount(){
 		clear.enabled = true;
 		view.beginAnimation(clearOff, 0, 255, 500);
 		view.beginAnimation(moveGreenBack,99, 196, 750);
-		view.beginAnimation(stopOn, 255, 0, 500); // reusing function 
-		view.beginAnimation(startOff, 0, 255, 500); // reusing function	
+		view.beginAnimation(stopOn, 255, 0, 500); // reusing function
+		view.beginAnimation(startOff, 0, 255, 500); // reusing function
 	}
 	stop.enabled = false;
 	blinky.visible = true;
 	blinky2.visible = true;
 	clearInterval(t);
-	
-	
+
+
 	if(modeSwitch.image == "timerTAB.png"){
 		if(upH.opacity != 255)
-		{		
-			view.beginAnimation(fadeID, 0, 255, 450);	
+		{
+			view.beginAnimation(fadeID, 0, 255, 450);
 			upH.enabled = true;
 			downH.enabled = true;
 			upM.enabled = true;
@@ -143,57 +171,57 @@ function stopCount(){
 			downS.enabled = true;
 		}
 		if(h == 0 && m == 0 && s == 0){
-			view.beginAnimation(stopOn, 255, 0, 500); // reusing function 
-			
+			view.beginAnimation(stopOn, 255, 0, 500); // reusing function
+
 			start.x = 99;
-			start.enabled = false;	
+			start.enabled = false;
 		}
 	}
 	done = 0;
 	modeSwitch.enabled = true;
 	modeSwitch.focus();
-	
+
 }
-function stopOn(){stop.opacity = event.value;}
-function startOff(){start.opacity = event.value;}
-function moveStop(){stop.x = event.value;}
-function moveGreenBack(){start.x = event.value;}
-function clearOff(){clear.opacity = event.value;}	
+function stopOn() /*:  -> Void */{stop.opacity = event.value;}
+function startOff() /*:  -> Void */{start.opacity = event.value;}
+function moveStop() /*:  -> Void */{stop.x = event.value;}
+function moveGreenBack() /*:  -> Void */{start.x = event.value;}
+function clearOff() /*:  -> Void */{clear.opacity = event.value;}
 //----------------------- stopwatch ends here ------------------------------
 
 //---------------------------- Timer Starts Here --------------------------
-function fasterEdit(whichEdit){
+function fasterEdit(whichEdit) /*: Int -> Void */{
 	switch(whichEdit){
-		case 0: // stop increasing or decreasing when left mouse button released 
-			clearInterval(tmr);
+		case 0: // stop increasing or decreasing when left mouse button released
+			if (typeof tmr === "number") clearInterval(tmr);
 			break;
 		case 1:
 			increaseSec();
-			tmr = setTimeout("fasterEdit(1)", 200);
+			tmr = setTimeout(function()/*:->Void*/{fasterEdit(1);}, 200);
 			break;
 		case 2:
 			decreaseSec();
-			tmr = setTimeout("fasterEdit(2)", 200);
+			tmr = setTimeout(function()/*:->Void*/{fasterEdit(1);}, 200);
 			break;
 		case 3:
 			increaseMin();
-			tmr = setTimeout("fasterEdit(3)", 200);
+			tmr = setTimeout(function()/*:->Void*/{fasterEdit(1);}, 200);
 			break;
 		case 4:
 			decreaseMin();
-			tmr = setTimeout("fasterEdit(4)", 200);
+			tmr = setTimeout(function()/*:->Void*/{fasterEdit(1);}, 200);
 			break;
 		case 5:
 			increaseHr();
-			tmr = setTimeout("fasterEdit(5)", 200);
+			tmr = setTimeout(function()/*:->Void*/{fasterEdit(1);}, 200);
 			break;
 		case 6:
 			decreaseHr();
-			tmr = setTimeout("fasterEdit(6)", 200);
+			tmr = setTimeout(function()/*:->Void*/{fasterEdit(1);}, 200);
 			break;
 	}
 }
-function increaseSec(){
+function increaseSec() /*:  -> Void */{
 	s++;
 	if(s == 60){
 		s = 0;
@@ -216,9 +244,9 @@ function increaseSec(){
 	}
 	modeSwitch.focus();
 }
-function decreaseSec(){
+function decreaseSec() /*:  -> Void */{
 	s--;
-	if(s == -1){	
+	if(s == -1){
 		s = 59;
 	}
 	seconds.innerText = correctOutput(s);
@@ -239,9 +267,9 @@ function decreaseSec(){
 	}
 	modeSwitch.focus();
 }
-function increaseMin(){
+function increaseMin() /*:  -> Void */{
 	m++;
-	if(m == 60){	
+	if(m == 60){
 		m = 0;
 	}
 	minutes.innerText = correctOutput(m);
@@ -262,10 +290,10 @@ function increaseMin(){
 	}
 	modeSwitch.focus();
 }
-function decreaseMin(){
+function decreaseMin() /*:  -> Void */{
 	m--;
 	if(m == -1){
-		m = 59
+		m = 59;
 	}
 	minutes.innerText = correctOutput(m);
 	if(m > 0 && start.opacity == 0){
@@ -285,7 +313,7 @@ function decreaseMin(){
 	}
 	modeSwitch.focus();
 }
-function increaseHr(){
+function increaseHr() /*:  -> Void */{
 	h++;
 	if(h == 100){
 		h = 0;
@@ -308,7 +336,7 @@ function increaseHr(){
 	}
 	modeSwitch.focus();
 }
-function decreaseHr(){
+function decreaseHr() /*:  -> Void */{
 	h--;
 	if(h == -1){
 		h = 99;
@@ -320,10 +348,10 @@ function decreaseHr(){
 		view.resizeTo(284,170);
 		view.beginAnimation(clearOff, 0, 255, 500);
 		view.beginAnimation(moveGreenBack,99, 196, 750);
-		view.beginAnimation(startOff, 0, 255, 500); 
+		view.beginAnimation(startOff, 0, 255, 500);
 	}
 	else if(h == 0 && s == 0 && m == 0 && start.opacity == 255){
-			view.beginAnimation(startOff, 255, 0, 500); 
+			view.beginAnimation(startOff, 255, 0, 500);
 			start.enabled = false;
 			view.beginAnimation(clearOff, 255, 0, 500);
 			clear.enabled = false;
@@ -331,10 +359,10 @@ function decreaseHr(){
 	}
 	modeSwitch.focus();
 }
-function startTimer(){
+function startTimer() /*:  -> Void */{
 	s--;
 
-	if(s == -1 && m > 0){	
+	if(s == -1 && m > 0){
 		s = 59;
 		m--;
 	}
@@ -344,30 +372,30 @@ function startTimer(){
 			s = 59;
 	}
 }
-function hoverAppear(){
+function hoverAppear() /*:  -> Void */{
 	hover.opacity = event.value;
 }
-function rotateHover(){
+function rotateHover() /*:  -> Void */{
 	hover.rotation = event.value;
 }
-function coolHover(){
+function coolHover() /*:  -> Void */{
 	if(hover.opacity == 0)
 	{
-		view.beginAnimation(hoverAppear, 0, 255, 400); 
+		view.beginAnimation(hoverAppear, 0, 255, 400);
 	}
 	view.beginAnimation(rotateHover, 0, 359, 600);
-	
-	r = setTimeout("coolHover()", 601);
+
+	r = setTimeout(coolHover, 601);
 }
-function stopCoolHover(){
+function stopCoolHover() /*:  -> Void */{
 	clearInterval(r);
 	hover.rotation = 0;
 	hover.opacity = 0;
 }
-function rotateModeSwitch(){
+function rotateModeSwitch() /*:  -> Void */{
 	modeSwitch.rotation = event.value;
 }
-function fadeID(){
+function fadeID() /*:  -> Void */{
 	upH.opacity = event.value;
 	downH.opacity = event.value;
 	upM.opacity = event.value;
@@ -375,7 +403,7 @@ function fadeID(){
 	upS.opacity = event.value;
 	downS.opacity = event.value;
 }
-function changeMode(){
+function changeMode() /*:  -> Void */{
 	stopCoolHover();
 	modeSwitch.enabled = false;
 	view.beginAnimation(rotateModeSwitch, 0, -180, 300);
@@ -386,7 +414,7 @@ function changeMode(){
 		modeSwitch.image = "stopwatchTAB.png";
 		if(start.x == 196){
 			view.beginAnimation(moveGreenBack,196, 99, 750);
-		}	
+		}
 	}
 	view.beginAnimation(rotateModeSwitch, -180, 0, 300);
 	if(modeSwitch.image == "stopwatchTAB.png"){
@@ -413,29 +441,29 @@ function changeMode(){
 	}
 	modeSwitch.enabled = true;
 	modeSwitch.focus();
-	stopCoolHover();	
+	stopCoolHover();
 }
-function alarm(){	
-	alarming = audio.open("alarm.mp3");
-	view.beginAnimation(rotateAlarmButton, 90, 0, 500);	
+function alarm() /*:  -> Void */{
+	alarming = framework.audio.open("alarm.mp3");
+	view.beginAnimation(rotateAlarmButton, 90, 0, 500);
 	stopAlarmSound.enabled = true;
 	alarming.onStateChange = mediaStateChange;
 	alarming.play();
-	stopAlarmSound.focus();	
+	stopAlarmSound.focus();
 }
-function mediaStateChange(media, state){
+function mediaStateChange(media, state) /*: Audioclip * Int -> Void */{
 	if(state == gddSoundStateStopped){
-	      m = setTimeout(function() { alarming.play(); }, 400);
+	      m = setTimeout(function() /*:  -> Void */ { alarming.play(); }, 400);
   	}
 }
-function rotateAlarmButton(){
+function rotateAlarmButton() /*:  -> Void */{
 	stopAlarmSound.rotation = event.value;
 	if(event.value == 90){
 		view.resizeTo(284,80);
 	}
 }
-function stopAlarm(){
-	audio.stop(alarming);
+function stopAlarm() /*:  -> Void */{
+	framework.audio.stop(alarming);
 	clearInterval(m);
 	view.beginAnimation(rotateAlarmButton, 0, 90, 500);
 	// flushing the stuff begins below
@@ -448,8 +476,8 @@ function stopAlarm(){
 	stopAlarmSound.enabled = false;
 	modeSwitch.focus();
 }
-function triSelect(whichEdit){
-	var mailMan; // variable named mailman after its only purpose - to take value from whichEdit and pass it to prevSelect
+function triSelect(whichEdit) /*: Int -> Void */{
+	var mailMan=0; // variable named mailman after its only purpose - to take value from whichEdit and pass it to prevSelect
 
 	switch(whichEdit){
 		case 1:
@@ -483,7 +511,7 @@ function triSelect(whichEdit){
 	triDeselect();
 	prevSelect = mailMan;
 }
-function triDeselect(){
+function triDeselect() /*:  -> Void */{
 	// turn off previous selection
 	switch(prevSelect){
 		case 1:
@@ -509,11 +537,11 @@ function triDeselect(){
 	{
 		editCancel(prevSelect);
 	}
-}	
-//keyboard functionality(setting the timer currently the only use)
-function editOn(whichEdit){
+}
+//keyboard functionality(setting the timer currently the only use) /*: Int -> Void */
+function editOn(whichEdit) /*: Int -> Void */{
 	switch(whichEdit){
-		case 1: 
+		case 1:
 			secEdit.visible = true;
 			secEdit.enabled = true;
 			seconds.enabled = false;
@@ -527,7 +555,7 @@ function editOn(whichEdit){
 			minutes.visible = false;
 			minEdit.focus();
 			break;
-		case 3: 
+		case 3:
 			hrsEdit.visible = true;
 			hrsEdit.enabled = true;
 			hours.enabled = false;
@@ -538,7 +566,7 @@ function editOn(whichEdit){
 	triSelect(whichEdit);
 }
 
-function clearInitialTime(whichEdit){
+function clearInitialTime(whichEdit) /*: Int -> Void */{
 	switch(whichEdit){
 		case 1:
 			secEdit.value = "";
@@ -551,27 +579,27 @@ function clearInitialTime(whichEdit){
 			break;
 	}
 }
-function limitEdit(whichEdit){
+function limitEdit(whichEdit) /*: Int -> Void */{
 	switch(whichEdit){
 		case 1:
 			if((secEdit.value.length == 2 || (event.keyCode < 48 || event.keyCode > 57)) && (event.keyCode != 8)){
-				event.returnValue = false
+				event.returnValue = false;
 			}
 			break;
 		case 2:
 			if((minEdit.value.length == 2 || (event.keyCode < 48 || event.keyCode > 57))&& (event.keyCode != 8)){
-				event.returnValue = false
+				event.returnValue = false;
 			}
 			break;
-		case 3: 
+		case 3:
 			if((hrsEdit.value.length == 2 || (event.keyCode < 48 || event.keyCode > 57))&& (event.keyCode != 8)){
-				event.returnValue = false
+				event.returnValue = false;
 			}
 			break;
 	}
 }
-function exitAlternate(whichEdit){
-	limitEdit(whichEdit);	
+function exitAlternate(whichEdit) /*: Int -> Void */{
+	limitEdit(whichEdit);
 	if(event.keyCode == 13){
 		editOff(whichEdit);
 	}
@@ -581,7 +609,7 @@ function exitAlternate(whichEdit){
 		modeSwitch.focus();
 	}
 	switch(whichEdit){
-		case 1: 
+		case 1:
 			if(event.keyCode == 77 || event.keyCode == 37){
 				triDeselect();
 				editCancel(whichEdit);
@@ -634,7 +662,7 @@ function exitAlternate(whichEdit){
 			break;
 	}
 }
-function editCancel(whichEdit){
+function editCancel(whichEdit) /*: Int -> Void */{
 	switch(whichEdit){
 		case 1:
 			secEdit.visible = false;
@@ -643,12 +671,12 @@ function editCancel(whichEdit){
 			seconds.visible = true;
 			break;
 		case 2:
-			minEdit.visible = false;			
+			minEdit.visible = false;
 			minEdit.enabled = false;
 			minutes.enabled = true;
-			minutes.visible = true;	
+			minutes.visible = true;
 			break;
-		case 3: 
+		case 3:
 			hours.enabled = true;
 			hours.visible = true;
 			hrsEdit.visible = false;
@@ -657,17 +685,17 @@ function editCancel(whichEdit){
 	}
 	prevSelect = 0;
 }
-function editOff(whichEdit){
+function editOff(whichEdit) /*: Int -> Void */{
 	switch(whichEdit){
-		case 1: 
+		case 1:
 			if(secEdit.value != "")
 			{
-				s = secEdit.value;
+				s = parseInt(secEdit.value);
 			}
 			secEdit.visible = false;
 			secEdit.enabled = false;
 			seconds.enabled = true;
-			seconds.visible = true;	
+			seconds.visible = true;
 			if(s >= 60){
 				s = s - 60;
 				m++;
@@ -689,13 +717,13 @@ function editOff(whichEdit){
 					start.enabled = true;
 				}
 			}
-			else if(s == 0 && m == 0 & h == 0){
-					if(clear.opacity == 255){					
+			else if((s == 0) && (m == 0) && (h == 0)){
+					if(clear.opacity == 255){
 						view.beginAnimation(clearOff, 255, 0, 500);
 						clear.enabled = false;
 					}
 					if(modeSwitch.image == "timerTAB.png"){
-						view.beginAnimation(startOff, 255, 0, 500); 
+						view.beginAnimation(startOff, 255, 0, 500);
 						start.enabled = false;
 						view.resizeTo(284,80);
 					}
@@ -705,19 +733,19 @@ function editOff(whichEdit){
 			triSelectMin2.opacity = 0;
 			editOn(2);
 			triDeselect();
-			editCancel(2);	
+			editCancel(2);
 			minEdit.opacity = 255;
 			triSelectMin1.opacity = 255;
-			triSelectMin2.opacity = 255;	
+			triSelectMin2.opacity = 255;
 			break;
 		case 2:
 			if(minEdit.value != ""){
-				m = minEdit.value;
-			}			
-			minEdit.visible = false;			
+				m = parseInt(minEdit.value);
+			}
+			minEdit.visible = false;
 			minEdit.enabled = false;
 			minutes.enabled = true;
-			minutes.visible = true;	
+			minutes.visible = true;
 			if(m >= 60){
 				m = m - 60;
 				h++;
@@ -739,13 +767,13 @@ function editOff(whichEdit){
 					start.enabled = true;
 				}
 			}
-			else if(s == 0 && m == 0 & h == 0){
-					if(clear.opacity == 255){					
+			else if(s == 0 && m == 0 && h == 0){
+					if(clear.opacity == 255){
 						view.beginAnimation(clearOff, 255, 0, 500);
 						clear.enabled = false;
 					}
 					if(modeSwitch.image == "timerTAB.png"){
-						view.beginAnimation(startOff, 255, 0, 500); 
+						view.beginAnimation(startOff, 255, 0, 500);
 						start.enabled = false;
 						view.resizeTo(284,80);
 					}
@@ -755,19 +783,19 @@ function editOff(whichEdit){
 			triSelectHrs2.opacity = 0;
 			editOn(3);
 			triDeselect();
-			editCancel(3);	
+			editCancel(3);
 			hrsEdit.opacity = 255;
 			triSelectHrs1.opacity = 255;
 			triSelectHrs2.opacity = 255;
 			break;
-		case 3: 
+		case 3:
 			if(hrsEdit.value != ""){
-				h = hrsEdit.value;
+				h = parseInt(hrsEdit.value);
 			}
 			hours.enabled = true;
 			hours.visible = true;
 			hrsEdit.visible = false;
-			hrsEdit.enabled = false;	
+			hrsEdit.enabled = false;
 			hours.innerText = correctOutput(h);
 			if(h > 0 && clear.opacity == 0){
 				start.enabled = true;
@@ -779,15 +807,15 @@ function editOff(whichEdit){
 				if(start.opacity == 0){
 					view.beginAnimation(startOff, 0, 255, 500);
 					start.enabled = true;
-				} 
+				}
 			}
-			else if(s == 0 && m == 0 & h == 0){
-					if(clear.opacity == 255){					
+			else if(s == 0 && m == 0 && h == 0){
+					if(clear.opacity == 255){
 						view.beginAnimation(clearOff, 255, 0, 500);
 						clear.enabled = false;
 					}
 					if(modeSwitch.image == "timerTAB.png"){
-						view.beginAnimation(startOff, 255, 0, 500); 
+						view.beginAnimation(startOff, 255, 0, 500);
 						start.enabled = false;
 						view.resizeTo(284,80);
 					}
@@ -797,7 +825,7 @@ function editOff(whichEdit){
 			triSelectMin2.opacity = 0;
 			editOn(2);
 			triDeselect();
-			editCancel(2);	
+			editCancel(2);
 			minEdit.opacity = 255;
 			triSelectMin1.opacity = 255;
 			triSelectMin2.opacity = 255;
@@ -809,17 +837,17 @@ function editOff(whichEdit){
 	modeSwitch.focus();
 
 }
-function clearSpecific(whichOne){
+function clearSpecific(whichOne) /*: Int -> Void */{
 	if(clear.opacity == 255){
 		switch(whichOne){
 			case 1:
 				s = 0;
 				seconds.innerText = "00";
-				if(s == 0 && m == 0 & h == 0){
+				if(s == 0 && m == 0 && h == 0){
 					view.beginAnimation(clearOff, 255, 0, 500);
 					clear.enabled = false;
 					if(modeSwitch.image == "timerTAB.png"){
-						view.beginAnimation(startOff, 255, 0, 500); 
+						view.beginAnimation(startOff, 255, 0, 500);
 						start.enabled = false;
 						view.resizeTo(284,80);
 					}
@@ -828,11 +856,11 @@ function clearSpecific(whichOne){
 			case 2:
 				m = 0;
 				minutes.innerText = "00";
-				if(s == 0 && m == 0 & h == 0){
+				if(s == 0 && m == 0 && h == 0){
 					view.beginAnimation(clearOff, 255, 0, 500);
 					clear.enabled = false;
 					if(modeSwitch.image == "timerTAB.png"){
-						view.beginAnimation(startOff, 255, 0, 500); 
+						view.beginAnimation(startOff, 255, 0, 500);
 						start.enabled = false;
 						view.resizeTo(284,80);
 					}
@@ -841,11 +869,11 @@ function clearSpecific(whichOne){
 			case 3:
 				h = 0;
 				hours.innerText = "00";
-				if(s == 0 && m == 0 & h == 0){
+				if(s == 0 && m == 0 && h == 0){
 					view.beginAnimation(clearOff, 255, 0, 500);
 					clear.enabled = false;
 					if(modeSwitch.image == "timerTAB.png"){
-						view.beginAnimation(startOff, 255, 0, 500); 
+						view.beginAnimation(startOff, 255, 0, 500);
 						start.enabled = false;
 						view.resizeTo(284,80);
 					}
@@ -855,10 +883,10 @@ function clearSpecific(whichOne){
 	}
 	modeSwitch.focus();
 }
-function kSupport(){
+function kSupport() /*:  -> Void */{
 	modeSwitch.focus();
 }
-function kBoard(){
+function kBoard() /*: -> Void */ {
 	controlAltPressed = (event.keyCode == 17) ? 1 : 0;
 	/*start.enabled = true;
 	start.caption = event.keyCode;*///debug purpose
@@ -886,8 +914,8 @@ function kBoard(){
 			}
 			else{
 				controlAltPressed = 0;
-				clearSpecific(3);				
-			}					 
+				clearSpecific(3);
+			}
 			break;
 		case 104:
 			if(controlAltPressed == 0 && stop.opacity == 0){
@@ -895,7 +923,7 @@ function kBoard(){
 			}
 			else{
 				controlAltPressed = 0;
-				clearSpecific(3);				
+				clearSpecific(3);
 			}
 			break;
 		case 109:
@@ -904,16 +932,16 @@ function kBoard(){
 			}
 			else{
 				controlAltPressed = 0;
-				clearSpecific(2);				
+				clearSpecific(2);
 			}
 			break;
-		case 77: 
+		case 77:
 			if(controlAltPressed == 0 && stop.opacity == 0){
 				editOn(2);
 			}
 			else{
 				controlAltPressed = 0;
-				clearSpecific(2);				
+				clearSpecific(2);
 			}
 			break;
 		case 115:
@@ -922,7 +950,7 @@ function kBoard(){
 			}
 			else{
 				controlAltPressed = 0;
-				clearSpecific(1);				
+				clearSpecific(1);
 			}
 			break;
 		case 83:
@@ -931,11 +959,11 @@ function kBoard(){
 			}
 			else{
 				controlAltPressed = 0;
-				clearSpecific(1);				
+				clearSpecific(1);
 			}
 			break;
 		case 9:
-			if(stop.enabled == false){			
+			if(stop.enabled == false){
 				modeSwitch.killFocus();
 				changeMode();
 			}
