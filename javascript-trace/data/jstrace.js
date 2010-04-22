@@ -1,3 +1,9 @@
+//names in the paper were changed to be clearer:
+//wrapFunc is actually 'tracefunction' here, which becomes '__typedjs' to the outside
+//inspectValue is really the function 'rttype'.
+//in rttype, the field "info" is really the field "type".
+//flat "undefined" doesnt exist, but is called "Void"
+
 //__typedJsVars["\"flapjax.js\" (line 38, column 13)"]
 
 var $jstraceid = "Global"; //mark the global object so we don't deeply inspect it
@@ -10,7 +16,9 @@ var $jstraceid = "Global"; //mark the global object so we don't deeply inspect i
 
 //type varies based on kind:
 //for flat, type is a string from typeof
-//for object, it is an object mapping property names to rttypes
+//for object, it is an object mapping property names to rttypes.
+//            has a field "$isArray", true if it's an array
+//            if is array, then "$itemType" is union-rttype of the item types.
 //for function, it is an object:
 //  {args: an array of union-rttypes indicating the rttypes of the arguments
 //   ret: the union-rttype of the ret type
@@ -155,15 +163,15 @@ var holder = (function() {  //lambda to hide all these local funcs
 
   //pjs value --> rttype (as described above)
   var rttype = function(rtval) {
-    if (rtval === null) return {kind: 'flat', type: 'null'};
+    if (rtval === null) return {kind: 'flat', type: 'Null'};
     var res = typeof(rtval);
     if (res == "object") {
       if (!isGG) {
         if (rtval instanceof Node) {
-          return {kind: 'flat', type: 'Dom'};
+          return {kind: 'flat', type: 'Unknown'};
         }
         if (rtval instanceof Event) {
-          return {kind: 'flat', type: 'Dom'};
+          return {kind: 'flat', type: 'Unknown'};
         }
       }
       if (rtval instanceof String) {
@@ -176,7 +184,6 @@ var holder = (function() {  //lambda to hide all these local funcs
       if (rtval instanceof Date) {
         return {kind:'flat', type:'Date'};
       }
-      
       //check for pre-traced objects:
       if (Object_hasOwnProperty(rtval, "$jstraceid")) {
         if (rtval.$jstraceid == "Global")
@@ -194,23 +201,38 @@ var holder = (function() {  //lambda to hide all these local funcs
       else {
         traceid = gensym("obj");
       }
+
       var typeObj = {};
+      var isArray = false;
+      var itemType = [];
 
       //mark the object
       try {
         rtval.$jstraceid = traceid;
-        for (var p in rtval) {
-          if (p == "$jstraceid") continue;
-          if (p == "$constrBy") continue;
-          //pln("((SEEING PROPERTY: " + p + "))");
-          try {
-            var property = rtval[p];
-          } catch (errorrrr) {
-            //'security exception' with skype or something
-            var property = undefined;
+        if (rtval.$jstraceid != traceid) 
+          throw "Can't deal with this object.";
+          
+        if (rtval instanceof Array) {
+          isArray = true;
+          itemType = [];
+          for (var i = 0; i < rtval.length; i++) {
+            mergeRttypes(itemType, reffed_rttype(rtval[i]));
           }
-          var innerres = reffed_rttype(property);
-          typeObj[p] = innerres;
+        } 
+        else {
+          for (var p in rtval) {
+            if (p == "$jstraceid") continue;
+            if (p == "$constrBy") continue;
+            //pln("((SEEING PROPERTY: " + p + "))");
+            try {
+              var property = rtval[p];
+            } catch (errorrrr) {
+              //'security exception' with skype or something
+              var property = undefined;
+            }
+            var innerres = reffed_rttype(property);
+            typeObj[p] = innerres;
+          }
         }
       }
       catch (errorr) {
@@ -220,12 +242,13 @@ var holder = (function() {  //lambda to hide all these local funcs
         //so just give it type DOM! =)
         //we can't return an object here, because the traceid might not
         //have stuck on the object (that might have thrown the exception)
-        return {kind: 'flat', type: "Dom"};
+        return {kind: 'flat', type: "Unknown"};
       }
 
       var resRttype = {kind:'object', type:typeObj, seen: false,
                        constructed: rtval.$constrBy !== undefined,
-                       constrName: (rtval.$constrBy ? traceid : undefined)};
+                       constrName: (rtval.$constrBy ? traceid : undefined),
+                       isArray: isArray, itemType: itemType};
       __typedJsTypes[traceid] = resRttype;
       return resRttype;
     }
@@ -382,24 +405,40 @@ var holder = (function() {  //lambda to hide all these local funcs
         decdbg();
         return {answer: t.constrName, typesSeen: typesSeen};
       }
-      var res = "{";
-      var needComma = false;
-      for (var p in t.type) {
-        if (needComma) res += ", ";
-        needComma = true;
-        if (dbg) {
-          if (flatOrRef(t.type[p])) {
-            debug("field " + p + ": " + _quickStrType(t.type[p]));
-          }
-          else
-            debug("field " + p + "...");
+      if (t.isArray) {
+        var res = "Array<";
+        if (t.itemType.length == 0) 
+          res += "Any";
+        else {
+          var innard = strUnion(t.itemType, dbg);
+          res += innard.answer;
+          copyFrom(innard.typesSeen, typesSeen);
         }
-        var innard = strType(t.type[p], dbg && !(t.type[p].kind == "flat"));
-        res += p + " : " + innard.answer;
-        copyFrom(innard.typesSeen, typesSeen);
+        res += ">";
+        decdbg();
+        return {answer: res, typesSeen: typesSeen};
       }
-      decdbg();
-      return {answer: res + "}", typesSeen: typesSeen};
+      else {      
+        var res = "{";
+        var needComma = false;
+        for (var p in t.type) {
+          if (needComma) res += ", ";
+          needComma = true;
+          if (dbg) {
+            if (flatOrRef(t.type[p])) {
+              debug("field " + p + ": " + _quickStrType(t.type[p]));
+            }
+            else
+              debug("field " + p + "...");
+          }
+          var innard = strType(t.type[p], dbg && !(t.type[p].kind == "flat"));
+          res += p + " : " + innard.answer;
+          copyFrom(innard.typesSeen, typesSeen);
+        }
+        decdbg();
+        return {answer: res + "}", typesSeen: typesSeen};
+      }
+      
     }
 
     if (t.kind == "function") {
@@ -688,19 +727,21 @@ var holder = (function() {  //lambda to hide all these local funcs
   //-----------------------------------------------------
   //wrap every function with this function. it makes
   //every function call add trace information.
-  //nestingLevel is how nested into other funcs this func is
+  //nestingLevel is how nested into other funcs this func is (just for output)
   //undefined if top-level. otherwise it should be wrapped
-  //name is the name, if any
+  //name is the name, if any (just for output)
+  //filename is name of the file it appears in, to know where to put it
   //position is what position it occupies in the nester, e.g.
   //0 if the first position, 1 if the 2nd, etc.
   var tracefunction = function(fn, nestingLevel, name, filename, position) {
     var dbg = false;
     
-    if (arguments.length != 5 || typeof nestingLevel != "number") {
+    if (arguments.length != 5 || typeof nestingLevel != "number" || typeof position != "number") {
       alert("Please re-compile this code!");
       return;
     }
-    
+
+    //initialize the structs:
     var traceid = gensym("func" + (name ? ("_" + (name.substring(name.lastIndexOf(".")+1))) : ""));
     var func_rttype = {
       kind: "function",
@@ -718,8 +759,27 @@ var holder = (function() {  //lambda to hide all these local funcs
     var ref = {
       kind: "function_ref",
       type: traceid};
-
-    //insert it in the right place in the global
+    
+    //however, see if we've already traced this position
+    //if so, use those structs instead
+    if ((filename in __orderedVars) && __orderedVars[filename][position]) {
+      var ov = __orderedVars[filename][position];
+      var prevname = ov.name;
+      var prevref = ov.rttype;
+      if (prevref && prevref.kind === "function_ref") {
+        var prevtype = __typedJsTypes[prevref.type];
+        if (prevtype.type.constrOrFunc === "shellfunc" ||
+           prevname === name) {
+          //we've already traced this position, just re-use it!
+          traceid = prevref.type;
+          func_rttype = prevtype;
+          tjstype = prevtype.type;
+          ref = {kind: "function_ref", type: traceid};
+        }
+      }
+    }
+        
+    //insert it in the right place in the global, if it's not there
     if (!(filename in __orderedVars))
       __orderedVars[filename] = [];
     __orderedVars[filename][position] = {name: name, rttype: ref};

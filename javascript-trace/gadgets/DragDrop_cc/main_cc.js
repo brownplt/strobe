@@ -1,3 +1,4 @@
+__initnumargs("gadgets/DragDrop_cc/main.js",[0,1,1,0,0,0,0,0]);
 var Utils = (__typedjs(function  ()
                        {
                          var createDragFilesImagesList = __typedjs(function  (obj)
@@ -22,20 +23,23 @@ var Utils = (__typedjs(function  ()
                                                                      };
                                                                      return files;
                                                                    },
-                                                                   arguments.callee,
+                                                                   1,
                                                                    "createDragFilesImagesList",
-                                                                   0);
+                                                                   "gadgets/DragDrop_cc/main.js",
+                                                                   1);
                          var extractExtension = __typedjs(function  (s)
                                                           {
                                                             return s.substring(s.lastIndexOf(".") + 1);
                                                           },
-                                                          arguments.callee,
+                                                          1,
                                                           "extractExtension",
-                                                          1);
+                                                          "gadgets/DragDrop_cc/main.js",
+                                                          2);
                          return {createDragFilesImagesList: createDragFilesImagesList, extractExtension: extractExtension};
                        },
-                       undefined,
+                       0,
                        "Utils",
+                       "gadgets/DragDrop_cc/main.js",
                        0))();
 var ViewHandlers = (__typedjs(function  ()
                               {
@@ -43,9 +47,10 @@ var ViewHandlers = (__typedjs(function  ()
                                                        {
                                                          label.innerText = strings.DRAG_IMAGES_HERE;
                                                        },
-                                                       arguments.callee,
+                                                       1,
                                                        "onOpen",
-                                                       0);
+                                                       "gadgets/DragDrop_cc/main.js",
+                                                       4);
                                 var onDragDrop = __typedjs(function  ()
                                                            {
                                                              var images = Utils.createDragFilesImagesList(event.dragFiles);
@@ -86,9 +91,10 @@ var ViewHandlers = (__typedjs(function  ()
                                                                     label.innerText = "";
                                                                   };
                                                            },
-                                                           arguments.callee,
+                                                           1,
                                                            "onDragDrop",
-                                                           1);
+                                                           "gadgets/DragDrop_cc/main.js",
+                                                           5);
                                 var onDragOver = __typedjs(function  ()
                                                            {
                                                              var images = Utils.createDragFilesImagesList(event.dragFiles);
@@ -100,18 +106,21 @@ var ViewHandlers = (__typedjs(function  ()
                                                              };
                                                              label.innerText = strings.THERE_ARE + " " + numImages + " " + strings.IMAGES;
                                                            },
-                                                           arguments.callee,
+                                                           1,
                                                            "onDragOver",
-                                                           2);
+                                                           "gadgets/DragDrop_cc/main.js",
+                                                           6);
                                 var onDragOut = __typedjs(function  ()
                                                           {
                                                             label.innerText = strings.DRAG_IMAGES_HERE;
                                                           },
-                                                          arguments.callee,
+                                                          1,
                                                           "onDragOut",
-                                                          3);
+                                                          "gadgets/DragDrop_cc/main.js",
+                                                          7);
                                 return {onOpen: onOpen, onDragDrop: onDragDrop, onDragOver: onDragOver, onDragOut: onDragOut};
                               },
-                              undefined,
+                              0,
                               "ViewHandlers",
-                              1))();
+                              "gadgets/DragDrop_cc/main.js",
+                              3))();

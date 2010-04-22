@@ -72,3 +72,8 @@ var loader = function(_) {
 
 
 document.addEventListener("load", loader, true);
+
+function a(f) {return 5;};
+function b(f) {return "str";};
+a(b);
+b(a);

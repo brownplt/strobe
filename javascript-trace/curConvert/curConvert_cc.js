@@ -1,3 +1,4 @@
+__initnumargs("curConvert/curConvert.js",[0,0,1,2,0]);
 var Currency = __typedjs(function  ()
                          {
                            __thisref(this,
@@ -5,7 +6,7 @@ var Currency = __typedjs(function  ()
                            __thisref(this,
                                      arguments.callee).konq = (navigator.userAgent.indexOf("Konqueror") >= 0);
                          },
-                         undefined,
+                         0,
                          "Currency",
                          "curConvert/curConvert.js",
                          0);
@@ -13,9 +14,7 @@ Currency.prototype.convert = __typedjs(function  ()
                                        {
                                          var from = document.getElementById("from").value;
                                          var to = document.getElementById("to").value;
-                                         var rate = __thisref(this,
-                                                              arguments.callee).rates[to] / __thisref(this,
-                                                                                                      arguments.callee).rates[from];
+                                         var rate = 1.0;
                                          var re = document.getElementById("result");
                                          var val = document.getElementById("value").value;
                                          if (val.length === 0)
@@ -27,7 +26,7 @@ Currency.prototype.convert = __typedjs(function  ()
                                                                      arguments.callee).format(val * rate);
                                               };
                                        },
-                                       undefined,
+                                       0,
                                        "Currency.prototype.convert",
                                        "curConvert/curConvert.js",
                                        1);
@@ -53,7 +52,7 @@ Currency.prototype.format = __typedjs(function  (num)
                                         };
                                         return ((sign ? "" : "-") + num + "." + cents);
                                       },
-                                      undefined,
+                                      0,
                                       "Currency.prototype.format",
                                       "curConvert/curConvert.js",
                                       2);
@@ -63,7 +62,7 @@ Currency.prototype.label = __typedjs(function  (el,sl)
                                        var e = document.getElementById(el);
                                        e.replaceChild(txt,e.firstChild);
                                      },
-                                     undefined,
+                                     0,
                                      "Currency.prototype.label",
                                      "curConvert/curConvert.js",
                                      3);
@@ -76,7 +75,7 @@ var swapFromTo = __typedjs(function  ()
                              cnvtr.label("from_s",document.getElementById("from"));
                              cnvtr.label("to_s",document.getElementById("to"));
                            },
-                           undefined,
+                           0,
                            "swapFromTo",
                            "curConvert/curConvert.js",
                            4);

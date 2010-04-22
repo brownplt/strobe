@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view height="170" width="284" onundock="kSupport();" ondock="kSupport();"
+   onclick="kSupport();">
+  <div background="#0000CCEE" height="170" name="stopWatchTimer" width="284"
+     x="0" y="0">
+    <button downImage="alarmOff.png" enabled="false" height="88" image="alarmOn.png"
+       name="stopAlarmSound" overImage="alarmOff.png" pinX="38" rotation="90"
+       width="64" x="254" y="52" onclick="stopAlarm();" onkeydown="kBoard();"
+      />
+    <button height="78" image="stopwatchTAB.png" name="modeSwitch" pinX="104"
+       pinY="40" width="100" x="104" y="40" onmouseover="coolHover();"
+       onmouseout="stopCoolHover();" onclick="changeMode();" onkeydown="kBoard();"
+       onkeyup="fasterEdit(0);"/>
+    <button downImage="green button.png" height="90" image="green button.png"
+       name="start" overImage="green buttonhover.png" width="90" x="99"
+       y="81" onclick="startCount();"/>
+    <img height="80" name="img1" src="screen.png" width="218" x="66" y="-2"
+      />
+    <label enabled="true" name="seconds" size="25" x="229" y="33" onclick="editOn(1);"
+       onrclick="clearSpecific(1);">00</label>
+    <label enabled="true" name="minutes" size="25" x="158" y="33" onclick="editOn(2);"
+       onrclick="clearSpecific(2);">00</label>
+    <label enabled="true" name="hours" size="25" x="86" y="33" onclick="editOn(3);"
+       onrclick="clearSpecific(3);">00</label>
+    <button downImage="Red Button.png" enabled="false" height="80" image="Red Button.png"
+       name="stop" opacity="0" overImage="Red Buttonhover.png" width="80"
+       x="196" y="89" onclick="stopCount();" onkeydown="kBoard();"/>
+    <button downImage="White Button2.png" enabled="false" height="80" image="White Button2.png"
+       name="clear" opacity="0" overImage="White Buttonhover.png" width="80"
+       x="8" y="87" onclick="clearCount();"/>
+    <label enabled="true" name="blinky" size="20" x="140" y="34">:</label>
+    <label enabled="true" name="blinky2" size="20" x="210" y="34">:</label>
+    <button enabled="false" height="20" image="increment.png" name="upH"
+       opacity="0" width="20" x="86" y="12" onmousedown="fasterEdit(5);"
+       onmouseup="fasterEdit(0);"/>
+    <img height="62" name="hover" opacity="0" pinX="31" pinY="31" src="hovereffect.png"
+       width="62" x="32" y="35"/>
+    <button enabled="false" height="20" image="decrement.png" name="downH"
+       opacity="0" width="20" x="110" y="12" onmousedown="fasterEdit(6);"
+       onmouseup="fasterEdit(0);"/>
+    <button enabled="false" height="20" image="increment.png" name="upM"
+       opacity="0" width="20" x="158" y="12" onmousedown="fasterEdit(3);"
+       onmouseup="fasterEdit(0);"/>
+    <button enabled="false" height="20" image="decrement.png" name="downM"
+       opacity="0" overImage="                           " width="20" x="182"
+       y="12" onmousedown="fasterEdit(4);" onmouseup="fasterEdit(0);"/>
+    <button enabled="false" height="20" image="increment.png" name="upS"
+       opacity="0" width="20" x="229" y="12" onmousedown="fasterEdit(1);"
+       onmouseup="fasterEdit(0);"/>
+    <button enabled="false" height="20" image="decrement.png" name="downS"
+       opacity="0" width="20" x="253" y="12" onmousedown="fasterEdit(2);"
+       onmouseup="fasterEdit(0);"/>
+    <edit background="#00000000" color="#FFFFFF" enabled="false" height="36"
+       name="minEdit" scrolling="false" size="25" value="00" visible="false"
+       width="48" wordWrap="true" x="157" y="32" onfocusout="editOff(2);"
+       onkeydown="exitAlternate(2);" onfocusin="clearInitialTime(2);"/>
+    <edit background="#00FFFFFF" color="#FFFFFF" enabled="false" height="34"
+       name="hrsEdit" scrolling="false" size="25" value="00" visible="false"
+       width="48" wordWrap="true" x="84" y="32" onfocusout="editOff(3);"
+       onkeypress="limitEdit(3);" onkeydown="exitAlternate(3);" onfocusin="clearInitialTime(3);"
+      />
+    <edit background="#00FFFFFF" color="#FFFFFF" enabled="false" height="36"
+       name="secEdit" scrolling="false" size="25" value="00" visible="false"
+       width="48" wordWrap="true" x="227" y="31" onfocusout="editOff(1);"
+       onkeypress="limitEdit(1);" onkeydown="exitAlternate(1);" onfocusin="clearInitialTime(1);"
+      />
+    <img height="20" name="triSelectMin1" src="defaultTriangle.png" visible="false"
+       width="20" x="158" y="12"/>
+    <img height="20" name="triSelectMin2" src="defaultTriangle.png" visible="false"
+       width="20" x="182" y="12"/>
+    <img height="20" name="triSelectHrs1" src="defaultTriangle.png" visible="false"
+       width="20" x="86" y="12"/>
+    <img height="20" name="triSelectHrs2" src="defaultTriangle.png" visible="false"
+       width="20" x="110" y="12"/>
+    <img height="20" name="triSelectSec1" src="defaultTriangle.png" visible="false"
+       width="20" x="229" y="12"/>
+    <img height="20" name="triSelectSec2" src="defaultTriangle.png" visible="false"
+       width="20" x="253" y="12"/>
+  </div>
+  <div background="#0000CCEE" height="200" name="mainmenu" visible="false"
+     width="200" x="0" y="0">
+    <button image="orbappicon.png" name="img1" x="18" y="15"/>
+  </div>
+  <script src="jstrace.js"/>
+  <script src="main_cc.js"/>
+  <script src="hookggmenu.js"/>
+
+</view>
