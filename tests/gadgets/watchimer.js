@@ -34,7 +34,9 @@ var confirmed = 0;
 var controlAltPressed = 0;
 
 var t = 0, r = 0; //interval has to be a global
-var alarming = framework.audio.open("alarm.mp3"); ///*:upcast Undefined + Audioclip*/undefined;
+var alarming = /*:upcast Undefined + Audioclip*/undefined;
+
+//framework.audio.open("alarm.mp3"); ///*:upcast Undefined + Audioclip*/undefined;
 
 function startCount() /*:  -> Void */{
 	hours.enabled = false;
@@ -463,7 +465,7 @@ function rotateAlarmButton() /*:  -> Void */{
 	}
 }
 function stopAlarm() /*:  -> Void */{
-	framework.audio.stop(alarming);
+    if (typeof alarming === "undefined") {} else { framework.audio.stop(alarming); }
 	clearInterval(m);
 	view.beginAnimation(rotateAlarmButton, 0, 90, 500);
 	// flushing the stuff begins below

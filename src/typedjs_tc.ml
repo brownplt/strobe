@@ -23,6 +23,13 @@ let tc_const (const : JavaScript_syntax.const) = match const with
   | JavaScript_syntax.CNull -> typ_null
   | JavaScript_syntax.CUndefined -> typ_undef
 
+let un_null t = match t with
+  | TUnion (TConstr ("Undefined", []), t') -> t'
+  | TUnion (t', TConstr ("Undefined", [])) -> t'
+  | TUnion (TConstr ("Null", []), t') -> t'
+  | TUnion (t', TConstr ("Null", [])) -> t'
+  | _ -> t
+ 
 let rec tc_exp (env : Env.env) exp = match exp with
     EConst (_, c) -> tc_const c
   | EId (p, x) -> begin
@@ -115,7 +122,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
     end
   | EObject (p, fields) ->
       Env.check_typ p env (TObject (map (second2 (tc_exp env)) fields))
-  | EBracket (p, obj, field) -> begin match tc_exp env obj, field with
+  | EBracket (p, obj, field) -> begin match un_null (tc_exp env obj), field with
       | TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
           (try
              snd2 (List.find (fun (x', _) -> x = x') fs)
@@ -167,7 +174,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
         else
           t
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
-  | EApp (p, f, args) -> begin match tc_exp env f with
+  | EApp (p, f, args) -> begin match un_null (tc_exp env f) with
       | TForall (x, _, TArrow (obj_typ, expected_typ, result_typ)) ->
           let subst = unify_typ (TArrow (obj_typ, expected_typ, result_typ))
             (TArrow (obj_typ, map (tc_exp env) args, result_typ)) in
