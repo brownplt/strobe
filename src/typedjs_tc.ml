@@ -22,7 +22,7 @@ let tc_const (const : JavaScript_syntax.const) = match const with
   | JavaScript_syntax.CBool _ -> typ_bool
   | JavaScript_syntax.CNull -> typ_null
   | JavaScript_syntax.CUndefined -> typ_undef
-      
+
 let rec tc_exp (env : Env.env) exp = match exp with
     EConst (_, c) -> tc_const c
   | EId (p, x) -> begin
@@ -105,7 +105,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       raise (Typ_error (p, "an empty array literal requires a type annotation"))
   | EArray (p, e :: es) -> 
       let u = fold_left (Env.typ_union env) 
-        (tc_exp env e) (tc_exps env es) in
+        (tc_exp env e) (map (tc_exp env) es) in
         (* hack to make arrays not have undefined elements: *)
         Env.check_typ p env (TConstr ("Array", [u]))
   | EIf (p, e1, e2, e3) -> begin
@@ -188,7 +188,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
                             (string_of_typ expected_thist)
                             (string_of_typ this_typ)))
               else this_typ) in
-          let arg_typs' = tc_exps env args in
+          let arg_typs' = map (tc_exp_ret env) args in
           let arg_typs = 
             fill (List.length expected_typs - List.length args) 
               typ_undef arg_typs' in
@@ -310,6 +310,21 @@ and tc_thist env e = match e with
   | ETryFinally (_, e1, e2) -> tc_thist env e1
   (*what would etypecast, subsumption, typecast do? probably be none....*)
   | _ -> TObject []
+
+(* type-check [e] and ensure that the resulting type is not [TBot]. If 
+   [e : TBot], then [e] provably does not return. There are two possibilities:
+   
+   1. [e] is a control operator. If so, call [tc_exp'] to avoid this check.
+   2. [e] is unreachable code. This is not a type-error, but probably 
+      unintended.
+*)
+   
+and tc_exp_ret env e = 
+  let t = tc_exp env e in
+    if t = TBot then
+      error (Exp.pos e) "unreachable code"
+    else 
+      t
 
 let rec tc_def env def = match def with
     DEnd -> ()
