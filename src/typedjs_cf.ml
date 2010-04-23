@@ -19,6 +19,11 @@ let reached_nodes : (node, bool) H.t = H.create 200
 
 let lambdas : (node, node * env * cpsexp) H.t = H.create 200
 
+let op_env = ref IdMap.empty
+
+let set_op_env env = 
+  op_env := Typedjs_env.operator_env_of_tc_env env
+
 let mk_type_is x s = match s with
   | "string" -> ALocTypeIs (x, RTSet.singleton RT.String)
   | "number" -> ALocTypeIs (x, RTSet.singleton RT.Number)
@@ -51,6 +56,7 @@ let calc_op1 node env heap (op : op1)  v = match op, v with
   | Op1Prefix "prefix:typeof", ADeref loc -> ALocTypeof loc, heap
   | _ -> any, heap
 
+
 let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
   | Op2Infix "===", ALocTypeof loc, AString str ->
       mk_type_is loc str, heap
@@ -58,6 +64,12 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
       v, set_ref l (to_set heap v) heap
   | Op2Infix "+", _, _ -> 
       ASet (RTSetExt.from_list [ RT.Number; RT.String ]), heap
+  | Op2Infix op, v1, v2 -> begin try
+      let fn = IdMap.find op !op_env in
+        (fn [ v1; v2 ], heap)
+    with Not_found ->
+      failwith (sprintf "operator %s is unbound in calc_op2" op)
+    end
   | _ -> any, heap
 
 let mk_closure (env : env) (_, f, args, typ, body_exp) =
@@ -142,6 +154,8 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) =
         calc new_env new_heap cpsexp
       end
     else ()
+
+
               
 let typed_cfa (env : env) (cpsexp : cpsexp) : unit =
   flow env empty_heap cpsexp;

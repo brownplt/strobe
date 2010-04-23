@@ -66,3 +66,5 @@ val compare_env : env -> env -> int
 val escape_env : heap -> env -> env
 
 val escape_heap : heap -> heap
+
+val rt_of_typ : typ -> RTSet.t

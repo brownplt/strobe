@@ -50,7 +50,6 @@ type heap = RTSet.t Heap.t
 
 open FormatExt
 
-
 let rec p_av av = match av with
   | ASet s -> RTSetExt.p_set RT.pp s
   | ADeref l -> horz [ text "deref"; Loc.pp l ]
@@ -176,3 +175,9 @@ let empty_heap = Heap.empty
 let compare_heap = Heap.compare RTSet.compare
 
 let compare_env = IdMap.compare AV.compare
+
+let df_func_of_typ (t : typ) : av list -> av = match t with
+  | TArrow (_, _, r_typ) ->
+      let r_av = ASet (rt_of_typ r_typ) in
+        (fun _ -> r_av)
+  | _ -> (fun _ -> ASet rtany)

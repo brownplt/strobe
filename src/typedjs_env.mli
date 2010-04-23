@@ -66,3 +66,6 @@ val cf_env_of_tc_env : Env.env -> Typedjs_lattice.env
 val typ_subst : id -> typ -> typ -> typ
 
 val unify_typ : typ -> typ -> typ IdMap.t
+
+val operator_env_of_tc_env : Env.env 
+  -> (Typedjs_lattice.av list -> Typedjs_lattice.av) IdMap.t

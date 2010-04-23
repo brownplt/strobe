@@ -293,9 +293,23 @@ let extend_global_env env lst = mk_env' lst (add_classes lst env)
 
 module L = Typedjs_lattice
 
+let df_func_of_typ (t : typ) : L.av list -> L.av = match t with
+  | TArrow (_, _, r_typ) ->
+      let r_av = L.ASet (L.rt_of_typ r_typ) in
+        (fun _ -> r_av)
+  | TForall (x, r_typ, TArrow (_, _, TId y)) when x = y ->
+      let r_av = L.ASet (L.rt_of_typ r_typ) in
+        (fun _ -> r_av)
+  | _ -> (fun _ -> L.any)
+
 let cf_env_of_tc_env tc_env = 
   let fn x typ cf_env = L.bind x (L.runtime typ) cf_env in
     IdMap.fold fn (Env.id_env tc_env) L.empty_env
+
+let operator_env_of_tc_env tc_env =
+  let fn x t env = IdMap.add x (df_func_of_typ t) env in
+    IdMap.fold fn (Env.id_env tc_env) IdMap.empty
+  
 
 let rec typ_subst x s typ = match typ with
   | TId y -> if x = y then s else typ

@@ -2,6 +2,8 @@ open Prelude
 open Typedjs_lattice
 open Typedjs_cps
 
+val set_op_env : Typedjs_env.Env.env -> unit
+
 val typed_cfa : env -> cpsexp -> unit
 
 val bound_id_map : (pos * id, node) Hashtbl.t
