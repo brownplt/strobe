@@ -287,7 +287,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
               if Env.subtype env u s then
                 typ_subst x u t
               else 
-                error p (sprintf "invalid type application (bound mismatch)")
+                error p (sprintf "expected an argument of type %s, got %s"
+                           (string_of_typ s) (string_of_typ u))
           | t ->
               error p (sprintf "expected a quantified type (got %s)"
                          (string_of_typ t))
