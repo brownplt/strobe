@@ -24,14 +24,26 @@ let op_env = ref IdMap.empty
 let set_op_env env = 
   op_env := Typedjs_env.operator_env_of_tc_env env
 
-let mk_type_is x s = match s with
-  | "string" -> ALocTypeIs (x, RTSet.singleton RT.String)
-  | "number" -> ALocTypeIs (x, RTSet.singleton RT.Number)
-  | "boolean" -> ALocTypeIs (x, RTSet.singleton RT.Boolean)
-  | "function" -> ALocTypeIs (x, RTSet.singleton RT.Function)
-  | "object" -> ALocTypeIs (x, RTSet.singleton RT.Object)
-  | "undefined" -> ALocTypeIs (x, RTSet.singleton RT.Undefined)
-  | _ -> singleton RT.Boolean
+let tag_of_string s = match s with
+  | "string" -> RT.String
+  | "number" -> RT.Number
+  | "boolean" -> RT.Boolean
+  | "function" ->  RT.Function
+  | "object" -> RT.Object
+  | "undefined" ->  RT.Undefined
+  | _ -> raise (Invalid_argument "tag_of_string")
+
+let mk_type_is x s = 
+  try 
+    ALocTypeIs (x, RTSet.singleton (tag_of_string s))
+  with Invalid_argument "tag_of_string" ->
+    singleton RT.Boolean
+
+let mk_type_is_not x s =
+  try 
+    ALocTypeIs (x, RTSet.remove (tag_of_string s) rtany)
+  with Invalid_argument "tag_of_string" ->
+    singleton RT.Boolean  
 
 let abs_of_cpsval node env (cpsval : cpsval) = match cpsval with
   | Const c -> begin match c with
@@ -58,8 +70,16 @@ let calc_op1 node env heap (op : op1)  v = match op, v with
 
 
 let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
-  | Op2Infix "===", ALocTypeof loc, AString str ->
+  | Op2Infix "==", ALocTypeof loc, AString str
+  | Op2Infix "===", ALocTypeof loc, AString str
+  | Op2Infix "==", AString str, ALocTypeof loc
+  | Op2Infix "===",  AString str, ALocTypeof loc ->
       mk_type_is loc str, heap
+  | Op2Infix "!=", ALocTypeof loc, AString str
+  | Op2Infix "!==", ALocTypeof loc, AString str
+  | Op2Infix "!=", AString str, ALocTypeof loc
+  | Op2Infix "!==",  AString str, ALocTypeof loc ->
+      mk_type_is_not loc str, heap
   | SetRef, ARef l, v ->
       v, set_ref l (to_set heap v) heap
   | Op2Infix "+", _, _ -> 

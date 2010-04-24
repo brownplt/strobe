@@ -27,6 +27,8 @@ type heap
 
 val singleton : RT.t -> av
 
+val rtany : RTSet.t
+
 val any : av
 
 val runtime : Typedjs_syntax.typ -> av
