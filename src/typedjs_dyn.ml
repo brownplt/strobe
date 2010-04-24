@@ -52,7 +52,9 @@ let rec ctc_of_typ p (typ : typ) = match typ with
   | TConstr ("String", []) -> flat p "String"
   | TConstr ("Undefined", []) -> flat p "Undefined"
   | TConstr ("NotUndefined", []) -> flat p "NotUndefined"
-  | _ -> raise (Invalid_argument "ctc_of_typ")
+  | _ -> 
+      failwith (sprintf "cannot create a contract for the type %s"
+                  (FormatExt.to_string Typedjs_syntax.Pretty.p_typ typ))
 
 let rec cc p (ctc : contract) : expr = match ctc with
   | CPred (name, expr) -> 
