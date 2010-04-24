@@ -9,8 +9,8 @@ module IntMapExt : MapExt.S
   with type key = int
   with type +'a t = 'a IntMap.t
 
-val transform_exprs : (int * (expr -> expr)) IntMap.t -> string
+val transform_exprs : (int * string * string) IntMap.t -> string
   -> out_channel -> unit
 
 val mk_contract_transformers : (int * typ) IntMap.t 
-  -> (int * (expr -> expr)) IntMap.t
+  -> (int * string * string) IntMap.t

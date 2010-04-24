@@ -13,19 +13,27 @@ module IntMap = Map.Make (Int)
 module IntMapExt = MapExt.Make (Int) (IntMap)
 
 
+let is_before stop_ix (start_ix, _) =
+  start_ix < stop_ix
+
+
 let transform_exprs fs cin cout : unit =
   let curr_ix = ref 0 in
-  let apply start_ix (end_ix, f) = 
-    output_string cout (String.sub cin !curr_ix (start_ix - !curr_ix));
-      let expr_buf = String.sub cin start_ix (end_ix - start_ix) in
-        (* A sanity check *)
-        let expr = parse_expr expr_buf "<expr_transformer.ml>" in
-        let expr = f expr in
-        let expr_str = FormatExt.to_string Pretty.p_expr expr in
-          output_string cout expr_str;
-          curr_ix := end_ix in
-    IntMap.iter apply fs;
-    output cout cin !curr_ix (String.length cin - !curr_ix)
+
+  let rec apply lst end_ix = match lst with
+    | [] -> output cout cin !curr_ix (end_ix - !curr_ix)
+    | (start_ix, (stop_ix, prefix, suffix)) :: rest ->
+        output_string cout (String.sub cin !curr_ix (start_ix - !curr_ix));
+        let expr_buf = String.sub cin start_ix (stop_ix - start_ix) in
+          ignore (parse_expr expr_buf "<expr_transformer.ml>"); (* sanity *)
+          output_string cout prefix;
+          let nested, next = take_while (is_before stop_ix) rest in
+            curr_ix := start_ix;
+            apply nested stop_ix;
+            output_string cout suffix;
+            curr_ix := stop_ix;
+            apply next end_ix in
+    apply (List.rev (IntMapExt.to_list fs)) (String.length cin)
 
 type contract =
   | CPred of string * expr
@@ -58,13 +66,13 @@ let rec cc p (ctc : contract) : expr = match ctc with
            ArrayExpr (p, []); (* zero var-arity arguments *)
            cc p result ])
 
+let pp expr = FormatExt.to_string Pretty.p_expr expr
+
 let mk_contract_transformers typs =
-  let f typ =
+  let f (stop_ix, typ) =
     let e' = cc p (ctc_of_typ p typ) in
-      fun expr ->
-        CallExpr (p, DotExpr (p, contract_lib, "guard"),
-                  [ e'; expr;
-                    ConstExpr (p, CString "callee");
-                    ConstExpr (p, CString "caller");
-                    ConstExpr (p, CString (string_of_position p)) ]) in
-    IntMap.map (second2 f) typs
+    let prefix = (pp contract_lib) ^ ".guard(" ^ pp e' ^ ", " in
+    let suffix = 
+      ", \"callee\", \"caller\", \"" ^ string_of_position p ^ "\")" in
+      (stop_ix, prefix, suffix) in
+    IntMap.map f typs
