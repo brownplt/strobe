@@ -64,6 +64,7 @@ type ref_kind =
     inline. *)
 type exp
   = EConst of pos * JavaScript_syntax.const
+  | EBot of pos
   | EArray of pos * exp list
   | EEmptyArray of pos * typ
   | EObject of pos * (string * exp) list
@@ -119,6 +120,7 @@ module Exp = struct
 
   let pos exp = match exp with
     | EConst (p, _) -> p
+    | EBot p -> p
     | EArray (p, _) -> p
     | EObject (p, _) -> p
     | EThis p -> p
@@ -184,6 +186,7 @@ module Pretty = struct
 
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
+    | EBot _ -> text "bot"
     | EEmptyArray _ -> text "[ ]"
     | EArray (_, es) -> brackets (horz (map exp es))
     | EObject (_, ps) -> brackets (vert (map prop ps))

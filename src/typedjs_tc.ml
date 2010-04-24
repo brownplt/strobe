@@ -31,7 +31,8 @@ let un_null t = match t with
   | _ -> t
  
 let rec tc_exp (env : Env.env) exp = match exp with
-    EConst (_, c) -> tc_const c
+  | EConst (_, c) -> tc_const c
+  | EBot _ -> TBot
   | EId (p, x) -> begin
       try 
         Env.lookup_id x env
@@ -164,7 +165,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       (* treat it as a function application, but return the class
          type instead of the return type *)
       (if not (Env.is_class env cid) then error p ("undefined class: " ^ cid));
-      let _ = tc_exp env (EApp (p, EId (p, cid), args)) in
+      let _ = tc_exp env (EApp (p, EDeref (p, EId (p, cid)), args)) in
         TConstr (cid, [])
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
@@ -253,7 +254,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
           let env = Env.clear_labels env in
           let env = Env.bind_id "this" this_t env in
           let body_typ = tc_exp env body in
-            if Env.subtype env body_typ result_typ then fn_typ
+            if Env.subtype env body_typ result_typ then 
+              TArrow (this_t, arg_typs, result_typ)
             else raise 
               (Typ_error
                  (p,
@@ -360,7 +362,8 @@ let rec tc_def env def = match def with
                          ^ (string_of_int (List.length arg_typs)) 
                          ^ " arg types"));            
             let bind_arg env x t = Env.bind_id x t env in
-            let env =List.fold_left2 bind_arg env (cexp.constr_args) arg_typs in
+            let env = List.fold_left2 bind_arg env (cexp.constr_args) arg_typs
+            in
             let env = Env.clear_labels env in           
               begin match result_typ with
                   TObject fields -> 
@@ -394,7 +397,7 @@ let rec tc_def env def = match def with
                       (* also add the constr itself as a tarrow *)
                       let env = Env.new_root_class env cexp.constr_name in
                       let env = Env.bind_id cexp.constr_name 
-                        (Env.check_typ p env cexp.constr_typ) env in
+                        (TRef (Env.check_typ p env cexp.constr_typ)) env in
                       let f (fname, ftype) envacc = Env.add_method
                         cexp.constr_name fname ftype envacc in
                       let env = fold_right f fields env in

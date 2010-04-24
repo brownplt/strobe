@@ -58,8 +58,9 @@ type ref_kind =
 
 (** Typed JavaScript expressions. Additional well-formedness criteria are
     inline. *)
-type exp
-  = EConst of pos * JavaScript_syntax.const
+type exp =
+  | EConst of pos * JavaScript_syntax.const
+  | EBot of pos
   | EArray of pos * exp list
   | EEmptyArray of pos * typ
   | EObject of pos * (string * exp) list

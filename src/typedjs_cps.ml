@@ -85,6 +85,7 @@ let bind_cont cont fn = match cont with
 
 let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
   | EConst (_, c) -> ret k (Const c)
+  | EBot _ -> ret k (Const JavaScript_syntax.CUndefined)
   | EId (p, x) -> ret k (Id (p, x))
   | EArray (_, es) -> 
       cps_exp_list es throw

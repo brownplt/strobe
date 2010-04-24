@@ -216,6 +216,20 @@ and exp_seq env e = match e with
     SeqExpr (a, e1, e2) -> ESeq (a, exp env e1, exp env e2)
   | _ -> exp env e
 
+and func_exp env (_, x, expr) = 
+  let e = exp env expr in
+    match e with
+      | EFunc (_, _, t, _) -> (x, t, e)
+      | _ -> failwith "expected FuncExpr"
+
+and bind_func_ref (x, t, e) rest_exp = 
+  let p = Exp.pos e in
+    ELet (p, x, ERef (p, RefCell, ESubsumption (p, t, EBot p)), rest_exp)
+
+and set_func_ref (x, t, e) rest_exp =
+  let p = Exp.pos e in
+    ESeq (p, ESetRef (p, EId (p, x), e), rest_exp)
+  
 and block_intro env (decls, body) = match take_while is_func_decl decls with
     [], [] -> exp_seq env body
   | [], (a, x, e) :: rest ->
@@ -223,14 +237,11 @@ and block_intro env (decls, body) = match take_while is_func_decl decls with
             block_intro (IdMap.add x true env) (rest, body))
   | funcs, rest ->
       let new_ids = map snd3 funcs in
-      let env' = fold_left (fun acc f -> IdMap.add f false acc)  env new_ids in
-      let mk_bind (_, x, expr) = 
-        let e = exp env' expr in
-          (match e with
-               EFunc (_, _, t, _) -> (x, t, e)
-             | _ -> failwith "expected a FuncExpr") in
-        ERec (map mk_bind funcs,
-              block_intro env' (rest, body))
+      let env' = fold_left (fun acc f -> IdMap.add f true acc)  env new_ids in
+      let f_exps = map (func_exp env') funcs in
+        fold_right bind_func_ref f_exps 
+          (fold_right set_func_ref f_exps
+             (block_intro env' (rest, body)))
 
 (* assumes [SeqExpr]s are nested to the right. *)
 let rec flatten_seq (expr : expr) : expr list = match expr with
@@ -343,13 +354,21 @@ let match_external_method expr = match expr with
   | _ -> None
 
 
+and bind_top_func_ref (x, t, e) rest_exp = 
+  let p = Exp.pos e in
+    DLet (p, x, ERef (p, RefCell, ESubsumption (p, t, EBot p)), rest_exp)
+
+and set_top_func_ref (x, t, e) rest_exp =
+  let p = Exp.pos e in
+    DExp (ESetRef (p, EId (p, x), e), rest_exp)
+
 let rec defs env lst = 
   begin match lst with
       [] -> DEnd
     | expr :: lst' ->
         begin match match_constr_body env expr with
           | Some c -> 
-              DConstructor (c, defs (IdMap.add c.constr_name false env) lst')
+              DConstructor (c, defs (IdMap.add c.constr_name true env) lst')
           | None ->
               begin match match_while match_func_decl (expr :: lst') with
                   [], expr :: lst' -> begin match match_decl expr with
@@ -365,12 +384,12 @@ let rec defs env lst =
                                 defs env' lst')
                   end
                 | func_binds, lst' ->
-                    let mk acc (_, f, _) = IdMap.add f false acc in
+                    let mk acc (_, f, _) = IdMap.add f true acc in
                     let env' = fold_left mk env func_binds in
-                    let mk_bind (_, x, expr) = match match_func env' expr with
-                        Some (t, e) -> (x, t, e)
-                      | None -> failwith "match_func returned None (defs)" in
-                      DRec (map mk_bind func_binds, defs env' lst')
+                    let f_exps = map (func_exp env') func_binds in
+                      fold_right bind_top_func_ref f_exps 
+                        (fold_right set_top_func_ref f_exps
+                           (defs env' lst'))
               end
         end
   end
