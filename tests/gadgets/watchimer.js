@@ -120,7 +120,7 @@ function correctOutput(h) /*: (Int + String) -> String */{
 	else if(h == 0){
 		h = "00";
 	}
-	return ""+h;
+	return "" + h;
 }
 function clearCount() /*:  -> Void */{
 	h = 0;

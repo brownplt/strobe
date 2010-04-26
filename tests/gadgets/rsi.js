@@ -110,8 +110,8 @@ function updateCount() /*: -> Void */
 
 function updateCountText() /*: -> Void */
 {
-	bcount.innerText = bCount + " " + minText;
-	mcount.innerText = mCount + " " + minText;
+    bcount.innerText = bCount.toString() + " " + minText;
+    mcount.innerText = mCount.toString() + " " + minText;
 }
 
 function userActive() /*: -> Boolean */

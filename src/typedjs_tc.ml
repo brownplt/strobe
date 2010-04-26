@@ -168,6 +168,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let _ = tc_exp env (EApp (p, EDeref (p, EId (p, cid)), args)) in
         TConstr (cid, [])
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
+  | EInfixOp (p, "+", e1, e2) -> 
+      let t1 = tc_exp env e1 in
+      let t2 = tc_exp env e2 in
+        if (t1 = typ_str || t2 = typ_str) then
+          typ_str
+        else 
+          tc_exp env (EApp (p, EId (p, "+"), [e1; e2]))
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> begin match un_null (tc_exp env f) with
       | TForall (x, _, TArrow (obj_typ, expected_typ, result_typ)) ->
