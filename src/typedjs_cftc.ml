@@ -8,6 +8,7 @@ module H = Hashtbl
 let rec a_exp (exp : exp) : exp = match exp with
   | EConst _ -> exp
   | EBot _ -> exp
+  | EAssertTyp (p, t, e) -> EAssertTyp (p, t, a_exp e)
   | EEmptyArray _ -> exp
   | EArray (p, es) -> EArray (p, map a_exp es)
   | EObject (p, props) -> EObject (p, map (second2 a_exp) props)

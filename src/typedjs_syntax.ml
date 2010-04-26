@@ -54,6 +54,7 @@ type annotation =
   | ADowncast of typ
   | ATypAbs of id * typ
   | ATypApp of typ
+  | AAssertTyp of typ
 
 type ref_kind =
   | RefCell
@@ -65,6 +66,7 @@ type ref_kind =
 type exp
   = EConst of pos * JavaScript_syntax.const
   | EBot of pos
+  | EAssertTyp of pos * typ * exp
   | EArray of pos * exp list
   | EEmptyArray of pos * typ
   | EObject of pos * (string * exp) list
@@ -121,6 +123,7 @@ module Exp = struct
   let pos exp = match exp with
     | EConst (p, _) -> p
     | EBot p -> p
+    | EAssertTyp (p, _, _) -> p
     | EArray (p, _) -> p
     | EObject (p, _) -> p
     | EThis p -> p
@@ -187,6 +190,8 @@ module Pretty = struct
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
     | EBot _ -> text "bot"
+    | EAssertTyp (_, t, e) ->
+        parens (vert [ text "assert-typ"; parens (typ t); exp e ])
     | EEmptyArray _ -> text "[ ]"
     | EArray (_, es) -> brackets (horz (map exp es))
     | EObject (_, ps) -> brackets (vert (map prop ps))

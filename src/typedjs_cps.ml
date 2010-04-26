@@ -148,6 +148,15 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                                   App (new_node (), mk_id meth,
                                        mk_id k' :: mk_id throw :: objv 
                                        :: argvs))))))
+  | EAssertTyp (_, t, e) -> begin match k with
+      | Jmp _ -> cps_exp e throw k
+      | Cont k ->
+          let k' = new_name () in
+          let r = new_name () in
+            Fix (new_node (),
+                 [false, k', [r], TArrow (TTop, [t], TTop), k (mk_id r)],
+                 cps_exp e throw (Jmp k'))
+    end
   | EApp (_, func, args) -> 
       bind_cont k
         (fun k' ->

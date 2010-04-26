@@ -50,6 +50,7 @@ rule token = parse
    | "upcast" { UPCAST }
    | "downcast" { DOWNCAST }
    | "operator" { OPERATOR }
+   | "is" { IS }
    | "val" { VAL }
    | "<" { LANGLE }
    | ">" { RANGLE }

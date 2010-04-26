@@ -278,6 +278,15 @@ let rec tc_exp (env : Env.env) exp = match exp with
           t
         else 
           raise (Typ_error (p, "subsumption error"))
+  | EAssertTyp (p, raw_t, e) ->
+      let s = tc_exp env e in
+      let t = Env.check_typ p env raw_t in
+        if Env.subtype env s t then
+          s (* we do not subsume *)
+        else
+          error p 
+            (sprintf "expression has type %s, which is incompatible with the \
+                      annotation" (string_of_typ s))
   | EDowncast (p, t, e) -> 
       let t = Env.check_typ p env t in
       let (p1, p2) = Exp.pos e in 

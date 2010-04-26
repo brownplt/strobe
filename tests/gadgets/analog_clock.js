@@ -37,7 +37,7 @@ function _view_onpopout() /*:  -> Void */ {
 function d() /*:  -> Void */ {
   var a = new Date(undefined); // Claudiu : added undefined
     if (_minimized) {
-        var b = /*:upcast String + Int */(a.getHours());
+        var b = /*:upcast String + Int */(/*:is Int */(a.getHours()));
         if (b > 12) b = b - 12;
         if (b < 10) b = "0" + b;
         var c = /*:upcast String + Int */(a.getMinutes());
