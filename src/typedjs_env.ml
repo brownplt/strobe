@@ -60,7 +60,10 @@ module Env = struct
 
   let id_env env = env.id_typs
 
-  let clear_labels env = { env with lbl_typs = IdMap.empty }
+  let clear_labels env = { env with lbl_typs = 
+      try 
+        IdMap.add "%return" (IdMap.find "%return" env.lbl_typs) IdMap.empty
+      with Not_found -> IdMap.empty }
 
   let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)
 
