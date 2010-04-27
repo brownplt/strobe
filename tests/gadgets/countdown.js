@@ -1,7 +1,5 @@
 /* Changes:
- * in getDateDiff, a bunch of casts, and have to
- *   add ".0" to the int literals to make them floats.
- * Otherwise, just had to insert some .toString()s
+ * in getDateDiff, change loc of floor
  */
 
 // Change this to the date of the event.
@@ -22,8 +20,7 @@ function update() /*: -> Void */ {
     // Days until the event.
     var daysUntil = diff.days + 1;
 
-    //Claudiu: daysUntil --> daysUntil.toString()
-    timeLeftLabel.innerText = daysUntil.toString() + ' ' +
+    timeLeftLabel.innerText = daysUntil + ' ' +
         (daysUntil > 1 ? strings.DAYS : strings.DAY) + ' ' +
         strings.UNTIL;
 
@@ -41,21 +38,20 @@ function update() /*: -> Void */ {
     }
 
     view.setTimeout(update, nextUpdateMs);
-    //Claudiu: .toString()
-    gadget.debug.trace('Next update in ' + nextUpdateMs.toString() + ' ms.');
+    gadget.debug.trace('Next update in ' + nextUpdateMs + ' ms.');
   } else {
     // Start the countdown!
     var s = '';
 
     if (diff.hours > 0) {
-      s += diff.hours.toString() + ' ';
+      s += diff.hours + ' ';
       s += (diff.hours > 1 ? strings.HOURS : strings.HOUR) + ' ';
     }
     if (diff.minutes > 0) {
-      s += diff.minutes.toString() + ' ';
+      s += diff.minutes + ' ';
       s += (diff.minutes > 1 ? strings.MINUTES : strings.MINUTE) + ' ';
     }
-    s += diff.seconds.toString() + ' ';
+    s += diff.seconds + ' ';
     s += (diff.seconds > 1 ? strings.SECONDS : strings.SECOND) + ' ';
 
     s += strings.UNTIL;
@@ -69,9 +65,9 @@ function update() /*: -> Void */ {
 
 // Creates a date object for tomorrow midnight.
 function makeTomorrow(d) /*:  Date -> Date */ {
-  var tomorrow = new Date((d.getMonth() + 1).toString() + '/' +
-                          d.getDate().toString() + '/' +
-                          d.getYear().toString());
+  var tomorrow = new Date((d.getMonth() + 1) + '/' +
+                          d.getDate() + '/' +
+                          d.getYear());
   tomorrow.setDate(tomorrow.getDate() + 1);
 
   return tomorrow;

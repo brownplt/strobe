@@ -1,0 +1,23 @@
+<view height="200" width="250" onopen="view_onOpen()">
+    <img height="199" src="stock_images\background.png"/>
+    <radio height="15" name="radio2" width="88" x="111" y="24" onclick="radio2_onclick()"
+      color="#FFFFFF" image="stock_images\radiobutton.png"
+      caption="Morse -&gt; Text" checkedImage="stock_images\radiobutton_checked.png"
+     />
+    <radio height="15" name="radio1" width="90" x="19" y="24" onclick="radio1_onclick()"
+      color="#FFFFFF" image="stock_images\radiobutton.png"
+      caption="Text -&gt; Morse" checkedImage="stock_images\radiobutton_checked.png"
+      value="true"/>
+    <edit height="60" name="edit1" opacity="200" width="210" x="19" y="49"
+      onclick="edit1_onclick()" wordwrap="true" multiline="true"
+      onchange="edit1_onchange()"/>
+    <edit height="60" name="edit2" opacity="200" width="210" x="19" y="116"
+      bold="true" size="14" wordwrap="true" multiline="true"
+      readonly="true"/>
+    <button height="22" name="bplay" width="31" x="202" y="22" onclick="bplay_onclick()"
+      downImage="stock_images\button_down.png" image="stock_images\button_up.png"
+      overImage="stock_images\button_over.png" caption="Play"/>
+    <script src="jstrace.js" />
+    <script src="main_cc.js" />
+    <script src="hookggmenu.js" />
+</view>
