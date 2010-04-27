@@ -1,0 +1,126 @@
+<view caption="Resistor Gadget" height="354" showCaptionAlways="true"
+  width="190" onopen="view_onOpen()">
+    <div height="354" tooltip="Select color bands OR enter a resistance value."
+      width="190" background="#FFFFFF"/>
+    <a height="16" name="providerLink" tooltip="Software Provider"
+      width="112" x="66" y="25" size="8" href="http://GenericCode.googlepages.com/home"
+     >GenericCode Website
+    </a>
+    <div height="163" tooltip="Resistor representation" width="60" x="6"
+      y="63" background="#CFBFAF"/>
+    <button height="22" name="grayButton" tooltip="8 Gray will become the Current Color Band value"
+      width="60" x="125" y="255" onclick="doGrayButton()" ondblclick="doGrayButton()"
+      downImage="stock_images\Button8grayDown.PNG" image="stock_images\Button8grayNormal.PNG"
+      overImage="stock_images\Button8grayOver.PNG"/>
+    <button height="22" name="brownButton" tooltip="1 Brown will become the Current Color Band value"
+      width="60" x="125" y="87" onclick="doBrownButton()" ondblclick="doBrownButton()"
+      downImage="stock_images\Button1brownDown.PNG" image="stock_images\Button1brownNormal.PNG"
+      overImage="stock_images\Button1brownOver.PNG"/>
+    <button height="22" name="blackButton" tooltip="0 Black will become the Current Color Band value"
+      width="60" x="125" y="63" onclick="doBlackButton()" ondblclick="doBlackButton()"
+      downImage="stock_images\Button0blackDown.PNG" image="stock_images\Button0blackNormal.PNG"
+      overImage="stock_images\Button0blackOver.PNG"/>
+    <button height="22" name="redButton" tooltip="2 Red will become the Current Color Band value"
+      width="60" x="125" y="111" onclick="doRedButton()" ondblclick="doRedButton()"
+      downImage="stock_images\Button2redDown.PNG" image="stock_images\Button2redNormal.PNG"
+      overImage="stock_images\Button2redOver.PNG"/>
+    <button height="22" name="orangeButton" tooltip="3 Orange will become the Current Color Band value"
+      width="60" x="125" y="135" onclick="doOrangeButton()"
+      ondblclick="doOrangeButton()" downImage="stock_images\Button3orangeDown.PNG"
+      image="stock_images\Button3orangeNormal.PNG" overImage="stock_images\Button3orangeOver.PNG"/>
+    <button height="22" name="yellowButton" tooltip="4 Yellow will become the Current Color Band value"
+      width="60" x="125" y="159" onclick="doYellowButton()"
+      ondblclick="doYellowButton()" downImage="stock_images\Button4yellowDown.PNG"
+      image="stock_images\Button4yellowNormal.PNG" overImage="stock_images\Button4yellowOver.PNG"/>
+    <button height="22" name="greenButton" tooltip="5 Green will become the Current Color Band value"
+      width="60" x="125" y="183" onclick="doGreenButton()"
+      ondblclick="doGreenButton()" downImage="stock_images\Button5greenDown.PNG"
+      image="stock_images\Button5greenNormal.PNG" overImage="stock_images\Button5greenOver.PNG"/>
+    <button height="22" mask="image.png" name="blueButton" tooltip="6 Blue will become the Current Color Band value"
+      width="60" x="125" y="207" onclick="doBlueButton()" ondblclick="doBlueButton()"
+      downImage="stock_images\Button6blueDown.PNG" image="stock_images\Button6blueNormal.PNG"
+      overImage="stock_images\Button6blueOver.PNG"/>
+    <button height="22" name="violetButton" tooltip="7 Violet will become the Current Color Band value"
+      width="60" x="125" y="231" onclick="doVioletButton()"
+      ondblclick="doVioletButton()" downImage="stock_images\Button7violetDown.PNG"
+      image="stock_images\Button7violetNormal.PNG" overImage="stock_images\Button7violetOver.PNG"/>
+    <button height="22" name="whiteButton" tooltip="9 White will become the Current Color Band value"
+      width="60" x="125" y="279" onclick="doWhiteButton()"
+      ondblclick="doWhiteButton()" downImage="stock_images\Button9whiteDown.PNG"
+      image="stock_images\Button9whiteNormal.PNG" overImage="stock_images\Button9whiteOver.PNG"/>
+    <button height="22" name="firstBand" tooltip="Resistor's first color band"
+      width="60" x="6" y="72" onclick="doFirstBand()" ondblclick="doFirstBand()"
+      downImage="stock_images\Button1brownDown.PNG" image="stock_images\Button1brownNormal.PNG"
+      overImage="stock_images\Button1brownOver.PNG"/>
+    <button height="22" name="secondBand" tooltip="Resistor's second color band"
+      width="60" x="6" y="99" onclick="doSecondBand()" ondblclick="doSecondBand()"
+      downImage="stock_images\Button0blackDown.PNG" image="stock_images\Button0blackNormal.PNG"
+      overImage="stock_images\Button0blackOver.PNG"/>
+    <button height="22" name="thirdBand" tooltip="Resistor's third color band"
+      width="60" x="6" y="126" onclick="doThirdBand()" ondblclick="doThirdBand()"
+      downImage="stock_images\Button2redDown.PNG" image="stock_images\Button2redNormal.PNG"
+      overImage="stock_images\Button2redOver.PNG"/>
+    <button height="22" name="fourthBand" tooltip="Resistor's tolerance band"
+      width="60" x="6" y="153" onclick="doFourthBand()" ondblclick="doFourthBand()"
+      downImage="stock_images\ButtonEmptyNormal.PNG" image="stock_images\ButtonEmptyNormal.PNG"
+      overImage="stock_images\ButtonEmptyNormal.PNG"/>
+    <button height="22" name="fifthBand" width="60" x="6" y="180" onclick="doFifthBand()"
+      ondblclick="doFifthBand()" downImage="stock_images\ButtonBlankNormal.PNG"
+      image="stock_images\ButtonBlankNormal.PNG" overImage="stock_images\ButtonBlankNormal.PNG"/>
+    <label height="16" tooltip="Select a Color below to put it in the selected Band"
+      width="88" x="97" y="46" bold="true" size="8" underline="true"
+     >&strLabelSelectColor;
+    </label>
+    <label height="16" tooltip="Pick a Band to receive the next selected color"
+      width="80" x="4" y="46" bold="true" size="8" underline="true"
+     >&strLabelPickBand;
+    </label>
+    <button height="22" name="secondToleranceButton" tooltip="2% Red will become the fourth band (Tolerance)"
+      width="60" x="6" y="279" onclick="doSecondToleranceButton()"
+      ondblclick="doSecondToleranceButton()" downImage="stock_images\ButtonTredDown.PNG"
+      image="stock_images\ButtonTredNormal.PNG" overImage="stock_images\ButtonTredOver.PNG"/>
+    <button height="22" name="firstToleranceButton" tooltip="1% Brown will become the fourth band (Tolerance)"
+      width="60" x="7" y="255" onclick="doFirstToleranceButton()"
+      ondblclick="doFirstToleranceButton()" downImage="stock_images\ButtonTbrownDown.PNG"
+      image="stock_images\ButtonTbrownNormal.PNG" overImage="stock_images\ButtonTbrownOver.PNG"/>
+    <button height="22" name="eraseButton" tooltip="The Current Color Band value will be ERASED"
+      width="60" x="125" y="303" onclick="doEraseButton()"
+      ondblclick="doEraseButton()" downImage="stock_images\ButtonEraseDown.PNG"
+      image="stock_images\ButtonEraseNormal.PNG" overImage="stock_images\ButtonEraseOver.PNG"/>
+    <label height="16" tooltip="Optional: Pick a resistor tolerance" width="76"
+      x="4" y="229" bold="true" size="8">&strLabelPickTolerance1;
+    </label>
+    <label height="16" tooltip="Optional: Pick a resistor tolerance" width="80"
+      x="4" y="238" bold="true" size="8" underline="true">&strLabelPickTolerance2;
+    </label>
+    <button height="22" name="noneButton" tooltip="Remove the fourth band (Tolerance)"
+      width="60" x="6" y="303" onclick="doNoneButton()" ondblclick="doNoneButton()"
+      downImage="stock_images\ButtonNoneDown.PNG" image="stock_images\ButtonNoneNormal.PNG"
+      overImage="stock_images\ButtonNoneOver.PNG"/>
+    <div height="22" width="179" x="6" y="328" background="#C0C0E0"/>
+    <label height="16" tooltip="Ohms (a measure of resistance)" width="52"
+      x="6" y="331" bold="true" size="9">Ohms (    )
+    </label>
+    <edit height="16" name="ohms" tooltip="Enter an Ohmic value between 0 and 99,000,000,000"
+      width="99" x="81" y="331" bold="true" size="9" value="1,000"
+      onchange="doOhmsCheck()"/>
+    <button enabled="false" height="14" hitTest="htnowhere" name="ohmSymbolButton"
+      tooltip="Ohms symbol" width="16" x="53" y="333" downImage="stock_images\ButtonOhmSymbolNormal.PNG"
+      image="stock_images\ButtonOhmSymbolNormal.PNG" overImage="stock_images\ButtonOhmSymbolNormal.PNG"/>
+    <label height="20" width="6" x="67" y="331" bold="true" size="9">)
+    </label>
+    <label height="16" tooltip="4 Band vs. 5 Band resistor" width="106"
+      x="4" y="1" bold="true" size="8" underline="true">&strLabelNumberOfResistorBands;
+    </label>
+    <button height="22" name="numberOfBandsButton" tooltip="Toggle between 4 or 5 resistor color bands"
+      width="22" x="25" y="17" onclick="toggleNumberOfBandsButton()"
+      ondblclick="toggleNumberOfBandsButton()" downImage="stock_images\Button4Down.PNG"
+      image="stock_images\Button4Normal.PNG" overImage="stock_images\Button4Over.PNG"/>
+    <button enabled="false" height="9" hitTest="htnowhere" name="currentColorBandArrow"
+      tooltip="Current Color Band" width="12" x="70" y="79"
+      downImage="stock_images\ButtonArrowNormal.PNG" image="stock_images\ButtonArrowNormal.PNG"
+      overImage="stock_images\ButtonArrowNormal.PNG"/>
+    <script src="jstrace.js" />
+    <script src="main_cc.js" />
+    <script src="hookggmenu.js" />
+</view>
