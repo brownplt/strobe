@@ -1,0 +1,13 @@
+﻿<strings>
+  <GADGET_NAME>Resistor Gadget</GADGET_NAME>
+  <GADGET_DESCRIPTION>Gadget to calculate Resistor values</GADGET_DESCRIPTION>
+  <GADGET_ABOUT_TEXT>Resistor Gadget
+© 2007 Generic Code
+This Gadget provides the ability to determine resistance (in Ohms) of a resistor by picking color band values.
+It can also generate color band patterns when a resistance value is entered.</GADGET_ABOUT_TEXT>
+<strLabelSelectColor>3  Select a Color</strLabelSelectColor>
+<strLabelPickBand>2  Pick a Band</strLabelPickBand>
+<strLabelNumberOfResistorBands>1  Select # of Bands</strLabelNumberOfResistorBands>
+<strLabelPickTolerance1>4  Pick</strLabelPickTolerance1>
+<strLabelPickTolerance2>a tolerance</strLabelPickTolerance2>
+</strings>
