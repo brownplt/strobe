@@ -1,24 +1,26 @@
-nSquares = 4;
-nTypes = 7;
-boardHeight = 16;
-boardWidth = 10;
-Level = 1;
-speed0 = 700;
-speedK = 60;
-speed = speed0 - speedK * Level;
-nLines = 0;
-curX = 1;
-curY = 1;
-skyline = boardHeight - 1;
-serialN = 0;
-boardLoaded = 1;
-gamePaused = 0;
-gameStarted = 0;
-sayingBye = 0;
-timerID = null;
-tetrisMusic = null;
-tetrisMusicSrc = storage.extract("music/Korobeiniki.mid");
-f = __new(Array,[]);
+__initnumargs("gadgets/TetraminoGame_cc/tetris.js",
+              [0,0,0,0,2,2,0,0,0,0,0,0,0,2,0,0,0,0,0,1,1]);
+var nSquares = 4;
+var nTypes = 7;
+var boardHeight = 16;
+var boardWidth = 10;
+var Level = 1;
+var speed0 = 700;
+var speedK = 60;
+var speed = speed0 - speedK * Level;
+var nLines = 0;
+var curX = 1;
+var curY = 1;
+var skyline = boardHeight - 1;
+var serialN = 0;
+var boardLoaded = 1;
+var gamePaused = 0;
+var gameStarted = 0;
+var sayingBye = 0;
+var timerID = null;
+var tetrisMusic = null;
+var tetrisMusicSrc = storage.extract("music/Korobeiniki.mid");
+var f = __new(Array,[]);
 for (i = 0; i < 20; i++)
 {
   f[i] = __new(Array,[]);
@@ -27,14 +29,14 @@ for (i = 0; i < 20; i++)
     f[i][j] = 0;
   };
 };
-xToErase = __new(Array,[0,0,0,0]);
-yToErase = __new(Array,[0,0,0,0]);
-dx = __new(Array,[0,0,0,0]);
-dy = __new(Array,[0,0,0,0]);
-dx_ = __new(Array,[0,0,0,0]);
-dy_ = __new(Array,[0,0,0,0]);
-dxBank = __new(Array,[]);
-dyBank = __new(Array,[]);
+var xToErase = __new(Array,[0,0,0,0]);
+var yToErase = __new(Array,[0,0,0,0]);
+var dx = __new(Array,[0,0,0,0]);
+var dy = __new(Array,[0,0,0,0]);
+var dx_ = __new(Array,[0,0,0,0]);
+var dy_ = __new(Array,[0,0,0,0]);
+var dxBank = __new(Array,[]);
+var dyBank = __new(Array,[]);
 dxBank[1] = __new(Array,[0,1,- 1,0]);
 dyBank[1] = __new(Array,[0,0,0,1]);
 dxBank[2] = __new(Array,[0,1,- 1,- 1]);
@@ -71,7 +73,7 @@ var resetGame = __typedjs(function  ()
                             serialN = 0;
                             skyline = boardHeight - 1;
                           },
-                          undefined,
+                          0,
                           "resetGame",
                           "gadgets/TetraminoGame_cc/tetris.js",
                           0);
@@ -79,7 +81,7 @@ var init = __typedjs(function  ()
                      {
                        resetGame();
                      },
-                     undefined,
+                     0,
                      "init",
                      "gadgets/TetraminoGame_cc/tetris.js",
                      1);
@@ -101,7 +103,7 @@ var start = __typedjs(function  ()
                         view.caption = GADGET_NAME;
                         playMusic();
                       },
-                      undefined,
+                      0,
                       "start",
                       "gadgets/TetraminoGame_cc/tetris.js",
                       2);
@@ -115,13 +117,13 @@ var playMusic = __typedjs(function  ()
                                                                       ClipStateChange(clip,
                                                                                       new_state);
                                                                     },
-                                                                    arguments.callee,
+                                                                    1,
                                                                     "tetrisMusic.onstatechange",
                                                                     "gadgets/TetraminoGame_cc/tetris.js",
-                                                                    0);
+                                                                    4);
                             };
                           },
-                          undefined,
+                          0,
                           "playMusic",
                           "gadgets/TetraminoGame_cc/tetris.js",
                           3);
@@ -135,10 +137,10 @@ var ClipStateChange = __typedjs(function  (clip,new_state)
                                     setTimeout("playMusic();",500);
                                   };
                                 },
-                                undefined,
+                                0,
                                 "ClipStateChange",
                                 "gadgets/TetraminoGame_cc/tetris.js",
-                                4);
+                                5);
 var pause = __typedjs(function  ()
                       {
                         if (boardLoaded && gameStarted)
@@ -156,10 +158,10 @@ var pause = __typedjs(function  ()
                           };
                         };
                       },
-                      undefined,
+                      0,
                       "pause",
                       "gadgets/TetraminoGame_cc/tetris.js",
-                      5);
+                      6);
 var resume = __typedjs(function  ()
                        {
                          if (boardLoaded && gameStarted && gamePaused)
@@ -173,10 +175,10 @@ var resume = __typedjs(function  ()
                            };
                          };
                        },
-                       undefined,
+                       0,
                        "resume",
                        "gadgets/TetraminoGame_cc/tetris.js",
-                       6);
+                       7);
 var play = __typedjs(function  ()
                      {
                        if (movedown())
@@ -208,10 +210,10 @@ var play = __typedjs(function  ()
                                    };
                             };
                      },
-                     undefined,
+                     0,
                      "play",
                      "gadgets/TetraminoGame_cc/tetris.js",
-                     7);
+                     8);
 var fillMatrix = __typedjs(function  ()
                            {
                              for (var k = 0; k < nSquares; k++)
@@ -226,10 +228,10 @@ var fillMatrix = __typedjs(function  ()
                                };
                              };
                            },
-                           undefined,
+                           0,
                            "fillMatrix",
                            "gadgets/TetraminoGame_cc/tetris.js",
-                           8);
+                           9);
 var removeLines = __typedjs(function  ()
                             {
                               for (var i = 0; i < boardHeight; i++)
@@ -273,10 +275,10 @@ var removeLines = __typedjs(function  ()
                                 gadget.debug.trace("Level is now: " + Level);
                               };
                             },
-                            undefined,
+                            0,
                             "removeLines",
                             "gadgets/TetraminoGame_cc/tetris.js",
-                            9);
+                            10);
 var drawPiece = __typedjs(function  ()
                           {
                             if (boardLoaded)
@@ -299,10 +301,10 @@ var drawPiece = __typedjs(function  ()
                               };
                             };
                           },
-                          undefined,
+                          0,
                           "drawPiece",
                           "gadgets/TetraminoGame_cc/tetris.js",
-                          10);
+                          11);
 var erasePiece = __typedjs(function  ()
                            {
                              if (boardLoaded)
@@ -320,10 +322,10 @@ var erasePiece = __typedjs(function  ()
                                };
                              };
                            },
-                           undefined,
+                           0,
                            "erasePiece",
                            "gadgets/TetraminoGame_cc/tetris.js",
-                           11);
+                           12);
 var pieceFits = __typedjs(function  (X,Y)
                           {
                             for (var k = 0; k < nSquares; k++)
@@ -337,10 +339,10 @@ var pieceFits = __typedjs(function  (X,Y)
                             };
                             return 1;
                           },
-                          undefined,
+                          0,
                           "pieceFits",
                           "gadgets/TetraminoGame_cc/tetris.js",
-                          12);
+                          13);
 var moveleft = __typedjs(function  ()
                          {
                            for (var k = 0; k < nSquares; k++)
@@ -355,10 +357,10 @@ var moveleft = __typedjs(function  ()
                              drawPiece();
                            };
                          },
-                         undefined,
+                         0,
                          "moveleft",
                          "gadgets/TetraminoGame_cc/tetris.js",
-                         13);
+                         14);
 var moveright = __typedjs(function  ()
                           {
                             for (var k = 0; k < nSquares; k++)
@@ -373,10 +375,10 @@ var moveright = __typedjs(function  ()
                               drawPiece();
                             };
                           },
-                          undefined,
+                          0,
                           "moveright",
                           "gadgets/TetraminoGame_cc/tetris.js",
-                          14);
+                          15);
 var rotate = __typedjs(function  ()
                        {
                          for (var k = 0; k < nSquares; k++)
@@ -395,10 +397,10 @@ var rotate = __typedjs(function  ()
                            drawPiece();
                          };
                        },
-                       undefined,
+                       0,
                        "rotate",
                        "gadgets/TetraminoGame_cc/tetris.js",
-                       15);
+                       16);
 var movedown = __typedjs(function  ()
                          {
                            for (var k = 0; k < nSquares; k++)
@@ -415,10 +417,10 @@ var movedown = __typedjs(function  ()
                            };
                            return 0;
                          },
-                         undefined,
+                         0,
                          "movedown",
                          "gadgets/TetraminoGame_cc/tetris.js",
-                         16);
+                         17);
 var fall = __typedjs(function  ()
                      {
                        for (var k = 0; k < nSquares; k++)
@@ -431,14 +433,16 @@ var fall = __typedjs(function  ()
                        clearTimeout(timerID);
                        erasePiece();
                        while (pieceFits(curX,curY + 1))
-                       curY++;
+                       {
+                         curY++;
+                       };
                        drawPiece();
                        timerID = setTimeout("play()",speed);
                      },
-                     undefined,
+                     0,
                      "fall",
                      "gadgets/TetraminoGame_cc/tetris.js",
-                     17);
+                     18);
 var getPiece = __typedjs(function  (N)
                          {
                            curPiece = (getPiece.arguments.length == 0) ? 1 + Math.floor(nTypes * Math.random()) : N;
@@ -461,10 +465,10 @@ var getPiece = __typedjs(function  (N)
                            };
                            return 0;
                          },
-                         undefined,
+                         0,
                          "getPiece",
                          "gadgets/TetraminoGame_cc/tetris.js",
-                         18);
+                         19);
 var getBackground = __typedjs(function  (index)
                               {
                                 if (index == 0)
@@ -475,7 +479,7 @@ var getBackground = __typedjs(function  (index)
                                        return "images\\block" + index + ".png";
                                      };
                               },
-                              undefined,
+                              0,
                               "getBackground",
                               "gadgets/TetraminoGame_cc/tetris.js",
-                              19);
+                              20);

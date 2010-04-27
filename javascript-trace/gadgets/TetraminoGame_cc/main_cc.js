@@ -1,3 +1,5 @@
+__initnumargs("gadgets/TetraminoGame_cc/main.js",
+              [0,1,1,0,0,0,0,0]);
 var tetris = null;
 var view_onOpen = __typedjs(function  ()
                             {
@@ -12,7 +14,6 @@ var view_onOpen = __typedjs(function  ()
                               options.putDefaultValue("keyFallHR","Space");
                               options.putDefaultValue("keyFall",32);
                               options.putDefaultValue("tetrisMusic",true);
-                              //plugin.onAddCustomMenuItems = AddCustomMenuItems;
                               for (x = 0; x < 10; x++)
                               {
                                 for (y = 0; y < 16; y++)
@@ -25,7 +26,7 @@ var view_onOpen = __typedjs(function  ()
                               labelStatus.visible = false;
                               btnStart.visible = true;
                             },
-                            undefined,
+                            0,
                             "view_onOpen",
                             "gadgets/TetraminoGame_cc/main.js",
                             0);
@@ -33,7 +34,7 @@ var AddCustomMenuItems = __typedjs(function  (menu)
                                    {
                                      menu.AddItem(strMenuNew,0,OnMenuClicked);
                                    },
-                                   undefined,
+                                   0,
                                    "AddCustomMenuItems",
                                    "gadgets/TetraminoGame_cc/main.js",
                                    1);
@@ -44,7 +45,7 @@ var OnMenuClicked = __typedjs(function  (itemText)
                                   gameStart();
                                 };
                               },
-                              undefined,
+                              0,
                               "OnMenuClicked",
                               "gadgets/TetraminoGame_cc/main.js",
                               2);
@@ -54,7 +55,7 @@ var gameLeave = __typedjs(function  ()
                             labelStatus.innerText = strPaused;
                             labelStatus.visible = true;
                           },
-                          undefined,
+                          0,
                           "gameLeave",
                           "gadgets/TetraminoGame_cc/main.js",
                           3);
@@ -66,7 +67,7 @@ var gameFocus = __typedjs(function  ()
                               labelStatus.visible = false;
                             };
                           },
-                          undefined,
+                          0,
                           "gameFocus",
                           "gadgets/TetraminoGame_cc/main.js",
                           4);
@@ -78,7 +79,7 @@ var gameStart = __typedjs(function  ()
                             labelStatus.visible = false;
                             divBackground.focus();
                           },
-                          undefined,
+                          0,
                           "gameStart",
                           "gadgets/TetraminoGame_cc/main.js",
                           5);
@@ -108,14 +109,14 @@ var gameKeyDown = __typedjs(function  ()
                                  fall();
                                  break;};
                             },
-                            undefined,
+                            0,
                             "gameKeyDown",
                             "gadgets/TetraminoGame_cc/main.js",
                             6);
 var gameKeyUp = __typedjs(function  ()
                           {
                           },
-                          undefined,
+                          0,
                           "gameKeyUp",
                           "gadgets/TetraminoGame_cc/main.js",
                           7);

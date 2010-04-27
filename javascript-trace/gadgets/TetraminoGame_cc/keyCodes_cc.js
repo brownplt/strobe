@@ -1,3 +1,4 @@
+__initnumargs("gadgets/TetraminoGame_cc/keyCodes.js",[0,1]);
 var keyCodes = __typedjs(function  ()
                          {
                            __thisref(this,arguments.callee).keys = __new(Array,[]);
@@ -86,7 +87,7 @@ var keyCodes = __typedjs(function  ()
                            __thisref(this,arguments.callee).keys.push([122,"F11"]);
                            __thisref(this,arguments.callee).keys.push([123,"F12"]);
                          },
-                         undefined,
+                         0,
                          "keyCodes",
                          "gadgets/TetraminoGame_cc/keyCodes.js",
                          0);
@@ -105,7 +106,7 @@ keyCodes.prototype.getNameForKey = __typedjs(function  (keyCode)
                                                };
                                                return "Key" + keyCode;
                                              },
-                                             undefined,
+                                             0,
                                              "keyCodes.prototype.getNameForKey",
                                              "gadgets/TetraminoGame_cc/keyCodes.js",
                                              1);

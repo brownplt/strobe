@@ -14,7 +14,7 @@ function view_onOpen() {
     options.putDefaultValue("keyFall", 32);
     options.putDefaultValue("tetrisMusic", true);
 
-    plugin.onAddCustomMenuItems = AddCustomMenuItems;
+    //plugin.onAddCustomMenuItems = AddCustomMenuItems;
 
     for (x = 0; x < 10; x++) {
         for (y = 0; y < 16; y++) {

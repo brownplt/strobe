@@ -1,3 +1,5 @@
+__initnumargs("gadgets/TetraminoGame_cc/options.js",
+              [0,0,0,0,0,0,0]);
 var keyCodeLeft = 0;
 var keyCodeRight = 0;
 var keyCodeRotate = 0;
@@ -17,7 +19,7 @@ var view_onOpen = __typedjs(function  ()
                               keyCodeFall = options.getValue("keyFall");
                               optMusic.value = options.getValue("tetrisMusic");
                             },
-                            undefined,
+                            0,
                             "view_onOpen",
                             "gadgets/TetraminoGame_cc/options.js",
                             0);
@@ -30,7 +32,7 @@ var keyLeftCode = __typedjs(function  ()
                               keyLeft.value = codes.getNameForKey(event.keyCode);
                               event.returnValue = false;
                             },
-                            undefined,
+                            0,
                             "keyLeftCode",
                             "gadgets/TetraminoGame_cc/options.js",
                             1);
@@ -43,7 +45,7 @@ var keyRightCode = __typedjs(function  ()
                                keyRight.value = codes.getNameForKey(event.keyCode);
                                event.returnValue = false;
                              },
-                             undefined,
+                             0,
                              "keyRightCode",
                              "gadgets/TetraminoGame_cc/options.js",
                              2);
@@ -56,7 +58,7 @@ var keyRotateCode = __typedjs(function  ()
                                 keyRotate.value = codes.getNameForKey(event.keyCode);
                                 event.returnValue = false;
                               },
-                              undefined,
+                              0,
                               "keyRotateCode",
                               "gadgets/TetraminoGame_cc/options.js",
                               3);
@@ -69,7 +71,7 @@ var keyDownCode = __typedjs(function  ()
                               keyDown.value = codes.getNameForKey(event.keyCode);
                               event.returnValue = false;
                             },
-                            undefined,
+                            0,
                             "keyDownCode",
                             "gadgets/TetraminoGame_cc/options.js",
                             4);
@@ -82,7 +84,7 @@ var keyFallCode = __typedjs(function  ()
                               keyFall.value = codes.getNameForKey(event.keyCode);
                               event.returnValue = false;
                             },
-                            undefined,
+                            0,
                             "keyFallCode",
                             "gadgets/TetraminoGame_cc/options.js",
                             5);
@@ -101,7 +103,7 @@ var optionsSave = __typedjs(function  ()
                               options.putValue("keyFall",keyCodeFall);
                               options.putValue("tetrisMusic",optMusic.value);
                             },
-                            undefined,
+                            0,
                             "optionsSave",
                             "gadgets/TetraminoGame_cc/options.js",
                             6);

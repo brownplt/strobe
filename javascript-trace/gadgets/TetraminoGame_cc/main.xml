@@ -31,4 +31,5 @@
   <script src="jstrace.js" />
   <script src="main_cc.js" />
   <script src="tetris_cc.js" />
+  <script src="hookggmenu.js" />
 </view>
