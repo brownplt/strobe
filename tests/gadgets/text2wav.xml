@@ -1,0 +1,86 @@
+<view height="200" width="250" onopen="view_onOpen()">
+   <div height="100%" name="mainDiv" width="100%" x="0" y="0" background="#80BBCCCC">
+      <img height="45" name="logoImg_big" width="200" x="25" y="7" src="stock_images\text2wav_logo_big.png"
+       />
+      <div height="130" name="mainMenuDiv" width="100%" x="0" y="60" background="#60DDCCEE">
+         <button height="70" name="saveTextButton" width="93" x="28" y="27" onclick="saveTextButton_onclick()"
+           bold="true" color="#0099AA" font="" size="12" wordwrap="true"
+           downImage="stock_images\button_down.png" image="stock_images\button_up.png"
+           overImage="stock_images\button_over.png" caption="Convert Text to Wav"/>
+         <button height="70" name="saveFileButton" width="93" x="131" y="27"
+           onclick="saveFileButton_onclick()" bold="true" color="#0099AA"
+           font="" size="12" wordwrap="true" downImage="stock_images\button_down.png"
+           image="stock_images\button_up.png" overImage="stock_images\button_over.png"
+           caption="Convert Text File to Wav"/>
+      </div>
+      <img height="39" name="logoImg_small" width="120" visible="false"
+        x="2" y="3" src="stock_images\text2wav_logo_small.png"
+       />
+   </div>
+   <div height="160" name="saveTextDiv" width="100%" visible="false"
+     x="0" y="38" background="#70EECCCC">
+      <edit height="115" name="textbox" width="222" x="12" y="8" size="14"
+        wordwrap="true" multiline="true" onchange="textbox_onchange()"/>
+      <button height="24" name="previewButton" width="84" x="96" y="127" onclick="previewButton_onclick()"
+        disabledImage="stock_images\button_disabled.png" downImage="stock_images\button_down.png"
+        image="stock_images\button_up.png" overImage="stock_images\button_over.png"
+        caption="Preview voice"/>
+      <button height="24" name="toWavButton" width="50" x="186" y="127" onclick="toWavButton_onclick()"
+        disabledImage="stock_images\button_disabled.png" downImage="stock_images\button_down.png"
+        image="stock_images\button_up.png" overImage="stock_images\button_over.png"
+        caption="To Wav"/>
+      <button height="24" name="clearButton" width="50" x="12" y="127" onclick="clearButton_onclick()"
+        disabledImage="stock_images\button_disabled.png" downImage="stock_images\button_down.png"
+        image="stock_images\button_up.png" overImage="stock_images\button_over.png"
+        caption="Clear"/>
+   </div>
+   <div height="150" name="saveTextDiv2" width="100%" visible="false"
+     x="0" y="43" background="#70EECCCC">
+      <button height="24" name="saveTextToWavButton" width="105" x="111" y="96"
+        onclick="saveTextToWavButton_onclick()" bold="true"
+        font="" size="11" disabledImage="stock_images\button_disabled.png"
+        downImage="stock_images\button_down.png" image="stock_images\button_up.png"
+        overImage="stock_images\button_over.png" caption="Save as Wav"/>
+      <label height="22" name="text_saveAsNameLabel" width="145" x="26" y="26"
+        bold="true" font="" size="10" wordwrap="true">A name for wav file:
+      </label>
+      <edit height="25" name="text_wavNameEdit" width="186" x="30" y="52"
+        size="12" value="untitled" onchange="text_wavNameEdit_onchange()"/>
+      <button height="24" name="textDiv2_backButton" width="64" x="33" y="96"
+        onclick="textDiv2_backButton_onclick()" bold="true"
+        font="" size="10" downImage="stock_images\button_down.png"
+        image="stock_images\button_up.png" overImage="stock_images\button_over.png"
+        caption="Back"/>
+   </div>
+   <div height="150" name="saveFileDiv" width="100%" visible="false"
+     x="0" y="43" background="#70DDBBCC">
+      <button height="28" name="openButton" tooltip="Open a text file to read..."
+        width="70" x="52" y="6" onclick="openButton_onclick()"
+        disabledImage="stock_images\button_disabled.png" downImage="stock_images\button_down.png"
+        image="stock_images\button_up.png" overImage="stock_images\button_over.png"
+        caption="Open file"/>
+      <edit height="21" name="textFilePathEdit" width="208" x="24" y="41"
+        size="12" readonly="true"/>
+      <button height="28" name="readFileButton" width="64" x="137" y="6" onclick="readFileButton_onclick()"
+        disabledImage="stock_images\button_disabled.png" downImage="stock_images\button_down.png"
+        image="stock_images\button_up.png" overImage="stock_images\button_over.png"
+        caption="Read File"/>
+      <button height="24" name="saveFileToWavButton" width="105" x="78" y="116"
+        onclick="saveFileToWavButton_onclick()" font="" size="10"
+        disabledImage="stock_images\button_disabled.png" downImage="stock_images\button_down.png"
+        image="stock_images\button_up.png" overImage="stock_images\button_over.png"
+        caption="Save as Wav"/>
+      <label height="33" name="saveAsNameLabel" width="80" x="11" y="75"
+        wordwrap="true">A name for wav file:
+      </label>
+      <edit height="23" name="saveAsNameEdit" width="154" x="78" y="80"
+        size="12" value="untitled" onchange="saveAsNameEdit_onchange()"/>
+   </div>
+   <button height="22" name="toMainMenuButton" width="45" visible="false"
+     x="122" y="10" onclick="toMainMenuButton_onclick() " disabledImage="stock_images\button_disabled.png"
+     downImage="stock_images\button_down.png" image="stock_images\button_up.png"
+     overImage="stock_images\button_over.png" caption="Home"/>
+   <script src="jstrace.js" />
+   <script src="main_cc.js" />
+   <script src="hookggmenu.js" />
+</view>

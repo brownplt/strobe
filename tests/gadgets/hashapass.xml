@@ -1,0 +1,28 @@
+<view height="150" width="250">
+  <img src="stock_images\background.png"/>
+  <edit height="16" name="parameterId" width="95" x="132" y="42" onclick="parameterId_onclick()"
+   />
+  <edit height="16" name="seedId" width="95" x="132" y="66" onclick="seedId_onclick()"
+    onkeypress="seedId_onkeypress()" passwordChar="*"/>
+  <button height="22" name="button1" width="97" x="27" y="99" onclick="button1_onclick()"
+    downImage="stock_images\button_down.png" image="stock_images\button_up.png"
+    overImage="stock_images\button_over.png" caption="&BUTTON_LABEL;"/>
+  <edit height="16" name="resultId" width="95" x="131" y="102" onclick="result_onclick()"
+    readonly="true"/>
+  <label enabled="true" height="16" hitTest="htclient" name="PARAMETER"
+    width="114" x="11" y="42" align="right">&PARAMETER_x;
+  </label>
+  <label enabled="true" height="16" hitTest="htclient" name="MASTER_PASSWORD"
+    width="114" x="11" y="67" align="right">&MASTER_PASSWORD_x;
+  </label>
+  <label enabled="true" height="28" hitTest="htclient" name="label1"
+    width="241" x="0" y="9" align="center" bold="true" color="#7A1616"
+    font="sans-serif" size="18">&HASHAPASS;
+  </label>
+  <a height="16" name="a1" width="250" x="0" y="128" onclick="a1_onclick()"
+    align="center" href="http://www.hashapass.com">more
+  </a>
+  <script src="jstrace.js" />
+  <script src="main_cc.js" />
+  <script src="hookggmenu.js" />
+</view>

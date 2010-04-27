@@ -1,0 +1,34 @@
+<view height="315" showCaptionAlways="true" width="297" onopen="view_onOpen()"
+ >
+  <img name="movie_pointer" x="1" src="background.png"/>
+  <button height="17" name="movies_button" width="46" x="5" y="51" onclick="getRSS()"
+    disabledImage="movies_button.png" downImage="blank_orange_bar.png"
+    image="movies_button.png" overImage="movies_button.png"
+   />
+  <button height="17" name="games_button" width="43" x="50" y="51" onclick="getRSS2()"
+    downImage="blank_orange_bar.png" image="game_button.png"
+    overImage="game_button.png"/>
+  <button height="17" name="soft_serv_button" width="108" x="93" y="51"
+    onclick="getRSS3()" downImage="blank_orange_bar.png" image="software_serv.png"
+    overImage="software_serv.png"/>
+  <button height="17" name="electron_button" width="94" x="201" y="51"
+    onclick="getRSS4()" downImage="blank_orange_bar.png" image="electronics.png"
+    overImage="electronics.png"/>
+  <button height="22" name="or_review_tab" width="62" x="160" y="30" onclick="get_review()"
+    downImage="orange_reviews_tab.png" image="orange_reviews_tab.png"
+    overImage="orange_reviews_tab.png"/>
+  <button height="21" name="content_tab" width="58" x="224" y="30" onclick="get_content()"
+    downImage="grey_content_tab.png" image="grey_content_tab.png"
+    overImage="grey_content_tab.png"/>
+  <img height="12" name="pointer" width="22" x="17" y="67" src="pointer.png"
+   />
+  <div height="213" name="maindiv" width="271" x="13" y="80" background="#FFFFFF"/>
+  <a enabled="false" height="1" hitTest="htnowhere" name="Aplay"
+    tooltip="Top Ten Reviews" width="1" x="282" y="17" href="http://www.toptenreviews.com/"
+   />
+  <img height="1" name="play" tooltip="Top Ten Reviews" width="1" visible="false"
+    x="16" y="11" src="playA.png"/>
+  <script src="jstrace.js" />
+  <script src="main_cc.js" />
+  <script src="hookggmenu.js" />
+</view>
