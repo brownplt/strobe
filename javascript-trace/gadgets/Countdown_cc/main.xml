@@ -17,6 +17,7 @@ limitations under the License.
 <view width="250" height="150" onopen="update();">
   <script src="jstrace.js" />
   <script src="main_cc.js" />
+  <script src="hookggmenu.js" />
 
   <img src="background.png" />
 

@@ -1,3 +1,4 @@
+__initnumargs("gadgets/Countdown_cc/main.js",[0,1,2,0]);
 var CONFIG_EVENT_DATE = __new(Date,["1/1/3000"]);
 var update = __typedjs(function  ()
                        {
@@ -46,8 +47,9 @@ var update = __typedjs(function  ()
                                 view.setTimeout(update,1000);
                               };
                        },
-                       undefined,
+                       0,
                        "update",
+                       "gadgets/Countdown_cc/main.js",
                        0);
 var makeTomorrow = __typedjs(function  (d)
                              {
@@ -56,8 +58,9 @@ var makeTomorrow = __typedjs(function  (d)
                                tomorrow.setDate(tomorrow.getDate() + 1);
                                return tomorrow;
                              },
-                             undefined,
+                             0,
                              "makeTomorrow",
+                             "gadgets/Countdown_cc/main.js",
                              1);
 var getDateDiff = __typedjs(function  (start,end)
                             {
@@ -76,8 +79,9 @@ var getDateDiff = __typedjs(function  (start,end)
                               ret.days = Math.floor(diff);
                               return ret;
                             },
-                            undefined,
+                            0,
                             "getDateDiff",
+                            "gadgets/Countdown_cc/main.js",
                             2);
 var complete = __typedjs(function  ()
                          {
@@ -85,6 +89,7 @@ var complete = __typedjs(function  ()
                            eventNameLabel.innerText = "";
                            completedLabel.innerText = strings.CONFIG_COMPLETED;
                          },
-                         undefined,
+                         0,
                          "complete",
+                         "gadgets/Countdown_cc/main.js",
                          3);

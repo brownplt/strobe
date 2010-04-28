@@ -1,3 +1,9 @@
+//names in the paper were changed to be clearer:
+//wrapFunc is actually 'tracefunction' here, which becomes '__typedjs' to the outside
+//inspectValue is really the function 'rttype'.
+//in rttype, the field "info" is really the field "type".
+//flat "undefined" doesnt exist, but is called "Void"
+
 //__typedJsVars["\"flapjax.js\" (line 38, column 13)"]
 
 var $jstraceid = "Global"; //mark the global object so we don't deeply inspect it
@@ -10,12 +16,14 @@ var $jstraceid = "Global"; //mark the global object so we don't deeply inspect i
 
 //type varies based on kind:
 //for flat, type is a string from typeof
-//for object, it is an object mapping property names to rttypes
+//for object, it is an object mapping property names to rttypes.
+//            has a field "$isArray", true if it's an array
+//            if is array, then "$itemType" is union-rttype of the item types.
 //for function, it is an object:
 //  {args: an array of union-rttypes indicating the rttypes of the arguments
 //   ret: the union-rttype of the ret type
 ///  thist: the union-rttype of the 'this' type,
-//   nested: an array of named rttypes representing local vars/local funcs in order of appearance}
+//   nestingLevel: nesting level the func appears in, for prettier output}
 //
 //objects and functions also have a 'seen' field which is true if we've seen the object while
 //  trying to find out its type (meaning we have a recursive type)
@@ -103,23 +111,8 @@ var holder = (function() {  //lambda to hide all these local funcs
     }
   };
   
-  if (isGG) {
-    //HOOK INTO IT MAN!!! HOOK INTO IT!
-    //easy way to display windows - add it to menu item
-    function onAddCustomMenuItems(menu) {
-      for (var i = 0; i < __windows.length; i++) {
-        menu.addItem(
-          __windows[i].title, 0, 
-          (function (w) { return function(){showwin(w);} })(__windows[i]));
-      }
-    }
-    
-    pluginHelper.onAddCustomMenuItems = onAddCustomMenuItems;
-  }
-
-  
-    
   var __tracewin = mkwin(" traced types");
+  var __outwin = mkwin("tobestitched");
 
   var __dbgwin = mkwin(" DEBUG INFO");
   var debug = function(s) {
@@ -132,10 +125,22 @@ var holder = (function() {  //lambda to hide all these local funcs
   //-------------------
   //important variables:
   var __typedJsTypes = {$global: {kind: 'object', type: {}}}; //map type aliases to their rttypes
-  var __orderedVars = []; //map order of appearance to named rttypes
+  var __orderedVars = {}; //map file names to a mapping of order of appearance to named rttypes
 
   //-------------------
   //helper functions
+  var Object_hasOwnProperty = function(obj, prop) {
+    if (isGG) {
+      //apparently not all objects support "in"...
+      try {
+        return prop in obj;
+      }
+      catch (e) {
+        return false;
+      }
+    }
+    return obj.hasOwnProperty(prop);
+  }
   var symnum = 0;
   var gensym = function(name) {
     if (name) {
@@ -158,15 +163,15 @@ var holder = (function() {  //lambda to hide all these local funcs
 
   //pjs value --> rttype (as described above)
   var rttype = function(rtval) {
-    if (rtval === null) return {kind: 'flat', type: 'null'};
+    if (rtval === null) return {kind: 'flat', type: 'Null'};
     var res = typeof(rtval);
     if (res == "object") {
       if (!isGG) {
         if (rtval instanceof Node) {
-          return {kind: 'flat', type: 'DOM'};
+          return {kind: 'flat', type: 'Unknown'};
         }
         if (rtval instanceof Event) {
-          return {kind: 'flat', type: 'DOM'};
+          return {kind: 'flat', type: 'Unknown'};
         }
       }
       if (rtval instanceof String) {
@@ -179,10 +184,8 @@ var holder = (function() {  //lambda to hide all these local funcs
       if (rtval instanceof Date) {
         return {kind:'flat', type:'Date'};
       }
-      
       //check for pre-traced objects:
-      if ((isGG && ("$jstraceid" in rtval)) ||
-          (!isGG && rtval.hasOwnProperty("$jstraceid"))) {
+      if (Object_hasOwnProperty(rtval, "$jstraceid")) {
         if (rtval.$jstraceid == "Global")
           return {kind: 'flat', type: "Global"};
         return {kind: 'object_ref', type: rtval.$jstraceid};
@@ -198,23 +201,38 @@ var holder = (function() {  //lambda to hide all these local funcs
       else {
         traceid = gensym("obj");
       }
+
       var typeObj = {};
+      var isArray = false;
+      var itemType = [];
 
       //mark the object
       try {
         rtval.$jstraceid = traceid;
-        for (var p in rtval) {
-          if (p == "$jstraceid") continue;
-          if (p == "$constrBy") continue;
-          //pln("((SEEING PROPERTY: " + p + "))");
-          try {
-            var property = rtval[p];
-          } catch (errorrrr) {
-            //'security exception' with skype or something
-            var property = undefined;
+        if (rtval.$jstraceid != traceid) 
+          throw "Can't deal with this object.";
+          
+        if (rtval instanceof Array) {
+          isArray = true;
+          itemType = [];
+          for (var i = 0; i < rtval.length; i++) {
+            mergeRttypes(itemType, reffed_rttype(rtval[i]));
           }
-          var innerres = reffed_rttype(property);
-          typeObj[p] = innerres;
+        } 
+        else {
+          for (var p in rtval) {
+            if (p == "$jstraceid") continue;
+            if (p == "$constrBy") continue;
+            //pln("((SEEING PROPERTY: " + p + "))");
+            try {
+              var property = rtval[p];
+            } catch (errorrrr) {
+              //'security exception' with skype or something
+              var property = undefined;
+            }
+            var innerres = reffed_rttype(property);
+            typeObj[p] = innerres;
+          }
         }
       }
       catch (errorr) {
@@ -224,12 +242,13 @@ var holder = (function() {  //lambda to hide all these local funcs
         //so just give it type DOM! =)
         //we can't return an object here, because the traceid might not
         //have stuck on the object (that might have thrown the exception)
-        return {kind: 'flat', type: "DOM"};
+        return {kind: 'flat', type: "Unknown"};
       }
 
       var resRttype = {kind:'object', type:typeObj, seen: false,
                        constructed: rtval.$constrBy !== undefined,
-                       constrName: (rtval.$constrBy ? traceid : undefined)};
+                       constrName: (rtval.$constrBy ? traceid : undefined),
+                       isArray: isArray, itemType: itemType};
       __typedJsTypes[traceid] = resRttype;
       return resRttype;
     }
@@ -254,7 +273,7 @@ var holder = (function() {  //lambda to hide all these local funcs
       return {kind:'flat', type:'Bool'};
     }
     else if (res == "undefined") {
-      return {kind:'flat', type:'Undefined'};
+      return {kind:'flat', type:'Void'};
     }
 
     return {kind:'flat', type:res};
@@ -386,29 +405,45 @@ var holder = (function() {  //lambda to hide all these local funcs
         decdbg();
         return {answer: t.constrName, typesSeen: typesSeen};
       }
-      var res = "{";
-      var needComma = false;
-      for (var p in t.type) {
-        if (needComma) res += ", ";
-        needComma = true;
-        if (dbg) {
-          if (flatOrRef(t.type[p])) {
-            debug("field " + p + ": " + _quickStrType(t.type[p]));
-          }
-          else
-            debug("field " + p + "...");
+      if (t.isArray) {
+        var res = "Array<";
+        if (t.itemType.length == 0) 
+          res += "Any";
+        else {
+          var innard = strUnion(t.itemType, dbg);
+          res += innard.answer;
+          copyFrom(innard.typesSeen, typesSeen);
         }
-        var innard = strType(t.type[p], dbg && !(t.type[p].kind == "flat"));
-        res += p + " : " + innard.answer;
-        copyFrom(innard.typesSeen, typesSeen);
+        res += ">";
+        decdbg();
+        return {answer: res, typesSeen: typesSeen};
       }
-      decdbg();
-      return {answer: res + "}", typesSeen: typesSeen};
+      else {      
+        var res = "{";
+        var needComma = false;
+        for (var p in t.type) {
+          if (needComma) res += ", ";
+          needComma = true;
+          if (dbg) {
+            if (flatOrRef(t.type[p])) {
+              debug("field " + p + ": " + _quickStrType(t.type[p]));
+            }
+            else
+              debug("field " + p + "...");
+          }
+          var innard = strType(t.type[p], dbg && !(t.type[p].kind == "flat"));
+          res += p + " : " + innard.answer;
+          copyFrom(innard.typesSeen, typesSeen);
+        }
+        decdbg();
+        return {answer: res + "}", typesSeen: typesSeen};
+      }
+      
     }
 
     if (t.kind == "function") {
       var res = "(";
-      if (t.type.thist) {
+      if (t.type.thist && t.type.refsthis) {
         if (dbg) debug("function this type...");
         var innard = strUnion(t.type.thist, dbg);
         var strthist = innard.answer;
@@ -427,10 +462,16 @@ var holder = (function() {  //lambda to hide all these local funcs
           copyFrom(innard.typesSeen, typesSeen);
         }
       }
-      else
-        res += "Any..."; //no info available
+      else {
+        //no info available, print as many Anys as named args
+        for (var ii=0; ii<t.type.numNamedArgs; ii++) {
+          res += "Any";
+          if (ii != t.type.numNamedArgs - 1) res += " * ";
+        }
+      }
 
       res += " -> ";
+
       if (t.type.ret === undefined)
         res += "Any";
       else
@@ -490,7 +531,8 @@ var holder = (function() {  //lambda to hide all these local funcs
 
   //given a named rt type, return an array of strings representing the lines
   //of this type and any nestings it might have, if it's a function.
-  var strNestedNamedRttype = function(nrt, dbg) {
+  //"foroutput" is true if just print without any names.
+  var strNestedNamedRttype = function(nrt, dbg, foroutput) {
     var typesSeen = {};
     if (nrt === undefined) {
       return {answer: ["ERROR: BLANK"], typesSeen: typesSeen};
@@ -503,12 +545,24 @@ var holder = (function() {  //lambda to hide all these local funcs
     if (rt.kind === "function_ref") {
       rt = __typedJsTypes[rt.type];
     }
-
     if (rt.kind === "function") {
-      line += rt.type.constrOrFunc + " " + n + "() : ";
+      var corf = rt.type.constrOrFunc;
+      if (foroutput) {
+        if (corf === "constructor") line += corf + " ";
+      }
+      else {
+        for (var nlev=0;nlev<rt.type.nestingLevel;nlev++) {
+          line += "  ";
+        }
+        line += corf + " " + n + " : ";
+      }
     }
     else if (n) {
-      line += n + " : ";
+      if (foroutput) {
+      }
+      else {
+        line += n + " : ";
+      }
     }
     else {
       return {answer: ["ERROR: NOT FUNC OR NAMED"], typesSeen: typesSeen};
@@ -527,19 +581,25 @@ var holder = (function() {  //lambda to hide all these local funcs
       isFunc = __typedJsTypes[rt.type].type;
     }
 
-    if (isFunc === false || isFunc.nested.length === 0) {
+    /*if (isFunc === false || isFunc.nested.length === 0) {
       return {answer: [line], typesSeen: typesSeen};
+    }*/
+    //cut off parens if it's for output
+    if (foroutput) {
+      if (line.charAt(0) == "(") {
+        line = line.substring(1,line.length-1);
+      }
     }
-
+      
     var res = [line];
 
-    for (var i=0; i < isFunc.nested.length; i++) {
-      var innerRes = strNestedNamedRttype(isFunc.nested[i], dbg);
+    /*for (var i=0; i < isFunc.nested.length; i++) {
+      var innerRes = strNestedNamedRttype(isFunc.nested[i], dbg, foroutput);
       for (var j = 0; j < innerRes.answer.length; j++) {
-        res.push("  " + innerRes.answer[j]);
+        res.push((foroutput ? "" : "  ") + innerRes.answer[j]);
       }
       copyFrom(innerRes.typesSeen, typesSeen);
-    }
+    }*/
 
     return {answer: res, typesSeen: typesSeen};
   };
@@ -591,53 +651,70 @@ var holder = (function() {  //lambda to hide all these local funcs
   var update_tracewin = function() {
     clearwin(__dbgwin);
     clearwin(__tracewin);
-    if (__orderedVars.length == 0) {
-      println(__tracewin, "No tracing info yet...");
+    clearwin(__outwin);
+    var sawSomething = false;
+
+    var typesSeen = {};
+    
+    //with function names for testing:
+    for (var fn in __orderedVars) {
+      sawSomething = true;
+      
+      println(__tracewin, "// *** TYPES FOR " + fn + " *** ");
+      println(__tracewin, "/*::");
+      var ovs = __orderedVars[fn];
+      
+      if (ovs.length == 0) {
+        println(__tracewin, "No tracing info yet...");
+        continue;
+      }
+
+      for (var i=0; i < ovs.length; i++) {
+        println(__dbgwin, "stringing var #" + i);
+        var res = strNestedNamedRttype(ovs[i], true, false);
+        println(__dbgwin, "done with var #" + i);
+        var strs = res.answer;
+        copyFrom(res.typesSeen, typesSeen);
+        for (var j = 0; j < strs.length; j++) {
+          println(__tracewin, "  " + strs[j]);
+        }
+      }
+      println(__tracewin, "*/");
+    }
+
+    //output for the file
+    typesSeen = {};
+    for (var fn in __orderedVars) {
+      sawSomething = true;
+      
+      println(__outwin, "// *** TYPES FOR " + fn + " *** ");
+      var ovs = __orderedVars[fn];
+      
+      if (ovs.length == 0) {
+        println(__outwin, "No tracing info yet...");
+        continue;
+      }
+
+      for (var i=0; i < ovs.length; i++) {
+        var res = strNestedNamedRttype(ovs[i], true, true);
+        var strs = res.answer;
+        copyFrom(res.typesSeen, typesSeen);
+        for (var j = 0; j < strs.length; j++) {
+          println(__outwin, strs[j]);
+        }
+      }
+    }
+    
+    if (!sawSomething) {
+      println(__tracewin, "No tracing info at all...");      
+      println(__outwin, "No tracing info at all...");      
       return;
     }
 
-    println(__tracewin, "/*::");
-
-    var typesSeen = {};
-
-    for (var i=0; i < __orderedVars.length; i++) {
-      println(__dbgwin, "stringing var #" + i);
-      var res = strNestedNamedRttype(__orderedVars[i], true);
-      println(__dbgwin, "done with var #" + i);
-      var strs = res.answer;
-      copyFrom(res.typesSeen, typesSeen);
-      for (var j = 0; j < strs.length; j++) {
-        println(__tracewin, "  " + strs[j]);
-      }
-    }
-    println(__tracewin, "*/");
-
-    /*println(__tracewin, "/*:::");
-    var typesPrinted = {};
-    while (true) {
-      var printedSmth = false;
-      var newTs = {};
-      for (var ts in typesSeen) {
-        if (ts == "Global") continue;
-        if (ts in typesPrinted) continue;
-        var res = strType(__typedJsTypes[ts], true);
-        var alort = "alias";
-        if (__typedJsTypes[ts] &&
-            __typedJsTypes[ts].constructed)
-          alort = "type";
-        println(__tracewin, "  " + alort + " " + ts + " : " + res.answer);
-        copyFrom(res.typesSeen, newTs);
-        typesPrinted[ts] = true;
-        printedSmth = true;
-      }
-      typesSeen = newTs;
-      if (!printedSmth) break;
-    }
-    println(__tracewin, "*-/"); */
-    
     //if we're not in google gadgets, show results right away:
     if (!isGG) {
       showwin(__tracewin);
+      showwin(__outwin);
       showwin(__dbgwin);
     }    
   };
@@ -650,40 +727,62 @@ var holder = (function() {  //lambda to hide all these local funcs
   //-----------------------------------------------------
   //wrap every function with this function. it makes
   //every function call add trace information.
-  //nester is the function this function is nested in.
+  //nestingLevel is how nested into other funcs this func is (just for output)
   //undefined if top-level. otherwise it should be wrapped
-  //name is the name, if any
+  //name is the name, if any (just for output)
+  //filename is name of the file it appears in, to know where to put it
   //position is what position it occupies in the nester, e.g.
   //0 if the first position, 1 if the 2nd, etc.
-  var tracefunction = function(fn, nester, name, position, dbg) {
+  var tracefunction = function(fn, nestingLevel, name, filename, position) {
+    var dbg = false;
+    
+    if (arguments.length != 5 || typeof nestingLevel != "number" || typeof position != "number") {
+      alert("Please re-compile this code!");
+      return;
+    }
+
+    //initialize the structs:
     var traceid = gensym("func" + (name ? ("_" + (name.substring(name.lastIndexOf(".")+1))) : ""));
     var func_rttype = {
       kind: "function",
       type: {
-        args: undefined,
+        numNamedArgs: fn.length,
+        args: undefined,       
         ret: undefined,
         thist: undefined,
-        nested: [],
+        nestingLevel: nestingLevel, //strictly for pretty output
         constrOrFunc: "unknown",
-        namehint: name},
+        namehint: name,
+        refsthis: false}, //true if "this" is ever referenced inside this function
       seen: false};
     var tjstype = func_rttype.type;
     var ref = {
       kind: "function_ref",
       type: traceid};
-
-    if (nester !== undefined) {
-      //insert the func in the proper position in the nester
-      /*alert("trace id of nester is " + nester.$jstraceid);
-      alert("len of nested: " +
-            __typedJsTypes[nester.$jstraceid].type.nested.length);*/
-      __typedJsTypes[nester.$jstraceid].type.nested[position] = {
-        name: name, rttype: ref};
+    
+    //however, see if we've already traced this position
+    //if so, use those structs instead
+    if ((filename in __orderedVars) && __orderedVars[filename][position]) {
+      var ov = __orderedVars[filename][position];
+      var prevname = ov.name;
+      var prevref = ov.rttype;
+      if (prevref && prevref.kind === "function_ref") {
+        var prevtype = __typedJsTypes[prevref.type];
+        if (prevtype.type.constrOrFunc === "shellfunc" ||
+           prevname === name) {
+          //we've already traced this position, just re-use it!
+          traceid = prevref.type;
+          func_rttype = prevtype;
+          tjstype = prevtype.type;
+          ref = {kind: "function_ref", type: traceid};
+        }
+      }
     }
-    else {
-      //insert it in the right place in the global
-      __orderedVars[position] = {name: name, rttype: ref};
-    }
+        
+    //insert it in the right place in the global, if it's not there
+    if (!(filename in __orderedVars))
+      __orderedVars[filename] = [];
+    __orderedVars[filename][position] = {name: name, rttype: ref};
 
     var res = function() {
       //since all calls to 'new' are wrapped, $callingAsNew will be set
@@ -731,12 +830,13 @@ var holder = (function() {  //lambda to hide all these local funcs
       if (dbg) debug("procced ret!");
 
       if (calledWithNew) {
-        /*//update the type of this upon exiting the constructor
-        tjstype.thist = mergeRttypes(
-          tjstype.thist, reffed_rttype(this));*/
-
         //mark the object as being constructed by this function
         this.$constrBy = traceid;
+        
+        //update the type of the constructed element upon exiting the constructor
+        rttype(this);
+        /*tjstype.thist = mergeRttypes(
+          tjstype.thist, reffed_rttype(this));*/
       }
       return r;
     };
@@ -749,6 +849,39 @@ var holder = (function() {  //lambda to hide all these local funcs
 
     return res;
   };
+
+  //this fills out the orderedvars array with initial values, so if
+  //a function never gets called, we can put in the right number
+  //of Anys.
+  var initnumargs = function(filename, argsarray) {
+    if (!(filename in __orderedVars))
+      __orderedVars[filename] = [];
+    else
+      alert("initnumargs called twice for no good reason");
+
+    for (var i=0; i < argsarray.length; i++) {
+      var traceid = gensym("shellfunc");
+      var func_rttype = {
+        kind: "function",
+        type: {
+          numNamedArgs: argsarray[i],
+          args: undefined,       
+          ret: undefined,
+          thist: undefined,
+          nestingLevel: 0, 
+          constrOrFunc: "shellfunc",
+          namehint: "",
+          refsthis: false},
+        seen: false};
+      var tjstype = func_rttype.type;
+      var ref = {
+        kind: "function_ref",
+        type: traceid};
+  
+      __orderedVars[filename][i] = {name: "SHILL", rttype: ref};    
+      __typedJsTypes[traceid] = func_rttype;
+    }
+  }
 
   //wrap every call to "new" with this function
   //if the constructor has a $jstraceid, then the newly
@@ -769,12 +902,12 @@ var holder = (function() {  //lambda to hide all these local funcs
     newStr += ");";
 
     //if it's a non-wrapped constructor (e.g. Date), do nothing:
-    if (!constr.hasOwnProperty("$jstraceid")) {
+    if (!Object_hasOwnProperty(constr, "$jstraceid")) {
       return eval(newStr);
     }
 
     //otherwise let the tracing func know whats going on:
-    if (!constr.hasOwnProperty("$callingAsNew"))
+    if (!Object_hasOwnProperty(constr, "$callingAsNew"))
       constr.$callingAsNew = 0;
 
     constr.$callingAsNew += 1;
@@ -784,14 +917,42 @@ var holder = (function() {  //lambda to hide all these local funcs
     return res;
   }
   
+  //wrap ever ref to "this"
+  //it will alert func that its "this" type matters
+  //this could be done statically but it'd involve
+  //50 lines of boring case breakdowns 
+  var thisref = function (_this, func) {
+    if (func.$jstraceid !== undefined) {
+      var t = __typedJsTypes[func.$jstraceid];
+      t.type.refsthis = true;
+    }
+    return _this;
+  };
+  
+  //this function will add our menu items to GG:
+  //it must be called after the compiled code runs, in case they
+  //add their own menu items.
+  var addMenuItems = function (menu) {
+      for (var i = 0; i < __windows.length; i++) {
+        menu.addItem(
+          __windows[i].title, 0, 
+          (function (w) { return function(){showwin(w);} })(__windows[i]));
+      }
+    };    
+  
   return {
     __typedjs: tracefunction,
     __new: newwrapper,
-    showTypes: function () { return showwin(__tracewin); }
+    __thisref: thisref,
+    showTypes: function () { return showwin(__tracewin); },
+    addMenuItems: addMenuItems,
+    initnumargs: initnumargs
   };
 })();
 
 var __typedjs = holder.__typedjs;
 var __new = holder.__new;
 var showTypes = holder.showTypes;
-
+var __thisref = holder.__thisref;
+var __ADDMENUITEMS = holder.addMenuItems;
+var __initnumargs = holder.initnumargs;
