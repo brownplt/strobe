@@ -1,3 +1,13 @@
+//CHANGES:
+//8x: put everything in a namespace, anonymous function idiom
+//6x inferred annotations that stuck
+//2x: "Unknown' annotation -> Collection
+//4x: everything with XXX
+//1x downcast,
+//1x empty array lit annotation
+
+
+
 /*
 Copyright (C) 2007 Google Inc.
 
@@ -14,28 +24,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//REFACTORED TO WORK WITH TJS
-//it's just a bunch of mututally recursive functions which
-//happen to be put into structs instead of vars..
-
 /**
  * @fileoverview Drag and Drop Sample Gadget
- * 
+ *
  * Simple example of drag and drop features
- * 
- * 'view', 'basicElement' (and elements inheriting from 'basicElement') 
+ *
+ * 'view', 'basicElement' (and elements inheriting from 'basicElement')
  * have a property called 'dropTarget'.
- * 
- * If set to true, the element's ondrag* events will fire 
+ *
+ * If set to true, the element's ondrag* events will fire
  * when a drag/drop operation is initiated by the user.
- * 
+ *
  * See main.xml and take a look at the main 'div':
- * 'dropTarget' is set to true 
+ * 'dropTarget' is set to true
  * and the ondrag* events are set to event handlers.
- * 
- * If you wish to cancel a drag/drop operation, 
+ *
+ * If you wish to cancel a drag/drop operation,
  * set 'event.returnValue' to 'false' (Boolean) within the event handler.
- * 
+ *
  * Another thing to know, is within the handler
  * 'event.dragFiles' is a collection object containing the paths of the file(s)
  * in the drag operation.
@@ -44,17 +50,17 @@ limitations under the License.
 /**
  * Utils namespace
  */
-var Utils = (function(){
+var Utils = (function() /*: ( -> {createDragFilesImagesList : (Collection -> Array<String>), extractExtension : (String -> String)}) */ {
 
 /**
  * Convert event.dragfiles object to an array of strings
  * @param {Object} obj collection of drag files
  * @return {Array} Array of filepaths
  */
-var createDragFilesImagesList = function(obj) {
-  var files = [];
+function createDragFilesImagesList(obj) /*: Collection -> Array<String> */ {
+  var files = /*:String*/[];
 
-  if (!obj) {
+  if (obj === null) { //XXX: was "!obj"
     return files;
   }
 
@@ -65,28 +71,29 @@ var createDragFilesImagesList = function(obj) {
     gif: true,
     jpg: true,
     jpeg: true };
-    
+
   while (!e.atEnd()) {
-    var path = e.item();
+    var path = /*:downcast String*/(e.item());
     var extension = extractExtension(path).toLowerCase();
-    
-    if (validExtensions[extension] === true) {
-      files.push(path + '');
+
+    //XXX: was validExtension[extension], hashmap, oh noes..
+    if (extension in validExtensions) {
+      files[files.length] = (path + ''); //XXX: was files.push()
     }
     e.moveNext();
   }
-    
+
   return files;
-};
+}
 
 /**
  * Extract the extension from a path
  * @param {String} The path
  * @return {String} The extension
  */
-var extractExtension = function(s) {
-  return s.substring(s.lastIndexOf('.') + 1); 
-};
+function extractExtension(s) /*: String -> String */{
+  return s.substring(s.lastIndexOf('.') + 1);
+}
 
 return {
   createDragFilesImagesList: createDragFilesImagesList,
@@ -98,29 +105,29 @@ return {
 /**
  * ViewHandlers namespace
  */
-var ViewHandlers = (function(){
+var ViewHandlers = (function() /*: ( -> {onOpen : ( -> Void), onDragDrop : ( -> Void), onDragOver : ( -> Void), onDragOut : ( -> Void)}) */ {
 
-var onOpen = function() {
+var onOpen = function() /*: -> Void */ {
   label.innerText = strings.DRAG_IMAGES_HERE;
 };
 
 /**
  * Executed when the user drops an object
- */  
-var onDragDrop = function() {
+ */
+var onDragDrop = function() /*: -> Void */  {
   var images = Utils.createDragFilesImagesList(event.dragFiles);
-  
+
   var MAX_DISPLAY = 4;
   var numImages = images.length;
-  
-  var i;
+
+  var i = 0; //XXX: init
 
   // clear images
-  image0.src = '';  
+  image0.src = '';
   image1.src = '';
   image2.src = '';
   image3.src = '';
-  
+
   for (i = 0; i < numImages && i < MAX_DISPLAY; ++i) {
     switch (i) {
       case 0:
@@ -135,11 +142,11 @@ var onDragDrop = function() {
       case 3:
         image3.src = images[i];
         break;
-    }  
+    }
   }
-  
+
   label.vAlign = 'bottom';
-  
+
   if (numImages > MAX_DISPLAY) {
     var numOthers = numImages - MAX_DISPLAY;
     label.innerText = '... ' + strings.AND + ' ' + numOthers + ' ' + strings.OTHERS + ' ...';
@@ -150,24 +157,24 @@ var onDragDrop = function() {
 
 /**
  * Executed when the user drags an object over
- */  
-var onDragOver = function() {
+ */
+var onDragOver = function() /*: -> Void */  {
   var images = Utils.createDragFilesImagesList(event.dragFiles);
   var numImages = images.length;
-  
+
   // There are no images, cancel the default event
   if (numImages === 0) {
     event.returnValue = false;
     return;
   }
-  
+
   label.innerText = strings.THERE_ARE + ' ' + numImages + ' ' + strings.IMAGES;
 };
 
 /**
  * Executed when the user drags out
- */  
-var onDragOut = function() {
+ */
+var onDragOut = function() /*: -> Void */  {
   label.innerText = strings.DRAG_IMAGES_HERE;
 };
 
