@@ -1,0 +1,9 @@
+String -> Unknown
+ -> Void
+constructor (Double * Double * Double * Double -> {x : Double, y : Double, xsee : Double, ysee : Double, move : ([Ball]  -> Void)})
+[Ball]  -> Void
+ -> Void
+ -> Void
+ -> Void
+Unknown -> Void
+Unknown -> Void

@@ -179,7 +179,7 @@ var holder = (function() {  //lambda to hide all these local funcs
 	return {kind:'flat', type:'String'};
       }
       if (rtval instanceof Number) {
-        return {kind:'flat', type:'Number'};
+        return {kind:'flat', type:'Double'};
       }
       if (rtval instanceof Date) {
         return {kind:'flat', type:'Date'};

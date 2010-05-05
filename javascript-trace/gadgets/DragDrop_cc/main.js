@@ -1,14 +1,3 @@
-/*::
-  function Utils : ( -> {createDragFilesImagesList : (Dom -> {0 : String}), extractExtension : (String -> String)})
-    function createDragFilesImagesList : (Dom -> {0 : String})
-    function extractExtension : (String -> String)
-  function ViewHandlers : ( -> {onOpen : ( -> Void), onDragDrop : ( -> Void), onDragOver : ( -> Void), onDragOut : ( -> Void)})
-    function onOpen : ( -> Void)
-    function onDragDrop : ( -> Void)
-    function onDragOver : ( -> Void)
-    function onDragOut : ( -> Void)
-*/
-
 /*
 Copyright (C) 2007 Google Inc.
 
@@ -187,7 +176,7 @@ return {
   onOpen: onOpen,
   onDragDrop: onDragDrop,
   onDragOver: onDragOver,
-  onDragOut: onDragOut,
+  onDragOut: onDragOut
 };
 
 })();
