@@ -1,3 +1,5 @@
+//TODO: get do/while loops to work
+
 //changed 1 Host annot to HTMLElement + Null
 
 //1 function lifted
@@ -78,10 +80,11 @@ function updateStat() /*:  -> Void  */ {
 
 function createBall() /*:  -> Void  */ {
         var x = 0.0, y = 0.0; //type init
-	do {
+//	do {
 		x = Math.random() * 315;
 		y = Math.random() * 315;
-	} while(prey.x <= x + 35 && x <= prey.x + 55 && prey.y <= y + 35 && y <= prey.y + 55);
+//	} while(prey.x <= x + 35 && x <= prey.x + 55 && prey.y <= y + 35 && y <= prey.y + 55);
+
 
 	balls.push(new Ball(x, y, Math.random() * 5.5 - 2.75, Math.random() * 5.5 - 2.75));
 }
