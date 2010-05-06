@@ -1,14 +1,17 @@
 //TODO: get do/while loops to work
+//TODO: get array properties to work
 
-//changed 1 Host annot to HTMLElement + Null
+//changed 1 Host annot to HTMLElement + Null, other 2 to Event
 
+//1 settimeout 'clock()' to clock
 //1 function lifted
 //2 'var' added
 //1 var annot on ctx
 //added 1 ignore variable to an event handler
 //2 added empty array annot
 //3 downcast, 3 toStrings on same line
-
+//1 refactor .push() into array setting
+//change 15 to 15.0 for correct type
 
 var ctx = /*:upcast Undefined + CanvasRenderingContext2D*/undefined;
 
@@ -25,7 +28,7 @@ var tries = 1;
 var score = 0;
 var max_score = 0;
 
-var inc_score = 15;
+var inc_score = 15.0;
 
 
 function Ball(x, y, xsee, ysee) /*: constructor (Double * Double * Double * Double -> {x : Double, y : Double, xsee : Double, ysee : Double, move : ([Ball]  -> Void)})  */ {
@@ -86,11 +89,13 @@ function createBall() /*:  -> Void  */ {
 //	} while(prey.x <= x + 35 && x <= prey.x + 55 && prey.y <= y + 35 && y <= prey.y + 55);
 
 
-	balls.push(new Ball(x, y, Math.random() * 5.5 - 2.75, Math.random() * 5.5 - 2.75));
+//	balls.push(new Ball(x, y, Math.random() * 5.5 - 2.75, Math.random() * 5.5 - 2.75));
+	balls[balls.length] = (new Ball(x, y, Math.random() * 5.5 - 2.75, Math.random() * 5.5 - 2.75));
+
 }
 
 function init() /*:  -> Void  */ {
-	ctx = $('canvas').getContext('2d');
+	ctx = (/*:downcast Canvas*/($('canvas'))).getContext('2d');
 	clock();
 }
 
@@ -131,10 +136,10 @@ function clock() /*:  -> Void  */ {
 
 	if(inc_score > 5.5) inc_score-= 0.2;
 
-	window.setTimeout('clock()', 20);
+	window.setTimeout(clock, 20);
 }
 
-document.onclick = function(_) /*: Host -> Void  */ {
+document.onclick = function(_) /*: Event -> Void  */ {
 
 	for(var i=0; i < balls.length; i++) {
 		balls[i].xsee =-balls[i].xsee;
@@ -142,7 +147,7 @@ document.onclick = function(_) /*: Host -> Void  */ {
 	}
 };
 
-document.onmousemove = function(e) /*: Host -> Void  */ {
+document.onmousemove = function(e) /*: Event -> Void  */ {
 
 	mouse.x = e.pageX;
 	mouse.y = e.pageY;
