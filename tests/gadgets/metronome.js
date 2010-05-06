@@ -1,5 +1,5 @@
 /* Eval: required 1 upcast, 1 downcast, changing null to false/0 (other
- *   sentinel values), and just some function annotations. not bad!
+ *   sentinel values), and just 2 function annotations. not bad!
  */
 var curAudioClip_ = /*:upcast Audioclip + Void*/ undefined;
 var timer = 0; // Arjun: null --> 0

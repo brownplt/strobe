@@ -383,8 +383,18 @@ let rec tc_def env def = match def with
             let env = Env.clear_labels env in           
               begin match result_typ with
                   TObject fields -> 
-                    (* first make sure all fields are initialized with
-                       the right types in constr_inits. *)
+                    (* first update the env to have the class
+                       available inside the constructor body *)
+                    (* create a new class, add fields as initial methods *)
+                    (* also add the constr itself as a tarrow *)
+                    let env = Env.new_root_class env cexp.constr_name in
+                    let env = Env.bind_id cexp.constr_name 
+                      (TRef (Env.check_typ p env cexp.constr_typ)) env in
+                    let f (fname, ftype) envacc = Env.add_method
+                      cexp.constr_name fname ftype envacc in
+                    let env = fold_right f fields env in
+                      (* first make sure all fields are initialized with
+                         the right types in constr_inits. *)
                     let check_field (name, typ) = match typ with
                       | TRef t -> begin try 
                           let (_, e) = List.find (fun (n,_) -> n = name) 
@@ -408,16 +418,8 @@ let rec tc_def env def = match def with
                       List.iter check_field fields;
                       (* now check the body, with "this" bound to res_type *)
                       ignore (tc_exp (Env.bind_id "this" result_typ env) 
-                        cexp.constr_exp);
-                      (* create a new class, add fields as initial methods *)
-                      (* also add the constr itself as a tarrow *)
-                      let env = Env.new_root_class env cexp.constr_name in
-                      let env = Env.bind_id cexp.constr_name 
-                        (TRef (Env.check_typ p env cexp.constr_typ)) env in
-                      let f (fname, ftype) envacc = Env.add_method
-                        cexp.constr_name fname ftype envacc in
-                      let env = fold_right f fields env in
-                        tc_def env d
+                                cexp.constr_exp);
+                      tc_def env d
                 | _ -> raise (Typ_error (
                                 p, "constructor's ret type must be obj"))
               end

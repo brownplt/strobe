@@ -147,7 +147,10 @@ module Env = struct
         raise (Not_wf_typ ("Array only takes one argument"))
     | TConstr (constr, []) ->
         if IdMap.mem constr env.classes then typ
-        else raise (Not_wf_typ (constr ^ " is not a type constructor"))
+        else 
+          begin
+            raise (Not_wf_typ (constr ^ " is not a type constructor"))
+          end
     | TConstr (constr, _) ->
         raise (Not_wf_typ (constr ^ " does not take arguments"))
     | TArrow (this, args, result) ->
