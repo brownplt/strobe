@@ -4,11 +4,11 @@
 var request = new XMLHttpRequest();
 
 
-function view_onOpen() /*:  -> Void */ {
+function view_onOpen() /*:  -> Undef */ {
     getRSS();
 }
 
-function getRSS() /*:  -> Void */ {
+function getRSS() /*:  -> Undef */ {
     pointer.x = 17;
     var url = "http://www.toptenreviews.com/rss/movies.xml";
     request.open('GET', url, true);
@@ -16,7 +16,7 @@ function getRSS() /*:  -> Void */ {
     request.send(null);
 }
 
-function showRSS() /*:  -> Void */ {
+function showRSS() /*:  -> Undef */ {
 
 
     if (request.readyState == 4) {
@@ -82,7 +82,7 @@ function showRSS() /*:  -> Void */ {
 
 }
 
-function getRSS2() /*:  -> Void */ {
+function getRSS2() /*:  -> Undef */ {
     pointer.x = 61;
     var url = "http://www.toptenreviews.com/rss/games.xml";
     request.open('GET', url, true);
@@ -90,7 +90,7 @@ function getRSS2() /*:  -> Void */ {
     request.send(null);
 }
 
-function showRSS2() /*:  -> Void */ {
+function showRSS2() /*:  -> Undef */ {
 
     if (request.readyState == 4) {
         maindiv.removeAllElements();
@@ -146,7 +146,7 @@ function showRSS2() /*:  -> Void */ {
 }
 
 
-function getRSS3() /*:  -> Void */ {
+function getRSS3() /*:  -> Undef */ {
     pointer.x = 134;
     var url = "http://www.toptenreviews.com/rss/software.xml";
     request.open('GET', url, true);
@@ -154,7 +154,7 @@ function getRSS3() /*:  -> Void */ {
     request.send(null);
 }
 
-function showRSS3() /*:  -> Void */ {
+function showRSS3() /*:  -> Undef */ {
 
     if (request.readyState == 4) {
         maindiv.removeAllElements();
@@ -200,7 +200,7 @@ function showRSS3() /*:  -> Void */ {
     }
 }
 
-function getRSS4() /*:  -> Void */ {
+function getRSS4() /*:  -> Undef */ {
     pointer.x = 233;
     var url = "http://www.toptenreviews.com/rss/ce.xml";
     request.open('GET', url, true);
@@ -208,7 +208,7 @@ function getRSS4() /*:  -> Void */ {
     request.send(null);
 }
 
-function showRSS4() /*:  -> Void */ {
+function showRSS4() /*:  -> Undef */ {
 
     if (request.readyState == 4) {
         maindiv.removeAllElements();
@@ -253,7 +253,7 @@ function showRSS4() /*:  -> Void */ {
     }
 }
 
-function getRSS5() /*:  -> Void */ {
+function getRSS5() /*:  -> Undef */ {
     pointer.x = 20;
     var url = "http://www.toptenreviews.com/rss/articles.xml";
     request.open('GET', url, true);
@@ -261,7 +261,7 @@ function getRSS5() /*:  -> Void */ {
     request.send(null);
 }
 
-function showRSS5() /*:  -> Void */ {
+function showRSS5() /*:  -> Undef */ {
 
     if (request.readyState == 4) {
         maindiv.removeAllElements();
@@ -303,7 +303,7 @@ function showRSS5() /*:  -> Void */ {
     }
 }
 
-function getRSS6() /*:  -> Void */ {
+function getRSS6() /*:  -> Undef */ {
     pointer.x = 60;
     var url = "http://www.toptenreviews.com/rss/blog.xml";
     request.open('GET', url, true);
@@ -311,7 +311,7 @@ function getRSS6() /*:  -> Void */ {
     request.send(null);
 }
 
-function showRSS6() /*:  -> Void */ {
+function showRSS6() /*:  -> Undef */ {
 
     if (request.readyState == 4) {
         maindiv.removeAllElements();
@@ -355,7 +355,7 @@ function showRSS6() /*:  -> Void */ {
     }
 }
 
-function get_content() /*:  -> Void */ {
+function get_content() /*:  -> Undef */ {
     getRSS5();
     or_review_tab.image = "Greviews.png";
     content_tab.image = "Content.png";
@@ -376,12 +376,12 @@ function get_content() /*:  -> Void */ {
     soft_serv_button.downImage = "videos.png";
     soft_serv_button.width = 205;
     soft_serv_button.x = 90;
-    soft_serv_button.onclick = function () /*: -> Void */ {};
+    soft_serv_button.onclick = function () /*: -> Undef */ {};
     electron_button.enabled = false;
     electron_button.visible = false;
 }
 
-function get_review() /*:  -> Void */ {
+function get_review() /*:  -> Undef */ {
     view_onOpen();
     or_review_tab.image = "orange_reviews_tab.png";
     content_tab.image = "grey_content_tab.png";

@@ -1,4 +1,4 @@
-function f(a, b) /*: Int * Int + Void -> Int */ {
+function f(a, b) /*: Int * Int + Undef -> Int */ {
   if (typeof b != "number") {
     b = 10;
   }

@@ -1,4 +1,4 @@
-function(x) /*: Int + Void -> { h : (-> Void) -> Void } */ {
+function(x) /*: Int + Undef -> { h : (-> Undef) -> Undef } */ {
 
   var g = function() /*: -> Int */ {
     return x;
@@ -6,7 +6,7 @@ function(x) /*: Int + Void -> { h : (-> Void) -> Void } */ {
   x = 90;
   g();
 
-  var h = function(z) /*: (-> Void) -> Void */ {
+  var h = function(z) /*: (-> Undef) -> Undef */ {
     if (typeof x === "number") {
        z();
        // g is called from an escaping function (this continuation). Therefore,

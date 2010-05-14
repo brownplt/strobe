@@ -3,7 +3,7 @@
 //4 changes to settimeout to not use a string
 var token = 0; //CLAUDIU: move here for func lift
 
-function view_onOpen() /*:  -> Void */ {
+function view_onOpen() /*:  -> Undef */ {
     edit1.value = "Type the text...";
     edit2.value = "- -.-- .--. . + - .... . + - . -..- - .-.-.- .-.-.- .-.-.- ";
     edit2.readonly = true;
@@ -12,7 +12,7 @@ function view_onOpen() /*:  -> Void */ {
     edit2.size = 12;
 }
 
-function radio1_onclick() /*:  -> Void */ {
+function radio1_onclick() /*:  -> Undef */ {
     edit1.value = "";
     edit2.value = "";
     bplay.visible = true;
@@ -21,7 +21,7 @@ function radio1_onclick() /*:  -> Void */ {
     edit2.size = 12;
 }
 
-function radio2_onclick() /*:  -> Void */ {
+function radio2_onclick() /*:  -> Undef */ {
     stopAudio();
     edit1.value = "";
     edit2.value = "";
@@ -30,19 +30,19 @@ function radio2_onclick() /*:  -> Void */ {
     edit2.size = 10;
 }
 
-function edit1_onchange() /*:  -> Void */ {
+function edit1_onchange() /*:  -> Undef */ {
     if (radio2.value == true) code2Text();
     else text2Code();
 }
 
-function edit1_onclick() /*:  -> Void */ {
+function edit1_onclick() /*:  -> Undef */ {
     if (edit1.value == "Type the text...") {
         edit1.value = "";
         edit2.value = "";
     }
 }
 
-function bplay_onclick() /*:  -> Void */ {
+function bplay_onclick() /*:  -> Undef */ {
     if (edit2.value.length != 0) {
         if (bplay.caption == "Play") {
             bplay.caption = "Stop";
@@ -55,7 +55,7 @@ function bplay_onclick() /*:  -> Void */ {
     }
 }
 
-function playAudio() /*:  -> Void */ {
+function playAudio() /*:  -> Undef */ {
     var source = edit2.value,
         i = 0;
     var audio_dit = framework.audio.open(storage.extract("dit.wav"));
@@ -66,25 +66,25 @@ function playAudio() /*:  -> Void */ {
                 switch (source.charAt(i)) {
                 case '.':
                     token = setTimeout(
-                      function()/*:->Void*/{ audio_dit.play(); }, i * 500);
+                      function()/*:->Undef*/{ audio_dit.play(); }, i * 500);
                     break;
                 case '-':
                     token = setTimeout(
-                      function()/*:->Void*/{ audio_dah.play(); }, i * 500);
+                      function()/*:->Undef*/{ audio_dah.play(); }, i * 500);
                     break;
                 default:
                     token = setTimeout(
-                      function()/*:->Void*/{ audio_pause.play(); }, i * 500);
+                      function()/*:->Undef*/{ audio_pause.play(); }, i * 500);
                     break;
                 }
             }
             token = setTimeout(
-              function()/*:->Void*/{ bplay.caption = "Play"; },
+              function()/*:->Undef*/{ bplay.caption = "Play"; },
               source.length * 500);
         }
 }
 
-function stopAudio() /*:  -> Void */ {
+function stopAudio() /*:  -> Undef */ {
     for (var i = 1; i <= token; i++)
     clearTimeout(i);
 }
@@ -92,7 +92,7 @@ function stopAudio() /*:  -> Void */ {
 //codes a character and appends it to output
 
 
-function writeCode(c) /*: String -> Void */ {
+function writeCode(c) /*: String -> Undef */ {
     var output = edit2;
     switch (c) {
     case 'a':
@@ -253,7 +253,7 @@ function writeCode(c) /*: String -> Void */ {
 //Text to Morse code function [Max 1000 characters]
 
 
-function text2Code() /*:  -> Void */ {
+function text2Code() /*:  -> Undef */ {
     var possiblecomb = "abcdefghijklmnopqrstuvwxyz0123456789.,?!/():;=+-_";
     var input = edit1.value.toLowerCase();
     var output = edit2;
@@ -271,7 +271,7 @@ function text2Code() /*:  -> Void */ {
 //decodes a morse combination and appends it to output
 
 
-function writeText(s) /*: String -> Void */ {
+function writeText(s) /*: String -> Undef */ {
     var output = edit2;
     switch (s) {
     case '.-':
@@ -429,7 +429,7 @@ function writeText(s) /*: String -> Void */ {
 //Morse to Text function [MAX 4000 characters]
 
 
-function code2Text() /*:  -> Void */ {
+function code2Text() /*:  -> Undef */ {
     var input = edit1.value;
     var output = edit2,
         s="";

@@ -105,16 +105,16 @@ return {
 /**
  * ViewHandlers namespace
  */
-var ViewHandlers = (function() /*: ( -> {onOpen : ( -> Void), onDragDrop : ( -> Void), onDragOver : ( -> Void), onDragOut : ( -> Void)}) */ {
+var ViewHandlers = (function() /*: ( -> {onOpen : ( -> Undef), onDragDrop : ( -> Undef), onDragOver : ( -> Undef), onDragOut : ( -> Undef)}) */ {
 
-var onOpen = function() /*: -> Void */ {
+var onOpen = function() /*: -> Undef */ {
   label.innerText = strings.DRAG_IMAGES_HERE;
 };
 
 /**
  * Executed when the user drops an object
  */
-var onDragDrop = function() /*: -> Void */  {
+var onDragDrop = function() /*: -> Undef */  {
   var images = Utils.createDragFilesImagesList(event.dragFiles);
 
   var MAX_DISPLAY = 4;
@@ -158,7 +158,7 @@ var onDragDrop = function() /*: -> Void */  {
 /**
  * Executed when the user drags an object over
  */
-var onDragOver = function() /*: -> Void */  {
+var onDragOver = function() /*: -> Undef */  {
   var images = Utils.createDragFilesImagesList(event.dragFiles);
   var numImages = images.length;
 
@@ -174,7 +174,7 @@ var onDragOver = function() /*: -> Void */  {
 /**
  * Executed when the user drags out
  */
-var onDragOut = function() /*: -> Void */  {
+var onDragOut = function() /*: -> Undef */  {
   label.innerText = strings.DRAG_IMAGES_HERE;
 };
 

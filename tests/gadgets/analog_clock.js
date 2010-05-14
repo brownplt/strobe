@@ -8,11 +8,11 @@ var _UpdateSecondHandInterval = 0,
     _BounceRotationIncrement = 1.8,
     _NewRotation = 0.0; // Claudiu: changed to number
 
-function _view_onopen() /*:  -> Void */ {
+function _view_onopen() /*:  -> Undef */ {
     f();
     d();
 }
-function _view_onminimize() /*:  -> Void */ {
+function _view_onminimize() /*:  -> Undef */ {
     _minimized = true;
     d();
     if (_SecondInterval != 0) {
@@ -20,21 +20,21 @@ function _view_onminimize() /*:  -> Void */ {
         _SecondInterval = 0;
     }
 }
-function _view_onrestore() /*:  -> Void */ {
+function _view_onrestore() /*:  -> Undef */ {
     _minimized = false;
     view.caption = strings.PLUGIN_TITLE;
     f();
     d();
 }
 
-function _view_onpopout() /*:  -> Void */ {
+function _view_onpopout() /*:  -> Undef */ {
     if (_minimized) {
         f();
         d();
     }
 }
 
-function d() /*:  -> Void */ {
+function d() /*:  -> Undef */ {
   var a = new Date(undefined); // Claudiu : added undefined
     if (_minimized) {
         var b = /*:upcast String + Int */(/*:is Int */(a.getHours()));
@@ -51,23 +51,23 @@ function d() /*:  -> Void */ {
     setTimeout(d, i);
 }
 
-function e() /*:  -> Void */ {
+function e() /*:  -> Undef */ {
     var a = new Date(undefined);
     l(a);
     h(a);
 }
-function k(a) /*: Date -> Void */ {
+function k(a) /*: Date -> Undef */ {
     var b = a.getHours();
     if (b >= 12) b -= 12;
     var c = a.getMinutes() + 60 * b;
     HourHand.rotation = c / 2;
 }
-function h(a) /*: Date -> Void */ {
+function h(a) /*: Date -> Undef */ {
     var b = a.getSeconds() + 60 * a.getMinutes();
     MinuteHand.rotation = b / 10;
 }
 
-function l(a) /*: Date -> Void */ {
+function l(a) /*: Date -> Undef */ {
     if (_UpdateSecondHandInterval != 0) {
         clearInterval(_UpdateSecondHandInterval);
         _UpdateSecondHandInterval = 0;
@@ -77,10 +77,10 @@ function l(a) /*: Date -> Void */ {
     SecondHand.rotation = _NewRotation + _BounceRotationIncrement;
     _UpdateSecondHandInterval = setInterval(m, 50);
 }
-function m() /*:  -> Void */ {
+function m() /*:  -> Undef */ {
     SecondHand.rotation = _NewRotation;
 }
-function f() /*:  -> Void */ {
+function f() /*:  -> Undef */ {
     if (_SecondInterval != 0) {
         clearInterval(_SecondInterval);
         _SecondInterval = 0;
@@ -104,7 +104,7 @@ function f() /*:  -> Void */ {
     }*/
 }
 
-function g(a) /*: Bool -> Void */ {
+function g(a) /*: Bool -> Undef */ {
     var b = a ? 255 : 0;
     if (_SecondHandFade != 0) {
         cancelAnimation(_SecondHandFade);
@@ -113,6 +113,6 @@ function g(a) /*: Bool -> Void */ {
         _SecondHandFade = beginAnimation(j, SecondHand.opacity, b, Math.abs(SecondHand.opacity - b) * 5);
     }
 }
-function j() /*:  -> Void */ {
+function j() /*:  -> Undef */ {
     SecondHand.opacity = event.value;
 };

@@ -1,5 +1,5 @@
-function(x) /*: Int -> Void */ {
-  var g = function() /*: -> Void */ {
+function(x) /*: Int -> Undef */ {
+  var g = function() /*: -> Undef */ {
       x;
   };
 };

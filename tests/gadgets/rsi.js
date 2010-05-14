@@ -11,7 +11,7 @@ var debug = false; // FIX: 0 -> false
 
 var bTimer = 0, secTimer = 0; //FIX: = 0
 
-function setDefaultOptions() /*: -> Void */
+function setDefaultOptions() /*: -> Undef */
 {
     // FIX: this used to use setters and broke with "expected l-value"
     options.putDefaultValue("breakInterval", 35); //35 min
@@ -60,12 +60,12 @@ pluginHelper.max_content_items = 1;
 var tips = [tiprest1, tiprest2, tiprest3, tiprest4, tiprest5, tiprest6,
             tiprest7, tiprest8, tiprest9, tiprest10 ];
 
-function onUnload() /*: -> Void */
+function onUnload() /*: -> Undef */
 {
 	stop();
 }
 
-function viewOnOpen() /*: -> Void */
+function viewOnOpen() /*: -> Undef */
 {
 	setLabels();
 	bTimer = setInterval( updateCount, secTime );
@@ -75,7 +75,7 @@ function viewOnOpen() /*: -> Void */
 	//sizeBar();
 }
 
-function updateCount() /*: -> Void */
+function updateCount() /*: -> Undef */
 {
 	updateCountText();
 	smCount = smallestCount();
@@ -108,7 +108,7 @@ function updateCount() /*: -> Void */
 	}
 }
 
-function updateCountText() /*: -> Void */
+function updateCountText() /*: -> Undef */
 {
     bcount.innerText = bCount.toString() + " " + minText;
     mcount.innerText = mCount.toString() + " " + minText;
@@ -133,7 +133,7 @@ function userActive() /*: -> Boolean */
 	}
 }
 
-function displayOptions() /*: -> Void */
+function displayOptions() /*: -> Undef */
 {
 	microtitlelbl.innerText = microtitletxt;
 	resttitlelbl.innerText = resttitletxt;
@@ -159,7 +159,7 @@ function displayOptions() /*: -> Void */
         postponetime.value = /*:downcast Int*/(options.getValue("postponeTime")).toString();
 }
 
-function updateOptions() /*: -> Void */
+function updateOptions() /*: -> Undef */
 {
     options.putValue("breakInterval", parseInt(bTime.value));
     options.putValue("microInterval", parseInt(mTime.value));
@@ -170,7 +170,7 @@ function updateOptions() /*: -> Void */
     options.putValue("postponeTime", parseInt(postponetime.value));
 }
 
-function showAlert(title, desc, time) /*: String * String * Int -> Void */
+function showAlert(title, desc, time) /*: String * String * Int -> Undef */
 {
 	clearInterval(bTimer);
 	if(time == /*:downcast Int*/ (options.getValue("microDuration"))) alert(title); //microbreak
@@ -201,7 +201,7 @@ function showAlert(title, desc, time) /*: String * String * Int -> Void */
 	if(!debug) cnArea.removeAllContentItems();
 }
 
-function configureBar(title, desc, time) /*: String * String * Int -> Void */
+function configureBar(title, desc, time) /*: String * String * Int -> Undef */
 {
 	progbar.enabled = true;
 	progbar.visible = true;
@@ -217,7 +217,7 @@ function configureBar(title, desc, time) /*: String * String * Int -> Void */
 	secTimer = setInterval(updateBar, oneSec);
 }
 
-function updateBar() /*: -> Void */
+function updateBar() /*: -> Undef */
 {
 	if(secBar <= 0) 
 	{
@@ -238,7 +238,7 @@ function updateBar() /*: -> Void */
 	}
 }
 
-function stopBar() /*: -> Void */
+function stopBar() /*: -> Undef */
 {
 	clearInterval(secTimer);
 	bTimer = setInterval( updateCount, secTime );
@@ -261,7 +261,7 @@ function randNotification(timeLeft) /*: Int -> String */
 	}
 }
 
-function dispInCaption() /*: -> Void */
+function dispInCaption() /*: -> Undef */
 {
 	if(smCount == 0)
 	{
@@ -272,32 +272,32 @@ function dispInCaption() /*: -> Void */
 	minimized = true;
 }
 
-function dispFull() /*: -> Void */
+function dispFull() /*: -> Undef */
 {
 	view.caption = GADGET_NAME;
 	minimized = false;
 }
 
-function stop() /*: -> Void */
+function stop() /*: -> Undef */
 {
 	clearInterval(bTimer);
 	clearInterval(secTimer);
 }
 
-function sizeBar() /*: -> Void */
+function sizeBar() /*: -> Undef */
 {
 	progbar.width = view.width;
 	progbar.height = view.height;
 }
 
-function toggleAllowPostpone() /*: -> Void */
+function toggleAllowPostpone() /*: -> Undef */
 {
 	if(allowpostpone.value) postponetime.enabled = true;
 	else postponetime.enabled = false;
 
 }
 
-function mouseOverNow(button, on) /*: Int * Boolean -> Void */
+function mouseOverNow(button, on) /*: Int * Boolean -> Undef */
 {
 	if(on)
 	{
@@ -311,7 +311,7 @@ function mouseOverNow(button, on) /*: Int * Boolean -> Void */
 	}
 }
 
-function earlyBreak(type) /*: Int -> Void */
+function earlyBreak(type) /*: Int -> Undef */
 {
 	clearInterval(bTimer);
 	if(type == 1) mCount = 0;
@@ -319,7 +319,7 @@ function earlyBreak(type) /*: Int -> Void */
 	updateCount();
 }
 
-function setLabels() /*: -> Void */
+function setLabels() /*: -> Undef */
 {
 	nextmicrobreak.innerText = nextmicrobreakin;
 	nextfullbreak.innerText = nextfullbreakin;

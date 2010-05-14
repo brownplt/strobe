@@ -16,4 +16,4 @@ let typ_bool = TConstr ("Boolean", [])
 
 let typ_null = TConstr ("Null", [])
 
-let typ_undef = TConstr ("Undefined", [])
+let typ_undef = TConstr ("Undef", [])

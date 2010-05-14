@@ -1,2 +1,2 @@
-function (x) /*: Double -> Void */ { return 5; };
+function (x) /*: Double -> Undef */ { return 5; };
 

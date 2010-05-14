@@ -82,10 +82,10 @@ var isReadingTextFile = false;
 var checkTextFileReadingStatusToken=0;
 var textFilePath = "";
 
-function view_onOpen() /*:  -> Void */ {}
+function view_onOpen() /*:  -> Undef */ {}
 
 
-function checkText() /*:  -> Void */ {
+function checkText() /*:  -> Undef */ {
     if (textbox.value.length == 0) {
         alert("Please enter some words in the text box.");
         return;
@@ -95,7 +95,7 @@ function checkText() /*:  -> Void */ {
 //------------------------------------------ speak
 
 
-function textbox_onchange() /*:  -> Void */ {
+function textbox_onchange() /*:  -> Undef */ {
 
     if (textbox.value.length > 0) {
         clearButton.enabled = true;
@@ -109,24 +109,24 @@ function textbox_onchange() /*:  -> Void */ {
     }
 }
 
-function disableButtonsWhenSpeakingText() /*:  -> Void */ {
+function disableButtonsWhenSpeakingText() /*:  -> Undef */ {
     toWavButton.enabled = false;
     clearButton.enabled = false;
     toMainMenuButton.enabled = false;
 }
 
-function enableButtonsAfterSpeakingText() /*:  -> Void */ {
+function enableButtonsAfterSpeakingText() /*:  -> Undef */ {
     toWavButton.enabled = true;
     clearButton.enabled = true;
     toMainMenuButton.enabled = true;
 }
 
-function preview() /*:  -> Void */ {
+function preview() /*:  -> Undef */ {
     checkText();
     speakText(textbox.value);
 }
 
-function speakText(str) /*: String -> Void */ {
+function speakText(str) /*: String -> Undef */ {
     disableButtonsWhenSpeakingText();
 
     speaker = createSpeaker();
@@ -143,7 +143,7 @@ function speakText(str) /*: String -> Void */ {
 // this function checks whether the speaking of text is finished. If it is finished, this function clear the interval and set the stop button caption to "play".
 
 
-function checkTextSpeakingStatus() /*:  -> Void */ {
+function checkTextSpeakingStatus() /*:  -> Undef */ {
     var isDone = speaker.WaitUntilDone(1);
 
     if (isDone) {
@@ -158,21 +158,21 @@ function checkTextSpeakingStatus() /*:  -> Void */ {
 
 
 
-function toWav() /*:  -> Void */ {
+function toWav() /*:  -> Undef */ {
     toMainMenuButton.visible = false;
     saveTextDiv.visible = false;
 
     saveTextDiv2.visible = true;
 }
 
-function textDiv2_backButton_onclick() /*:  -> Void */ {
+function textDiv2_backButton_onclick() /*:  -> Undef */ {
     toMainMenuButton.visible = true;
     saveTextDiv2.visible = false;
 
     saveTextDiv.visible = true;
 }
 
-function saveTextToWavButton_onclick() /*:  -> Void */ {
+function saveTextToWavButton_onclick() /*:  -> Undef */ {
 
     saveAsWav(textbox.value);
 }
@@ -180,7 +180,7 @@ function saveTextToWavButton_onclick() /*:  -> Void */ {
 // save the provided text as a wav file.
 
 
-function saveAsWav(str) /*: String -> Void */ {
+function saveAsWav(str) /*: String -> Undef */ {
     var fileName = text_wavNameEdit.value;
 
     if (isFileNameValid(fileName)) {
@@ -221,7 +221,7 @@ function saveAsWav(str) /*: String -> Void */ {
 //---------------------------- opening a text file
 
 
-function saveFileDiv_onOpen() /*:  -> Void */ {
+function saveFileDiv_onOpen() /*:  -> Undef */ {
     if (textFilePathEdit.value.length > 0) {
         saveFileDiv_enableButtonsForTextFile();
     }
@@ -233,7 +233,7 @@ function saveFileDiv_onOpen() /*:  -> Void */ {
 // enables read & save as wav buttons after getting the text file path.
 
 
-function saveFileDiv_enableButtonsForTextFile() /*:  -> Void */ {
+function saveFileDiv_enableButtonsForTextFile() /*:  -> Undef */ {
     readFileButton.enabled = true;
     saveFileToWavButton.enabled = true;
 
@@ -243,12 +243,12 @@ function saveFileDiv_enableButtonsForTextFile() /*:  -> Void */ {
 // disables read & save as wav buttons if no text file is selected.
 
 
-function saveFileDiv_disableButtonsForTextFile() /*:  -> Void */ {
+function saveFileDiv_disableButtonsForTextFile() /*:  -> Undef */ {
     readFileButton.enabled = false;
     saveFileToWavButton.enabled = false;
 }
 
-function openFile() /*:  -> Void */ {
+function openFile() /*:  -> Undef */ {
     textFilePath = framework.BrowseForFile("Text Files|*.txt");
 
     if (textFilePath.length == 0) {
@@ -261,13 +261,13 @@ function openFile() /*:  -> Void */ {
 }
 
 
-function disableButtonsWhenReadingTextFile() /*:  -> Void */ {
+function disableButtonsWhenReadingTextFile() /*:  -> Undef */ {
     openButton.enabled = false;
     saveFileToWavButton.enabled = false;
     toMainMenuButton.enabled = false;
 }
 
-function enableButtonsAfterReadingTextFile() /*:  -> Void */ {
+function enableButtonsAfterReadingTextFile() /*:  -> Undef */ {
     openButton.enabled = true;
     saveFileToWavButton.enabled = true;
     toMainMenuButton.enabled = true;
@@ -276,7 +276,7 @@ function enableButtonsAfterReadingTextFile() /*:  -> Void */ {
 // read a selected text file.
 
 
-function readTextFile(filePath) /*: String -> Void */ {
+function readTextFile(filePath) /*: String -> Undef */ {
     disableButtonsWhenReadingTextFile();
 
     speaker = createSpeaker();
@@ -294,7 +294,7 @@ function readTextFile(filePath) /*: String -> Void */ {
 // If it is finished, this function clear the interval and set the stop button caption to "play".
 
 
-function checkTextFileReadingStatus() /*:  -> Void */ {
+function checkTextFileReadingStatus() /*:  -> Undef */ {
     var isDone = speaker.WaitUntilDone(1);
 
     if (isDone) {
@@ -309,7 +309,7 @@ function checkTextFileReadingStatus() /*:  -> Void */ {
 // save the selected text file in wav format.
 
 
-function saveTextFileAsWav(textFilePath) /*: String -> Void */ {
+function saveTextFileAsWav(textFilePath) /*: String -> Undef */ {
     var fileName = saveAsNameEdit.value;
 
     if (isFileNameValid(fileName)) {
@@ -349,7 +349,7 @@ function saveTextFileAsWav(textFilePath) /*: String -> Void */ {
 
 //----------------------------------------------------------------- functions for buttons
 
-function toMainMenuButton_onclick() /*:  -> Void */ {
+function toMainMenuButton_onclick() /*:  -> Undef */ {
     if (saveTextDiv.visible) {
         saveTextDiv.visible = false;
     }
@@ -363,13 +363,13 @@ function toMainMenuButton_onclick() /*:  -> Void */ {
 }
 
 
-function showButtons_top() /*:  -> Void */ {
+function showButtons_top() /*:  -> Undef */ {
     toMainMenuButton.visible = true;
     logoImg_big.visible = false;
     logoImg_small.visible = true;
 }
 
-function hideButtons_top() /*:  -> Void */ {
+function hideButtons_top() /*:  -> Undef */ {
     toMainMenuButton.visible = false;
     logoImg_big.visible = true;
     logoImg_small.visible = false;
@@ -379,7 +379,7 @@ function hideButtons_top() /*:  -> Void */ {
 // buttons in saveTextDiv
 
 
-function previewButton_onclick() /*:  -> Void */ {
+function previewButton_onclick() /*:  -> Undef */ {
     if (isSpeakingText) {
         stopSpeaking();
     }
@@ -388,7 +388,7 @@ function previewButton_onclick() /*:  -> Void */ {
     }
 }
 
-function stopSpeaking() /*:  -> Void */ {
+function stopSpeaking() /*:  -> Undef */ {
     speaker.Pause();
     speaker.AudioOutputStream = null;
     speaker = null;
@@ -400,16 +400,16 @@ function stopSpeaking() /*:  -> Void */ {
     isSpeakingText = false;
 }
 
-function toWavButton_onclick() /*:  -> Void */ {
+function toWavButton_onclick() /*:  -> Undef */ {
     toWav();
 }
 
-function clearButton_onclick() /*:  -> Void */ {
+function clearButton_onclick() /*:  -> Undef */ {
     textbox.value = "";
     textbox.focus();
 }
 
-function saveTextButton_onclick() /*:  -> Void */ {
+function saveTextButton_onclick() /*:  -> Undef */ {
     mainMenuDiv.visible = false;
 
     showButtons_top();
@@ -422,11 +422,11 @@ function saveTextButton_onclick() /*:  -> Void */ {
 // buttons in saveFileDiv
 
 
-function openButton_onclick() /*:  -> Void */ {
+function openButton_onclick() /*:  -> Undef */ {
     openFile();
 }
 
-function saveFileButton_onclick() /*:  -> Void */ {
+function saveFileButton_onclick() /*:  -> Undef */ {
     mainMenuDiv.visible = false;
 
     showButtons_top();
@@ -434,7 +434,7 @@ function saveFileButton_onclick() /*:  -> Void */ {
     saveFileDiv.visible = true;
 }
 
-function readFileButton_onclick() /*:  -> Void */ {
+function readFileButton_onclick() /*:  -> Undef */ {
 
     if (isReadingTextFile) {
         stopReadingTextFile();
@@ -444,7 +444,7 @@ function readFileButton_onclick() /*:  -> Void */ {
     }
 }
 
-function stopReadingTextFile() /*:  -> Void */ {
+function stopReadingTextFile() /*:  -> Undef */ {
     speaker.Pause();
     speaker.AudioOutputStream = null;
     speaker = null;
@@ -456,14 +456,14 @@ function stopReadingTextFile() /*:  -> Void */ {
     isReadingTextFile = false;
 }
 
-function saveFileToWavButton_onclick() /*:  -> Void */ {
+function saveFileToWavButton_onclick() /*:  -> Undef */ {
     saveTextFileAsWav(textFilePath);
 }
 
 
 
 
-function text_wavNameEdit_onchange() /*:  -> Void */ {
+function text_wavNameEdit_onchange() /*:  -> Undef */ {
     if (text_wavNameEdit.value.length > 0) {
         saveTextToWavButton.enabled = true;
     }
@@ -475,7 +475,7 @@ function text_wavNameEdit_onchange() /*:  -> Void */ {
 
 
 
-function saveAsNameEdit_onchange() /*:  -> Void */ {
+function saveAsNameEdit_onchange() /*:  -> Undef */ {
     if (saveAsNameEdit.value.length == 0) {
         saveFileToWavButton.enabled = false;
         return;

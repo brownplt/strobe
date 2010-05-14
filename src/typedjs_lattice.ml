@@ -150,7 +150,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
       | "Number"  -> RTSet.singleton RT.Number
       | "Int" -> RTSet.singleton RT.Number
       | "Boolean" -> RTSet.singleton RT.Boolean
-      | "Undefined" -> RTSet.singleton RT.Undefined
+      | "Undef" -> RTSet.singleton RT.Undefined
       | _ -> RTSet.singleton RT.Object
     end
   | Typedjs_syntax.TConstr ("Array", [arrayt]) -> RTSet.singleton RT.Object

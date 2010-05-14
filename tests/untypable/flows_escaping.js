@@ -1,7 +1,7 @@
-function(x) /*: Int + Void -> { h : (-> Void) -> Void } */ {
+function(x) /*: Int + Undef -> { h : (-> Undef) -> Undef } */ {
 
 
-  var h = function(z) /*: (-> Void) -> Void */ {
+  var h = function(z) /*: (-> Undef) -> Undef */ {
     if (typeof x === "number") {
        z();
        // The expression below is the continuation of z(), which is escaping.

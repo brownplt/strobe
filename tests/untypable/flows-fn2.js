@@ -8,14 +8,14 @@ function getValue(a) /*: String + Double -> Double */ {
   return a;
 }
 
-function foo(x) /*: (String + Double) -> Void */ {
+function foo(x) /*: (String + Double) -> Undef */ {
     return;
 }
 
-function pf1() /*: -> Void */ {
+function pf1() /*: -> Undef */ {
     return foo(3.2);
 }
 var x = foo;
-function pf2() /*: -> Void */ {
+function pf2() /*: -> Undef */ {
     return foo("hi");
 }

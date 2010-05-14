@@ -39,7 +39,7 @@ rule token = parse
    | "Double" { NUM }
    | "String" { STR }
    | "Bool" { BOOL }
-   | "Void" { UNDEF }
+   | "Undef" { UNDEF }
    | "*" { STAR }
    | ":" { COLON }
    | "+" { UNION }

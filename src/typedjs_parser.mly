@@ -80,6 +80,7 @@ any_id :
   | ID { $1 }
   | STR { "String" }
   | INT { "Int" }
+  | UNDEF { "Undef" }
 
 env_decl :
   | CLASS any_id PROTOTYPE any_id LBRACE fields RBRACE

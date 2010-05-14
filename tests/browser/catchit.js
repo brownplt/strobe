@@ -13,7 +13,7 @@
 //1 refactor .push() into array setting
 //change 15 to 15.0 for correct type
 
-var ctx = /*:upcast Undefined + CanvasRenderingContext2D*/undefined;
+var ctx = /*:upcast Undef + CanvasRenderingContext2D*/undefined;
 
 // mouse position cache
 var mouse = {x:-100, y:-100};
@@ -31,14 +31,14 @@ var max_score = 0;
 var inc_score = 15.0;
 
 
-function Ball(x, y, xsee, ysee) /*: constructor (Double * Double * Double * Double -> {x : Double, y : Double, xsee : Double, ysee : Double, move : ([Ball]  -> Void)})  */ {
+function Ball(x, y, xsee, ysee) /*: constructor (Double * Double * Double * Double -> {x : Double, y : Double, xsee : Double, ysee : Double, move : ([Ball]  -> Undef)})  */ {
 
 	this.x = x;
 	this.y = y;
 	this.xsee = xsee;
 	this.ysee = ysee;
 
-	this.move = function() /*: [Ball]  -> Void  */ {
+	this.move = function() /*: [Ball]  -> Undef  */ {
 
 		if(this.x > 315) {
 			this.x = 315;
@@ -73,7 +73,7 @@ function $(id) /*: String -> HTMLElement + Null */ {
 	return document.getElementById(id);
 }
 
-function updateStat() /*:  -> Void  */ {
+function updateStat() /*:  -> Undef  */ {
 
 	(/*:downcast HTMLLabel*/($('tries'))).innerHTML = tries.toString();
 	(/*:downcast HTMLLabel*/($('score'))).innerHTML = score.toString();
@@ -81,7 +81,7 @@ function updateStat() /*:  -> Void  */ {
 	(/*:downcast HTMLLabel*/($('max_score'))).innerHTML = max_score.toString();
 }
 
-function createBall() /*:  -> Void  */ {
+function createBall() /*:  -> Undef  */ {
         var x = 0.0, y = 0.0; //type init
 //	do {
 		x = Math.random() * 315;
@@ -94,12 +94,12 @@ function createBall() /*:  -> Void  */ {
 
 }
 
-function init() /*:  -> Void  */ {
+function init() /*:  -> Undef  */ {
 	ctx = (/*:downcast Canvas*/($('canvas'))).getContext('2d');
 	clock();
 }
 
-function clock() /*:  -> Void  */ {
+function clock() /*:  -> Undef  */ {
 
 	// global clear is faster for many balls
 	ctx.clearRect(0, 0, 320, 320);
@@ -139,7 +139,7 @@ function clock() /*:  -> Void  */ {
 	window.setTimeout(clock, 20);
 }
 
-document.onclick = function(_) /*: Event -> Void  */ {
+document.onclick = function(_) /*: Event -> Undef  */ {
 
 	for(var i=0; i < balls.length; i++) {
 		balls[i].xsee =-balls[i].xsee;
@@ -147,7 +147,7 @@ document.onclick = function(_) /*: Event -> Void  */ {
 	}
 };
 
-document.onmousemove = function(e) /*: Event -> Void  */ {
+document.onmousemove = function(e) /*: Event -> Undef  */ {
 
 	mouse.x = e.pageX;
 	mouse.y = e.pageY;

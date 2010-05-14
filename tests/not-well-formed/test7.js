@@ -1,1 +1,1 @@
-function () /*: Int -> Void */ { return; };
+function () /*: Int -> Undef */ { return; };

@@ -1,1 +1,1 @@
-4 + (function(x) /*: Double -> Void */ { return; });
+4 + (function(x) /*: Double -> Undef */ { return; });

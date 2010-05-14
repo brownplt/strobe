@@ -1,6 +1,6 @@
-function() /*: -> Void */ {
+function() /*: -> Undef */ {
   foo: {
-    function() /*: -> Void */ {
+    function() /*: -> Undef */ {
       break foo;
     };
   }

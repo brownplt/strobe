@@ -5,7 +5,7 @@ function foo(x) /*:Int -> Int */ {
     return x;
 }
 
-function bar() /*: -> Void */ {
+function bar() /*: -> Undef */ {
 }
 
 foo(120);

@@ -1,2 +1,2 @@
-window.setTimeout(function () /*: -> Void */ {
+window.setTimeout(function () /*: -> Undef */ {
         return; }, 200);

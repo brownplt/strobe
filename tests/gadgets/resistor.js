@@ -14,7 +14,7 @@ var numberOfColorBands = 4;
 var bandNumberValues = [1, 0, 2, 10, 15]; // Brown, Black, Red, Empty, Blank.
 var buttonStrings = ["0black", "1brown", "2red", "3orange", "4yellow", "5green", "6blue", "7violet", "8gray", "9white", "Empty", "Tbrown", "Tred", "Tgold", "Tsilver", "Blank"];
 
-function view_onOpen() /*:  -> Void */ {
+function view_onOpen() /*:  -> Undef */ {
     // Initialize the resistor's color bands to match the bandNumberValues array above.
     firstBand.downImage = "stock_images\\Button" + buttonStrings[bandNumberValues[0]] + "Down.PNG";
     firstBand.image = "stock_images\\Button" + buttonStrings[bandNumberValues[0]] + "Normal.PNG";
@@ -59,7 +59,7 @@ function view_onOpen() /*:  -> Void */ {
 //		Gold		 	 5%
 //		Silver		 	10%
 
-function doBlackButton() /*:  -> Void */ {
+function doBlackButton() /*:  -> Undef */ {
     drawNewColorBand(0);
     bandNumberValues[currentBandIndex] = 0;
     doCalculateResistance();
@@ -67,7 +67,7 @@ function doBlackButton() /*:  -> Void */ {
     return;
 }
 
-function doBrownButton() /*:  -> Void */ {
+function doBrownButton() /*:  -> Undef */ {
     drawNewColorBand(1);
     bandNumberValues[currentBandIndex] = 1;
     doCalculateResistance();
@@ -75,7 +75,7 @@ function doBrownButton() /*:  -> Void */ {
     return;
 }
 
-function doRedButton() /*:  -> Void */ {
+function doRedButton() /*:  -> Undef */ {
     drawNewColorBand(2);
     bandNumberValues[currentBandIndex] = 2;
     doCalculateResistance();
@@ -83,7 +83,7 @@ function doRedButton() /*:  -> Void */ {
     return;
 }
 
-function doOrangeButton() /*:  -> Void */ {
+function doOrangeButton() /*:  -> Undef */ {
     drawNewColorBand(3);
     bandNumberValues[currentBandIndex] = 3;
     doCalculateResistance();
@@ -91,7 +91,7 @@ function doOrangeButton() /*:  -> Void */ {
     return;
 }
 
-function doYellowButton() /*:  -> Void */ {
+function doYellowButton() /*:  -> Undef */ {
     drawNewColorBand(4);
     bandNumberValues[currentBandIndex] = 4;
     doCalculateResistance();
@@ -99,7 +99,7 @@ function doYellowButton() /*:  -> Void */ {
     return;
 }
 
-function doGreenButton() /*:  -> Void */ {
+function doGreenButton() /*:  -> Undef */ {
     drawNewColorBand(5);
     bandNumberValues[currentBandIndex] = 5;
     doCalculateResistance();
@@ -107,7 +107,7 @@ function doGreenButton() /*:  -> Void */ {
     return;
 }
 
-function doBlueButton() /*:  -> Void */ {
+function doBlueButton() /*:  -> Undef */ {
     drawNewColorBand(6);
     bandNumberValues[currentBandIndex] = 6;
     doCalculateResistance();
@@ -115,7 +115,7 @@ function doBlueButton() /*:  -> Void */ {
     return;
 }
 
-function doVioletButton() /*:  -> Void */ {
+function doVioletButton() /*:  -> Undef */ {
     drawNewColorBand(7);
     bandNumberValues[currentBandIndex] = 7;
     doCalculateResistance();
@@ -123,7 +123,7 @@ function doVioletButton() /*:  -> Void */ {
     return;
 }
 
-function doGrayButton() /*:  -> Void */ {
+function doGrayButton() /*:  -> Undef */ {
     drawNewColorBand(8);
     bandNumberValues[currentBandIndex] = 8;
     doCalculateResistance();
@@ -131,7 +131,7 @@ function doGrayButton() /*:  -> Void */ {
     return;
 }
 
-function doWhiteButton() /*:  -> Void */ {
+function doWhiteButton() /*:  -> Undef */ {
     drawNewColorBand(9);
     bandNumberValues[currentBandIndex] = 9;
     doCalculateResistance();
@@ -139,7 +139,7 @@ function doWhiteButton() /*:  -> Void */ {
     return;
 }
 
-function doEraseButton() /*:  -> Void */ {
+function doEraseButton() /*:  -> Undef */ {
     drawNewColorBand(10);
     bandNumberValues[currentBandIndex] = 10;
     doCalculateResistance();
@@ -148,7 +148,7 @@ function doEraseButton() /*:  -> Void */ {
 }
 
 
-function doFirstToleranceButton() /*:  -> Void */ {
+function doFirstToleranceButton() /*:  -> Undef */ {
     if (numberOfColorBands == 4) {
         fourthBand.downImage = firstToleranceButton.image;
         fourthBand.image = firstToleranceButton.image;
@@ -162,7 +162,7 @@ function doFirstToleranceButton() /*:  -> Void */ {
     return;
 }
 
-function doSecondToleranceButton() /*:  -> Void */ {
+function doSecondToleranceButton() /*:  -> Undef */ {
     if (numberOfColorBands == 4) {
         fourthBand.downImage = secondToleranceButton.image;
         fourthBand.image = secondToleranceButton.image;
@@ -176,7 +176,7 @@ function doSecondToleranceButton() /*:  -> Void */ {
     return;
 }
 
-function doNoneButton() /*:  -> Void */ {
+function doNoneButton() /*:  -> Undef */ {
     if (numberOfColorBands == 4) {
         fourthBand.downImage = "stock_images\\ButtonBlankNormal.PNG";
         fourthBand.image = "stock_images\\ButtonBlankNormal.PNG";
@@ -190,7 +190,7 @@ function doNoneButton() /*:  -> Void */ {
     return;
 }
 
-function drawNewColorBand(color) /*: Int -> Void */ {
+function drawNewColorBand(color) /*: Int -> Undef */ {
 
     switch (currentBandIndex) {
     case 0:
@@ -226,7 +226,7 @@ function drawNewColorBand(color) /*: Int -> Void */ {
     return;
 }
 
-function doFirstBand() /*:  -> Void */ {
+function doFirstBand() /*:  -> Undef */ {
     // Move the arrow pointer.
     currentColorBandArrow.y = 79;
     currentBandIndex = 0;
@@ -234,7 +234,7 @@ function doFirstBand() /*:  -> Void */ {
     return;
 }
 
-function doSecondBand() /*:  -> Void */ {
+function doSecondBand() /*:  -> Undef */ {
     // Move the arrow pointer.
     currentColorBandArrow.y = 105;
     currentBandIndex = 1;
@@ -242,7 +242,7 @@ function doSecondBand() /*:  -> Void */ {
     return;
 }
 
-function doThirdBand() /*:  -> Void */ {
+function doThirdBand() /*:  -> Undef */ {
     // Move the arrow pointer.
     currentColorBandArrow.y = 131;
     currentBandIndex = 2;
@@ -250,7 +250,7 @@ function doThirdBand() /*:  -> Void */ {
     return;
 }
 
-function doFourthBand() /*:  -> Void */ {
+function doFourthBand() /*:  -> Undef */ {
     // This function does not need to do anything for a four band resistor.
     if (numberOfColorBands == 5) {
         // Move the arrow pointer.
@@ -261,12 +261,12 @@ function doFourthBand() /*:  -> Void */ {
     return;
 }
 
-function doFifthBand() /*:  -> Void */ {
+function doFifthBand() /*:  -> Undef */ {
     // This is an "empty" function.  The fifth color band should only be set by the Tolerance buttons.
     return;
 }
 
-function doSwitchToFourBandResistor() /*:  -> Void */ {
+function doSwitchToFourBandResistor() /*:  -> Undef */ {
     bandNumberValues[2] = 10;
     thirdBand.downImage = "stock_images\\ButtonEmptyNormal.PNG";
     thirdBand.image = "stock_images\\ButtonEmptyNormal.PNG";
@@ -293,7 +293,7 @@ function doSwitchToFourBandResistor() /*:  -> Void */ {
     return;
 }
 
-function doSwitchToFiveBandResistor() /*:  -> Void */ {
+function doSwitchToFiveBandResistor() /*:  -> Undef */ {
     bandNumberValues[3] = 10;
     fourthBand.downImage = "stock_images\\ButtonEmptyNormal.PNG";
     fourthBand.image = "stock_images\\ButtonEmptyNormal.PNG";
@@ -315,7 +315,7 @@ function doSwitchToFiveBandResistor() /*:  -> Void */ {
     return;
 }
 
-function toggleNumberOfBandsButton() /*:  -> Void */ {
+function toggleNumberOfBandsButton() /*:  -> Undef */ {
     if (numberOfColorBands == 4) {
         numberOfColorBands = 5;
         numberOfBandsButton.downImage = "stock_images\\Button5Down.PNG";
@@ -349,7 +349,7 @@ function toggleNumberOfBandsButton() /*:  -> Void */ {
     return;
 }
 
-function doCalculateResistance() /*:  -> Void */ {
+function doCalculateResistance() /*:  -> Undef */ {
     var currentBandValue=0;
     var power=0;
 
@@ -357,7 +357,7 @@ function doCalculateResistance() /*:  -> Void */ {
     for (var bandIndex = 0; bandIndex < numberOfColorBands - 2; bandIndex++) {
         currentBandValue = bandNumberValues[bandIndex];
         if (currentBandValue > 9) {
-            resistance = -1; // Undefined.
+            resistance = -1; // Undef.
         } else {
             resistance *= 10;
             resistance += Math.floor(Number(currentBandValue));
@@ -366,14 +366,14 @@ function doCalculateResistance() /*:  -> Void */ {
 
     power = bandNumberValues[numberOfColorBands - 2];
     if (power > 9) {
-        resistance = -1; // Undefined.
+        resistance = -1; // Undef.
     } else {
         power = Math.pow(10, power);
         resistance *= power;
     }
 
     if (resistance < 0) {
-        ohms.value = "Undefined";
+        ohms.value = "Undef";
     } else {
         ohms.value = addCommas(resistance.toString());
     }
@@ -448,7 +448,7 @@ function removeCommas(inputString) /*: String -> String */ {
     return (noCommasValue);
 }
 
-function doOhmsCheck() /*:  -> Void */ {
+function doOhmsCheck() /*:  -> Undef */ {
     var cleanedOhms = removeCommas(ohms.value);
     var minimumOhmsValue = 0, maximumOhmsValue = 0.0;
     if (numberOfColorBands == 4) {
@@ -473,7 +473,7 @@ function doOhmsCheck() /*:  -> Void */ {
     return;
 }
 
-function doGenerateBandColors() /*:  -> Void */ {
+function doGenerateBandColors() /*:  -> Undef */ {
     var digitString = resistance.toString();
     var length = digitString.length;
     var digit = 0;
