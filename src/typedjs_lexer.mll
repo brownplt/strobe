@@ -39,11 +39,11 @@ rule token = parse
    | "Double" { NUM }
    | "String" { STR }
    | "Bool" { BOOL }
+   | "Void" { UNDEF }
    | "*" { STAR }
    | ":" { COLON }
    | "+" { UNION }
    | "." { DOT }
-   | "Void" { UNDEF }
    | "constructor" { CONSTRUCTOR }
    | "prototype" { PROTOTYPE }
    | "class" { CLASS }
