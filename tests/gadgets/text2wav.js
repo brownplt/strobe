@@ -21,7 +21,7 @@ function getVoiceList() /*:  -> Any */ {
 }
 
 
-function isFileNameValid(fileName) /*: String -> Bool */ {
+function isFileNameValid(fileName) /*: Str -> Bool */ {
     if (/^[^\\\/\:\*\?\"\<\>\|\.]+(\.[^\\\/\:\*\?\"\<\>\|\.]+)*$/.test(fileName)) {
         return true;
     }
@@ -30,7 +30,7 @@ function isFileNameValid(fileName) /*: String -> Bool */ {
     }
 }
 
-function getSaveFolder() /*:  -> String + Null */ {
+function getSaveFolder() /*:  -> Str + Null */ {
 
     var objShell = /*:downcast ShellApplication*/(new ActiveXObject("Shell.Application"));
     var objFolder = objShell.BrowseForFolder(0, "Save wav file in...", 0);
@@ -126,7 +126,7 @@ function preview() /*:  -> Undef */ {
     speakText(textbox.value);
 }
 
-function speakText(str) /*: String -> Undef */ {
+function speakText(str) /*: Str -> Undef */ {
     disableButtonsWhenSpeakingText();
 
     speaker = createSpeaker();
@@ -180,7 +180,7 @@ function saveTextToWavButton_onclick() /*:  -> Undef */ {
 // save the provided text as a wav file.
 
 
-function saveAsWav(str) /*: String -> Undef */ {
+function saveAsWav(str) /*: Str -> Undef */ {
     var fileName = text_wavNameEdit.value;
 
     if (isFileNameValid(fileName)) {
@@ -276,7 +276,7 @@ function enableButtonsAfterReadingTextFile() /*:  -> Undef */ {
 // read a selected text file.
 
 
-function readTextFile(filePath) /*: String -> Undef */ {
+function readTextFile(filePath) /*: Str -> Undef */ {
     disableButtonsWhenReadingTextFile();
 
     speaker = createSpeaker();
@@ -309,7 +309,7 @@ function checkTextFileReadingStatus() /*:  -> Undef */ {
 // save the selected text file in wav format.
 
 
-function saveTextFileAsWav(textFilePath) /*: String -> Undef */ {
+function saveTextFileAsWav(textFilePath) /*: Str -> Undef */ {
     var fileName = saveAsNameEdit.value;
 
     if (isFileNameValid(fileName)) {

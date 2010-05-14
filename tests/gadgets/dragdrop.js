@@ -40,7 +40,7 @@ limitations under the License.
  * and the ondrag* events are set to event handlers.
  *
  * If you wish to cancel a drag/drop operation,
- * set 'event.returnValue' to 'false' (Boolean) within the event handler.
+ * set 'event.returnValue' to 'false' (Bool) within the event handler.
  *
  * Another thing to know, is within the handler
  * 'event.dragFiles' is a collection object containing the paths of the file(s)
@@ -50,15 +50,15 @@ limitations under the License.
 /**
  * Utils namespace
  */
-var Utils = (function() /*: ( -> {createDragFilesImagesList : (Collection -> Array<String>), extractExtension : (String -> String)}) */ {
+var Utils = (function() /*: ( -> {createDragFilesImagesList : (Collection -> Array<Str>), extractExtension : (Str -> Str)}) */ {
 
 /**
  * Convert event.dragfiles object to an array of strings
  * @param {Object} obj collection of drag files
  * @return {Array} Array of filepaths
  */
-function createDragFilesImagesList(obj) /*: Collection -> Array<String> */ {
-  var files = /*:String*/[];
+function createDragFilesImagesList(obj) /*: Collection -> Array<Str> */ {
+  var files = /*:Str*/[];
 
   if (obj === null) { //XXX: was "!obj"
     return files;
@@ -73,7 +73,7 @@ function createDragFilesImagesList(obj) /*: Collection -> Array<String> */ {
     jpeg: true };
 
   while (!e.atEnd()) {
-    var path = /*:downcast String*/(e.item());
+    var path = /*:downcast Str*/(e.item());
     var extension = extractExtension(path).toLowerCase();
 
     //XXX: was validExtension[extension], hashmap, oh noes..
@@ -88,10 +88,10 @@ function createDragFilesImagesList(obj) /*: Collection -> Array<String> */ {
 
 /**
  * Extract the extension from a path
- * @param {String} The path
- * @return {String} The extension
+ * @param {Str} The path
+ * @return {Str} The extension
  */
-function extractExtension(s) /*: String -> String */{
+function extractExtension(s) /*: Str -> Str */{
   return s.substring(s.lastIndexOf('.') + 1);
 }
 

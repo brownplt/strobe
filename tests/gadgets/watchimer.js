@@ -3,7 +3,7 @@
 - added 2 intervals as global variable
 - added alarming as global, initialized it to audioclip
 - change the Unknown to Audioclip
-- changed correctOutput to always return String
+- changed correctOutput to always return Str
 - changed 8 setTimeouts to use functions, not eval strings
 - added upcast to a timer to be undefined + Int, guarded
   call to clearInterval to make sure it is Int
@@ -113,7 +113,7 @@ function blink() /*:  -> Undef */{
 	}
 	pause++;
 }
-function correctOutput(h) /*: (Int + String) -> String */{
+function correctOutput(h) /*: (Int + Str) -> Str */{
 	if(h < 10 && h > 0){
 		h = "0" + h;
 	}

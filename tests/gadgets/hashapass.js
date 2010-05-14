@@ -29,7 +29,7 @@ var chrsz = 8; /* bits per input character. 8 - ASCII; 16 - Unicode      */
  */
 
 
-function b64_hmac_sha1(key, data) /*: String * String -> String */ {
+function b64_hmac_sha1(key, data) /*: Str * Str -> Str */ {
     return binb2b64(core_hmac_sha1(key, data));
 }
 
@@ -101,7 +101,7 @@ function sha1_kt(t) /*: Int -> Int */ {
  * Calculate the HMAC-SHA1 of a key and some data
  */
 
-function core_hmac_sha1(key, data) /*: String * String -> Array<Int> */ {
+function core_hmac_sha1(key, data) /*: Str * Str -> Array<Int> */ {
     var bkey = str2binb(key);
     if (bkey.length > 16) bkey = core_sha1(bkey, key.length * chrsz);
 
@@ -141,7 +141,7 @@ function rol(num, cnt) /*: Int * Int -> Int */ {
  * In 8-bit function, characters >255 have their hi-byte silently ignored.
  */
 
-function str2binb(str) /*: String -> Array<Int> */ {
+function str2binb(str) /*: Str -> Array<Int> */ {
     var bin = /*:Int*/[];
     var mask = (1 << chrsz) - 1;
     bin[0] = 3;
@@ -159,7 +159,7 @@ function str2binb(str) /*: String -> Array<Int> */ {
  * Convert an array of big-endian words to a base-64 string
  */
 
-function binb2b64(binarray) /*: Array<Int> -> String */ {
+function binb2b64(binarray) /*: Array<Int> -> Str */ {
     var tab = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     var str = "";
     for (var i = 0; i < binarray.length * 4; i += 3) {
@@ -201,7 +201,7 @@ function button1_onclick() /*:  -> Bool */ {
 // Has same efect as clicking on the 'hashapass!' button.
 
 
-function seedId_onkeypress() /*:  -> Undef + Boolean */ {
+function seedId_onkeypress() /*:  -> Undef + Bool */ {
     if (event.keyCode == 13) {
         onHashapass();
         return false;

@@ -1,2 +1,2 @@
 var x = /*:downcast Int */23;
-var y = /*:downcast String */"sdfsdf";
+var y = /*:downcast Str */"sdfsdf";

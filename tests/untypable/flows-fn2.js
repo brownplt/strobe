@@ -1,14 +1,14 @@
-function pf() /*: -> Double */ {
+function pf() /*: -> Num */ {
     return "heelo";
 }
 
-function getValue(a) /*: String + Double -> Double */ {
+function getValue(a) /*: Str + Num -> Num */ {
     a = pf();
 
   return a;
 }
 
-function foo(x) /*: (String + Double) -> Undef */ {
+function foo(x) /*: (Str + Num) -> Undef */ {
     return;
 }
 

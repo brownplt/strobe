@@ -1,2 +1,2 @@
-function (x) /*: Double -> Undef */ { return 5; };
+function (x) /*: Num -> Undef */ { return 5; };
 

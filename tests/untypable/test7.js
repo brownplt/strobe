@@ -1,1 +1,1 @@
-4 + (function(x) /*: Double -> Undef */ { return; });
+4 + (function(x) /*: Num -> Undef */ { return; });

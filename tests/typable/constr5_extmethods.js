@@ -10,6 +10,6 @@ Point.prototype.RANDOMVALUE = "hi";
 //the same point can now be used to sum:
 p.sum();
 
-function bob(s) /*: String -> String */ { return s + s; };
+function bob(s) /*: Str -> Str */ { return s + s; };
 
 bob(p.RANDOMVALUE);

@@ -78,9 +78,11 @@ typ_ann :
 
 any_id :
   | ID { $1 }
-  | STR { "String" }
+  | STR { "Str" }
   | INT { "Int" }
   | UNDEF { "Undef" }
+  | BOOL { "Bool" }
+  | NUM { "Num" }
 
 env_decl :
   | CLASS any_id PROTOTYPE any_id LBRACE fields RBRACE

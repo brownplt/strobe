@@ -92,7 +92,7 @@ function stopAudio() /*:  -> Undef */ {
 //codes a character and appends it to output
 
 
-function writeCode(c) /*: String -> Undef */ {
+function writeCode(c) /*: Str -> Undef */ {
     var output = edit2;
     switch (c) {
     case 'a':
@@ -271,7 +271,7 @@ function text2Code() /*:  -> Undef */ {
 //decodes a morse combination and appends it to output
 
 
-function writeText(s) /*: String -> Undef */ {
+function writeText(s) /*: Str -> Undef */ {
     var output = edit2;
     switch (s) {
     case '.-':

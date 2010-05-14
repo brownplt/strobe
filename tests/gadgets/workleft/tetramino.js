@@ -445,7 +445,7 @@ function getPiece(N) /*: Int -> Undef */ {
     return 0;
 }
 
-function getBackground(index) /*: Int -> String */ {
+function getBackground(index) /*: Int -> Str */ {
     if (index == 0) {
         return "";
     }

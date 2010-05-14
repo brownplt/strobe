@@ -423,7 +423,7 @@ function str_len(len) /*: Int -> Int */ {
     return len;
 }
 
-function str_fit(ttitle) /*: String -> String */ {
+function str_fit(ttitle) /*: Str -> Str */ {
     ttitle = ttitle.substring(0, 40);
     if (ttitle.length == 40) {
         ttitle += "...";
@@ -432,7 +432,7 @@ function str_fit(ttitle) /*: String -> String */ {
     return ttitle;
 }
 
-function str_fita(ttitle) /*: String -> String */ {
+function str_fita(ttitle) /*: Str -> Str */ {
     ttitle = ttitle.substring(0, 27);
     if (ttitle.length == 27) {
         ttitle += "...";

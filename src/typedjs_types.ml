@@ -4,15 +4,15 @@ open Typedjs_syntax
 (** Some of these constructor names correspond directly to the object names
     in JavaScript. Good or bad? *)
 
-let typ_str = TConstr ("String", [])
+let typ_str = TConstr ("Str", [])
 
 let typ_regexp = TConstr ("RegExp", [])
 
-let typ_num = TConstr ("Number", [])
+let typ_num = TConstr ("Num", [])
 
 let typ_int = TConstr ("Int", [])
 
-let typ_bool = TConstr ("Boolean", [])
+let typ_bool = TConstr ("Bool", [])
 
 let typ_null = TConstr ("Null", [])
 

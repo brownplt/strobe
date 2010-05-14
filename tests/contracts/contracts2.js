@@ -1,2 +1,2 @@
-// contract violation: expected String, but received 900
-/*:downcast String*/900;
+// contract violation: expected Str, but received 900
+/*:downcast Str*/900;

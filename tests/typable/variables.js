@@ -1,4 +1,4 @@
-function foo(x) /*: Int + String -> Int */ {
+function foo(x) /*: Int + Str -> Int */ {
   x = 9000;
   return x;
 }

@@ -4,20 +4,20 @@
 //to be called, since they would onyl come frmo an
 //"express" mode. i filled those in myself.
 /*::
-  function getValue : ((Int + String + Double) -> (Int + Double))
+  function getValue : ((Int + Str + Num) -> (Int + Num))
   function menuAddItems : (Dom -> Undef)
   function menuItemClicked : (Dom -> Undef)
   function redrawAll : ( -> Undef)
-  function getNumber : ((Int + Double) -> (Int + Double + String))
-  function getExpressionString : ( -> String)
+  function getNumber : ((Int + Num) -> (Int + Num + Str))
+  function getExpressionStr : ( -> Str)
   function braces : (Int -> Undef)
   function iRefresh : ( -> Undef)
   function iClear : ( -> Undef)
   function viewOpen : ( -> Undef)
-  function handleDigit : (String -> Undef)
-  function handleOperator : (String -> Undef)
-  function reverse : (String -> String)
-  function changeBase : ((String + Int) -> Undef)
+  function handleDigit : (Str -> Undef)
+  function handleOperator : (Str -> Undef)
+  function reverse : (Str -> Str)
+  function changeBase : ((Str + Int) -> Undef)
   function insertPi : ( -> Undef)
   function convertInt : ( -> Undef)
   function iFlags : ( -> Undef)
@@ -25,11 +25,11 @@
   function toReference : (Int -> Undef)
   function changeAngleRef : (Int -> Undef)
 
-  function allRight : (String -> Bool)
-  function checkValid : (String -> Bool)
-  function convertMath : (String -> String)
+  function allRight : (Str -> Bool)
+  function checkValid : (Str -> Bool)
+  function convertMath : (Str -> Str)
 
-  function transistState : (String -> Undef)
+  function transistState : (Str -> Undef)
   function keyTrap : ( -> Undef)
   function backSpace : ( -> Undef)
   function changeSign : ( -> Undef)
@@ -37,12 +37,12 @@
   function unaryExp : ( -> Undef)
   function unaryLog : ( -> Undef)
   function addE : ( -> Undef)
-  function mSinh : ((Int + Double) -> (Int + Double))
-  function mCosh : (Double -> Double)
-  function mTanh : (Double -> Int)
-  function iSinh : ((Int + Double) -> Double)
-  function iCosh : (Double -> Double)
-  function iTanh : (Double -> Double)
+  function mSinh : ((Int + Num) -> (Int + Num))
+  function mCosh : (Num -> Num)
+  function mTanh : (Num -> Int)
+  function iSinh : ((Int + Num) -> Num)
+  function iCosh : (Num -> Num)
+  function iTanh : (Num -> Num)
   function unarySin : ( -> Undef)
   function unaryCos : ( -> Undef)
   function unaryTan : ( -> Undef)
@@ -52,7 +52,7 @@
   function unaryInverse : ( -> Undef)
   function baseButtons : ( -> Undef)
   function percentOf : ( -> Undef)
-  function calculate : ((Int + Double) * String * (Int + Double) -> (Int + Double))
+  function calculate : ((Int + Num) * Str * (Int + Num) -> (Int + Num))
   function unaryNot : ( -> Undef)
 */
 
@@ -82,7 +82,7 @@ var expression = undefined;
 
 /*
 for (var k = 0; k <= 25; ++k) {
-  var a = String_fromCharCode("A".charCodeAt(0) + k);
+  var a = Str_fromCharCode("A".charCodeAt(0) + k);
   eval(a + '=' + 0);
   } */
 
@@ -221,7 +221,7 @@ function getNumber(a) {
   return a;
 }
 
-function getExpressionString() {
+function getExpressionStr() {
   var ret = '';
   var i = 0;
   var e = "";
@@ -285,7 +285,7 @@ function braces(a) {
 }
 
 function iRefresh() {
-  expressionPanel.innerText = getExpressionString();
+  expressionPanel.innerText = getExpressionStr();
   displayPanel.innerText = (dValue && sci_flag != 2) ? getNumber(display) : display;
   if (displayPanel.innerText == '')
     displayPanel.innerText = '0';
@@ -356,7 +356,7 @@ function handleDigit(d) {
   }
 
   if (d >= 'a' && d <= 'f' && !end)
-    d = String_fromCharCode(d.charCodeAt(0) + "A".charCodeAt(0) - "a".charCodeAt(0));
+    d = Str_fromCharCode(d.charCodeAt(0) + "A".charCodeAt(0) - "a".charCodeAt(0));
 
   if (dValue) {
     var ff = feFlag;
@@ -454,7 +454,7 @@ function changeBase(b) {
 
   for (var i = 0; i < 16; ++i) {
     var id = "b_" + i;
-    var img = "\"b_" + String_fromCharCode(i >= 10 ? aaa + i-10 : zero + i) + "_";
+    var img = "\"b_" + Str_fromCharCode(i >= 10 ? aaa + i-10 : zero + i) + "_";
     var post = ".png\"";
     var dis = img + "dis" + post;
     if (base > i) {
@@ -558,7 +558,7 @@ function checkValid(a) {
   a += ' ';
 
   for (var i = 0; i < a.length; ++i) {
-    var p = String_fromCharCode(a.charCodeAt(i));
+    var p = Str_fromCharCode(a.charCodeAt(i));
     if (p >= 'A' && p <= 'Z' || p >= 'a' && p <= 'z') {
       s += p;
     } else {
@@ -576,7 +576,7 @@ function convertMath(a) {
   a += ' ';
 
   for (var i = 0; i < a.length; ++i) {
-    var p = String_fromCharCode(a.charCodeAt(i));
+    var p = Str_fromCharCode(a.charCodeAt(i));
     if (p >= 'A' && p <= 'Z' || p >= 'a' && p <= 'z') {
       s += p;
     } else {
@@ -612,7 +612,7 @@ function transistState(c) {
 
 function keyTrap() {
   var pc = event.keyCode;
-  var c = String_fromCharCode(pc);
+  var c = Str_fromCharCode(pc);
 
   transistState(c);
 
@@ -1071,7 +1071,7 @@ function unaryNot() {
         display.charCodeAt(i) - "A".charCodeAt(0) + 10;
       cc = base - 1 - cc;
       cc = (cc < 10) ? cc + "0".charCodeAt(0) : cc + "A".chatCodeAt(0) - 10;
-      display = display.substr(0, i) + String_fromCharCode(cc) + display.substr(i + 1);
+      display = display.substr(0, i) + Str_fromCharCode(cc) + display.substr(i + 1);
     }
 
     display = getValue(display);

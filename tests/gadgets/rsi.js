@@ -101,7 +101,7 @@ function updateCount() /*: -> Undef */
 		}
 		updateCountText();
 	}
-	if(!(/*:downcast Boolean */(options.getValue("useTimeout"))) || userActive() || debug) // only decrement if the user is active or timeout not used
+	if(!(/*:downcast Bool */(options.getValue("useTimeout"))) || userActive() || debug) // only decrement if the user is active or timeout not used
 	{
 		bCount--;
 		mCount--;
@@ -110,11 +110,11 @@ function updateCount() /*: -> Undef */
 
 function updateCountText() /*: -> Undef */
 {
-    bcount.innerText = bCount.toString() + " " + minText;
-    mcount.innerText = mCount.toString() + " " + minText;
+    bcount.innerText = bCount.toStr() + " " + minText;
+    mcount.innerText = mCount.toStr() + " " + minText;
 }
 
-function userActive() /*: -> Boolean */
+function userActive() /*: -> Bool */
 {
 	if((cursor.x == framework.system.cursor.position.x) && (cursor.y == framework.system.cursor.position.y)) // mouse idle
 	{
@@ -150,13 +150,13 @@ function displayOptions() /*: -> Undef */
 	sectxt2.innerText = secText;
 
 
-	bTime.value = /*:downcast Int*/(options.getValue("breakInterval")).toString();
-	mTime.value = /*:downcast Int*/(options.getValue("microInterval")).toString();	
-	bDuration.value = /*:downcast Int*/(options.getValue("breakDuration")).toString();
-	mDuration.value = /*:downcast Int*/(options.getValue("microDuration")).toString();
-	usetimeout.value = /*:downcast Boolean*/(options.getValue("useTimeout"));
-	allowpostpone.value = /*:downcast Boolean*/(options.getValue("allowPostpone"));
-        postponetime.value = /*:downcast Int*/(options.getValue("postponeTime")).toString();
+	bTime.value = /*:downcast Int*/(options.getValue("breakInterval")).toStr();
+	mTime.value = /*:downcast Int*/(options.getValue("microInterval")).toStr();	
+	bDuration.value = /*:downcast Int*/(options.getValue("breakDuration")).toStr();
+	mDuration.value = /*:downcast Int*/(options.getValue("microDuration")).toStr();
+	usetimeout.value = /*:downcast Bool*/(options.getValue("useTimeout"));
+	allowpostpone.value = /*:downcast Bool*/(options.getValue("allowPostpone"));
+        postponetime.value = /*:downcast Int*/(options.getValue("postponeTime")).toStr();
 }
 
 function updateOptions() /*: -> Undef */
@@ -170,11 +170,11 @@ function updateOptions() /*: -> Undef */
     options.putValue("postponeTime", parseInt(postponetime.value));
 }
 
-function showAlert(title, desc, time) /*: String * String * Int -> Undef */
+function showAlert(title, desc, time) /*: Str * Str * Int -> Undef */
 {
 	clearInterval(bTimer);
 	if(time == /*:downcast Int*/ (options.getValue("microDuration"))) alert(title); //microbreak
-	else if(/*:downcast Boolean*/(options.getValue("allowPostpone")))
+	else if(/*:downcast Bool*/(options.getValue("allowPostpone")))
 	{
 		if(!confirm(willTakeBreak + " " + /*:downcast Int*/(options.getValue("postponeTime")) + " " + minText + ")")) //postpone the rest break
 		{
@@ -201,7 +201,7 @@ function showAlert(title, desc, time) /*: String * String * Int -> Undef */
 	if(!debug) cnArea.removeAllContentItems();
 }
 
-function configureBar(title, desc, time) /*: String * String * Int -> Undef */
+function configureBar(title, desc, time) /*: Str * Str * Int -> Undef */
 {
 	progbar.enabled = true;
 	progbar.visible = true;
@@ -251,7 +251,7 @@ function stopBar() /*: -> Undef */
 
 }
 
-function randNotification(timeLeft) /*: Int -> String */
+function randNotification(timeLeft) /*: Int -> Str */
 {
 	if(timeLeft == 0) return backToWorkText;
 	else
@@ -297,7 +297,7 @@ function toggleAllowPostpone() /*: -> Undef */
 
 }
 
-function mouseOverNow(button, on) /*: Int * Boolean -> Undef */
+function mouseOverNow(button, on) /*: Int * Bool -> Undef */
 {
 	if(on)
 	{

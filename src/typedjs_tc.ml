@@ -118,7 +118,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
         Env.check_typ p env (TConstr ("Array", [u]))
   | EIf (p, e1, e2, e3) -> begin
       match tc_exp env e1, tc_exp env e2, tc_exp env e3 with
-          TConstr ("Boolean", []), t2, t3 -> Env.typ_union env t2 t3
+          TConstr ("Bool", []), t2, t3 -> Env.typ_union env t2 t3
         | t, _, _ -> raise (Typ_error (p, "expected a boolean"))
     end
   | EObject (p, fields) ->
@@ -132,13 +132,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | TConstr ("Array", [tarr]), eidx ->
           let (p1, p2) = p in 
             contracts := IntMap.add p1.Lexing.pos_cnum 
-              (* TODO: NotUndefined is not a type, but just a contract *)
+              (* TODO: NotUndef is not a type, but just a contract *)
               (p2.Lexing.pos_cnum, TConstr ("NotUndef", []))
               !contracts;
           let tidx = tc_exp env eidx in
             begin match tidx with
               | TConstr ("Int", []) -> tarr
-              | TConstr ("String", []) -> begin match eidx with
+              | TConstr ("Str", []) -> begin match eidx with
                   | EConst (_, JavaScript_syntax.CString "length") -> 
                       TRef typ_int
                   | _ -> error p ("only property of arrays is .length")

@@ -1,4 +1,4 @@
-function containsNonDigit(inputString) /*: String -> Bool */ {
+function containsNonDigit(inputStr) /*: Str -> Bool */ {
     while (true) {
             return true;
     }

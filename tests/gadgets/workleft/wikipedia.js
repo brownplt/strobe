@@ -8,8 +8,8 @@ var assert = function(cond) /*: Bool -> Undef */ {
 
 // A general function to simplify downloading data from a website and also
 // handle errors gracefully.
-function SimpleHTTPRequest() /*: constructor (-> {request : (String * (Null + String -> Undef) * (Boolean + Undef) -> Undef), stop : ( -> Any)}) */ {
-  this.request = function(url, receivedResultCallback, opt_getStream) /*: String * (String -> Undef) * (Boolean + Undef) -> Undef */ {};
+function SimpleHTTPRequest() /*: constructor (-> {request : (Str * (Null + Str -> Undef) * (Bool + Undef) -> Undef), stop : ( -> Any)}) */ {
+  this.request = function(url, receivedResultCallback, opt_getStream) /*: Str * (Str -> Undef) * (Bool + Undef) -> Undef */ {};
   this.stop = function() /*:  -> Any */ {};
 }
 
@@ -18,7 +18,7 @@ function SimpleHTTPRequest() /*: constructor (-> {request : (String * (Null + St
 // Creates a throbber with elements. A throbber is a 'spinning thing' that
 // normally symbolizes waiting. Firefox has one in the top right animated when
 // loading a webpage.
-function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) /*: constructor (Div * String * String * Int * Int -> {show : ( -> Undef), hide : ( -> Undef)}) */ {
+function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) /*: constructor (Div * Str * Str * Int * Int -> {show : ( -> Undef), hide : ( -> Undef)}) */ {
   this.show = function() /*: -> Undef */ {};
   this.hide = function() /*: -> Undef */ {};
   var imagePrefix_ = imagePrefix;
@@ -31,7 +31,7 @@ function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) /
   var timer_ = /*:upcast Null + Int*/null;
 
   // Returns a frame's filename
-  function getImageFilename(frame) /*: Int -> String */ {
+  function getImageFilename(frame) /*: Int -> Str */ {
     return imagePrefix_ + frame + imageSuffix_;
   }
 
@@ -83,9 +83,9 @@ function Throbber(ownerDiv, imagePrefix, imageSuffix, totalFrames, frameDelay) /
 // This class will query Google for Wikipedia pages. It uses the Google cached
 // pages to scrape from since the Wikipedia official servers are known to be
 // very slow. Also, this makes it easier for us to control the server load.
-function WikipediaQuery() /*: constructor ( -> {query : (String * (String * Null * String -> Undef) -> (String + Undef)), stop : ( -> Any), getDisambiguationArray : ( -> Any)}) */ {
+function WikipediaQuery() /*: constructor ( -> {query : (Str * (Str * Null * Str -> Undef) -> (Str + Undef)), stop : ( -> Any), getDisambiguationArray : ( -> Any)}) */ {
 
-  this.query = function(name, receivedResultCallback) /*: String * (String * Null * String -> Undef) -> (String + Undef) */ { return "tmp"; };
+  this.query = function(name, receivedResultCallback) /*: Str * (Str * Null * Str -> Undef) -> (Str + Undef) */ { return "tmp"; };
   this.stop = function() /*: -> Any */ {};
   this.getDisambiguationArray = function() /*: -> Any */ {};
 
@@ -108,14 +108,14 @@ function WikipediaQuery() /*: constructor ( -> {query : (String * (String * Null
 
   var MINIMUM_PARAGRAPH_LENGTH = 15;
 
-  var receivedResultCallback_ = /*:upcast Null + (String * Null * String -> Undef)*/null; // (paragraph, imageURL, articleURL)
+  var receivedResultCallback_ = /*:upcast Null + (Str * Null * Str -> Undef)*/null; // (paragraph, imageURL, articleURL)
   var request_ = null;
   var articleURL_ = null;
 
   var pageText_ = null;
-  var originalQuery_ = /*:upcast Null + String*/null;
+  var originalQuery_ = /*:upcast Null + Str*/null;
 
-  function query(name, receivedResultCallback) /*: String * (String * Null * String -> Undef) -> (String + Undef) */ {
+  function query(name, receivedResultCallback) /*: Str * (Str * Null * Str -> Undef) -> (Str + Undef) */ {
     assert(request_ == null);
     if (request_ != null)
       return;
@@ -137,7 +137,7 @@ function WikipediaQuery() /*: constructor ( -> {query : (String * (String * Null
     return articleURL_;
   }
 
-  function onReceivedWebpage(text) /*: String -> Undef */ {
+  function onReceivedWebpage(text) /*: Str -> Undef */ {
     request_ = null;
     pageText_ = text;
 
@@ -196,7 +196,7 @@ function WikipediaQuery() /*: constructor ( -> {query : (String * (String * Null
 
   // Parses the page text that should already be set in pageText_ and retrieves
   // the text of the first paragraph.
-  function getArticleFirstParagraph() /*:  -> String */ {
+  function getArticleFirstParagraph() /*:  -> Str */ {
     // Loop through all paragraph tags in the article until one is found that is
     // suitable for the description
     var result = null;
@@ -322,7 +322,7 @@ function WikipediaQuery() /*: constructor ( -> {query : (String * (String * Null
 
   // A simple function to get only the text from a webpage. Some small
   // conversions are done to convert some html elements to symbols.
-  function htmlToPlainText(item) /*: String -> String */ {
+  function htmlToPlainText(item) /*: Str -> Str */ {
     if (item) {
       // Remove html tags
       item = item.replace(/<([^>]|\n)*>/g, '');
@@ -668,7 +668,7 @@ var MAX_HISTORY_ITEMS = 5;
 
 // This class takes care of tracking the wikipedia history. This includes
 // storing/loading keywords and showing the history in sidebar or not
-function WikipediaHistory(historyDiv_, selectedHistoryItemCallback_) /*: constructor (null * (Any -> Any) -> {show : ( -> Any), hide : ( -> Any), addHistoryItem : (String -> Undef)}) */ {
+function WikipediaHistory(historyDiv_, selectedHistoryItemCallback_) /*: constructor (null * (Any -> Any) -> {show : ( -> Any), hide : ( -> Any), addHistoryItem : (Str -> Undef)}) */ {
   var historyListbox_ = null;
   var items_ = [];
   var inSidebar_ = (historyDiv_ == null);
@@ -756,7 +756,7 @@ function WikipediaHistory(historyDiv_, selectedHistoryItemCallback_) /*: constru
   }
 
   // Add an item to the history options object
-  function addHistoryItem(text) /*: String -> Undef */ {
+  function addHistoryItem(text) /*: Str -> Undef */ {
     text = text.replace(/\|/g, " ");
 
     // If the item is already the most recent, do not add it again
@@ -910,7 +910,7 @@ var DISAMBIGUATION_DETAILS_HTML_ITEM =
 
 // This class controls the article details panel. This class controls showing
 // and hiding of the panel with animations and also displays the text inside.
-function DetailsController(mainDivElement_, textElement_, imageElement_, popoutElement_, detailsLoadedCallback_, showArticleCallback_) /*: constructor (null * null * null * null * ( -> Undef) * ( -> Undef) -> {show : (String * null * String -> Undef), hide : ( -> Undef)}) */ {
+function DetailsController(mainDivElement_, textElement_, imageElement_, popoutElement_, detailsLoadedCallback_, showArticleCallback_) /*: constructor (null * null * null * null * ( -> Undef) * ( -> Undef) -> {show : (Str * null * Str -> Undef), hide : ( -> Undef)}) */ {
   var curArticleText_ = null;
   var curImageURL_ = null;
   var curKeywords_ = null;
@@ -929,7 +929,7 @@ function DetailsController(mainDivElement_, textElement_, imageElement_, popoutE
     popoutElement_.onclick = onPopoutClick;
 
   // Show the panel (details of the article)
-  function show(articleText, imageURL, keywords) /*: String * null * String -> Undef */ {
+  function show(articleText, imageURL, keywords) /*: Str * null * Str -> Undef */ {
     curArticleText_ = articleText;
     curImageURL_ = imageURL;
     curKeywords_ = keywords;
@@ -1517,7 +1517,7 @@ function setNoResults() /*:  -> Undef */ {
 }
 
 // Called when the Wikipedia search completes (success or failure)
-function onQueryReceived(text, imageURL, articleURL) /*: String * null * String -> Undef */ {
+function onQueryReceived(text, imageURL, articleURL) /*: Str * null * Str -> Undef */ {
   // No results found
   if (text == null) {
     curQuery_ = null;
@@ -1585,7 +1585,7 @@ function onShowArticle() /*:  -> Undef */ {
 }
 
 // Opens the requested URL using the user's default web browser
-function openURL(url) /*: String -> Undef */ {
+function openURL(url) /*: Str -> Undef */ {
   try {
     var shell = /*:downcast ShellApplication*/(new ActiveXObject("Shell.Application"));
     shell.Open(url);

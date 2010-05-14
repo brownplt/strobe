@@ -9,7 +9,7 @@
 //1 var annot on ctx
 //added 1 ignore variable to an event handler
 //2 added empty array annot
-//3 downcast, 3 toStrings on same line
+//3 downcast, 3 toStrs on same line
 //1 refactor .push() into array setting
 //change 15 to 15.0 for correct type
 
@@ -31,7 +31,7 @@ var max_score = 0;
 var inc_score = 15.0;
 
 
-function Ball(x, y, xsee, ysee) /*: constructor (Double * Double * Double * Double -> {x : Double, y : Double, xsee : Double, ysee : Double, move : ([Ball]  -> Undef)})  */ {
+function Ball(x, y, xsee, ysee) /*: constructor (Num * Num * Num * Num -> {x : Num, y : Num, xsee : Num, ysee : Num, move : ([Ball]  -> Undef)})  */ {
 
 	this.x = x;
 	this.y = y;
@@ -69,16 +69,16 @@ function Ball(x, y, xsee, ysee) /*: constructor (Double * Double * Double * Doub
 var balls = /*:Ball*/ [];
 
 
-function $(id) /*: String -> HTMLElement + Null */ {
+function $(id) /*: Str -> HTMLElement + Null */ {
 	return document.getElementById(id);
 }
 
 function updateStat() /*:  -> Undef  */ {
 
-	(/*:downcast HTMLLabel*/($('tries'))).innerHTML = tries.toString();
-	(/*:downcast HTMLLabel*/($('score'))).innerHTML = score.toString();
+	(/*:downcast HTMLLabel*/($('tries'))).innerHTML = tries.toStr();
+	(/*:downcast HTMLLabel*/($('score'))).innerHTML = score.toStr();
 
-	(/*:downcast HTMLLabel*/($('max_score'))).innerHTML = max_score.toString();
+	(/*:downcast HTMLLabel*/($('max_score'))).innerHTML = max_score.toStr();
 }
 
 function createBall() /*:  -> Undef  */ {

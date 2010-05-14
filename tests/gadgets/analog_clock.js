@@ -37,10 +37,10 @@ function _view_onpopout() /*:  -> Undef */ {
 function d() /*:  -> Undef */ {
   var a = new Date(undefined); // Claudiu : added undefined
     if (_minimized) {
-        var b = /*:upcast String + Int */(/*:is Int */(a.getHours()));
+        var b = /*:upcast Str + Int */(/*:is Int */(a.getHours()));
         if (b > 12) b = b - 12;
         if (b < 10) b = "0" + b;
-        var c = /*:upcast String + Int */(a.getMinutes());
+        var c = /*:upcast Str + Int */(a.getMinutes());
         if (c < 10) c = "0" + c;
         view.caption = b + ":" + c;
     } else {

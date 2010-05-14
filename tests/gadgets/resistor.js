@@ -12,29 +12,29 @@ var currentBandIndex = 0;
 var numberOfColorBands = 4;
 
 var bandNumberValues = [1, 0, 2, 10, 15]; // Brown, Black, Red, Empty, Blank.
-var buttonStrings = ["0black", "1brown", "2red", "3orange", "4yellow", "5green", "6blue", "7violet", "8gray", "9white", "Empty", "Tbrown", "Tred", "Tgold", "Tsilver", "Blank"];
+var buttonStrs = ["0black", "1brown", "2red", "3orange", "4yellow", "5green", "6blue", "7violet", "8gray", "9white", "Empty", "Tbrown", "Tred", "Tgold", "Tsilver", "Blank"];
 
 function view_onOpen() /*:  -> Undef */ {
     // Initialize the resistor's color bands to match the bandNumberValues array above.
-    firstBand.downImage = "stock_images\\Button" + buttonStrings[bandNumberValues[0]] + "Down.PNG";
-    firstBand.image = "stock_images\\Button" + buttonStrings[bandNumberValues[0]] + "Normal.PNG";
-    firstBand.overImage = "stock_images\\Button" + buttonStrings[bandNumberValues[0]] + "Over.PNG";
+    firstBand.downImage = "stock_images\\Button" + buttonStrs[bandNumberValues[0]] + "Down.PNG";
+    firstBand.image = "stock_images\\Button" + buttonStrs[bandNumberValues[0]] + "Normal.PNG";
+    firstBand.overImage = "stock_images\\Button" + buttonStrs[bandNumberValues[0]] + "Over.PNG";
 
-    secondBand.downImage = "stock_images\\Button" + buttonStrings[bandNumberValues[1]] + "Down.PNG";
-    secondBand.image = "stock_images\\Button" + buttonStrings[bandNumberValues[1]] + "Normal.PNG";
-    secondBand.overImage = "stock_images\\Button" + buttonStrings[bandNumberValues[1]] + "Over.PNG";
+    secondBand.downImage = "stock_images\\Button" + buttonStrs[bandNumberValues[1]] + "Down.PNG";
+    secondBand.image = "stock_images\\Button" + buttonStrs[bandNumberValues[1]] + "Normal.PNG";
+    secondBand.overImage = "stock_images\\Button" + buttonStrs[bandNumberValues[1]] + "Over.PNG";
 
-    thirdBand.downImage = "stock_images\\Button" + buttonStrings[bandNumberValues[2]] + "Down.PNG";
-    thirdBand.image = "stock_images\\Button" + buttonStrings[bandNumberValues[2]] + "Normal.PNG";
-    thirdBand.overImage = "stock_images\\Button" + buttonStrings[bandNumberValues[2]] + "Over.PNG";
+    thirdBand.downImage = "stock_images\\Button" + buttonStrs[bandNumberValues[2]] + "Down.PNG";
+    thirdBand.image = "stock_images\\Button" + buttonStrs[bandNumberValues[2]] + "Normal.PNG";
+    thirdBand.overImage = "stock_images\\Button" + buttonStrs[bandNumberValues[2]] + "Over.PNG";
 
-    fourthBand.downImage = "stock_images\\Button" + buttonStrings[bandNumberValues[3]] + "Down.PNG";
-    fourthBand.image = "stock_images\\Button" + buttonStrings[bandNumberValues[3]] + "Normal.PNG";
-    fourthBand.overImage = "stock_images\\Button" + buttonStrings[bandNumberValues[3]] + "Over.PNG";
+    fourthBand.downImage = "stock_images\\Button" + buttonStrs[bandNumberValues[3]] + "Down.PNG";
+    fourthBand.image = "stock_images\\Button" + buttonStrs[bandNumberValues[3]] + "Normal.PNG";
+    fourthBand.overImage = "stock_images\\Button" + buttonStrs[bandNumberValues[3]] + "Over.PNG";
 
-    fifthBand.downImage = "stock_images\\Button" + buttonStrings[bandNumberValues[4]] + "Down.PNG";
-    fifthBand.image = "stock_images\\Button" + buttonStrings[bandNumberValues[4]] + "Normal.PNG";
-    fifthBand.overImage = "stock_images\\Button" + buttonStrings[bandNumberValues[4]] + "Over.PNG";
+    fifthBand.downImage = "stock_images\\Button" + buttonStrs[bandNumberValues[4]] + "Down.PNG";
+    fifthBand.image = "stock_images\\Button" + buttonStrs[bandNumberValues[4]] + "Normal.PNG";
+    fifthBand.overImage = "stock_images\\Button" + buttonStrs[bandNumberValues[4]] + "Over.PNG";
 
     // Initialize the resistor value.
     doCalculateResistance();
@@ -195,30 +195,30 @@ function drawNewColorBand(color) /*: Int -> Undef */ {
     switch (currentBandIndex) {
     case 0:
         {
-            firstBand.downImage = "stock_images\\Button" + buttonStrings[color] + "Down.PNG";
-            firstBand.image = "stock_images\\Button" + buttonStrings[color] + "Normal.PNG";
-            firstBand.overImage = "stock_images\\Button" + buttonStrings[color] + "Over.PNG";
+            firstBand.downImage = "stock_images\\Button" + buttonStrs[color] + "Down.PNG";
+            firstBand.image = "stock_images\\Button" + buttonStrs[color] + "Normal.PNG";
+            firstBand.overImage = "stock_images\\Button" + buttonStrs[color] + "Over.PNG";
             break;
         }
     case 1:
         {
-            secondBand.downImage = "stock_images\\Button" + buttonStrings[color] + "Down.PNG";
-            secondBand.image = "stock_images\\Button" + buttonStrings[color] + "Normal.PNG";
-            secondBand.overImage = "stock_images\\Button" + buttonStrings[color] + "Over.PNG";
+            secondBand.downImage = "stock_images\\Button" + buttonStrs[color] + "Down.PNG";
+            secondBand.image = "stock_images\\Button" + buttonStrs[color] + "Normal.PNG";
+            secondBand.overImage = "stock_images\\Button" + buttonStrs[color] + "Over.PNG";
             break;
         }
     case 2:
         {
-            thirdBand.downImage = "stock_images\\Button" + buttonStrings[color] + "Down.PNG";
-            thirdBand.image = "stock_images\\Button" + buttonStrings[color] + "Normal.PNG";
-            thirdBand.overImage = "stock_images\\Button" + buttonStrings[color] + "Over.PNG";
+            thirdBand.downImage = "stock_images\\Button" + buttonStrs[color] + "Down.PNG";
+            thirdBand.image = "stock_images\\Button" + buttonStrs[color] + "Normal.PNG";
+            thirdBand.overImage = "stock_images\\Button" + buttonStrs[color] + "Over.PNG";
             break;
         }
     case 3:
         {
-            fourthBand.downImage = "stock_images\\Button" + buttonStrings[color] + "Down.PNG";
-            fourthBand.image = "stock_images\\Button" + buttonStrings[color] + "Normal.PNG";
-            fourthBand.overImage = "stock_images\\Button" + buttonStrings[color] + "Over.PNG";
+            fourthBand.downImage = "stock_images\\Button" + buttonStrs[color] + "Down.PNG";
+            fourthBand.image = "stock_images\\Button" + buttonStrs[color] + "Normal.PNG";
+            fourthBand.overImage = "stock_images\\Button" + buttonStrs[color] + "Over.PNG";
             break;
         }
     }
@@ -375,15 +375,15 @@ function doCalculateResistance() /*:  -> Undef */ {
     if (resistance < 0) {
         ohms.value = "Undef";
     } else {
-        ohms.value = addCommas(resistance.toString());
+        ohms.value = addCommas(resistance.toStr());
     }
 
     return;
 }
 
-function addCommas(inputString) /*: String -> String */ {
+function addCommas(inputStr) /*: Str -> Str */ {
     var commaAddedValue = "";
-    var lengthRemaining = inputString.length;
+    var lengthRemaining = inputStr.length;
     var index = lengthRemaining - 1;
     var digitCount = 0;
 
@@ -392,7 +392,7 @@ function addCommas(inputString) /*: String -> String */ {
             commaAddedValue = "," + commaAddedValue; // Stick a comma in.
             digitCount = 0;
         }
-        commaAddedValue = inputString.charAt(index--) + commaAddedValue;
+        commaAddedValue = inputStr.charAt(index--) + commaAddedValue;
         digitCount++;
         lengthRemaining--;
     }
@@ -400,10 +400,10 @@ function addCommas(inputString) /*: String -> String */ {
     return (commaAddedValue);
 }
 
-function containsNonDigit(inputString) /*: String -> Bool */ {
-    var stringLength = inputString.length;
+function containsNonDigit(inputStr) /*: Str -> Bool */ {
+    var stringLength = inputStr.length;
     for (var i = 0; i < stringLength; i++) {
-        if ((inputString.charAt(i) < "0") || (inputString.charAt(i) > "9")) {
+        if ((inputStr.charAt(i) < "0") || (inputStr.charAt(i) > "9")) {
             return (true);
         }
     }
@@ -411,23 +411,23 @@ function containsNonDigit(inputString) /*: String -> Bool */ {
     return (false);
 }
 
-function containsLeadingZero(inputString) /*: String -> Bool */ {
-    if ((inputString.charAt(0) == "0") && (inputString.length != 1)) {
+function containsLeadingZero(inputStr) /*: Str -> Bool */ {
+    if ((inputStr.charAt(0) == "0") && (inputStr.length != 1)) {
         return (true);
     }
 
     return (false);
 }
 
-function containsErroneousNonZeroDigits(inputString, zerosStartAtPosition) /*: String * Int -> Bool */ {
-    var length = inputString.length;
+function containsErroneousNonZeroDigits(inputStr, zerosStartAtPosition) /*: Str * Int -> Bool */ {
+    var length = inputStr.length;
 
     if (length <= zerosStartAtPosition) {
         return (false);
     }
 
     for (var i = zerosStartAtPosition; i < length; i++) {
-        if (inputString.charAt(i) != "0") {
+        if (inputStr.charAt(i) != "0") {
             return (true);
         }
     }
@@ -435,13 +435,13 @@ function containsErroneousNonZeroDigits(inputString, zerosStartAtPosition) /*: S
     return (false);
 }
 
-function removeCommas(inputString) /*: String -> String */ {
+function removeCommas(inputStr) /*: Str -> Str */ {
     var noCommasValue = "";
     var index = 0;
 
-    for (var i = 0; i < inputString.length; i++) {
-        if (inputString.charAt(i) != ",") {
-            noCommasValue = noCommasValue + inputString.charAt(i);
+    for (var i = 0; i < inputStr.length; i++) {
+        if (inputStr.charAt(i) != ",") {
+            noCommasValue = noCommasValue + inputStr.charAt(i);
         }
     }
 
@@ -474,8 +474,8 @@ function doOhmsCheck() /*:  -> Undef */ {
 }
 
 function doGenerateBandColors() /*:  -> Undef */ {
-    var digitString = resistance.toString();
-    var length = digitString.length;
+    var digitStr = resistance.toStr();
+    var length = digitStr.length;
     var digit = 0;
 
     if (resistance < 0) { // Do NOT update the Color Bands if resistance is UNDEFINED.
@@ -490,10 +490,10 @@ function doGenerateBandColors() /*:  -> Undef */ {
             bandNumberValues[0] = 0;
         } else { // if(resistance >= 10)
             // Process the first digit.
-            digit = parseInt(digitString.charAt(0));
-            firstBand.downImage = "stock_images\\Button" + buttonStrings[digit] + "Down.PNG";
-            firstBand.image = "stock_images\\Button" + buttonStrings[digit] + "Normal.PNG";
-            firstBand.overImage = "stock_images\\Button" + buttonStrings[digit] + "Over.PNG";
+            digit = parseInt(digitStr.charAt(0));
+            firstBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
+            firstBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
+            firstBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
             bandNumberValues[0] = digit;
         }
 
@@ -501,17 +501,17 @@ function doGenerateBandColors() /*:  -> Undef */ {
             if (length == 0) {
                 digit = 0;
             } else {
-                digit = parseInt(digitString.charAt(0));
+                digit = parseInt(digitStr.charAt(0));
             }
-            secondBand.downImage = "stock_images\\Button" + buttonStrings[digit] + "Down.PNG";
-            secondBand.image = "stock_images\\Button" + buttonStrings[digit] + "Normal.PNG";
-            secondBand.overImage = "stock_images\\Button" + buttonStrings[digit] + "Over.PNG";
+            secondBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
+            secondBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
+            secondBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
             bandNumberValues[1] = digit;
         } else { // Process the second digit.
-            digit = parseInt(digitString.charAt(1));
-            secondBand.downImage = "stock_images\\Button" + buttonStrings[digit] + "Down.PNG";
-            secondBand.image = "stock_images\\Button" + buttonStrings[digit] + "Normal.PNG";
-            secondBand.overImage = "stock_images\\Button" + buttonStrings[digit] + "Over.PNG";
+            digit = parseInt(digitStr.charAt(1));
+            secondBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
+            secondBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
+            secondBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
             bandNumberValues[1] = digit;
         }
 
@@ -522,10 +522,10 @@ function doGenerateBandColors() /*:  -> Undef */ {
             thirdBand.overImage = "stock_images\\Button0blackOver.PNG";
             bandNumberValues[2] = 0;
         } else {
-            digit = (digitString.length - 2);
-            thirdBand.downImage = "stock_images\\Button" + buttonStrings[digit] + "Down.PNG";
-            thirdBand.image = "stock_images\\Button" + buttonStrings[digit] + "Normal.PNG";
-            thirdBand.overImage = "stock_images\\Button" + buttonStrings[digit] + "Over.PNG";
+            digit = (digitStr.length - 2);
+            thirdBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
+            thirdBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
+            thirdBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
             bandNumberValues[2] = digit;
         }
     } else { // if(numberOfColorBands == 5) { // Do the first four bands of color bars.
@@ -539,43 +539,43 @@ function doGenerateBandColors() /*:  -> Undef */ {
                 secondBand.image = "stock_images\\Button0blackNormal.PNG";
                 secondBand.overImage = "stock_images\\Button0blackOver.PNG";
                 bandNumberValues[1] = 0;
-                digit = parseInt(digitString.charAt(0));
-                thirdBand.downImage = "stock_images\\Button" + buttonStrings[digit] + "Down.PNG";
-                thirdBand.image = "stock_images\\Button" + buttonStrings[digit] + "Normal.PNG";
-                thirdBand.overImage = "stock_images\\Button" + buttonStrings[digit] + "Over.PNG";
+                digit = parseInt(digitStr.charAt(0));
+                thirdBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
+                thirdBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
+                thirdBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
                 bandNumberValues[2] = digit;
             } else { // Resistance is between 10 and 99.
                 // Process the first digit.
-                digit = parseInt(digitString.charAt(0));
-                secondBand.downImage = "stock_images\\Button" + buttonStrings[digit] + "Down.PNG";
-                secondBand.image = "stock_images\\Button" + buttonStrings[digit] + "Normal.PNG";
-                secondBand.overImage = "stock_images\\Button" + buttonStrings[digit] + "Over.PNG";
+                digit = parseInt(digitStr.charAt(0));
+                secondBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
+                secondBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
+                secondBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
                 bandNumberValues[1] = digit;
                 // Process the second digit.
-                digit = parseInt(digitString.charAt(1));
-                thirdBand.downImage = "stock_images\\Button" + buttonStrings[digit] + "Down.PNG";
-                thirdBand.image = "stock_images\\Button" + buttonStrings[digit] + "Normal.PNG";
-                thirdBand.overImage = "stock_images\\Button" + buttonStrings[digit] + "Over.PNG";
+                digit = parseInt(digitStr.charAt(1));
+                thirdBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
+                thirdBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
+                thirdBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
                 bandNumberValues[2] = digit;
             }
         } else { // if(resistance >= 100)
             // Process the first digit.
-            digit = parseInt(digitString.charAt(0));
-            firstBand.downImage = "stock_images\\Button" + buttonStrings[digit] + "Down.PNG";
-            firstBand.image = "stock_images\\Button" + buttonStrings[digit] + "Normal.PNG";
-            firstBand.overImage = "stock_images\\Button" + buttonStrings[digit] + "Over.PNG";
+            digit = parseInt(digitStr.charAt(0));
+            firstBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
+            firstBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
+            firstBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
             bandNumberValues[0] = digit;
             // Process the second digit.
-            digit = parseInt(digitString.charAt(1));
-            secondBand.downImage = "stock_images\\Button" + buttonStrings[digit] + "Down.PNG";
-            secondBand.image = "stock_images\\Button" + buttonStrings[digit] + "Normal.PNG";
-            secondBand.overImage = "stock_images\\Button" + buttonStrings[digit] + "Over.PNG";
+            digit = parseInt(digitStr.charAt(1));
+            secondBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
+            secondBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
+            secondBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
             bandNumberValues[1] = digit;
             // Process the third digit.
-            digit = parseInt(digitString.charAt(2));
-            thirdBand.downImage = "stock_images\\Button" + buttonStrings[digit] + "Down.PNG";
-            thirdBand.image = "stock_images\\Button" + buttonStrings[digit] + "Normal.PNG";
-            thirdBand.overImage = "stock_images\\Button" + buttonStrings[digit] + "Over.PNG";
+            digit = parseInt(digitStr.charAt(2));
+            thirdBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
+            thirdBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
+            thirdBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
             bandNumberValues[2] = digit;
         }
 
@@ -586,10 +586,10 @@ function doGenerateBandColors() /*:  -> Undef */ {
             fourthBand.overImage = "stock_images\\Button0blackOver.PNG";
             bandNumberValues[3] = 0;
         } else {
-            digit = (digitString.length - 3);
-            fourthBand.downImage = "stock_images\\Button" + buttonStrings[digit] + "Down.PNG";
-            fourthBand.image = "stock_images\\Button" + buttonStrings[digit] + "Normal.PNG";
-            fourthBand.overImage = "stock_images\\Button" + buttonStrings[digit] + "Over.PNG";
+            digit = (digitStr.length - 3);
+            fourthBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
+            fourthBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
+            fourthBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
             bandNumberValues[3] = digit;
         }
     }
