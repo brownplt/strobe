@@ -18,20 +18,20 @@
 //abs, drawLight, getDataFromImage, loadImage,
 
 
-function abs(x) /*: Double -> Double */ {
+function abs(x) /*: Num -> Num */ {
     return x > 0 ? x : -x;
 }
 
 // this two functions were promoted to be global
 // to make firefoxs jit happy - URGH
-function clamp(x, min, max) /*: (Double + Int) * Int * Int -> (Double + Int) */{
+function clamp(x, min, max) /*: (Num + Int) * Int * Int -> (Num + Int) */{
     if(x < min) return min;
     if(x > max) return max-1;
     return x;
 }
 
 // this is basically where the magic happens
-function drawLight(canvas, ctx, normals, textureData, directionlut, shiny, specularity, lx, ly, lz) /*: HTMLCanvasElement * CanvasRenderingContext2D * Array<(Double + Int)> * Array<Int> * Array<Double> * Int * Double * Int * Int * Int -> Void */ {
+function drawLight(canvas, ctx, normals, textureData, directionlut, shiny, specularity, lx, ly, lz) /*: HTMLCanvasElement * CanvasRenderingContext2D * Array<(Num + Int)> * Array<Int> * Array<Num> * Int * Num * Int * Int * Int -> Undef */ {
     var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     var data = imgData.data;
     var i = 0;
@@ -88,9 +88,9 @@ function drawLight(canvas, ctx, normals, textureData, directionlut, shiny, specu
 }
 
 
-function normalmap(canvasId, texture, normalmap, specularity, shiny) /*: String * String * String * Double * Int -> Void */ {
+function normalmap(canvasId, texture, normalmap, specularity, shiny) /*: Str * Str * Str * Num * Int -> Undef */ {
 
-    var canvas = /*:downcast HTMLCanvasElement + Void*/(document.getElementById(canvasId));
+    var canvas = /*:downcast HTMLCanvasElement + Undef*/(document.getElementById(canvasId));
     if(canvas.getContext == undefined) {
         document.write('unsupported browser');
         return;
@@ -101,7 +101,7 @@ function normalmap(canvasId, texture, normalmap, specularity, shiny) /*: String 
     var normalData = null;
     var textureData = null;
 
-    function getDataFromImage(img) /*: Undefined + HTMLImageElement -> ImageData */ {
+    function getDataFromImage(img) /*: Undef + HTMLImageElement -> ImageData */ {
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.clearRect(0, 0, img.width, img.height);
@@ -110,23 +110,23 @@ function normalmap(canvasId, texture, normalmap, specularity, shiny) /*: String 
         return ctx.getImageData(0, 0, img.width, img.height);
     }
 
-    function loadImage(src, callback) /*: String * (Event -> Void) -> HTMLImageElement */ {
+    function loadImage(src, callback) /*: Str * (Event -> Undef) -> HTMLImageElement */ {
         var img = /*:downcast HTMLImageElement*/(document.createElement('img'));
         img.onload = callback;
         img.src = src;
         return img;
     }
 
-    var normals = /*:Double*/ [];
-    var textureData = /*:upcast Undefined + Array<Int>*/undefined;
-    var directionlut = /*:upcast Undefined + Array<Double>*/undefined;
+    var normals = /*:Num*/ [];
+    var textureData = /*:upcast Undef + Array<Int>*/undefined;
+    var directionlut = /*:upcast Undef + Array<Num>*/undefined;
 
     // assume lz is always 100
     var lz = 100;
 
-    function main() /*: -> Void */ {
+    function main() /*: -> Undef */ {
         var rect = canvas.getBoundingClientRect();
-        canvas.onmousemove = function(e) /*: Event -> Void */ {
+        canvas.onmousemove = function(e) /*: Event -> Undef */ {
           if ((typeof canvas !== "undefined")) { if
               (typeof textureData !== "undefined") { if
               (typeof directionlut !== "undefined") {
@@ -136,8 +136,8 @@ function normalmap(canvasId, texture, normalmap, specularity, shiny) /*: String 
         };
     }
 
-  var normalsImg = /*:upcast Undefined + HTMLImageElement*/undefined;
-  loadImage(normalmap, function(_) /*: Event -> Void */ {
+  var normalsImg = /*:upcast Undef + HTMLImageElement*/undefined;
+  loadImage(normalmap, function(_) /*: Event -> Undef */ {
         var data = getDataFromImage(normalsImg).data;
         // precalculate the normals
         for(var i = 0; i < canvas.height*canvas.width*4; i+=4) {
@@ -159,7 +159,7 @@ function normalmap(canvasId, texture, normalmap, specularity, shiny) /*: String 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         // and use that knowledge to build a lookup table
         // for normalizing the direction vectors
-        directionlut = /*:Double*/[];
+        directionlut = /*:Num*/[];
         var i = 0;
         for(var y = 0; y < canvas.height; y++){
             for(var x = 0; x < canvas.width; x++){
@@ -167,12 +167,12 @@ function normalmap(canvasId, texture, normalmap, specularity, shiny) /*: String 
                 directionlut[i++] = magInv;
             }
         }
-         var textureImg = /*:upcast Undefined + HTMLImageElement*/undefined;
-         textureImg = loadImage(texture, function(_) /*: Event -> Void */ {
+         var textureImg = /*:upcast Undef + HTMLImageElement*/undefined;
+         textureImg = loadImage(texture, function(_) /*: Event -> Undef */ {
            textureData = getDataFromImage(textureImg).data;
            main();
          });
-       console.log(directionlut.length.toString());
+       console.log(directionlut.length.toStr());
     });
 }
 
