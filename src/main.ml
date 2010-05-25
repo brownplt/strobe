@@ -33,6 +33,9 @@ module Input : sig
   val get_env : unit -> Env.env
   val load_env : string -> unit
   val set_global_object : string -> unit
+  (** Skip flow analysis? *)
+  val set_no_cf : unit -> unit
+  val get_no_cf : unit -> bool
 end = struct
 
   let env = ref Env.empty_env
@@ -64,6 +67,14 @@ end = struct
     | None -> Env.set_global_object !env "Global"
     | Some c -> Env.set_global_object !env c
 
+  let no_cf = ref false
+
+  let set_no_cf () = match !no_cf with
+    | false -> no_cf := true
+    | true -> failwith "-skipcf already set"
+
+  let get_no_cf () = !no_cf
+
 end
 
 open Input
@@ -86,9 +97,11 @@ let action_pretypecheck () : unit =
   let typedjs = get_typedjs () in
     Typedjs_syntax.Pretty.p_def typedjs std_formatter
 
-let action_tc () : unit = 
-  let typedjs = get_typedjs () in
-  let cpstypedjs = Typedjs_cps.cps typedjs in
+let annotate_exp exp = 
+  if Input.get_no_cf () then
+    exp
+  else 
+    let cpstypedjs = Typedjs_cps.cps exp in
   let cf_env =
     Lat.bind "%end" (Lat.singleton RT.Function)
       (Lat.bind "%global" (Lat.singleton RT.Object)
@@ -96,10 +109,12 @@ let action_tc () : unit =
             (cf_env_of_tc_env (get_env ())))) in
     set_op_env (get_env ());
     typed_cfa cf_env cpstypedjs;
-    let annotated_typedjs = insert_typecasts typedjs in
-    let _ = Typedjs_tc.typecheck (get_env ()) annotated_typedjs in
-    let tr_map = mk_contract_transformers !contracts in
-      transform_exprs tr_map (get_cin ()) stdout
+    insert_typecasts exp
+
+let action_tc () : unit = 
+  let _ = Typedjs_tc.typecheck (get_env ()) (annotate_exp (get_typedjs ())) in
+  let tr_map = mk_contract_transformers !contracts in
+    transform_exprs tr_map (get_cin ()) stdout
 
 let action_cps () : unit =
   let typedjs = get_typedjs () in
@@ -149,7 +164,9 @@ let main () : unit =
       ("-cps", Arg.Unit (set_action action_cps),
        "convert program to CPS");
       ("-df", Arg.Unit (set_action action_df),
-       "convert program to ANF, then apply dataflow analysis")
+       "convert program to ANF, then apply dataflow analysis");
+      ("-noflows", Arg.Unit Input.set_no_cf,
+       "disable flow analysis (for debugging and benchmarking)")
     ]
     (fun s -> set_cin (open_in s) s)
     "Usage: jst [options] [file]\noptions are:\n";;
