@@ -29,7 +29,7 @@ type av =
   | ARef of Loc.t
   | ALocTypeof of Loc.t
   | ALocTypeIs of Loc.t * RTSet.t
-  | AString of string
+  | AStr of string
   | AClosure of int * id list * cpsexp
 
 module AV = struct
@@ -58,7 +58,7 @@ let rec p_av av = match av with
   | ALocTypeIs (x, t) -> 
       horz [ text "typeis"; Loc.pp x; RTSetExt.p_set RT.pp t ]
   | AClosure _ -> text "#closure"
-  | AString s -> text ("\"" ^ s ^ "\"")
+  | AStr s -> text ("\"" ^ s ^ "\"")
 
 let singleton t = ASet (RTSet.singleton t)
 
@@ -66,7 +66,7 @@ let empty = ASet RTSet.empty
 
 let rtany = 
   (RTSetExt.from_list
-     [ RT.Number; RT.String; RT.Boolean; RT.Function; RT.Object; RT.Undefined ])
+     [ RT.Num; RT.Str; RT.Bool; RT.Function; RT.Object; RT.Undefined ])
 
 let any = ASet rtany
 
@@ -76,9 +76,9 @@ let p_heap h =
 
 let rec to_set heap v = match v with
   | ASet set -> set
-  | ALocTypeof _ -> RTSet.singleton RT.String
-  | ALocTypeIs _ -> RTSet.singleton RT.Boolean
-  | AString _ -> RTSet.singleton RT.String
+  | ALocTypeof _ -> RTSet.singleton RT.Str
+  | ALocTypeIs _ -> RTSet.singleton RT.Bool
+  | AStr _ -> RTSet.singleton RT.Str
   | AClosure _ -> RTSet.singleton RT.Function
   | ARef _ -> rtany
   | ADeref loc -> 
@@ -105,7 +105,7 @@ let rec av_union h av1 av2 = match av1, av2 with
   | ALocTypeof x, ALocTypeof y when x = y -> ALocTypeof x
   | ALocTypeIs (x, s), ALocTypeIs (y, t) when x = y -> 
       ALocTypeIs (x, RTSet.union s t)
-  | AString str1, AString str2 when str1 = str2 -> AString str1
+  | AStr str1, AStr str2 when str1 = str2 -> AStr str1
   | AClosure (m, _, _), AClosure (n, _, _) -> 
       if m = n then av1
       else failwith "av_union on distinct closures"
@@ -130,8 +130,8 @@ let empty_env = IdMap.empty
 let escape_env (heap : heap) (env : env) : env =
   let f v = match v with
 (*    | AClosure _ -> ASet (RTSet.singleton RT.Function) *)
-    | ALocTypeIs _ -> ASet (RTSet.singleton RT.Boolean)
-    | ALocTypeof _ -> ASet (RTSet.singleton RT.String)
+    | ALocTypeIs _ -> ASet (RTSet.singleton RT.Bool)
+    | ALocTypeof _ -> ASet (RTSet.singleton RT.Str)
     | _ -> v in
     IdMap.map f env
 
@@ -145,12 +145,12 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
     Typedjs_syntax.TArrow _ -> RTSet.singleton RT.Function
   | Typedjs_syntax.TUnion (t1, t2) -> RTSet.union (rt_of_typ t1) (rt_of_typ t2)
   | Typedjs_syntax.TConstr (s, []) -> begin match s with
-        "String" ->  RTSet.singleton RT.String
+        "Str" ->  RTSet.singleton RT.Str
       | "RegExp" -> RTSet.singleton RT.Object
-      | "Number"  -> RTSet.singleton RT.Number
-      | "Int" -> RTSet.singleton RT.Number
-      | "Boolean" -> RTSet.singleton RT.Boolean
-      | "Undefined" -> RTSet.singleton RT.Undefined
+      | "Num"  -> RTSet.singleton RT.Num
+      | "Int" -> RTSet.singleton RT.Num
+      | "Bool" -> RTSet.singleton RT.Bool
+      | "Undef" -> RTSet.singleton RT.Undefined
       | _ -> RTSet.singleton RT.Object
     end
   | Typedjs_syntax.TConstr ("Array", [arrayt]) -> RTSet.singleton RT.Object

@@ -5,7 +5,7 @@
 ; STRINGS, e.g.
 ; <strings><GADGET_NAME>blahblah</GADGET_NAME></strings>
 ; will output
-; GADGET_NAME : String
+; GADGET_NAME : Str
 ;
 ; This tool does not raise an error if a name a used multiple times.
 (require xml)
@@ -14,7 +14,7 @@
 
 (define (extract-name e)
   (if (element? e)
-      (string-append (symbol->string (element-name e)) " : String")
+      (string-append (symbol->string (element-name e)) " : Str")
       5))
 
 (if (not (symbol=? (element-name head) 'strings))

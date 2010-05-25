@@ -1,6 +1,6 @@
 //have array anotations actually work
 
-var f = function(x) /*: Array<String> -> String */ {
+var f = function(x) /*: Array<Str> -> Str */ {
    return x[0];
 };
 

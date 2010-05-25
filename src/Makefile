@@ -21,3 +21,6 @@ prof: builddir
 
 doc: builddir
 	$(OCAMLBUILD) doc.docdir/index.html
+
+opt: builddir
+	$(OCAMLBUILD) main.native

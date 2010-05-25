@@ -4,9 +4,9 @@ exception Typ_error of pos * string
 
 module RT = struct
   type t =
-    | Number
-    | String
-    | Boolean
+    | Num
+    | Str
+    | Bool
     | Function
     | Object
     | Undefined
@@ -16,9 +16,9 @@ module RT = struct
   open FormatExt
 
   let pp v = match v with
-    | Number -> text "number"
-    | String -> text "string"
-    | Boolean -> text "boolean"
+    | Num -> text "number"
+    | Str -> text "string"
+    | Bool -> text "boolean"
     | Function -> text "function"
     | Object -> text "object"
     | Undefined -> text "undefined"

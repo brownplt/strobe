@@ -50,7 +50,7 @@ var isPuppyTurn = true;
 /**
  * view "onopen" handler
  */
-function View_onOpen() /*: -> Void */ {
+function View_onOpen() /*: -> Undef */ {
   // Must call initial fade effect ourselves.
   // "view.setInterval" does not perform an initial call.
   fadeImages();
@@ -61,7 +61,7 @@ function View_onOpen() /*: -> Void */ {
 /**
  * Fade the next image in and the previous image out
  */
-function fadeImages() /*: -> Void */ {
+function fadeImages() /*: -> Undef */ {
   var outImage = kitty;
   var inImage = kitty;
 
@@ -76,12 +76,12 @@ function fadeImages() /*: -> Void */ {
 
   // Anonymous closures for the callbacks
 
-  view.beginAnimation(function() /*: -> Void */ { setElementOpacity(outImage); }, // callback
+  view.beginAnimation(function() /*: -> Undef */ { setElementOpacity(outImage); }, // callback
                       255, // start value, 255 = full opacity
                       0, // end value, 0 = no opacity or "hidden"
                       FADE_DURATION); // duration in milliseconds
 
-  view.beginAnimation(function() /*: -> Void */ { setElementOpacity(inImage); }, // callback
+  view.beginAnimation(function() /*: -> Undef */ { setElementOpacity(inImage); }, // callback
                       0, // start value 0 = no opacity or "hidden"
                       255, // end value, 255 = full opacity
                       FADE_DURATION); // duration in milliseconds
@@ -96,7 +96,7 @@ function fadeImages() /*: -> Void */ {
  * "view.beginAnimation"'s start value and end value parameters.
  * @param {view.BasicElement}
  */
-function setElementOpacity(element) /*: BasicElement -> Void */ {
+function setElementOpacity(element) /*: BasicElement -> Undef */ {
   element.opacity = event.value;
 }
 

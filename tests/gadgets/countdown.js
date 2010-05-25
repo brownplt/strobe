@@ -6,7 +6,7 @@
 var CONFIG_EVENT_DATE = new Date('1/1/3000');
 
 // Updates the gadget.
-function update() /*: -> Void */ {
+function update() /*: -> Undef */ {
   var now = new Date(undefined);
   var diff = getDateDiff(now, CONFIG_EVENT_DATE);
 
@@ -122,7 +122,7 @@ function getDateDiff(start, end)
 
 // Called when date has passed.
 // Displays the "completed" message.
-function complete() /*: -> Void */ {
+function complete() /*: -> Undef */ {
   timeLeftLabel.innerText = '';
   eventNameLabel.innerText = '';
   completedLabel.innerText = strings.CONFIG_COMPLETED;

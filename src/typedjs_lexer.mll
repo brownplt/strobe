@@ -36,14 +36,14 @@ rule token = parse
    | "," { COMMA }
    | "Any" { ANY }
    | "Int" { INT }
-   | "Double" { NUM }
-   | "String" { STR }
+   | "Num" { NUM }
+   | "Str" { STR }
    | "Bool" { BOOL }
+   | "Undef" { UNDEF }
    | "*" { STAR }
    | ":" { COLON }
    | "+" { UNION }
    | "." { DOT }
-   | "Void" { UNDEF }
    | "constructor" { CONSTRUCTOR }
    | "prototype" { PROTOTYPE }
    | "class" { CLASS }

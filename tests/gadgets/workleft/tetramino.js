@@ -70,12 +70,12 @@ dyBank[7] = [0, 0, 1, 1];
 
 // FUNCTIONS
 
-function init() /*: -> Void */ {
+function init() /*: -> Undef */ {
     resetGame();
 }
 
 
-function view_onOpen() /*: -> Void */ {
+function view_onOpen() /*: -> Undef */ {
 
     options.putDefaultValue("keyLeftHR", "Left");
     options.putDefaultValue("keyLeft", 37);
@@ -105,30 +105,30 @@ function view_onOpen() /*: -> Void */ {
 // Adds our plugin specific items to the menu
 
 
-function AddCustomMenuItems(menu) /*: Menu -> Void */ {
+function AddCustomMenuItems(menu) /*: Menu -> Undef */ {
     menu.AddItem(strMenuNew, 0, OnMenuClicked);
 }
 
-function OnMenuClicked(itemText) /*: {} -> Void */ {
+function OnMenuClicked(itemText) /*: {} -> Undef */ {
     if (itemText == strMenuNew) {
         gameStart();
     }
 }
 
-function gameLeave() /*: -> Void */ {
+function gameLeave() /*: -> Undef */ {
     pause();
     labelStatus.innerText = strPaused;
     labelStatus.visible = true;
 }
 
-function gameFocus() /*: -> Void */ {
+function gameFocus() /*: -> Undef */ {
     if (gamePaused) {
         resume();
         labelStatus.visible = false;
     }
 }
 
-function gameStart() /*: -> Void */ {
+function gameStart() /*: -> Undef */ {
     init();
     start();
     btnStart.visible = false;
@@ -136,7 +136,7 @@ function gameStart() /*: -> Void */ {
     divBackground.focus();
 }
 
-function gameKeyDown() /*: -> Void */ {
+function gameKeyDown() /*: -> Undef */ {
     if (!gameStarted || gamePaused) return;
     //gadget.debug.trace("KeyDown: "+event.keyCode);
     switch (event.keyCode) {
@@ -158,12 +158,12 @@ function gameKeyDown() /*: -> Void */ {
     }
 }
 
-function gameKeyUp() /*: -> Void */ {
+function gameKeyUp() /*: -> Undef */ {
     //gadget.debug.trace("KeyUp: "+event.keyCode);
 }
 
 
-function resetGame() /*: -> Void */ {
+function resetGame() /*: -> Undef */ {
     for (var i = 0; i < boardHeight; i++) {
         for (var j = 0; j < boardWidth; j++) {
             f[i][j] = 0;
@@ -182,7 +182,7 @@ function resetGame() /*: -> Void */ {
     skyline = boardHeight - 1;
 }
 
-function start() /*: -> Void */ {
+function start() /*: -> Undef */ {
     if (gameStarted) {
         if (!boardLoaded) return;
         if (gamePaused) resume();
@@ -197,16 +197,16 @@ function start() /*: -> Void */ {
     playMusic();
 }
 
-function playMusic() /*: -> Void */ {
+function playMusic() /*: -> Undef */ {
     if (options.getValue("tetrisMusic")) {
         tetrisMusic = framework.audio.play(tetrisMusicSrc);
-        tetrisMusic.onstatechange = function (clip, new_state) /*: {} * Int -> Void */ {
+        tetrisMusic.onstatechange = function (clip, new_state) /*: {} * Int -> Undef */ {
             ClipStateChange(clip, new_state);
         };
     }
 }
 
-function ClipStateChange(clip, new_state) /*: {} * Int -> Void */ {
+function ClipStateChange(clip, new_state) /*: {} * Int -> Undef */ {
     gadget.debug.trace("State changed to " + new_state);
     if (new_state == gddSoundStateStopped) {
         gadget.debug.trace("Restart Music");
@@ -215,7 +215,7 @@ function ClipStateChange(clip, new_state) /*: {} * Int -> Void */ {
     }
 }
 
-function pause() /*: -> Void  */ {
+function pause() /*: -> Undef  */ {
     if (boardLoaded && gameStarted) {
         if (gamePaused) {
             //resume(); 
@@ -230,7 +230,7 @@ function pause() /*: -> Void  */ {
     }
 }
 
-function resume() /*: -> Void */ {
+function resume() /*: -> Undef */ {
     if (boardLoaded && gameStarted && gamePaused) {
         play();
         gamePaused = false;
@@ -241,7 +241,7 @@ function resume() /*: -> Void */ {
     }
 }
 
-function play() /*: -> Void */ {
+function play() /*: -> Undef */ {
     if (movedown()) {
         timerID = setTimeout("play()", speed);
         return;
@@ -269,7 +269,7 @@ function play() /*: -> Void */ {
     }
 }
 
-function fillMatrix() /*: -> Void */ {
+function fillMatrix() /*: -> Undef */ {
     for (var k = 0; k < nSquares; k++) {
         X = curX + dx[k];
         Y = curY + dy[k];
@@ -280,7 +280,7 @@ function fillMatrix() /*: -> Void */ {
     }
 }
 
-function removeLines() /*: -> Void */ {
+function removeLines() /*: -> Undef */ {
     for (var i = 0; i < boardHeight; i++) {
         var gapFound = 0;
         for (var j = 0; j < boardWidth; j++) {
@@ -314,7 +314,7 @@ function removeLines() /*: -> Void */ {
     }
 }
 
-function drawPiece() /*: -> Void */ {
+function drawPiece() /*: -> Undef */ {
     if (boardLoaded) {
         for (var k = 0; k < nSquares; k++) {
             X = curX + dx[k];
@@ -334,7 +334,7 @@ function drawPiece() /*: -> Void */ {
     }
 }
 
-function erasePiece() /*: -> Void */ {
+function erasePiece() /*: -> Undef */ {
     if (boardLoaded) {
         for (var k = 0; k < nSquares; k++) {
             X = curX + dx[k];
@@ -348,7 +348,7 @@ function erasePiece() /*: -> Void */ {
     }
 }
 
-function pieceFits(X, Y) /*: Int * Int -> Void */ {
+function pieceFits(X, Y) /*: Int * Int -> Undef */ {
     for (var k = 0; k < nSquares; k++) {
         var theX = X + dx_[k];
         var theY = Y + dy_[k];
@@ -358,7 +358,7 @@ function pieceFits(X, Y) /*: Int * Int -> Void */ {
     return 1;
 }
 
-function moveleft() /*: -> Void */ {
+function moveleft() /*: -> Undef */ {
     for (var k = 0; k < nSquares; k++) {
         dx_[k] = dx[k];
         dy_[k] = dy[k];
@@ -370,7 +370,7 @@ function moveleft() /*: -> Void */ {
     }
 }
 
-function moveright() /*: -> Void */ {
+function moveright() /*: -> Undef */ {
     for (var k = 0; k < nSquares; k++) {
         dx_[k] = dx[k];
         dy_[k] = dy[k];
@@ -382,7 +382,7 @@ function moveright() /*: -> Void */ {
     }
 }
 
-function rotate() /*: -> Void */ {
+function rotate() /*: -> Undef */ {
     for (var k = 0; k < nSquares; k++) {
         dx_[k] = dy[k];
         dy_[k] = -dx[k];
@@ -397,7 +397,7 @@ function rotate() /*: -> Void */ {
     }
 }
 
-function movedown() /*: -> Void */ {
+function movedown() /*: -> Undef */ {
     for (var k = 0; k < nSquares; k++) {
         dx_[k] = dx[k];
         dy_[k] = dy[k];
@@ -411,7 +411,7 @@ function movedown() /*: -> Void */ {
     return 0;
 }
 
-function fall() /*: -> Void */ {
+function fall() /*: -> Undef */ {
     for (var k = 0; k < nSquares; k++) {
         dx_[k] = dx[k];
         dy_[k] = dy[k];
@@ -426,7 +426,7 @@ function fall() /*: -> Void */ {
     timerID = setTimeout("play()", speed);
 }
 
-function getPiece(N) /*: Int -> Void */ {
+function getPiece(N) /*: Int -> Undef */ {
     curPiece = (getPiece.arguments.length == 0) ? 1 + Math.floor(nTypes * Math.random()) : N;
     curX = 5;
     curY = 0;
@@ -445,7 +445,7 @@ function getPiece(N) /*: Int -> Void */ {
     return 0;
 }
 
-function getBackground(index) /*: Int -> String */ {
+function getBackground(index) /*: Int -> Str */ {
     if (index == 0) {
         return "";
     }

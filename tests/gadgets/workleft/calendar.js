@@ -166,7 +166,7 @@ function SetDefaultOptions() {
   }
   if (options.GetValue("24") == "") {
     var d1 = new Date(1970, 12, 29, 13, 0, 0, 0);
-    var localTime = d1.toLocaleTimeString();
+    var localTime = d1.toLocaleTimeStr();
     format24 = localTime.indexOf("13") >= 0 ? true : false;
     options.PutValue("24", format24 ? "true" : "false");
   }
@@ -326,17 +326,17 @@ function loadEventsForCurrentDates(force) {
   var dow = (startDate.getDay() + europeanDate) % 7;
   var leftOver = (38 - dow);
 
-  var startString =
+  var startStr =
     getDateIso8601(new Date(startDate.getTime() - dow * 86400000));
-  var endString =
+  var endStr =
     getDateIso8601(new Date(startDate.getTime() + leftOver * 86400000));
 
-  setEventStoreTime(startString, endString);
+  setEventStoreTime(startStr, endStr);
 
   for(var i = 0; i < userStore.length; ++i) {
     var user = userStore[i];
     if (getUserShow(user)) {
-      loadEventsFromServer(startString, endString, force, user);
+      loadEventsFromServer(startStr, endStr, force, user);
     }
   }
 }
@@ -373,7 +373,7 @@ function loadEventsFromServer(expandFrom, expandTo, force, user) {
   // If we have a cache available. Then try to grab new events
   var updated = cacheUpdated[user.id + '/' + expandFrom + '/' + expandTo];
   if (updated) {
-    url += '&updated-min=' + to3339String(updated);
+    url += '&updated-min=' + to3339Str(updated);
   }
   
   var xmlReq = new XMLHttpRequest();
@@ -480,7 +480,7 @@ function addUser(elem, users) {
     } else if (node.nodeName == "gCal:hidden") {
       hidden = (node.getAttribute("value") != "false");
     } else if (node.nodeName == "updated" && node.firstChild) {
-      updated = rfc3339StringToDate(node.firstChild.nodeValue);
+      updated = rfc3339StrToDate(node.firstChild.nodeValue);
     } else if (node.nodeName == "gCal:overridename") {
       overrideName = node.getAttribute("value");
     }
@@ -671,7 +671,7 @@ function getEventsForDate(d, store) {
 /**
   * @param elem {Object} the XML node to extract the event from
   * @param events {Array} the array of events to plop the new event into
-  * @param userId {String} the user id
+  * @param userId {Str} the user id
   */
 function genCalEvents(elem, events, userId) {
   var title = ""; 
@@ -694,11 +694,11 @@ function genCalEvents(elem, events, userId) {
                node.getAttribute("rel") == "alternate") {
       url = node.getAttribute("href");
     } else if (node.nodeName == "gd:where") {
-      location = node.getAttribute("valueString");
+      location = node.getAttribute("valueStr");
     } else if (node.nodeName == "gd:reminder") {
       reminder = node.getAttribute("minutes");
     } else if (node.nodeName == "gd:who") {
-      attendees += node.getAttribute("valueString") + ", \n";
+      attendees += node.getAttribute("valueStr") + ", \n";
     } else if (node.nodeName == "gd:recurrence") {
       recur = true;
     } else if (node.nodeName == "gd:eventStatus") {
@@ -727,8 +727,8 @@ function genCalEvents(elem, events, userId) {
       var startTimeStr = node.getAttribute("startTime");
       var endTimeStr = node.getAttribute("endTime");
 
-      startTime = rfc3339StringToDate(startTimeStr);
-      endTime = rfc3339StringToDate(endTimeStr);
+      startTime = rfc3339StrToDate(startTimeStr);
+      endTime = rfc3339StrToDate(endTimeStr);
 
       if (startTime == null || endTime == null) {
         continue;
@@ -804,8 +804,8 @@ var SESSION_REGEX = /(gsessionid=[^&]*)/;
 
 /**
  * @param xmlReq {Object} the XMLHttpRequest object associated with this call
- * @param start {String} start time of the range that we are downloading
- * @param end {String} end time
+ * @param start {Str} start time of the range that we are downloading
+ * @param end {Str} end time
  * @param user {UserItem} the user object
  */
 function OnReceivedData(xmlReq, start, end, user) {
@@ -835,9 +835,9 @@ function OnReceivedData(xmlReq, start, end, user) {
 
 
 /**
- * @param responseText {String} the XML blob to parse
- * @param start {String} start time of the range that we are downloading
- * @param end {String} end time
+ * @param responseText {Str} the XML blob to parse
+ * @param start {Str} start time of the range that we are downloading
+ * @param end {Str} end time
  * @param user {UserItem} the user object
  */
 function processDoc(responseText, start, end, user) {
@@ -856,7 +856,7 @@ function processDoc(responseText, start, end, user) {
   var updatedElem = doc.getElementsByTagName("updated");
   var updatedTime = null;
   if (updatedElem != null && updatedElem.length > 0) {
-    updatedTime = rfc3339StringToDate(updatedElem[0].firstChild.nodeValue);
+    updatedTime = rfc3339StrToDate(updatedElem[0].firstChild.nodeValue);
   }
   
   // If we have a cache value. Then we have 2 choices
@@ -1266,7 +1266,7 @@ function QuoteEscape(str) {
 }
 
 // Escape non-latin HTML
-function EscapeHtmlString(str) {
+function EscapeHtmlStr(str) {
   var out = [];
   if (!str) return out;
   for(var i = 0; i < str.length; ++i) {
@@ -1326,7 +1326,7 @@ function onDetailsView(item, c) {
   
   html += '<br><br></font></body></html>';
   var control = new DetailsView();
-  control.SetContent(this.title, c.starTime, EscapeHtmlString(html), 
+  control.SetContent(this.title, c.starTime, EscapeHtmlStr(html), 
     true, item.layout);
   control.html_content = true;
   var details = {};
@@ -1424,7 +1424,7 @@ function GenNiceStartEnd(start, end, allday) {
 /** Convert a javascript date time to 3339 style [drop the ms and in UTZ]
   * ie - 2006-04-28T09:00:00Z
   */
-function to3339String(d) {
+function to3339Str(d) {
   return d.getUTCFullYear() + '-' + pad(d.getUTCMonth()) + '-' + 
          pad(d.getUTCDay()) + 'T' + pad(d.getUTCHours()) + ':' + 
          pad(d.getUTCMinutes()) + ':' + pad(d.getUTCSeconds()) + 'Z';
@@ -1440,7 +1440,7 @@ var DATE_REGEX = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
  * 2006-04-28T09:00:00.000Z
  * 2006-04-19
  */
-function rfc3339StringToDate(rfc3339) {
+function rfc3339StrToDate(rfc3339) {
   var parts = DATE_TIME_REGEX.exec(rfc3339);
   
   // Try out the Z version
@@ -1715,7 +1715,7 @@ function drawCalendar() {
 }
 
 // This incantation allows us to quickadd an event
-function getQuickAddString(text) {
+function getQuickAddStr(text) {
   return "<atom:entry xmlns:atom='http://www.w3.org/2005/Atom'>" + 
     "<atom:category scheme='http://schemas.google.com/g/2005#kind' " +
       "term='http://schemas.google.com/g/2005#event'></atom:category>" + 
@@ -1781,7 +1781,7 @@ function quickAddPrompt() {
     xmlReq.setRequestHeader('Authorization', 'GoogleLogin auth=' + authToken);
     xmlReq.setRequestHeader('Referer', 'http://gds.calendar.' + kClientLoginAppName);
     
-    var data = getQuickAddString(text);
+    var data = getQuickAddStr(text);
     xmlReq.onreadystatechange = genCreateEventReceive(xmlReq, text);
 
     try {

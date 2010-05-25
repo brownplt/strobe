@@ -183,12 +183,12 @@ module Env = struct
     | TTop -> TTop
     | TBot -> TBot (* might change if we allow arbitrary casts *)
     | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
-    | TConstr ("String", []) -> if RTSet.mem RT.String rt then typ else TBot
+    | TConstr ("Str", []) -> if RTSet.mem RT.Str rt then typ else TBot
     | TConstr ("RegExp", []) -> if RTSet.mem RT.Object rt then typ else TBot
-    | TConstr ("Number", []) -> if RTSet.mem RT.Number rt then typ else TBot
-    | TConstr ("Int", []) -> if RTSet.mem RT.Number rt then typ else TBot
-    | TConstr ("Boolean", []) -> if RTSet.mem RT.Boolean rt then typ else TBot
-    | TConstr ("Undefined", []) -> 
+    | TConstr ("Num", []) -> if RTSet.mem RT.Num rt then typ else TBot
+    | TConstr ("Int", []) -> if RTSet.mem RT.Num rt then typ else TBot
+    | TConstr ("Bool", []) -> if RTSet.mem RT.Bool rt then typ else TBot
+    | TConstr ("Undef", []) -> 
         if RTSet.mem RT.Undefined rt then typ else TBot
           (* any other app will be an object from a constructor *)
     | TConstr _ -> if RTSet.mem RT.Object rt then typ else TBot

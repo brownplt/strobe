@@ -1,5 +1,5 @@
 {
-  var fn = function(x) /*: Any -> Void */ {
+  var fn = function(x) /*: Any -> Undef */ {
     var t = typeof x;
     switch (t) {
       case "number":

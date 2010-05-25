@@ -1,10 +1,10 @@
-var currentAudioClip = /*:upcast Bool + { stop : -> Void } */ false;
+var currentAudioClip = /*:upcast Bool + { stop : -> Undef } */ false;
 
-function onPlay() /*: -> Void */ {
+function onPlay() /*: -> Undef */ {
     if (typeof currentAudioClip === "boolean") {
     }
     else {
-        (/*:downcast { stop : -> Void } */currentAudioClip).stop();
+        (/*:downcast { stop : -> Undef } */currentAudioClip).stop();
     }
 }
 

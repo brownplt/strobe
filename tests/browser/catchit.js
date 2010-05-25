@@ -9,11 +9,11 @@
 //1 var annot on ctx
 //added 1 ignore variable to an event handler
 //2 added empty array annot
-//3 downcast, 3 toStrings on same line
+//3 downcast, 3 toStrs on same line
 //1 refactor .push() into array setting
 //change 15 to 15.0 for correct type
 
-var ctx = /*:upcast Undefined + CanvasRenderingContext2D*/undefined;
+var ctx = /*:upcast Undef + CanvasRenderingContext2D*/undefined;
 
 // mouse position cache
 var mouse = {x:-100, y:-100};
@@ -31,14 +31,14 @@ var max_score = 0;
 var inc_score = 15.0;
 
 
-function Ball(x, y, xsee, ysee) /*: constructor (Double * Double * Double * Double -> {x : Double, y : Double, xsee : Double, ysee : Double, move : ([Ball]  -> Void)})  */ {
+function Ball(x, y, xsee, ysee) /*: constructor (Num * Num * Num * Num -> {x : Num, y : Num, xsee : Num, ysee : Num, move : ([Ball]  -> Undef)})  */ {
 
 	this.x = x;
 	this.y = y;
 	this.xsee = xsee;
 	this.ysee = ysee;
 
-	this.move = function() /*: [Ball]  -> Void  */ {
+	this.move = function() /*: [Ball]  -> Undef  */ {
 
 		if(this.x > 315) {
 			this.x = 315;
@@ -69,19 +69,19 @@ function Ball(x, y, xsee, ysee) /*: constructor (Double * Double * Double * Doub
 var balls = /*:Ball*/ [];
 
 
-function $(id) /*: String -> HTMLElement + Null */ {
+function $(id) /*: Str -> HTMLElement + Null */ {
 	return document.getElementById(id);
 }
 
-function updateStat() /*:  -> Void  */ {
+function updateStat() /*:  -> Undef  */ {
 
-	(/*:downcast HTMLLabel*/($('tries'))).innerHTML = tries.toString();
-	(/*:downcast HTMLLabel*/($('score'))).innerHTML = score.toString();
+	(/*:downcast HTMLLabel*/($('tries'))).innerHTML = tries.toStr();
+	(/*:downcast HTMLLabel*/($('score'))).innerHTML = score.toStr();
 
-	(/*:downcast HTMLLabel*/($('max_score'))).innerHTML = max_score.toString();
+	(/*:downcast HTMLLabel*/($('max_score'))).innerHTML = max_score.toStr();
 }
 
-function createBall() /*:  -> Void  */ {
+function createBall() /*:  -> Undef  */ {
         var x = 0.0, y = 0.0; //type init
 //	do {
 		x = Math.random() * 315;
@@ -94,12 +94,12 @@ function createBall() /*:  -> Void  */ {
 
 }
 
-function init() /*:  -> Void  */ {
+function init() /*:  -> Undef  */ {
 	ctx = (/*:downcast HTMLCanvasElement*/($('canvas'))).getContext('2d');
 	clock();
 }
 
-function clock() /*:  -> Void  */ {
+function clock() /*:  -> Undef  */ {
 
 	// global clear is faster for many balls
 	ctx.clearRect(0, 0, 320, 320);
@@ -139,7 +139,7 @@ function clock() /*:  -> Void  */ {
 	window.setTimeout(clock, 20);
 }
 
-document.onclick = function(_) /*: Event -> Void  */ {
+document.onclick = function(_) /*: Event -> Undef  */ {
 
 	for(var i=0; i < balls.length; i++) {
 		balls[i].xsee =-balls[i].xsee;
@@ -147,7 +147,7 @@ document.onclick = function(_) /*: Event -> Void  */ {
 	}
 };
 
-document.onmousemove = function(e) /*: Event -> Void  */ {
+document.onmousemove = function(e) /*: Event -> Undef  */ {
 
 	mouse.x = e.pageX;
 	mouse.y = e.pageY;

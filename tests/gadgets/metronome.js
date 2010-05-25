@@ -1,28 +1,28 @@
 /* Eval: required 1 upcast, 1 downcast, changing null to false/0 (other
  *   sentinel values), and just 2 function annotations. not bad!
  */
-var curAudioClip_ = /*:upcast Audioclip + Void*/ undefined;
+var curAudioClip_ = /*:upcast Audioclip + Undef*/ undefined;
 var timer = 0; // Arjun: null --> 0
 var flag = 0;
 var bpm = 0;
 var AUDIO_CLIP_URI = "tick.wav";
 
-function on_viewOpen() /*: -> Void */ {
+function on_viewOpen() /*: -> Undef */ {
   options.putDefaultValue("bpm",100);
   bpm = /*:downcast Int */(options.getValue("bpm"));
-  bpm_display.innerText = bpm.toString();
+  bpm_display.innerText = bpm.toStr();
   //pluginHelper.onAddCustomMenuItems = onAddCustomMenuItems;
 }
 
-function onAddCustomMenuItems(menu) /*: Menu -> Void */ {
+function onAddCustomMenuItems(menu) /*: Menu -> Undef */ {
   menu.AddItem("More Gadgets", 0, onMoreGadgetsClick);
 }
 
-function onMoreGadgetsClick(_ /* Arjun: ignored arg */) /*: { } -> Void */ {
+function onMoreGadgetsClick(_ /* Arjun: ignored arg */) /*: { } -> Undef */ {
 	framework.openURL("http://www.gdgadgets.com");
 }
 
-function onStart() /*: -> Void */ {
+function onStart() /*: -> Undef */ {
   if(flag == 0) {
     onStop();
     var time = parseInt((60/bpm)*1000.0, undefined);
@@ -41,18 +41,18 @@ function onStart() /*: -> Void */ {
   }
 }
 
-function onStop() /*: -> Void */ {
+function onStop() /*: -> Undef */ {
   if(timer != 0) { // Arjun: null --> 0
     clearInterval(timer);
     timer = 0;
   }
 }
 
-function incr() /*: -> Void */ {
+function incr() /*: -> Undef */ {
   if(280 > bpm) {
     bpm++;
     options.putValue("bpm",bpm);
-    bpm_display.innerText = bpm.toString();
+    bpm_display.innerText = bpm.toStr();
     if(flag == 1) {
       flag = 0;
       onStart();
@@ -60,11 +60,11 @@ function incr() /*: -> Void */ {
   }
 }
 
-function decr() /*: -> Void */ {
+function decr() /*: -> Undef */ {
   if(60 < bpm) {
     bpm-=1;
     options.putValue("bpm",bpm);
-    bpm_display.innerText = bpm.toString();
+    bpm_display.innerText = bpm.toStr();
     if(flag == 1) {
       flag = 0;
       onStart();
@@ -72,7 +72,7 @@ function decr() /*: -> Void */ {
   }
 }
 
-function onPlay() /*: -> Void */ {
+function onPlay() /*: -> Undef */ {
   if (typeof curAudioClip_ === "undefined") {      // Not playing anything
     curAudioClip_ = framework.audio.play(AUDIO_CLIP_URI, onAudioStateChange);
     startedAudio();
@@ -83,7 +83,7 @@ function onPlay() /*: -> Void */ {
   }
 }
 
-function onAudioStateChange(audioClip, state) /*: Audioclip * Int -> Void */ {
+function onAudioStateChange(audioClip, state) /*: Audioclip * Int -> Undef */ {
   if (state == gddSoundStateStopped) {
     stoppedAudio();
     curAudioClip_ = undefined; // Claudiu: null -> undefined
@@ -92,15 +92,15 @@ function onAudioStateChange(audioClip, state) /*: Audioclip * Int -> Void */ {
   }
 }
 
-function startedAudio() /*: -> Void */ {
+function startedAudio() /*: -> Undef */ {
   status_image.src = "green.png";
 }
 
-function stoppedAudio() /*: -> Void */ {
+function stoppedAudio() /*: -> Undef */ {
   status_image.src = "red.png";
 }
 
-function check_key() /*: -> Void */ {
+function check_key() /*: -> Undef */ {
   // Claudiu: keycode --> keyCode
   if(event.keyCode == 45)
     decr();

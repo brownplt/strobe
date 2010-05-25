@@ -18,7 +18,7 @@ type av =
   | ARef of Loc.t
   | ALocTypeof of Loc.t
   | ALocTypeIs of Loc.t * RTSet.t
-  | AString of string
+  | AStr of string
   | AClosure of int * id list * cpsexp
 
 type env

@@ -1,5 +1,5 @@
-function getValue(a) /*: String + Double -> Double */ {
-    a = /*:is Double*/(parseFloat("I AM NOT A FLOAT"));
+function getValue(a) /*: Str + Num -> Num */ {
+    a = /*:is Num*/(parseFloat("I AM NOT A FLOAT"));
 
   return a;
 }

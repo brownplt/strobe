@@ -110,11 +110,11 @@ contracts.Undefined = contracts.flat("Undefined")(function(val) {
   return val === undefined;
 });
 
-contracts.NotUndefined = contracts.flat("NotUndefined")(function(val) {
+contracts.NotUndefined = contracts.flat("NotUndef")(function(val) {
   return val !== undefined;
 });
 
-contracts.String = contracts.flat("String")(function(v) {
+contracts.Str = contracts.flat("Str")(function(v) {
     return typeof v === "string";
 });
 

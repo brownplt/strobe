@@ -1,7 +1,7 @@
 //from Calculator gadget:
 
 var base = undefined;
-function getValue(a) /*: ((Int + String + Double) -> (Int + Double)) */ {
+function getValue(a) /*: ((Int + Str + Num) -> (Int + Num)) */ {
   if (a == '.')
     a += '0';
 

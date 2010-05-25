@@ -11,7 +11,7 @@ var debug = false; // FIX: 0 -> false
 
 var bTimer = 0, secTimer = 0; //FIX: = 0
 
-function setDefaultOptions() /*: -> Void */
+function setDefaultOptions() /*: -> Undef */
 {
     // FIX: this used to use setters and broke with "expected l-value"
     options.putDefaultValue("breakInterval", 35); //35 min
@@ -60,12 +60,12 @@ pluginHelper.max_content_items = 1;
 var tips = [tiprest1, tiprest2, tiprest3, tiprest4, tiprest5, tiprest6,
             tiprest7, tiprest8, tiprest9, tiprest10 ];
 
-function onUnload() /*: -> Void */
+function onUnload() /*: -> Undef */
 {
 	stop();
 }
 
-function viewOnOpen() /*: -> Void */
+function viewOnOpen() /*: -> Undef */
 {
 	setLabels();
 	bTimer = setInterval( updateCount, secTime );
@@ -75,7 +75,7 @@ function viewOnOpen() /*: -> Void */
 	//sizeBar();
 }
 
-function updateCount() /*: -> Void */
+function updateCount() /*: -> Undef */
 {
 	updateCountText();
 	smCount = smallestCount();
@@ -101,20 +101,20 @@ function updateCount() /*: -> Void */
 		}
 		updateCountText();
 	}
-	if(!(/*:downcast Boolean */(options.getValue("useTimeout"))) || userActive() || debug) // only decrement if the user is active or timeout not used
+	if(!(/*:downcast Bool */(options.getValue("useTimeout"))) || userActive() || debug) // only decrement if the user is active or timeout not used
 	{
 		bCount--;
 		mCount--;
 	}
 }
 
-function updateCountText() /*: -> Void */
+function updateCountText() /*: -> Undef */
 {
-    bcount.innerText = bCount.toString() + " " + minText;
-    mcount.innerText = mCount.toString() + " " + minText;
+    bcount.innerText = bCount.toStr() + " " + minText;
+    mcount.innerText = mCount.toStr() + " " + minText;
 }
 
-function userActive() /*: -> Boolean */
+function userActive() /*: -> Bool */
 {
 	if((cursor.x == framework.system.cursor.position.x) && (cursor.y == framework.system.cursor.position.y)) // mouse idle
 	{
@@ -133,7 +133,7 @@ function userActive() /*: -> Boolean */
 	}
 }
 
-function displayOptions() /*: -> Void */
+function displayOptions() /*: -> Undef */
 {
 	microtitlelbl.innerText = microtitletxt;
 	resttitlelbl.innerText = resttitletxt;
@@ -150,16 +150,16 @@ function displayOptions() /*: -> Void */
 	sectxt2.innerText = secText;
 
 
-	bTime.value = /*:downcast Int*/(options.getValue("breakInterval")).toString();
-	mTime.value = /*:downcast Int*/(options.getValue("microInterval")).toString();	
-	bDuration.value = /*:downcast Int*/(options.getValue("breakDuration")).toString();
-	mDuration.value = /*:downcast Int*/(options.getValue("microDuration")).toString();
-	usetimeout.value = /*:downcast Boolean*/(options.getValue("useTimeout"));
-	allowpostpone.value = /*:downcast Boolean*/(options.getValue("allowPostpone"));
-        postponetime.value = /*:downcast Int*/(options.getValue("postponeTime")).toString();
+	bTime.value = /*:downcast Int*/(options.getValue("breakInterval")).toStr();
+	mTime.value = /*:downcast Int*/(options.getValue("microInterval")).toStr();	
+	bDuration.value = /*:downcast Int*/(options.getValue("breakDuration")).toStr();
+	mDuration.value = /*:downcast Int*/(options.getValue("microDuration")).toStr();
+	usetimeout.value = /*:downcast Bool*/(options.getValue("useTimeout"));
+	allowpostpone.value = /*:downcast Bool*/(options.getValue("allowPostpone"));
+        postponetime.value = /*:downcast Int*/(options.getValue("postponeTime")).toStr();
 }
 
-function updateOptions() /*: -> Void */
+function updateOptions() /*: -> Undef */
 {
     options.putValue("breakInterval", parseInt(bTime.value));
     options.putValue("microInterval", parseInt(mTime.value));
@@ -170,11 +170,11 @@ function updateOptions() /*: -> Void */
     options.putValue("postponeTime", parseInt(postponetime.value));
 }
 
-function showAlert(title, desc, time) /*: String * String * Int -> Void */
+function showAlert(title, desc, time) /*: Str * Str * Int -> Undef */
 {
 	clearInterval(bTimer);
 	if(time == /*:downcast Int*/ (options.getValue("microDuration"))) alert(title); //microbreak
-	else if(/*:downcast Boolean*/(options.getValue("allowPostpone")))
+	else if(/*:downcast Bool*/(options.getValue("allowPostpone")))
 	{
 		if(!confirm(willTakeBreak + " " + /*:downcast Int*/(options.getValue("postponeTime")) + " " + minText + ")")) //postpone the rest break
 		{
@@ -201,7 +201,7 @@ function showAlert(title, desc, time) /*: String * String * Int -> Void */
 	if(!debug) cnArea.removeAllContentItems();
 }
 
-function configureBar(title, desc, time) /*: String * String * Int -> Void */
+function configureBar(title, desc, time) /*: Str * Str * Int -> Undef */
 {
 	progbar.enabled = true;
 	progbar.visible = true;
@@ -217,7 +217,7 @@ function configureBar(title, desc, time) /*: String * String * Int -> Void */
 	secTimer = setInterval(updateBar, oneSec);
 }
 
-function updateBar() /*: -> Void */
+function updateBar() /*: -> Undef */
 {
 	if(secBar <= 0) 
 	{
@@ -238,7 +238,7 @@ function updateBar() /*: -> Void */
 	}
 }
 
-function stopBar() /*: -> Void */
+function stopBar() /*: -> Undef */
 {
 	clearInterval(secTimer);
 	bTimer = setInterval( updateCount, secTime );
@@ -251,7 +251,7 @@ function stopBar() /*: -> Void */
 
 }
 
-function randNotification(timeLeft) /*: Int -> String */
+function randNotification(timeLeft) /*: Int -> Str */
 {
 	if(timeLeft == 0) return backToWorkText;
 	else
@@ -261,7 +261,7 @@ function randNotification(timeLeft) /*: Int -> String */
 	}
 }
 
-function dispInCaption() /*: -> Void */
+function dispInCaption() /*: -> Undef */
 {
 	if(smCount == 0)
 	{
@@ -272,32 +272,32 @@ function dispInCaption() /*: -> Void */
 	minimized = true;
 }
 
-function dispFull() /*: -> Void */
+function dispFull() /*: -> Undef */
 {
 	view.caption = GADGET_NAME;
 	minimized = false;
 }
 
-function stop() /*: -> Void */
+function stop() /*: -> Undef */
 {
 	clearInterval(bTimer);
 	clearInterval(secTimer);
 }
 
-function sizeBar() /*: -> Void */
+function sizeBar() /*: -> Undef */
 {
 	progbar.width = view.width;
 	progbar.height = view.height;
 }
 
-function toggleAllowPostpone() /*: -> Void */
+function toggleAllowPostpone() /*: -> Undef */
 {
 	if(allowpostpone.value) postponetime.enabled = true;
 	else postponetime.enabled = false;
 
 }
 
-function mouseOverNow(button, on) /*: Int * Boolean -> Void */
+function mouseOverNow(button, on) /*: Int * Bool -> Undef */
 {
 	if(on)
 	{
@@ -311,7 +311,7 @@ function mouseOverNow(button, on) /*: Int * Boolean -> Void */
 	}
 }
 
-function earlyBreak(type) /*: Int -> Void */
+function earlyBreak(type) /*: Int -> Undef */
 {
 	clearInterval(bTimer);
 	if(type == 1) mCount = 0;
@@ -319,7 +319,7 @@ function earlyBreak(type) /*: Int -> Void */
 	updateCount();
 }
 
-function setLabels() /*: -> Void */
+function setLabels() /*: -> Undef */
 {
 	nextmicrobreak.innerText = nextmicrobreakin;
 	nextfullbreak.innerText = nextfullbreakin;

@@ -4,9 +4,9 @@ exception Typ_error of pos * string
 
 module RT : sig
   type t =
-    | Number
-    | String
-    | Boolean
+    | Num
+    | Str
+    | Bool
     | Function
     | Object
     | Undefined

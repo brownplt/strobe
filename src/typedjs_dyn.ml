@@ -49,9 +49,9 @@ let rec ctc_of_typ p (typ : typ) = match typ with
   | TArrow (_, args, result) -> 
       CArrow (map (ctc_of_typ p) args, ctc_of_typ p result)
   | TConstr ("Int", []) -> flat p "Int"
-  | TConstr ("String", []) -> flat p "String"
+  | TConstr ("Str", []) -> flat p "Str"
   | TConstr ("Undefined", []) -> flat p "Undefined"
-  | TConstr ("NotUndefined", []) -> flat p "NotUndefined"
+  | TConstr ("NotUndef", []) -> flat p "NotUndefined"
   | _ -> 
       failwith (sprintf "cannot create a contract for the type %s"
                   (FormatExt.to_string Typedjs_syntax.Pretty.p_typ typ))

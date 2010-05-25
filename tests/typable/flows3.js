@@ -1,4 +1,4 @@
-function(x) /*: Int + Void -> Int */ {
+function(x) /*: Int + Undef -> Int */ {
     if (typeof x === "number") { 
         return x;
     }

@@ -1,21 +1,21 @@
-function pf() /*: -> Double */ {
+function pf() /*: -> Num */ {
     return "heelo";
 }
 
-function getValue(a) /*: String + Double -> Double */ {
+function getValue(a) /*: Str + Num -> Num */ {
     a = pf();
 
   return a;
 }
 
-function foo(x) /*: (String + Double) -> Void */ {
+function foo(x) /*: (Str + Num) -> Undef */ {
     return;
 }
 
-function pf1() /*: -> Void */ {
+function pf1() /*: -> Undef */ {
     return foo(3.2);
 }
 var x = foo;
-function pf2() /*: -> Void */ {
+function pf2() /*: -> Undef */ {
     return foo("hi");
 }

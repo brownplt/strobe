@@ -1,4 +1,4 @@
-var a = /*:upcast String + Int */13;
+var a = /*:upcast Str + Int */13;
 a -= 3;
 a = "hi";
 

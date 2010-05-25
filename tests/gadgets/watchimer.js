@@ -3,7 +3,7 @@
 - added 2 intervals as global variable
 - added alarming as global, initialized it to audioclip
 - change the Unknown to Audioclip
-- changed correctOutput to always return String
+- changed correctOutput to always return Str
 - changed 8 setTimeouts to use functions, not eval strings
 - added upcast to a timer to be undefined + Int, guarded
   call to clearInterval to make sure it is Int
@@ -26,7 +26,7 @@ Infer evaluation: (events - annotations found)
 var h = 0;
 var m = 0;
 var s = 0;
-var tmr = /*:upcast Undefined + Int*/undefined;
+var tmr = /*:upcast Undef + Int*/undefined;
 var pause = 0;
 var done = 0;
 var prevSelect = 0;
@@ -34,11 +34,11 @@ var confirmed = 0;
 var controlAltPressed = 0;
 
 var t = 0, r = 0; //interval has to be a global
-var alarming = /*:upcast Undefined + Audioclip*/undefined;
+var alarming = /*:upcast Undef + Audioclip*/undefined;
 
-//framework.audio.open("alarm.mp3"); ///*:upcast Undefined + Audioclip*/undefined;
+//framework.audio.open("alarm.mp3"); ///*:upcast Undef + Audioclip*/undefined;
 
-function startCount() /*:  -> Void */{
+function startCount() /*:  -> Undef */{
 	hours.enabled = false;
 	minutes.enabled = false;
 	seconds.enabled = false;
@@ -101,7 +101,7 @@ function startCount() /*:  -> Void */{
 	}
 	stop.focus();
 }
-function blink() /*:  -> Void */{
+function blink() /*:  -> Undef */{
 	if(blinky.visible == true){
 		blinky.visible = false;
 		blinky2.visible = false;
@@ -113,7 +113,7 @@ function blink() /*:  -> Void */{
 	}
 	pause++;
 }
-function correctOutput(h) /*: (Int + String) -> String */{
+function correctOutput(h) /*: (Int + Str) -> Str */{
 	if(h < 10 && h > 0){
 		h = "0" + h;
 	}
@@ -122,7 +122,7 @@ function correctOutput(h) /*: (Int + String) -> String */{
 	}
 	return "" + h;
 }
-function clearCount() /*:  -> Void */{
+function clearCount() /*:  -> Undef */{
 	h = 0;
 	s = 0;
 	m = 0;
@@ -143,7 +143,7 @@ function clearCount() /*:  -> Void */{
 	}
 	modeSwitch.focus();
 }
-function stopCount() /*:  -> Void */{
+function stopCount() /*:  -> Undef */{
 	hours.enabled = true;
 	minutes.enabled = true;
 	seconds.enabled = true;
@@ -184,46 +184,46 @@ function stopCount() /*:  -> Void */{
 	modeSwitch.focus();
 
 }
-function stopOn() /*:  -> Void */{stop.opacity = event.value;}
-function startOff() /*:  -> Void */{start.opacity = event.value;}
-function moveStop() /*:  -> Void */{stop.x = event.value;}
-function moveGreenBack() /*:  -> Void */{start.x = event.value;}
-function clearOff() /*:  -> Void */{clear.opacity = event.value;}
+function stopOn() /*:  -> Undef */{stop.opacity = event.value;}
+function startOff() /*:  -> Undef */{start.opacity = event.value;}
+function moveStop() /*:  -> Undef */{stop.x = event.value;}
+function moveGreenBack() /*:  -> Undef */{start.x = event.value;}
+function clearOff() /*:  -> Undef */{clear.opacity = event.value;}
 //----------------------- stopwatch ends here ------------------------------
 
 //---------------------------- Timer Starts Here --------------------------
-function fasterEdit(whichEdit) /*: Int -> Void */{
+function fasterEdit(whichEdit) /*: Int -> Undef */{
 	switch(whichEdit){
 		case 0: // stop increasing or decreasing when left mouse button released
 			if (typeof tmr === "number") clearInterval(tmr);
 			break;
 		case 1:
 			increaseSec();
-			tmr = setTimeout(function()/*:->Void*/{fasterEdit(1);}, 200);
+			tmr = setTimeout(function()/*:->Undef*/{fasterEdit(1);}, 200);
 			break;
 		case 2:
 			decreaseSec();
-			tmr = setTimeout(function()/*:->Void*/{fasterEdit(1);}, 200);
+			tmr = setTimeout(function()/*:->Undef*/{fasterEdit(1);}, 200);
 			break;
 		case 3:
 			increaseMin();
-			tmr = setTimeout(function()/*:->Void*/{fasterEdit(1);}, 200);
+			tmr = setTimeout(function()/*:->Undef*/{fasterEdit(1);}, 200);
 			break;
 		case 4:
 			decreaseMin();
-			tmr = setTimeout(function()/*:->Void*/{fasterEdit(1);}, 200);
+			tmr = setTimeout(function()/*:->Undef*/{fasterEdit(1);}, 200);
 			break;
 		case 5:
 			increaseHr();
-			tmr = setTimeout(function()/*:->Void*/{fasterEdit(1);}, 200);
+			tmr = setTimeout(function()/*:->Undef*/{fasterEdit(1);}, 200);
 			break;
 		case 6:
 			decreaseHr();
-			tmr = setTimeout(function()/*:->Void*/{fasterEdit(1);}, 200);
+			tmr = setTimeout(function()/*:->Undef*/{fasterEdit(1);}, 200);
 			break;
 	}
 }
-function increaseSec() /*:  -> Void */{
+function increaseSec() /*:  -> Undef */{
 	s++;
 	if(s == 60){
 		s = 0;
@@ -246,7 +246,7 @@ function increaseSec() /*:  -> Void */{
 	}
 	modeSwitch.focus();
 }
-function decreaseSec() /*:  -> Void */{
+function decreaseSec() /*:  -> Undef */{
 	s--;
 	if(s == -1){
 		s = 59;
@@ -269,7 +269,7 @@ function decreaseSec() /*:  -> Void */{
 	}
 	modeSwitch.focus();
 }
-function increaseMin() /*:  -> Void */{
+function increaseMin() /*:  -> Undef */{
 	m++;
 	if(m == 60){
 		m = 0;
@@ -292,7 +292,7 @@ function increaseMin() /*:  -> Void */{
 	}
 	modeSwitch.focus();
 }
-function decreaseMin() /*:  -> Void */{
+function decreaseMin() /*:  -> Undef */{
 	m--;
 	if(m == -1){
 		m = 59;
@@ -315,7 +315,7 @@ function decreaseMin() /*:  -> Void */{
 	}
 	modeSwitch.focus();
 }
-function increaseHr() /*:  -> Void */{
+function increaseHr() /*:  -> Undef */{
 	h++;
 	if(h == 100){
 		h = 0;
@@ -338,7 +338,7 @@ function increaseHr() /*:  -> Void */{
 	}
 	modeSwitch.focus();
 }
-function decreaseHr() /*:  -> Void */{
+function decreaseHr() /*:  -> Undef */{
 	h--;
 	if(h == -1){
 		h = 99;
@@ -361,7 +361,7 @@ function decreaseHr() /*:  -> Void */{
 	}
 	modeSwitch.focus();
 }
-function startTimer() /*:  -> Void */{
+function startTimer() /*:  -> Undef */{
 	s--;
 
 	if(s == -1 && m > 0){
@@ -374,13 +374,13 @@ function startTimer() /*:  -> Void */{
 			s = 59;
 	}
 }
-function hoverAppear() /*:  -> Void */{
+function hoverAppear() /*:  -> Undef */{
 	hover.opacity = event.value;
 }
-function rotateHover() /*:  -> Void */{
+function rotateHover() /*:  -> Undef */{
 	hover.rotation = event.value;
 }
-function coolHover() /*:  -> Void */{
+function coolHover() /*:  -> Undef */{
 	if(hover.opacity == 0)
 	{
 		view.beginAnimation(hoverAppear, 0, 255, 400);
@@ -389,15 +389,15 @@ function coolHover() /*:  -> Void */{
 
 	r = setTimeout(coolHover, 601);
 }
-function stopCoolHover() /*:  -> Void */{
+function stopCoolHover() /*:  -> Undef */{
 	clearInterval(r);
 	hover.rotation = 0;
 	hover.opacity = 0;
 }
-function rotateModeSwitch() /*:  -> Void */{
+function rotateModeSwitch() /*:  -> Undef */{
 	modeSwitch.rotation = event.value;
 }
-function fadeID() /*:  -> Void */{
+function fadeID() /*:  -> Undef */{
 	upH.opacity = event.value;
 	downH.opacity = event.value;
 	upM.opacity = event.value;
@@ -405,7 +405,7 @@ function fadeID() /*:  -> Void */{
 	upS.opacity = event.value;
 	downS.opacity = event.value;
 }
-function changeMode() /*:  -> Void */{
+function changeMode() /*:  -> Undef */{
 	stopCoolHover();
 	modeSwitch.enabled = false;
 	view.beginAnimation(rotateModeSwitch, 0, -180, 300);
@@ -445,7 +445,7 @@ function changeMode() /*:  -> Void */{
 	modeSwitch.focus();
 	stopCoolHover();
 }
-function alarm() /*:  -> Void */{
+function alarm() /*:  -> Undef */{
 	alarming = framework.audio.open("alarm.mp3");
 	view.beginAnimation(rotateAlarmButton, 90, 0, 500);
 	stopAlarmSound.enabled = true;
@@ -453,18 +453,18 @@ function alarm() /*:  -> Void */{
 	alarming.play();
 	stopAlarmSound.focus();
 }
-function mediaStateChange(media, state) /*: Audioclip * Int -> Void */{
+function mediaStateChange(media, state) /*: Audioclip * Int -> Undef */{
 	if(state == gddSoundStateStopped){
-	      m = setTimeout(function() /*:  -> Void */ { alarming.play(); }, 400);
+	      m = setTimeout(function() /*:  -> Undef */ { alarming.play(); }, 400);
   	}
 }
-function rotateAlarmButton() /*:  -> Void */{
+function rotateAlarmButton() /*:  -> Undef */{
 	stopAlarmSound.rotation = event.value;
 	if(event.value == 90){
 		view.resizeTo(284,80);
 	}
 }
-function stopAlarm() /*:  -> Void */{
+function stopAlarm() /*:  -> Undef */{
     if (typeof alarming === "undefined") {} else { framework.audio.stop(alarming); }
 	clearInterval(m);
 	view.beginAnimation(rotateAlarmButton, 0, 90, 500);
@@ -478,7 +478,7 @@ function stopAlarm() /*:  -> Void */{
 	stopAlarmSound.enabled = false;
 	modeSwitch.focus();
 }
-function triSelect(whichEdit) /*: Int -> Void */{
+function triSelect(whichEdit) /*: Int -> Undef */{
 	var mailMan=0; // variable named mailman after its only purpose - to take value from whichEdit and pass it to prevSelect
 
 	switch(whichEdit){
@@ -513,7 +513,7 @@ function triSelect(whichEdit) /*: Int -> Void */{
 	triDeselect();
 	prevSelect = mailMan;
 }
-function triDeselect() /*:  -> Void */{
+function triDeselect() /*:  -> Undef */{
 	// turn off previous selection
 	switch(prevSelect){
 		case 1:
@@ -540,8 +540,8 @@ function triDeselect() /*:  -> Void */{
 		editCancel(prevSelect);
 	}
 }
-//keyboard functionality(setting the timer currently the only use) /*: Int -> Void */
-function editOn(whichEdit) /*: Int -> Void */{
+//keyboard functionality(setting the timer currently the only use) /*: Int -> Undef */
+function editOn(whichEdit) /*: Int -> Undef */{
 	switch(whichEdit){
 		case 1:
 			secEdit.visible = true;
@@ -568,7 +568,7 @@ function editOn(whichEdit) /*: Int -> Void */{
 	triSelect(whichEdit);
 }
 
-function clearInitialTime(whichEdit) /*: Int -> Void */{
+function clearInitialTime(whichEdit) /*: Int -> Undef */{
 	switch(whichEdit){
 		case 1:
 			secEdit.value = "";
@@ -581,7 +581,7 @@ function clearInitialTime(whichEdit) /*: Int -> Void */{
 			break;
 	}
 }
-function limitEdit(whichEdit) /*: Int -> Void */{
+function limitEdit(whichEdit) /*: Int -> Undef */{
 	switch(whichEdit){
 		case 1:
 			if((secEdit.value.length == 2 || (event.keyCode < 48 || event.keyCode > 57)) && (event.keyCode != 8)){
@@ -600,7 +600,7 @@ function limitEdit(whichEdit) /*: Int -> Void */{
 			break;
 	}
 }
-function exitAlternate(whichEdit) /*: Int -> Void */{
+function exitAlternate(whichEdit) /*: Int -> Undef */{
 	limitEdit(whichEdit);
 	if(event.keyCode == 13){
 		editOff(whichEdit);
@@ -664,7 +664,7 @@ function exitAlternate(whichEdit) /*: Int -> Void */{
 			break;
 	}
 }
-function editCancel(whichEdit) /*: Int -> Void */{
+function editCancel(whichEdit) /*: Int -> Undef */{
 	switch(whichEdit){
 		case 1:
 			secEdit.visible = false;
@@ -687,7 +687,7 @@ function editCancel(whichEdit) /*: Int -> Void */{
 	}
 	prevSelect = 0;
 }
-function editOff(whichEdit) /*: Int -> Void */{
+function editOff(whichEdit) /*: Int -> Undef */{
 	switch(whichEdit){
 		case 1:
 			if(secEdit.value != "")
@@ -839,7 +839,7 @@ function editOff(whichEdit) /*: Int -> Void */{
 	modeSwitch.focus();
 
 }
-function clearSpecific(whichOne) /*: Int -> Void */{
+function clearSpecific(whichOne) /*: Int -> Undef */{
 	if(clear.opacity == 255){
 		switch(whichOne){
 			case 1:
@@ -885,10 +885,10 @@ function clearSpecific(whichOne) /*: Int -> Void */{
 	}
 	modeSwitch.focus();
 }
-function kSupport() /*:  -> Void */{
+function kSupport() /*:  -> Undef */{
 	modeSwitch.focus();
 }
-function kBoard() /*: -> Void */ {
+function kBoard() /*: -> Undef */ {
 	controlAltPressed = (event.keyCode == 17) ? 1 : 0;
 	/*start.enabled = true;
 	start.caption = event.keyCode;*///debug purpose

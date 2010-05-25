@@ -1,1 +1,1 @@
-function (x) /*: -> Void */ { return; };
+function (x) /*: -> Undef */ { return; };

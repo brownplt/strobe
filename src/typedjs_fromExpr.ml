@@ -116,12 +116,12 @@ let rec exp (env : env) expr = match expr with
                                   EApp (a, EId (a, "%loop"), [])),
                             EConst (a, S.CUndefined))))],
               EApp (a, EId (a, "%loop"), []))
-  | DoWhileExpr (a, e1, e2) ->
+  | DoWhileExpr (a, body_e, test_e) ->
       let loop_typ = TArrow (TTop, [], typ_undef) in
         ERec ([("%loop", loop_typ,
                 EFunc (a, [], loop_typ,
-                       ESeq (a, exp env e1, 
-                             EIf (a, exp env e2, 
+                       ESeq (a, exp env body_e, 
+                             EIf (a, exp env test_e, 
                                   EApp (a, EId (a, "%loop"), []),
                                     EConst (a, S.CUndefined)))))],
               EApp (a, EId (a, "%loop"), []))

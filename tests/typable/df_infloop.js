@@ -18,7 +18,7 @@ while (i < 10) {
      (10:fix
       (%loop
        (lambda (%cps2 %cps3 %this)
-         (Undefined -> DoesNotReturn) * (Any -> DoesNotReturn) * {} -> DoesNotReturn
+         (Undef -> DoesNotReturn) * (Any -> DoesNotReturn) * {} -> DoesNotReturn
          (9:let %cps4 (deref i)
            (8:let %cps5 (< %cps4 10)
              (7:if %cps5
@@ -41,7 +41,7 @@ while (i < 10) {
      (11:fix
       (%loop
        (lambda (%cps2 %cps3 %this)
-         (Undefined -> DoesNotReturn) * (Any -> DoesNotReturn) * {} -> DoesNotReturn
+         (Undef -> DoesNotReturn) * (Any -> DoesNotReturn) * {} -> DoesNotReturn
          (10:let %cps4 (deref i)
            (9:let %cps5 (< %cps4 10)
              (8:if %cps5
