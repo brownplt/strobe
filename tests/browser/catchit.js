@@ -1,5 +1,5 @@
 //TODO: get do/while loops to work
-//TODO: get array properties to work
+//TODO: get array properties to work (.push)
 
 //changed 1 Host annot to HTMLElement + Null, other 2 to Event
 
@@ -95,7 +95,7 @@ function createBall() /*:  -> Void  */ {
 }
 
 function init() /*:  -> Void  */ {
-	ctx = (/*:downcast Canvas*/($('canvas'))).getContext('2d');
+	ctx = (/*:downcast HTMLCanvasElement*/($('canvas'))).getContext('2d');
 	clock();
 }
 
