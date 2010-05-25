@@ -188,7 +188,7 @@ module Env = struct
     | TConstr ("Num", []) -> if RTSet.mem RT.Num rt then typ else TBot
     | TConstr ("Int", []) -> if RTSet.mem RT.Num rt then typ else TBot
     | TConstr ("Bool", []) -> if RTSet.mem RT.Bool rt then typ else TBot
-    | TConstr ("Undefined", []) -> 
+    | TConstr ("Undef", []) -> 
         if RTSet.mem RT.Undefined rt then typ else TBot
           (* any other app will be an object from a constructor *)
     | TConstr _ -> if RTSet.mem RT.Object rt then typ else TBot
