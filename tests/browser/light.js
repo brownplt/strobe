@@ -1,22 +1,26 @@
 //Aw this example required tons of changes.
 //changes:
-//BUG (kinda?):  _ to callback func
-//BUG?: Added 4 var to implicit globals
-//lift main() up
-//loadImage callback strangeness, made a var nullalble
-//unhappy change: "new Array" was used to create array of an
+//2x: BUG (kinda?):  _ to callback func
+//4x: BUG?: Added 4 var to implicit globals
+//1x: lift main() up
+//1x: unhappy change: "new Array" was used to create array of an
 //  initial size. had to change it to not. likely makes the
 //  code slower.
 //2x Math.floor to make sure array access happens properly
-// had to add check for img being undefined cause of callback being strange
-// uygly 3-part check for local variables not being Null upon calling
+//1x: had to add check for img being undefined cause of callback being strange
+//3x: uygly 3-part check for local variables not being Null upon calling
 //   them. dnno if can refactor in a prettier way. very ugly
 //2x downcasts from creating/getting elements
+//4x var nullables from loadimage
+//2x array initializer
 //3x: temporary change normals.push() to normals[normals.length] =.
 
-//changes to the inferred annotatinos:
-//abs, drawLight, getDataFromImage, loadImage,
+//ANNOTS:
+//7x: changes to the inferred annotatinos:
+//  abs, drawLight, getDataFromImage, loadImage,
+//  and 3 Event handlers.
 
+//other 3 functions were inferred properly.
 
 function abs(x) /*: Num -> Num */ {
     return x > 0 ? x : -x;

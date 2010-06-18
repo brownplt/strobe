@@ -1,10 +1,11 @@
-//5x: new Array() --> []
+//5x: Array --> []
 //change string.fromcharcode to string_fromcharcode, tmp hack anywayg
-//added a line to safe_add to acct for undefined
 //1 empty array annotation
 //1 call to math.floor to guarantee int
 //removed 6 functions that were never used, but they would each
 //  require an annotation if they were left in
+
+//changed safe_add to not take undefineds
 
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
@@ -121,8 +122,7 @@ function core_hmac_sha1(key, data) /*: Str * Str -> Array<Int> */ {
  * to work around bugs in some JS interpreters.
  */
 
-function safe_add(x, y) /*: Int * (Int + Undef) -> Int */ {
-    if (typeof y === "undefined") y = 0;
+function safe_add(x, y) /*: Int * Int -> Int */ {
     var lsw = (x & 0xFFFF) + (y & 0xFFFF);
     var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
     return (msw << 16) | (lsw & 0xFFFF);

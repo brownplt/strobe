@@ -4,10 +4,11 @@
 //changed 1 Host annot to HTMLElement + Null, other 2 to Event
 
 //1 settimeout 'clock()' to clock
-//1 function lifted
 //2 'var' added
-//1 var annot on ctx
 //added 1 ignore variable to an event handler
+
+//1 function lifted
+//1 var annot on ctx
 //2 added empty array annot
 //3 downcast, 3 toStrs on same line
 //1 refactor .push() into array setting

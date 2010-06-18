@@ -87,7 +87,7 @@ function f() /*:  -> Undef */ {
     }
     //switch (options("SecondHand")) {
     //Claudiu : options is callable?? or a bug
-    /*switch (options.getValue("SecondHand")) {
+    switch (options.getValue("SecondHand")) {
     case 0:
         g(false);
         //break;
@@ -101,7 +101,7 @@ function f() /*:  -> Undef */ {
         e();
         _SecondInterval = setInterval(e, 1000);
         //break;
-    }*/
+    }
 }
 
 function g(a) /*: Bool -> Undef */ {

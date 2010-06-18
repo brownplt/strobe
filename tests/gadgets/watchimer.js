@@ -1,5 +1,6 @@
 /* Changes:
 - found a bug - img1 was declared twice in the xml
+
 - added 2 intervals as global variable
 - added alarming as global, initialized it to audioclip
 - change the Unknown to Audioclip

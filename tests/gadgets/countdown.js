@@ -1,5 +1,9 @@
 /* Changes:
- * in getDateDiff, change loc of floor
+ *4x:  in getDateDiff, add Math.floor to the / lines
+ *2x: 2 explicit conversions
+ *8x: turn "ret.hours" into "var hours"
+ *    remove var ret = {}
+ *    change return ret to return {hours:hours,} etc
  */
 
 // Change this to the date of the event.
@@ -100,21 +104,21 @@ function getDateDiff(start, end)
   var msec = (diff % 1000);
 
   // Seconds.
-  // Claudiu: put the Math.floor around the div, not around the mod.
+  // Claudiu: added floor to the diffs
   diff = Math.floor(diff / 1000);
-  var seconds = diff % 60;
+  var seconds = Math.floor(diff % 60);
 
   // Minutes.
   diff = Math.floor(diff / 60);
-  var minutes = diff % 60;
+  var minutes = Math.floor(diff % 60);
 
   // Hours.
   diff = Math.floor(diff / 60);
-  var hours = diff % 24;
+  var hours = Math.floor(diff % 24);
 
   // Days.
   diff = Math.floor(diff / 24);
-  var days = diff;
+  var days = Math.floor(diff);
 
   return { isPassed: isPassed, msec: msec, seconds: seconds,
           minutes : minutes, hours: hours, days: days };
