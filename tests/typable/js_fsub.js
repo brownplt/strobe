@@ -1,7 +1,7 @@
 var f = function(x) /*: Int -> Int */ {
     return x; };
 
-var g = function(x) /*: Number -> Number */ {
+var g = function(x) /*: Num -> Num */ {
     return x; };
 
 f(Math.abs(90));
