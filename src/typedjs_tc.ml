@@ -4,6 +4,7 @@ open Typedjs_env
 open Typedjs_types 
 open Format
 open Typedjs_dyn
+open Typedjs_tc_util
 
 let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
 
@@ -13,15 +14,6 @@ let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 let error p s = raise (Typ_error (p, s))
 
 let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
-
-let tc_const (const : JavaScript_syntax.const) = match const with
-    JavaScript_syntax.CString _ -> typ_str
-  | JavaScript_syntax.CRegexp _ -> typ_regexp
-  | JavaScript_syntax.CNum _ -> typ_num
-  | JavaScript_syntax.CInt _ -> typ_int
-  | JavaScript_syntax.CBool _ -> typ_bool
-  | JavaScript_syntax.CNull -> typ_null
-  | JavaScript_syntax.CUndefined -> typ_undef
 
 let un_null t = match t with
   | TUnion (TConstr ("Undef", []), t') -> t'

@@ -3,6 +3,7 @@ open Typedjs_syntax
 open Exprjs_syntax
 open Typedjs_types
 open Typedjs_env
+open Typedjs_tc_util
 
 module H = Hashtbl
 module S = JavaScript_syntax
@@ -30,7 +31,6 @@ let parse_annotation (pos, end_p) str =
 
 (******************************************************************************)
 
-
 (** [seq expr] returns the [VarDeclExpr]s at the head of a sequence of
     expressions. Assumes that [SeqExpr]s are nested on the right.
 
@@ -47,11 +47,13 @@ let rec seq expr = match expr with
         ((a2, f, HintExpr (a3, txt, FuncExpr (a2, args, e1))) :: decls, body)
   | _ -> ([], expr)
 
-let is_func_decl (_, _, e) = match e with
+let rec is_value e = match e with
   | HintExpr (_, _, FuncExpr _) -> true
+  | ConstExpr _ -> true
+  | ObjectExpr (_, flds) -> List.for_all (fun (_, _, e') -> is_value e') flds
   | _ -> false
 
-let is_not_func_decl d = not (is_func_decl d)
+let is_func_decl (_, _, e) = is_value e
 
 let is_empty lst = match lst with
     [] -> true
@@ -212,16 +214,13 @@ and match_func env expr = match expr with
       failwith ("expected a LabelledExpr at " ^ string_of_position a)
   | _ -> None
 
-
 and exp_seq env e = match e with
     SeqExpr (a, e1, e2) -> ESeq (a, exp env e1, exp env e2)
   | _ -> exp env e
 
 and func_exp env (_, x, expr) = 
   let e = exp env expr in
-    match e with
-      | EFunc (_, _, t, _) -> (x, t, e)
-      | _ -> failwith "expected FuncExpr"
+    (x, typ_of_value e, e)
 
 and bind_func_ref (x, t, e) rest_exp = 
   let p = Exp.pos e in
@@ -331,12 +330,13 @@ let match_constr_body env expr = match expr with
 (** [match_func_decl expr] matches function statements and variables bound to
     function expressions. *)
 let match_func_decl expr = match expr with
-  | VarDeclExpr (p, x, e) -> begin match e with
-      | HintExpr (_, _, FuncExpr _) -> Some (p, x, e)
-      | _ -> None
-    end
+  | VarDeclExpr (p, x, e) ->
+      if is_value e then Some (p, x, e) else None
   | HintExpr (p', txt, FuncStmtExpr (p, f, args, e)) ->
-      Some (p, f, HintExpr (p', txt, FuncExpr (p, args, e)))
+      if is_constructor_hint txt then
+        None
+      else
+        Some (p, f, HintExpr (p', txt, FuncExpr (p, args, e)))
   | _ -> None
 
 let match_decl expr = match expr with
