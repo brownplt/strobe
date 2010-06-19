@@ -104,8 +104,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EArray (p, []) -> 
       raise (Typ_error (p, "an empty array literal requires a type annotation"))
   | EArray (p, e :: es) -> 
-      let u = fold_left (Env.typ_union env) 
-        (tc_exp env e) (map (tc_exp env) es) in
+      (* We are promoting the type of values in each element to the union *)
+      let f t1 t2 = match t1, t2 with
+        | TRef s1, TRef s2 -> TRef (Env.typ_union env s1 s2)
+        | _ -> failwith "expected Ref cells in array" in
+      let u = fold_left f (tc_exp env e) (map (tc_exp env) es) in
         (* hack to make arrays not have undefined elements: *)
         Env.check_typ p env (TConstr ("Array", [u]))
   | EIf (p, e1, e2, e3) -> begin
