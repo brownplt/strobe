@@ -6,11 +6,12 @@
 //1 settimeout 'clock()' to clock
 //2 'var' added
 //added 1 ignore variable to an event handler
-
+//3 tostrings added
+//
 //1 function lifted
 //1 var annot on ctx
 //2 added empty array annot
-//3 downcast, 3 toStrs on same line
+//3 downcast
 //1 refactor .push() into array setting
 //change 15 to 15.0 for correct type
 
