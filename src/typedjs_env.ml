@@ -3,14 +3,6 @@ open Typedjs_syntax
 
 exception Not_wf_typ of string
 
-module IdPairSet = Set.Make 
-  (struct
-     type t = id * id
-     let compare (s11, s12) (s21, s22) = match String.compare s11 s21 with
-       | 0 -> String.compare s12 s22
-       | n -> n       
-   end)
-
 module Env = struct
 
   type class_info = {
@@ -22,8 +14,7 @@ module Env = struct
     id_typs : typ IdMap.t; 
     lbl_typs : typ IdMap.t;
     classes : class_info IdMap.t;
-    (* reflexive-transitive closure of the subclass relation *)
-    subclasses : IdPairSet.t;
+    subclasses : id IdMap.t; (* direct subclasses *)
     typ_ids: typ IdMap.t; (* bounded type variables *)
   }
 
@@ -32,7 +23,7 @@ module Env = struct
     id_typs = IdMap.empty;
     lbl_typs = IdMap.empty;
     classes = IdMap.empty;
-    subclasses = IdPairSet.empty;
+    subclasses = IdMap.empty;
     typ_ids = IdMap.empty;
   }
 
@@ -76,7 +67,14 @@ module Env = struct
             let s = IdMap.find x env.typ_ids in (* S-TVar *)
               subtype s t (* S-Trans *)
         | TConstr (c1, []), TConstr (c2, []) ->
-            IdPairSet.mem  (c1, c2) env.subclasses
+            let rec is_subclass sub sup =
+              if sub = sup then
+                true
+              else if not (IdMap.mem sub env.subclasses) then
+                false (* sub is a root class *)
+              else 
+                is_subclass (IdMap.find sub env.subclasses) sup in
+            is_subclass c1 c2
         | TConstr (c1, args1), TConstr (c2, args2) ->
             if c1 = c2 then subtypes args1 args2 else false
         | TUnion (s1, s2), _ -> 
@@ -208,17 +206,14 @@ module Env = struct
       let c = IdMap.add class_name 
         { fields = IdMap.empty; sup = None } env.classes in
         { env with
-            classes = c;
-            subclasses = IdPairSet.add (class_name, class_name) env.subclasses
+            classes = c
         }
 
   let new_subclass env sub_name sup_name =
     { env with
         classes = IdMap.add sub_name
         { fields = IdMap.empty; sup = Some sup_name } env.classes;
-        subclasses = 
-        IdPairSet.add (sub_name, sub_name)
-          (IdPairSet.add (sub_name, sup_name) env.subclasses) }
+        subclasses = IdMap.add sub_name sup_name env.subclasses }
 
   let add_method c_name m_name m_typ env =
     let ci = IdMap.find c_name env.classes in
