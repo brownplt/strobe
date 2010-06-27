@@ -3,12 +3,18 @@
 //  2x: added local var x,y
 //  2x: added var
 //  1x: added func arg
+//  6x: moved var into function since was only used locally
+//  1x: check for image not being defined ?
+//  1x: math.floor to give int value to setinterval
 //Bozo:
 //  1x: moved init stuff to end cause of func lifting
 //  2x: moved var down so didnt have to put in initial value
-//  1x: upcast+init-to-null-combo
-//  2x: downcast from createelement
+//  4x: upcast+init-to-undef-combo
+//  4x: downcast from createelement
 //  1x: really stupid undef check
+//  15x: init vars so never undefined
+//  7x: empty array annotations
+//  2x: stupid .push()
 //Annots:
 //   added 3x, since couldn't test touching stuff
 
@@ -21,13 +27,17 @@ var QUALITY_X = 6,
     HEIGHT_HALF = Math.floor(HEIGHT / 2),
     TEXT_OFFSETY = Math.floor((HEIGHT - 64) / 2),
 
-    context, image, data, buffer1, buffer2, tempbuffer,
+    context = /*:upcast Undef + CanvasRenderingContext2D*/undefined,
+    image = /*:upcast Undef + ImageData*/undefined,
+    data = [0], buffer1 = [0], buffer2 = [0],
 
-    canvasHeightMap, contextHeightMap, imageHeightMap, dataHeightMap, canvasText, contextText, imageText, dataText,
+    dataHeightMap = [0],
+    contextText = /*:upcast Undef + CanvasRenderingContext2D*/undefined,
+    dataText = [0],
 
-    input = /*:upcast Undef + HTMLInputElement*/undefined, text,
+    input = /*:upcast Undef + HTMLInputElement*/undefined, text="",
 
-    isUserInteracting, pointers;
+    isUserInteracting = false, pointers = [[0.0]];
 
 function init() /*: -> Undef */ {
 
@@ -45,16 +55,16 @@ function init() /*: -> Undef */ {
     input.focus();
 
     // Height Map (Water)
-    canvasHeightMap = /*:downcast HTMLCanvasElement*/(document.createElement("canvas"));
+    var canvasHeightMap = /*:downcast HTMLCanvasElement*/(document.createElement("canvas"));
     canvasHeightMap.width = WIDTH;
     canvasHeightMap.height = HEIGHT;
 
-    contextHeightMap = canvasHeightMap.getContext("2d");
-    imageHeightMap = contextHeightMap.getImageData(0, 0, WIDTH, HEIGHT);
+    var contextHeightMap = canvasHeightMap.getContext("2d");
+    var imageHeightMap = contextHeightMap.getImageData(0, 0, WIDTH, HEIGHT);
     dataHeightMap = imageHeightMap.data;
 
-    buffer1 = [];
-    buffer2 = [];
+    buffer1 = /*:Int*/[];
+    buffer2 = /*:Int*/[];
 
     for (var i = 0; i < SIZE; i++) {
 
@@ -63,7 +73,7 @@ function init() /*: -> Undef */ {
     }
 
     // Text
-    canvasText = document.createElement("canvas");
+    var canvasText = /*:downcast HTMLCanvasElement*/(document.createElement("canvas"));
     canvasText.width = WIDTH;
     canvasText.height = 128;
 
@@ -73,7 +83,7 @@ function init() /*: -> Undef */ {
     contextText.textAlign = "center";
 
     // Output (Parallax)
-    var canvas = document.createElement("canvas");
+    var canvas = /*:downcast HTMLCanvasElement*/(document.createElement("canvas"));
     canvas.width = WIDTH;
     canvas.height = HEIGHT;
     canvas.style.width = window.innerWidth + "px";
@@ -141,11 +151,12 @@ function onDocumentTouchStart(event) /*: Event -> Undef */  {
 
     event.preventDefault();
 
-    pointers = [];
+    pointers = /*:Array<Num>*/[];
 
     for (var i = 0; i < event.touches.length; i++) {
 
-        pointers.push([event.touches[i].pageX / QUALITY_X, event.touches[i].pageY / QUALITY_Y]);
+        //pointers.push([event.touches[i].pageX / QUALITY_X, event.touches[i].pageY / QUALITY_Y]);
+        pointers[pointers.length] = ([event.touches[i].pageX / QUALITY_X, event.touches[i].pageY / QUALITY_Y]);
 
     }
 
@@ -155,11 +166,12 @@ function onDocumentTouchMove(event) /*: Event -> Undef */  {
 
     event.preventDefault();
 
-    pointers = [];
+    pointers = /*:Array<Num>*/[];
 
     for (var i = 0; i < event.touches.length; i++) {
 
-        pointers.push([event.touches[i].pageX / QUALITY_X, event.touches[i].pageY / QUALITY_Y]);
+        //pointers.push([event.touches[i].pageX / QUALITY_X, event.touches[i].pageY / QUALITY_Y]);
+        pointers[pointers.length] = ([event.touches[i].pageX / QUALITY_X, event.touches[i].pageY / QUALITY_Y]);
 
     }
 
@@ -199,7 +211,7 @@ function writeText(string) /*: Str -> Undef */ {
     contextText.clearRect(0, 0, WIDTH, 128);
     contextText.fillText(string, WIDTH / 2, 63);
 
-    imageText = contextText.getImageData(0, 0, WIDTH, 128);
+    var imageText = contextText.getImageData(0, 0, WIDTH, 128);
     dataText = imageText.data;
 
 }
@@ -224,7 +236,7 @@ function processText() /*: -> Undef */ {
 
 function loop(_) /*: Int -> Undef */ {
 
-    var x, y, yz, pixel, index, indices;
+    var x=0, y=0, yz=0, pixel=0, index=0;
 
     if (isUserInteracting) {
 
@@ -237,7 +249,7 @@ function loop(_) /*: Int -> Undef */ {
     }
 
     // Water
-    var pixel, iMax = (WIDTH * HEIGHT) - WIDTH;
+    var iMax = (WIDTH * HEIGHT) - WIDTH;
 
     for (var i = WIDTH; i < iMax; i++) {
 
@@ -248,7 +260,7 @@ function loop(_) /*: Int -> Undef */ {
 
     }
 
-    tempbuffer = buffer1;
+    var tempbuffer = buffer1;
     buffer1 = buffer2;
     buffer2 = tempbuffer;
 
@@ -263,12 +275,12 @@ function loop(_) /*: Int -> Undef */ {
 
     // Parallax
     // Thx: http://pixelero.wordpress.com/2009/07/05/belousovzhabotinsky-with-perspective/
-    indices = [];
+    var indices = /*:Int*/[];
 
     for (x = 0; x < WIDTH; x++) {
 
-        var levels = [];
-        var pixels = [];
+        var levels = /*:Int*/[];
+        var pixels = /*:Int*/[];
 
         for (y = 0; y < HEIGHT; y++) {
 
@@ -290,10 +302,10 @@ function loop(_) /*: Int -> Undef */ {
         }
     }
 
-    context.putImageData(image, 0, 0);
+    if (typeof image != "undefined") context.putImageData(image, 0, 0);
 
 }
 
 init();
-setInterval(loop, 1000 / 60);
+setInterval(loop, Math.floor(1000 / 60));
 
