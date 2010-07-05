@@ -164,6 +164,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
   | Typedjs_syntax.TBot -> RTSet.empty
   | Typedjs_syntax.TForall _ -> rtany
   | Typedjs_syntax.TId _ -> rtany (* TODO: should be empty!!! *)
+  | Typedjs_syntax.TField -> rtany
 
 let runtime t : av = ASet (rt_of_typ t)
 

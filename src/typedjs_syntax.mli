@@ -38,6 +38,7 @@ type typ =
   | TBot
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TId of id
+  | TField
 
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list
@@ -99,6 +100,7 @@ type exp =
       (** [ETypAbs (_, x, t, e)] Lambda x <: t . e *)
   | ETypApp of pos * exp * typ
       (** [ETypApp (_, e, t)] e t *)
+  | EForInIdx of pos
 
 type constr_exp = { 
   constr_pos : pos;

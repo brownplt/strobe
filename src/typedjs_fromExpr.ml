@@ -162,6 +162,16 @@ let rec exp (env : env) expr = match expr with
       raise (Not_well_formed (p, "function is missing a type annotation"))
   | FuncStmtExpr (p, _, _, _) ->
       raise (Not_well_formed (p, "function is missing a type annotation"))
+  | ForInExpr (p, x, obj, body) ->
+      let loop_typ = TArrow (TTop, [TField; TField], typ_undef) in
+        ERec ([("%loop", loop_typ,
+                EFunc (p, ["%obj"; x], loop_typ,
+                       ESeq (p, exp env body, 
+                             EApp (p, EId (p, "%loop"),
+                                   [ EId (p, "%obj"); EId (p, x) ]))))],
+              EApp (p, EId (p, "%loop"), [EForInIdx p; EForInIdx p]))
+
+
 
 and match_func env expr = match expr with
   | HintExpr (p, txt, FuncExpr (a, args, LabelledExpr (a', "%return", body))) ->

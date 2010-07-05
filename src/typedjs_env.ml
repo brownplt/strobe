@@ -1,5 +1,6 @@
 open Prelude
 open Typedjs_syntax
+open Typedjs_types
 
 exception Not_wf_typ of string
 
@@ -100,6 +101,8 @@ module Env = struct
         | TSink s, TSink t -> subtype t s
         | TRef s, TSource t -> subtype s t
         | TRef s, TSink t -> subtype t s
+        | TConstr (constr, []), TField ->
+            List.mem constr [ "Num"; "Int"; "Str"; "Undef"; "Bool" ]
         | _, TTop -> true
         | TBot, _ -> true
         | _ -> s = t
@@ -159,6 +162,7 @@ module Env = struct
     | TSink t -> TSink (normalize_typ env t)
     | TTop -> TTop
     | TBot -> TBot
+    | TField -> TField
     | TId x ->
         if IdMap.mem x env.typ_ids then typ
         else raise (Not_wf_typ ("the type variable " ^ x ^ " is unbound"))
@@ -176,6 +180,14 @@ module Env = struct
             else normalize_typ env t
         | _ -> normalize_typ env t
     with Not_wf_typ s -> raise (Typ_error (p, s))
+
+  let basic_static env (typ : typ) (rt : RT.t) : typ = match rt with
+    | RT.Num -> typ_union env typ_num typ
+    | RT.Str -> typ_union env typ_str typ
+    | RT.Bool -> typ_union env typ_bool typ
+    | RT.Function -> typ_union env TField typ
+    | RT.Object -> typ_union env TField typ
+    | RT.Undefined -> typ_union env typ_undef typ
 
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
     | TTop -> TTop
@@ -196,6 +208,7 @@ module Env = struct
     | TSink t -> TSink t
     | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
     | TForall _ -> typ
+    | TField -> List.fold_left (basic_static cs) TBot (RTSetExt.to_list rt)
     | TId _ -> typ
 
 
@@ -324,6 +337,7 @@ let rec typ_subst x s typ = match typ with
   | TSink t -> TSink (typ_subst x s t)
   | TTop -> TTop
   | TBot -> TBot
+  | TField -> TField
   | TForall (y, t1, t2) -> 
       if x = y then 
         TForall (y, typ_subst x s t1, t2)

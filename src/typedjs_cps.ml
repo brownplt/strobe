@@ -238,6 +238,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                   cps_exp body throw' (Jmp cont)))
   | ETryFinally (_, e1, e2) -> (*TODO: make this not drop the finally *)
       cps_exp e1 throw k
+  | EForInIdx p -> ret k (Const (JavaScript_syntax.CString "%forinidx"))
 
 and cps_bind ((name, typ, e) : id * typ * exp) = match e with
     EFunc (_, args, _, body) ->

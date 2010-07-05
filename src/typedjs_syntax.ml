@@ -42,6 +42,7 @@ type typ =
   | TBot
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TId of id
+  | TField
 
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list
@@ -95,6 +96,7 @@ type exp
   | EDowncast of pos * typ * exp
   | ETypAbs of pos * id * typ * exp 
   | ETypApp of pos * exp * typ
+  | EForInIdx of pos
 
 type constr_exp = { 
   constr_pos : pos;
@@ -152,6 +154,7 @@ module Exp = struct
     | EEmptyArray (p, _) -> p
     | ETypApp (p, _, _) -> p
     | ETypAbs (p, _, _, _) -> p
+    | EForInIdx p -> p
 
 end
 
@@ -185,7 +188,8 @@ module Pretty = struct
     | TSink s -> horz [ text "sink"; parens (typ s) ]
     | TForall (x, s, t) -> 
         horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
-    | TId x -> text x        
+    | TId x -> text x
+    | TField -> text "field"
 
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
@@ -238,6 +242,7 @@ module Pretty = struct
     | ETypApp (_, e, t) -> parens (horz [ text "typ-app"; exp e; typ t ])
     | ETypAbs (_, x, t, e) -> 
         parens (horz [ text "typ-abs"; text x; text "<:"; typ t; exp e ])
+    | EForInIdx _ -> text "for-in-idx"
 
   and prop (s, e) =
     parens (horz [ text s; text ":"; exp e ])

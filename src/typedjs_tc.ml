@@ -46,6 +46,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EDeref (p, e) -> begin match tc_exp env e with
       | TRef t -> t
       | TSource t -> t
+      | TField -> TField
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
                                  (string_of_typ t)))
     end 
@@ -146,6 +147,10 @@ let rec tc_exp (env : Env.env) exp = match exp with
             | Some t -> t
             | None -> error p ("object does not have a field " ^ fname)
           end
+      | TTop, field -> begin match tc_exp env field with
+          | TField -> TField
+          | _ -> error p "expected a TField index"
+        end
       | t, EConst (_, JavaScript_syntax.CString _) ->
           error p ("expected object, but got " ^ string_of_typ t)
       | _ -> 
@@ -306,6 +311,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
               error p (sprintf "expected a quantified type (got %s)"
                          (string_of_typ t))
         end
+  | EForInIdx _ -> TField
         
 
 and tc_exps env es = map (tc_exp env) es
