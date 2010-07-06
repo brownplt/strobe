@@ -115,7 +115,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EIf (p, e1, e2, e3) -> begin
       match tc_exp env e1, tc_exp env e2, tc_exp env e3 with
           TConstr ("Bool", []), t2, t3 -> Env.typ_union env t2 t3
-        | t, _, _ -> raise (Typ_error (p, "expected a boolean"))
+        | t, _, _ -> 
+            raise (Typ_error (p, "expected a boolean but got a " ^ 
+                                (string_of_typ t)))
     end
   | EObject (p, fields) ->
       Env.check_typ p env (TObject (map (second2 (tc_exp env)) fields))

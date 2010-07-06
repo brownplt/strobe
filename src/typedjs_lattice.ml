@@ -30,6 +30,7 @@ type av =
   | ALocTypeof of Loc.t
   | ALocTypeIs of Loc.t * RTSet.t
   | AStr of string
+  | ABool of bool
   | AClosure of int * id list * cpsexp
 
 module AV = struct
@@ -59,6 +60,7 @@ let rec p_av av = match av with
       horz [ text "typeis"; Loc.pp x; RTSetExt.p_set RT.pp t ]
   | AClosure _ -> text "#closure"
   | AStr s -> text ("\"" ^ s ^ "\"")
+  | ABool b -> text (string_of_bool b)
 
 let singleton t = ASet (RTSet.singleton t)
 
@@ -81,6 +83,7 @@ let rec to_set heap v = match v with
   | AStr _ -> RTSet.singleton RT.Str
   | AClosure _ -> RTSet.singleton RT.Function
   | ARef _ -> rtany
+  | ABool _ -> RTSet.singleton RT.Bool
   | ADeref loc -> 
       try Heap.find loc heap
       with Not_found ->
@@ -109,6 +112,7 @@ let rec av_union h av1 av2 = match av1, av2 with
   | AClosure (m, _, _), AClosure (n, _, _) -> 
       if m = n then av1
       else failwith "av_union on distinct closures"
+  | ABool b1, ABool b2 when b1 = b2 -> ABool b1
   | _ -> av_union h (ASet (to_set h av1)) (ASet (to_set h av2))
 
 let union_env h (env1 : env) (env2 : env) : env = 

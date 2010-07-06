@@ -67,7 +67,7 @@ let rec exp (env : env) expr = match expr with
       begin match parse_annotation p txt with
         | ATyp t -> EEmptyArray (p, TRef t)
         | _ -> 
-            raise (Not_well_formed (p, "expected the type of array elemtns" ))
+            raise (Not_well_formed (p, "expected the type of array elements" ))
       end
   | ArrayExpr (a, es) -> EArray (
       a, map (fun e -> ERef (a, RefCell, exp env e)) es)

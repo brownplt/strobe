@@ -51,7 +51,7 @@ let abs_of_cpsval node env (cpsval : cpsval) = match cpsval with
       | JavaScript_syntax.CRegexp _ -> singleton RT.Object
       | JavaScript_syntax.CNum _ -> singleton RT.Num
       | JavaScript_syntax.CInt _ -> singleton RT.Num
-      | JavaScript_syntax.CBool _ -> singleton RT.Bool
+      | JavaScript_syntax.CBool b -> ABool b
       | JavaScript_syntax.CNull -> singleton RT.Object
       | JavaScript_syntax.CUndefined -> singleton RT.Undefined
     end
@@ -74,7 +74,7 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
   | Op2Infix "===", ALocTypeof loc, AStr str
   | Op2Infix "==", AStr str, ALocTypeof loc
   | Op2Infix "===",  AStr str, ALocTypeof loc ->
-      mk_type_is loc str, heap
+      (mk_type_is loc str, heap)
   | Op2Infix "!=", ALocTypeof loc, AStr str
   | Op2Infix "!==", ALocTypeof loc, AStr str
   | Op2Infix "!=", AStr str, ALocTypeof loc
@@ -111,14 +111,21 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         | UpdateField _ -> singleton RT.Object, heap in
         flow (bind x cpsval env) heap cont
   | If (node, v1, true_cont, false_cont) ->
-      let heap2, heap3 = match abs_of_cpsval node env v1 with
+      let absv1 = abs_of_cpsval node env v1 in
+      let heap2, heap3 = match absv1 with
         | ALocTypeIs (loc, true_set) ->
             (set_ref loc true_set heap,
              let false_set = RTSet.diff (deref loc heap) true_set in
                set_ref loc false_set heap)
-        | _ -> heap, heap in
-        flow env heap2 true_cont;
-        flow env heap3 false_cont
+        | _ -> (heap, heap) in
+        begin match absv1 with
+          | ABool true -> flow env heap2 true_cont
+          | ABool false ->  flow env heap3 false_cont
+          | _ -> begin
+              flow env heap2 true_cont;
+              flow env heap3 false_cont
+            end
+        end
   | Fix (n, binds, cont) ->
       let esc_set = esc_cpsexp cpsexp in
       let is_escaping (boundary, f, _, _, _) = 
