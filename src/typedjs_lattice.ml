@@ -55,9 +55,9 @@ let rec p_av av = match av with
   | ASet s -> RTSetExt.p_set RT.pp s
   | ADeref l -> horz [ text "deref"; Loc.pp l ]
   | ARef l -> horz [ text "ref"; Loc.pp l ]
-  | ALocTypeof x -> horz [ text "typeof"; Loc.pp x ]
+  | ALocTypeof x -> horz [ text "LocTypeof"; Loc.pp x ]
   | ALocTypeIs (x, t) -> 
-      horz [ text "typeis"; Loc.pp x; RTSetExt.p_set RT.pp t ]
+      horz [ text "LocType"; Loc.pp x; RTSetExt.p_set RT.pp t ]
   | AClosure _ -> text "#closure"
   | AStr s -> text ("\"" ^ s ^ "\"")
   | ABool b -> text (string_of_bool b)
@@ -127,7 +127,8 @@ let lookup (x : id) (env : env) : av =
     eprintf "%s is unbound in the abstract environment" x;
     raise Not_found
 
-let bind (x : id) (v : av) (env : env) : env = IdMap.add x v env
+let bind (x : id) (v : av) (env : env) : env = 
+  IdMap.add x v env
 
 let empty_env = IdMap.empty
 

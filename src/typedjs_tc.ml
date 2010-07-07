@@ -116,7 +116,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       match tc_exp env e1, tc_exp env e2, tc_exp env e3 with
           TConstr ("Bool", []), t2, t3 -> Env.typ_union env t2 t3
         | t, _, _ -> 
-            raise (Typ_error (p, "expected a boolean but got a " ^ 
+            raise (Typ_error (p, "expected condition to have type Bool, but got a " ^ 
                                 (string_of_typ t)))
     end
   | EObject (p, fields) ->

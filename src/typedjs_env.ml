@@ -189,6 +189,15 @@ module Env = struct
     | RT.Object -> typ_union env TField typ
     | RT.Undefined -> typ_union env typ_undef typ
 
+  let basic_static2 env (typ : typ) (rt : RT.t) : typ = match rt with
+    | RT.Num -> typ_union env typ_num typ
+    | RT.Str -> typ_union env typ_str typ
+    | RT.Bool -> typ_union env typ_bool typ
+    | RT.Function -> typ_union env (TArrow (TBot, [TBot], TTop)) typ
+    | RT.Object -> typ_union env (TObject []) typ
+    | RT.Undefined -> typ_union env typ_undef typ
+
+
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
     | TBot -> TBot (* might change if we allow arbitrary casts *)
     | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
@@ -208,7 +217,7 @@ module Env = struct
     | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
     | TForall _ -> typ
     | TField -> List.fold_left (basic_static cs) TBot (RTSetExt.to_list rt)
-    | TTop -> List.fold_left (basic_static cs) TBot (RTSetExt.to_list rt)
+    | TTop -> List.fold_left (basic_static2 cs) TBot (RTSetExt.to_list rt)
     | TId _ -> typ
 
 

@@ -229,7 +229,7 @@ module Pretty = struct
                        parens (vert [ text "finally"; exp finally ]) ])
     | EThrow (_, e) -> parens (vert [ text "throw"; exp e ])
     | EPrefixOp (_, op, e) -> parens (vert [ text op; exp e ])
-    | EInfixOp (_, op, e1, e2) -> parens (vert [ text op; exp e1; exp e2 ])
+    | EInfixOp (_, op, e1, e2) -> parens (horz [ text op; exp e1; exp e2 ])
     | ETypecast (_, t, e) ->
         parens (vert [ text "cast"; RTSetExt.p_set RT.pp t; exp e ])
     | ERef (_, _, e) -> parens (horz [ text "ref"; exp e ])
@@ -248,10 +248,10 @@ module Pretty = struct
     parens (horz [ text s; text ":"; exp e ])
 
   and bind (x, e) = 
-    parens (vert [text x; text "="; exp e])
+    parens (horz [text x; exp e])
 
   and rec_bind (x, t, e) = 
-    parens (vert [text x; text ":"; typ t; text "="; exp e])
+    parens (horz [text x; text ":"; typ t; exp e])
 
   let constr (c : constr_exp) =
     parens (vert [ sep [ text "define-constructor"; text c.constr_name; 
