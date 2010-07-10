@@ -118,7 +118,7 @@ let action_tc () : unit =
 
 let action_cps () : unit =
   let typedjs = get_typedjs () in
-  let cps = Typedjs_cps.cps typedjs in
+  let cps = Typedjs_cps.simpl_cps typedjs in
     Typedjs_cps.p_cpsexp cps std_formatter
 
 let action_df () : unit =

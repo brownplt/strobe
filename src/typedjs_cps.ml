@@ -399,3 +399,42 @@ and p_bind (_, f, args, typ, body) : printer =
                     [ text "lambda"; parens (horz (map text args));
                       Typedjs_syntax.Pretty.p_typ typ;
                       p_cpsexp body ]) ])
+
+(* Debugging aids *)
+
+let subst_val (x : id) (v : cpsval) (w : cpsval) = match w with
+  | Const c -> Const c
+  | Id (p, y) -> if x = y then v else Id (p, y)
+
+let subst_bindexp (x : id) (v : cpsval) (b : bindexp) = match b with
+  | Let w -> Let (subst_val x v w)
+  | Op1 (op, w) -> Op1 (op, subst_val x v w)
+  | Op2 (op, w1, w2) -> Op2 (op, subst_val x v w1, subst_val x v w2)
+  | Object fields -> Object (map (second2 (subst_val x v)) fields)
+  | Array ws -> Array (map (subst_val x v) ws)
+  | UpdateField (w1, w2, w3) ->
+      UpdateField (subst_val x v w1, subst_val x v w2, subst_val x v w3)
+
+let rec subst (x : id) (v : cpsval) (e : cpsexp) : cpsexp = match e with
+  | Fix (n, binds, body) -> Fix (n, map (subst_bind x v) binds, subst x v body)
+  | App (n, w, ws) -> App (n, subst_val x v w, map (subst_val x v) ws)
+  | If (n, w, e1, e2) -> If (n, subst_val x v w, subst x v e1, subst x v e2)
+  | Bind (n, y, rhs, body) ->
+      Bind (n, y, subst_bindexp x v rhs, if x = y then body else subst x v body)
+
+and subst_bind (x : id) (v : cpsval) (b, f, xs, t, e) = 
+  if List.mem x (f :: xs) then
+    (b, f, xs, t, e)
+  else 
+    (b, f, xs, t, subst x v e)
+
+let rec simpl_cpsexp exp = match exp with
+  | Bind (n, x, Let v, body) -> simpl_cpsexp (subst x v body)
+  | Bind (n, x, bindexp, body) -> Bind (n, x, bindexp, simpl_cpsexp body)
+  | If (n, v, e1, e2) -> If (n, v, simpl_cpsexp e1, simpl_cpsexp e2)
+  | App _ -> exp
+  | Fix (n, binds, body) ->
+      let f (b, f, xs, t, e) = (b, f, xs, t, simpl_cpsexp e) in
+        Fix (n, map f binds, simpl_cpsexp body)
+
+let simpl_cps (def : def) : cpsexp = simpl_cpsexp (cps def)
