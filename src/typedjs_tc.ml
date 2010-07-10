@@ -149,7 +149,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
             | Some t -> t
             | None -> error p ("object does not have a field " ^ fname)
           end
-      | TTop, field -> begin match tc_exp env field with
+      | TField, field -> begin match tc_exp env field with
           | TField -> TField
           | _ -> error p "expected a TField index"
         end
