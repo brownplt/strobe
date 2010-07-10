@@ -36,6 +36,8 @@ module Input : sig
   (** Skip flow analysis? *)
   val set_no_cf : unit -> unit
   val get_no_cf : unit -> bool
+  val set_simpl_cps : unit -> unit
+  val get_simpl_cps : unit -> bool
 end = struct
 
   let env = ref Env.empty_env
@@ -75,9 +77,21 @@ end = struct
 
   let get_no_cf () = !no_cf
 
+  let simpl_cps = ref false
+
+  let set_simpl_cps () = match !simpl_cps with
+    | false -> simpl_cps := true
+    | true -> failwith "-simplcps already set"
+
+  let get_simpl_cps () = !simpl_cps
+
 end
 
 open Input
+
+let get_cps exp = match get_simpl_cps () with
+  | true -> Typedjs_cps.simpl_cps exp
+  | false -> Typedjs_cps.cps exp
 
 let action_pretty () : unit = 
   let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
@@ -101,7 +115,7 @@ let annotate_exp exp =
   if Input.get_no_cf () then
     exp
   else 
-    let cpstypedjs = Typedjs_cps.cps exp in
+    let cpstypedjs = get_cps exp in
   let cf_env =
     Lat.bind "%end" (Lat.singleton RT.Function)
       (Lat.bind "%global" (Lat.singleton RT.Object)
@@ -118,7 +132,7 @@ let action_tc () : unit =
 
 let action_cps () : unit =
   let typedjs = get_typedjs () in
-  let cps = Typedjs_cps.simpl_cps typedjs in
+  let cps = get_cps typedjs in
     Typedjs_cps.p_cpsexp cps std_formatter
 
 let action_df () : unit =
@@ -155,6 +169,8 @@ let main () : unit =
        "<file> read environment types from <file>");
       ("-global", Arg.String (fun s -> set_global_object s),
        "<class> use <class> as the global object");
+      ("-simpl", Arg.Unit Input.set_simpl_cps,
+       "use simplified but slower CPS");
       ("-pretty", Arg.Unit (set_action action_pretty),
        "pretty-print JavaScript");
       ("-expr", Arg.Unit (set_action action_expr),
