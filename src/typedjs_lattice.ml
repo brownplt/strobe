@@ -187,3 +187,18 @@ let df_func_of_typ (t : typ) : av list -> av = match t with
       let r_av = ASet (rt_of_typ r_typ) in
         (fun _ -> r_av)
   | _ -> (fun _ -> ASet rtany)
+
+let narrow_env (heap : heap) (env : env) : env = 
+  let f x av = 
+    match av with
+    | ALocTypeIs (loc, testSet) ->
+        let locSet = deref loc heap in
+          if RTSet.subset locSet testSet then
+            ABool true
+          else if RTSet.is_empty (RTSet.inter testSet locSet) then
+            ABool false
+          else
+            ALocTypeIs (loc, testSet) (* original *)
+    | other -> other in
+    IdMap.mapi f env
+      

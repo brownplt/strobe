@@ -42,6 +42,8 @@ val av_union : heap -> av -> av -> av
 
 val union_env : heap -> env -> env -> env
 
+val narrow_env : heap -> env -> env
+
 val lookup : id -> env -> av
 
 val bind : id -> av -> env -> env

@@ -97,6 +97,10 @@ let mk_closure (env : env) (_, f, args, typ, body_exp) =
     try ignore (H.find envs node)
     with Not_found -> H.replace envs node env
 
+let bind_val split v absv env = match v with
+  | Id (p, x) when split -> bind x absv env
+  | _ -> env
+  
 let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
   | Bind (node, x, bindexp, cont) ->
       let cpsval, heap = match bindexp with
@@ -112,20 +116,22 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         flow (bind x cpsval env) heap cont
   | If (node, v1, true_cont, false_cont) ->
       let absv1 = abs_of_cpsval node env v1 in
-      let heap2, heap3 = match absv1 with
+      let heap2, heap3, split = match absv1 with
         | ALocTypeIs (loc, true_set) ->
-            (set_ref loc true_set heap,
-             let false_set = RTSet.diff (deref loc heap) true_set in
-               set_ref loc false_set heap)
-        | _ -> (heap, heap) in
-        begin match absv1 with
-          | ABool true -> flow env heap2 true_cont
-          | ABool false ->  flow env heap3 false_cont
-          | _ -> begin
-              flow env heap2 true_cont;
-              flow env heap3 false_cont
-            end
-        end
+            let false_set = RTSet.diff (deref loc heap) true_set in
+              (set_ref loc true_set heap,
+               set_ref loc false_set heap,
+               true)
+        | _ -> 
+            (heap, heap, false) in
+        (match absv1 with
+             ABool false -> ()
+           | _ ->
+               flow (bind_val split v1 (ABool true) env) heap2 true_cont);
+        (match absv1 with
+           | ABool true -> ()
+           | _ ->
+               flow (bind_val split v1 (ABool false) env) heap3 false_cont)
   | Fix (n, binds, cont) ->
       let esc_set = esc_cpsexp cpsexp in
       let is_escaping (boundary, f, _, _, _) = 
@@ -139,8 +145,10 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
   | App (n, f, args) ->
       begin match abs_of_cpsval n env f, map (abs_of_cpsval n env) args with
         | AClosure (_, formals, body), argvs -> 
-            let flow_env = List.fold_right2 bind formals argvs empty_env in
-              flow flow_env heap body
+            let node = node_of_cpsexp body in
+              H.replace envs node (narrow_env heap (H.find envs node));
+              let flow_env = List.fold_right2 bind formals argvs empty_env in
+                flow flow_env heap body
         | _ -> ()
       end
 
