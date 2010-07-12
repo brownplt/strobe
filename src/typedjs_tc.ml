@@ -21,6 +21,13 @@ let un_null t = match t with
   | TUnion (TConstr ("Null", []), t') -> t'
   | TUnion (t', TConstr ("Null", [])) -> t'
   | _ -> t
+
+let un_ref t = match t with
+  | TRef s -> s
+  | TSource s -> s
+  | TSink s -> s
+  | _ -> failwith ("un_ref got " ^ string_of_typ t)
+
  
 let rec tc_exp (env : Env.env) exp = match exp with
   | EConst (_, c) -> tc_const c
@@ -99,7 +106,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let _ = tc_exp env e in
         TBot
   | ETypecast (p, rt, e) -> 
-      Env.static env rt (tc_exp env e)
+      let t = tc_exp env e in
+        Env.static env rt t
   | EEmptyArray (p, elt_typ) -> 
       TConstr ("Array", [ Env.check_typ p env elt_typ ])
   | EArray (p, []) -> 
@@ -139,7 +147,17 @@ let rec tc_exp (env : Env.env) exp = match exp with
               | TConstr ("Str", []) -> begin match eidx with
                   | EConst (_, JavaScript_syntax.CString "length") -> 
                       TRef typ_int
-                  | _ -> error p ("only property of arrays is .length")
+                  | EConst (_, JavaScript_syntax.CString "push") ->
+                      TRef (TArrow (TConstr ("Array", [tarr]),
+                                    [un_ref tarr], typ_undef))
+                  | EConst (_, JavaScript_syntax.CString "join") ->
+                      (match un_ref tarr with
+                         | TConstr ("Str", []) ->
+                             TRef (TArrow (TConstr ("Array", [tarr]),
+                                           [typ_str], typ_str))
+                         | _ -> error p ("expected array of strings"))
+                             
+                  | _ -> error p ("unknown array method")
                 end
               | _ -> error p 
                   ("array index requires Int, got " ^ string_of_typ tidx)

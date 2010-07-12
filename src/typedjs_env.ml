@@ -197,7 +197,6 @@ module Env = struct
     | RT.Object -> typ_union env (TObject []) typ
     | RT.Undefined -> typ_union env typ_undef typ
 
-
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
     | TBot -> TBot (* might change if we allow arbitrary casts *)
     | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
@@ -217,7 +216,11 @@ module Env = struct
     | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
     | TForall _ -> typ
     | TField -> List.fold_left (basic_static cs) TBot (RTSetExt.to_list rt)
-    | TTop -> List.fold_left (basic_static2 cs) TBot (RTSetExt.to_list rt)
+    | TTop -> 
+        if RTSet.equal rt Typedjs_lattice.rtany then
+          TTop
+        else (* TODO: no arrow type that is the supertype of all arrows *)
+          List.fold_left (basic_static2 cs) TBot (RTSetExt.to_list rt)
     | TId _ -> typ
 
 
