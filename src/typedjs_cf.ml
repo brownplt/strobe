@@ -158,16 +158,17 @@ and bind_lambda env (_, f, args, typ, body_exp) =
 and bind_esc_lambda env (_, f, _,_, _) =
   bind f (singleton RT.Function) env
 
-and sub_flow (env_node : node) (_, f, args, typ, body_exp) =  match typ with
-  | Typedjs_syntax.TArrow (_, arg_typs, _) -> begin try
-      ignore (H.find lambdas (node_of_cpsexp body_exp))
-    with Not_found ->
-      H.add lambdas (node_of_cpsexp body_exp)
-        (env_node, 
-         List.fold_right2 bind args (map runtime arg_typs) empty_env,
-         body_exp)
-    end
-  | _ -> failwith "expected TArrow in sub_flow"
+and sub_flow (env_node : node) (_, f, args, typ, body_exp) = 
+  match Typedjs_syntax.Typ.match_func_typ typ with
+    |  Some (arg_typs, _) -> begin try
+         ignore (H.find lambdas (node_of_cpsexp body_exp))
+       with Not_found ->
+         H.add lambdas (node_of_cpsexp body_exp)
+           (env_node, 
+            List.fold_right2 bind args (map runtime arg_typs) empty_env,
+            body_exp)
+       end
+    | _ -> failwith "expected TArrow in sub_flow"
 
 and flow (env : env) (heap : heap) (cpsexp : cpsexp) = 
   let node = node_of_cpsexp cpsexp in

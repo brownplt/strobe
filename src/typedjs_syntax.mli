@@ -130,6 +130,15 @@ module Exp : sig
 
 end
 
+module Typ : sig
+
+  (* [match_func_typ typ] returns the list of argument types and the return
+     type, if [typ] is a function. Note that function types have additional
+     components. (The type of [this], quantifiers, etc.) *)
+  val match_func_typ : typ -> (typ list * typ) option
+
+end
+
 module Pretty : sig
 
   open Format

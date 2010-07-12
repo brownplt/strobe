@@ -118,6 +118,15 @@ type def =
 
 (******************************************************************************)
 
+module Typ = struct
+
+  let rec match_func_typ (typ : typ) : (typ list * typ) option = match typ with
+    | TForall (_, _, t) -> match_func_typ t
+    | TArrow (_, args, ret) -> Some (args, ret)
+    | _ -> None
+
+end
+
 module Exp = struct
 
   type t = exp

@@ -27,7 +27,6 @@ let un_ref t = match t with
   | TSource s -> s
   | TSink s -> s
   | _ -> failwith ("un_ref got " ^ string_of_typ t)
-
  
 let rec tc_exp (env : Env.env) exp = match exp with
   | EConst (_, c) -> tc_const c
@@ -269,28 +268,29 @@ let rec tc_exp (env : Env.env) exp = match exp with
                         (string_of_typ s)) in
         List.iter tc_bind binds;
         tc_exp env body
-  | EFunc (p, args, fn_typ, body) -> begin match Env.check_typ p env fn_typ with
-        TArrow (this_t, arg_typs, result_typ) ->
-          if List.length arg_typs = List.length args then ()
-          else raise (Typ_error (p,
-            "given " ^ (string_of_int (List.length args)) ^ " arg names but "
-            ^ (string_of_int (List.length arg_typs)) ^ " arg types"));
-
-          let bind_arg env x t = Env.bind_id x t env in
-          let env = List.fold_left2 bind_arg env args arg_typs in
-          let env = Env.clear_labels env in
-          let env = Env.bind_id "this" this_t env in
-          let body_typ = tc_exp env body in
-            if Env.subtype env body_typ result_typ then 
-              TArrow (this_t, arg_typs, result_typ)
-            else raise 
-              (Typ_error
-                 (p,
-                  sprintf "function body has type\n%s\n, but the \
+  | EFunc (p, args, fn_typ, body) -> 
+      let expected_typ = Env.check_typ p env fn_typ in
+      begin match Env.bind_typ env expected_typ with
+          (env, TArrow (this_t, arg_typs, result_typ)) ->
+            if not (List.length arg_typs = List.length args) then
+              error p 
+                (sprintf "given %d argument names, but %d argument types"
+                   (List.length args) (List.length arg_typs));
+            let bind_arg env x t = Env.bind_id x t env in
+            let env = List.fold_left2 bind_arg env args arg_typs in
+            let env = Env.clear_labels env in
+            let env = Env.bind_id "this" this_t env in
+            let body_typ = tc_exp env body in
+              if Env.subtype env body_typ result_typ then 
+                expected_typ
+              else raise 
+                (Typ_error
+                   (p,
+                    sprintf "function body has type\n%s\n, but the \
                              return type is\n%s" (string_of_typ body_typ)
-                    (string_of_typ result_typ)))
-      | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
-    end
+                      (string_of_typ result_typ)))
+        | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
+      end
   | ESubsumption (p, t, e) ->
       let s = tc_exp env e in
       let t = Env.check_typ p env t in

@@ -257,6 +257,10 @@ module Env = struct
         | None -> env
         | Some cname' -> set_global_object env cname'
 
+  let rec bind_typ env typ : env * typ = match typ with
+    | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) t
+    | typ -> (env, typ)
+
 
 end
 

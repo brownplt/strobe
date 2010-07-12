@@ -61,6 +61,7 @@ let is_empty lst = match lst with
 
 type env = bool IdMap.t
 
+
 let rec exp (env : env) expr = match expr with
   | ConstExpr (a, c) -> EConst (a, c)
   | HintExpr (p, txt, ArrayExpr (p', [])) -> 
@@ -211,8 +212,8 @@ and match_func env expr = match expr with
           fold_left (fun acc x -> IdMap.add x true acc) env' args in
         let mutable_arg exp id =
           ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) in
-        begin match typ with
-            TArrow (_, arg_typs, r) ->
+        begin match Typ.match_func_typ typ with
+            Some (arg_typs, r) ->
               if List.length args != List.length arg_typs then
                 raise (Not_well_formed (
                          a, sprintf "given %d args but %d arg types"
@@ -221,8 +222,7 @@ and match_func env expr = match expr with
                                 fold_left mutable_arg
                                   (ELabel (a', "%return", r, exp env' body))
                                   args))
-          | _ ->
-              raise (Not_well_formed (a, "expected a function type"))
+          | None -> raise (Not_well_formed (a, "expected a function type"))
         end
   | FuncExpr (a, _, _) ->
       failwith ("expected a LabelledExpr at " ^ string_of_position a)

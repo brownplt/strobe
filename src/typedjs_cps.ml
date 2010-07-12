@@ -55,7 +55,7 @@ let mk_id x = Id (p, x)
 (* [ext_typ] extends the arrow type on a function to account for additional
    arguments added by the CPS transformation: the continuation and exception
    handler. *)
-let ext_typ typ = match typ with
+let rec ext_typ typ = match typ with
   | TArrow (this_typ, arg_typs, result_typ) ->
       (* Note that all return types are TBot. (i.e. does not return) *)
       let cont_typ = TArrow (TTop, [result_typ], TBot)
@@ -63,6 +63,7 @@ let ext_typ typ = match typ with
       and throw_typ = TArrow (TTop, [TTop], TBot) 
       and this_typ = TObject [] in
       TArrow (this_typ, cont_typ :: throw_typ :: this_typ :: arg_typs, TBot)
+  | TForall (x, x_t, t) -> TForall (x, x_t, ext_typ t)
   | _ -> failwith "ext_typ expected an arrow type"
 
 
@@ -82,6 +83,10 @@ let bind_cont cont fn = match cont with
         Fix (new_node (), 
              [false, k', [r], TArrow (TTop, [TTop], TTop), k (mk_id r)],
              fn k')      
+
+
+let is_admin_name name = 
+  String.get name 0 = '%'
 
 let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
   | EConst (_, c) -> ret k (Const c)
@@ -154,7 +159,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
           let k' = new_name () in
           let r = new_name () in
             Fix (new_node (),
-                 [false, k', [r], TArrow (TTop, [t], TTop), k (mk_id r)],
+                 [true, k', [r], TArrow (TTop, [t], TTop), k (mk_id r)],
                  cps_exp e throw (Jmp k'))
     end
   | EApp (_, func, args) -> 
@@ -242,10 +247,13 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
 
 and cps_bind ((name, typ, e) : id * typ * exp) = match e with
     EFunc (_, args, _, body) ->
-      let k = new_name () 
-      and throw = new_name () in
-        (true, name, k :: throw :: "%this" :: args,
-         ext_typ typ, cps_exp body throw (Jmp k))
+      let k = new_name () in
+      let throw = new_name () in
+        (not (is_admin_name name),
+         name,
+         k :: throw :: "%this" :: args,
+         ext_typ typ,
+         cps_exp body throw (Jmp k))
   | _ -> failwith "cps_bind : expected a function"
 
 and cps_exp_list exps throw (k : cpsval list -> cpsexp) = match exps with

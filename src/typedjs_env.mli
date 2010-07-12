@@ -52,6 +52,8 @@ module Env : sig
 
   val static : env -> RTSet.t -> typ -> typ
 
+  val bind_typ : env -> typ -> env * typ
+
 end
 
 

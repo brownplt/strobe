@@ -27,7 +27,10 @@ type bindexp =
   | UpdateField of cpsval * cpsval * cpsval
 
 type cpsexp =
-    Fix of node * (bool * id * id list * typ * cpsexp) list * cpsexp
+  | Fix of node * (bool * id * id list * typ * cpsexp) list * cpsexp
+      (** A [true] flag on a function indicates that it is a modularity-boundary
+          for flow analysis. All user-defined functions are boundaries, while
+          administrative functions are not. *)
   | App of node * cpsval * cpsval list
   | If of node * cpsval * cpsexp * cpsexp
   | Bind of node * id * bindexp * cpsexp
