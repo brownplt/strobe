@@ -5,12 +5,12 @@ do
   result=`../tc -pretc $file 2>&1`
   exitcode=$?
   if [ $exitcode -ne 2 ]; then
-      echo "$file: expected a well-formedness error; exit code was $exitcode\n"
+      echo -e "$file: expected a well-formedness error; exit code was $exitcode\n"
       continue
   fi
   errors=`echo "$result" | grep -ci "not well-formed"`
   if [ $errors -ne 1 ]; then
-    echo "$file: expected a well-formness error; got\n$result\n"
+    echo -e "$file: expected a well-formness error; got\n$result\n"
   fi
 done
 
@@ -18,7 +18,7 @@ for file in ../tests/well-formed/*.js
 do
   result=`../tc -pretc $file 2>&1`
   if [ $? -ne 0 ]; then
-      echo "$file: aborted with exit code $?; output was:\n$result\n"
+      echo -e "$file: aborted with exit code $?; output was:\n$result\n"
   fi
 done
 
@@ -28,12 +28,12 @@ do
   result=`../tc -tc $file 2>&1`
   exitcode=$?
   if [ $exitcode -ne 2 ]; then
-      echo "$file: expected a type-error error; exit code was $exitcode\n"
+      echo -e "$file: expected a type-error error; exit code was $exitcode\n"
       continue
   fi
   errors=`echo "$result" | grep -ci "type error"`
   if [ $errors -ne 1 ]; then
-    echo "$file: expected a type error error; got\n$result\n"
+    echo -e "$file: expected a type error error; got\n$result\n"
   fi
 done
 
@@ -41,7 +41,7 @@ for file in ../tests/typable/*.js
 do
   result=`../tc -tc $file 2>&1`
   if [ $? -ne 0 ]; then
-      echo "$file: aborted with exit code $?; output was:\n$result\n"
+      echo -e "$file: aborted with exit code $?; output was:\n$result\n"
   fi
 done
 
@@ -49,7 +49,7 @@ for file in ../tests/browser/*.js
 do
   result=`../tcb -tc $file 2>&1`
   if [ $? -ne 0 ]; then
-      echo "$file: aborted with exit code $?; output was:\n$result\n"
+      echo -e "$file: aborted with exit code $?; output was:\n$result\n"
   fi
 done
 
@@ -58,7 +58,7 @@ for file in ../tests/parsing/*.js
 do
   result=`../tc -pretty $file 2>&1`
   if [ $? -ne 0 ]; then
-      echo "$file: aborted with exit code $?; output was:\n$result\n"
+      echo -e "$file: aborted with exit code $?; output was:\n$result\n"
   fi
 done
 

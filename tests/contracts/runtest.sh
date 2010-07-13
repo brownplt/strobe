@@ -6,7 +6,7 @@ DEST=`mktemp`
 set -o pipefail
 
 cat ../../data/contracts.js > $DEST
-../../build/main.d.byte -env ../../data/javascript.env $SRC >> $DEST
+../../build/main.d.byte -contracts -env ../../data/javascript.env $SRC >> $DEST
 
 if [[ $(head -n1 $SRC) == "// succeeds" ]]; then
   OUTPUT=`./v8 -f $DEST 2>&1`

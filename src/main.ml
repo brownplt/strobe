@@ -38,6 +38,8 @@ module Input : sig
   val get_no_cf : unit -> bool
   val set_simpl_cps : unit -> unit
   val get_simpl_cps : unit -> bool
+  val get_print_contracts : unit -> bool
+  val set_print_contracts: unit -> unit
 end = struct
 
   let env = ref Env.empty_env
@@ -85,6 +87,14 @@ end = struct
 
   let get_simpl_cps () = !simpl_cps
 
+  let print_contracts = ref false
+
+  let set_print_contracts () = match !print_contracts with
+    | false -> print_contracts := true
+    | true -> failwith "-contracts already set"
+
+  let get_print_contracts () = !print_contracts
+
 end
 
 open Input
@@ -127,8 +137,9 @@ let annotate_exp exp =
 
 let action_tc () : unit = 
   let _ = Typedjs_tc.typecheck (get_env ()) (annotate_exp (get_typedjs ())) in
-  let tr_map = mk_contract_transformers !contracts in
-    transform_exprs tr_map (get_cin ()) stdout
+    if get_print_contracts () then
+      let tr_map = mk_contract_transformers !contracts in
+        transform_exprs tr_map (get_cin ()) stdout
 
 let action_cps () : unit =
   let typedjs = get_typedjs () in
@@ -170,7 +181,7 @@ let main () : unit =
       ("-global", Arg.String (fun s -> set_global_object s),
        "<class> use <class> as the global object");
       ("-simpl", Arg.Unit Input.set_simpl_cps,
-       "use simplified but slower CPS");
+       "use simplified but slower CPS (broken)");
       ("-pretty", Arg.Unit (set_action action_pretty),
        "pretty-print JavaScript");
       ("-expr", Arg.Unit (set_action action_expr),
@@ -180,7 +191,9 @@ let main () : unit =
       ("-cps", Arg.Unit (set_action action_cps),
        "convert program to CPS");
       ("-df", Arg.Unit (set_action action_df),
-       "convert program to ANF, then apply dataflow analysis");
+       "convert program to CPS, then apply flow analysis");
+      ("-contracts", Arg.Unit set_print_contracts,
+       "insert contracts (prints to stdout)");
       ("-noflows", Arg.Unit Input.set_no_cf,
        "disable flow analysis (for debugging and benchmarking)")
     ]
