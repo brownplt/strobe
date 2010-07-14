@@ -55,6 +55,7 @@ rule token = parse
    | "<" { LANGLE }
    | ">" { RANGLE }
    | "forall" { FORALL }
+   | "checked" { CHECKED }
    | "<:" { LTCOLON }
    | eof { EOF }
    | ident as x { ID x }

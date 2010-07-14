@@ -106,11 +106,11 @@ contracts.varArityFunc = function(name) {
 };
 
 
-contracts.Undefined = contracts.flat("Undefined")(function(val) {
+contracts.Undefined = contracts.flat("Undef")(function(val) {
   return val === undefined;
 });
 
-contracts.NotUndefined = contracts.flat("NotUndef")(function(val) {
+contracts.NotUndef = contracts.flat("NotUndef")(function(val) {
   return val !== undefined;
 });
 
@@ -120,7 +120,21 @@ contracts.Str = contracts.flat("Str")(function(v) {
 
 contracts.Int = contracts.flat("Int")(function(v) {
     return typeof v === "number" && (Math.round(v) == v);
-})
+});
+
+contracts.Num = contracts.flat("Num")(function(v) {
+    return typeof v === "number";
+});
+
+contracts.Bool = contracts.flat("Bool")(function(v) {
+    return typeof v === "boolean";
+});
+
+contracts.Instanceof = function(klass) { 
+  return contracts.flat("instanceof")(function(v) {
+    return v instanceof klass;
+  });
+};
 
 // pos is the name of val.  neg should be the name of the calling context.
 // loc is the location where the contract is declared.

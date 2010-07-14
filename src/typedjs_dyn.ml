@@ -3,6 +3,7 @@ open Typedjs_fromExpr
 open JavaScript_syntax
 open Typedjs_syntax
 open JavaScript
+open Typedjs_dyn_supp
 
 module Int = struct
   type t = int
@@ -11,7 +12,6 @@ end
 
 module IntMap = Map.Make (Int)
 module IntMapExt = MapExt.Make (Int) (IntMap)
-
 
 let is_before stop_ix (start_ix, _) =
   start_ix < stop_ix
@@ -44,14 +44,21 @@ let p = (Lexing.dummy_pos, Lexing.dummy_pos)
 let contract_lib = VarExpr (p, "contracts")
   
 let flat p name =  CPred (name, DotExpr (p, contract_lib, name))
-  
+
+let instanceof p name =  
+  CPred (name, CallExpr (p, DotExpr (p, contract_lib, "Instanceof"),
+                         [ VarExpr (p, name) ]))
+
 let rec ctc_of_typ p (typ : typ) = match typ with
   | TArrow (_, args, result) -> 
       CArrow (map (ctc_of_typ p) args, ctc_of_typ p result)
   | TConstr ("Int", []) -> flat p "Int"
   | TConstr ("Str", []) -> flat p "Str"
-  | TConstr ("Undefined", []) -> flat p "Undefined"
-  | TConstr ("NotUndef", []) -> flat p "NotUndefined"
+  | TConstr ("Undef", []) -> flat p "Undef"
+  | TConstr ("NotUndef", []) -> flat p "NotUndef"
+  | TConstr ("Bool", []) -> flat p "Bool"
+  | TConstr (name, []) when is_instanceof_contract name ->
+      instanceof p name
   | _ -> 
       failwith (sprintf "cannot create a contract for the type %s"
                   (FormatExt.to_string Typedjs_syntax.Pretty.p_typ typ))

@@ -1,5 +1,5 @@
 #!/bin/bash
 P=`dirname $0`
-$P/build/main.d.byte -env $P/data/javascript.env $@
+$P/build/main.d.byte -contracts -env $P/data/javascript.env $@
 
 

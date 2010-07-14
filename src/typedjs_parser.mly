@@ -10,6 +10,7 @@ open Typedjs_types
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
+       CHECKED
 
 %right UNION
 
@@ -84,13 +85,20 @@ any_id :
   | BOOL { "Bool" }
   | NUM { "Num" }
 
+checked :
+  | CHECKED { true }
+  | { false }
+
 env_decl :
-  | CLASS any_id PROTOTYPE any_id LBRACE fields RBRACE
-    { EnvClass
-        ( $2 (* name *) , 
-          Some $4 (* prototype type *),
-          $6 (* local fields *)) }
-  | CLASS any_id LBRACE fields RBRACE { EnvClass ($2, None (* root *), $4) }
+  | CLASS checked any_id PROTOTYPE any_id LBRACE fields RBRACE
+    { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
+      EnvClass
+        ( $3 (* name *) , 
+          Some $5 (* prototype type *),
+          $7 (* local fields *)) }
+  | CLASS checked any_id LBRACE fields RBRACE 
+      { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
+        EnvClass ($3, None (* root *), $5) }
   | VAL ID COLON typ { EnvBind ($2, $4) }
   | ID COLON typ { EnvBind ($1, TRef $3) }
   | OPERATOR STRING COLON typ { EnvBind ($2, $4) }
