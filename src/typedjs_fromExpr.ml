@@ -134,6 +134,11 @@ let rec exp (env : env) expr = match expr with
           Therefore, the return type is [ty_undef]. *)
       ELabel (a, x, typ_undef, exp env e)
   | BreakExpr (a, x, e) -> EBreak (a, x, exp env e)
+  | SeqExpr 
+      (p,
+       IfExpr (_, IdExpr _, ConstExpr (_, S.CUndefined), 
+               ConstExpr (_, S.CUndefined)),
+       next_expr) -> exp env next_expr
   | SeqExpr (a, _, _) -> block_intro env (seq expr)
   | VarDeclExpr (a, x, e) -> 
       (* peculiar code: body or block ends with var *)

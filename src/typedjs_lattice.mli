@@ -14,7 +14,7 @@ end
 
 type av =
   | ASet of RTSet.t
-  | ADeref of Loc.t
+  | ADeref of Loc.t * RTSet.t
   | ARef of Loc.t
   | ALocTypeof of Loc.t
   | ALocTypeIs of Loc.t * RTSet.t
@@ -38,11 +38,9 @@ val empty : av
 
 val p_av : av -> FormatExt.printer
 
-val av_union : heap -> av -> av -> av
+val av_union : av -> av -> av
 
-val union_env : heap -> env -> env -> env
-
-val narrow_env : heap -> env -> env
+val union_env : env -> env -> env
 
 val lookup : id -> env -> av
 
@@ -58,7 +56,7 @@ val deref : Loc.t -> heap -> RTSet.t
 
 val set_ref : Loc.t -> RTSet.t -> heap -> heap
 
-val to_set : heap -> av -> RTSet.t
+val to_set : av -> RTSet.t
 
 val union_heap : heap -> heap -> heap
 

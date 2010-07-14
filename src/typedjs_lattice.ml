@@ -25,7 +25,7 @@ module HeapExt = MapExt.Make (Loc) (Heap)
 
 type av =
   | ASet of RTSet.t
-  | ADeref of Loc.t
+  | ADeref of Loc.t * RTSet.t
   | ARef of Loc.t
   | ALocTypeof of Loc.t
   | ALocTypeIs of Loc.t * RTSet.t
@@ -53,7 +53,7 @@ open FormatExt
 
 let rec p_av av = match av with
   | ASet s -> RTSetExt.p_set RT.pp s
-  | ADeref l -> horz [ text "deref"; Loc.pp l ]
+  | ADeref (l, v) -> horz [ text "deref"; Loc.pp l; RTSetExt.p_set RT.pp v ]
   | ARef l -> horz [ text "ref"; Loc.pp l ]
   | ALocTypeof x -> horz [ text "LocTypeof"; Loc.pp x ]
   | ALocTypeIs (x, t) -> 
@@ -76,7 +76,7 @@ let p_heap h =
   HeapExt.p_map Loc.pp (RTSetExt.p_set RT.pp) h
 
 
-let rec to_set heap v = match v with
+let rec to_set v = match v with
   | ASet set -> set
   | ALocTypeof _ -> RTSet.singleton RT.Str
   | ALocTypeIs _ -> RTSet.singleton RT.Bool
@@ -84,12 +84,7 @@ let rec to_set heap v = match v with
   | AClosure _ -> RTSet.singleton RT.Function
   | ARef _ -> rtany
   | ABool _ -> RTSet.singleton RT.Bool
-  | ADeref loc -> 
-      try Heap.find loc heap
-      with Not_found ->
-        eprintf "to_set cannot dereference location %s.\n"
-          (FormatExt.to_string Loc.pp loc);
-        raise Not_found
+  | ADeref (_, v) -> v
 
 let deref loc heap  =
   try 
@@ -99,11 +94,12 @@ let deref loc heap  =
     raise Not_found
 
 
-let rec av_union h av1 av2 = match av1, av2 with
+let rec av_union av1 av2 = match av1, av2 with
   | ASet s1, ASet s2 -> ASet (RTSet.union s1 s2)
-  | ASet _, _ -> av_union h av1 (ASet (to_set h av2))
-  | _, ASet _ -> av_union h (ASet (to_set h av1)) av2
-  | ADeref x, ADeref y when x = y -> ADeref x
+  | ASet _, _ -> av_union av1 (ASet (to_set av2))
+  | _, ASet _ -> av_union (ASet (to_set av1)) av2
+  | ADeref (x ,s1), ADeref (y, s2) when x = y && RTSet.equal s1 s2 -> 
+      ADeref (x, s1)
   | ARef x, ARef y when x = y -> ARef x
   | ALocTypeof x, ALocTypeof y when x = y -> ALocTypeof x
   | ALocTypeIs (x, s), ALocTypeIs (y, t) when x = y -> 
@@ -113,12 +109,15 @@ let rec av_union h av1 av2 = match av1, av2 with
       if m = n then av1
       else failwith "av_union on distinct closures"
   | ABool b1, ABool b2 when b1 = b2 -> ABool b1
-  | _ -> av_union h (ASet (to_set h av1)) (ASet (to_set h av2))
+  | _ -> av_union (ASet (to_set av1)) (ASet (to_set av2))
 
-let union_env h (env1 : env) (env2 : env) : env = 
-  IdMapExt.join (fun _ -> av_union h) env1 env2
+let union_env = IdMapExt.join (fun _ -> av_union)
 
-let p_env env = IdMapExt.p_map text p_av env
+let p_env env = IdMapExt.p_map text p_av 
+  (IdMapExt.filter (fun _ v -> match v with
+                      |  ASet _ -> false
+                      | _ -> true) 
+     env)
 
 let lookup (x : id) (env : env) : av =
   try
@@ -187,18 +186,3 @@ let df_func_of_typ (t : typ) : av list -> av = match t with
       let r_av = ASet (rt_of_typ r_typ) in
         (fun _ -> r_av)
   | _ -> (fun _ -> ASet rtany)
-
-let narrow_env (heap : heap) (env : env) : env = 
-  let f x av = 
-    match av with
-    | ALocTypeIs (loc, testSet) ->
-        let locSet = deref loc heap in
-          if RTSet.subset locSet testSet then
-            ABool true
-          else if RTSet.is_empty (RTSet.inter testSet locSet) then
-            ABool false
-          else
-            ALocTypeIs (loc, testSet) (* original *)
-    | other -> other in
-    IdMap.mapi f env
-      

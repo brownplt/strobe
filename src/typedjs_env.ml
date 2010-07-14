@@ -193,7 +193,7 @@ module Env = struct
     | RT.Num -> typ_union env typ_num typ
     | RT.Str -> typ_union env typ_str typ
     | RT.Bool -> typ_union env typ_bool typ
-    | RT.Function -> typ_union env (TArrow (TBot, [TBot], TTop)) typ
+    | RT.Function -> typ_union env (TObject []) typ
     | RT.Object -> typ_union env (TObject []) typ
     | RT.Undefined -> typ_union env typ_undef typ
 

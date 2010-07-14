@@ -1,7 +1,6 @@
 function serialize(val) /*: Any ->  Str + Bool */ {
   switch (typeof val) {
   case "function": 
-      return false;
   case "undefined":
       return false;
   case "boolean":

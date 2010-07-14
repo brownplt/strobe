@@ -59,13 +59,12 @@ let abs_of_cpsval node env (cpsval : cpsval) = match cpsval with
       H.replace bound_id_map (p, x) node;
       lookup x env
 
-let calc_op1 node env heap (op : op1)  v = match op, v with
+let calc_op1 node env heap (op : op1) v = match op, v with
   | Ref, v -> 
       let loc = Loc node in
-        ARef loc, set_ref loc (to_set heap v) heap
-  | Deref, ARef loc ->
-      ADeref loc, heap
-  | Op1Prefix "prefix:typeof", ADeref loc -> ALocTypeof loc, heap
+        ARef loc, set_ref loc (to_set v) heap
+  | Deref, ARef loc -> (ADeref (loc, deref loc heap), heap)
+  | Op1Prefix "prefix:typeof", ADeref (loc, _) -> ALocTypeof loc, heap
   | _ -> any, heap
 
 
@@ -81,7 +80,7 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
   | Op2Infix "!==",  AStr str, ALocTypeof loc ->
       mk_type_is_not loc str, heap
   | SetRef, ARef l, v ->
-      v, set_ref l (to_set heap v) heap
+      v, set_ref l (to_set v) heap
   | Op2Infix "+", _, _ -> 
       ASet (RTSetExt.from_list [ RT.Num; RT.Str ]), heap
   | Op2Infix op, v1, v2 -> begin try
@@ -96,10 +95,6 @@ let mk_closure (env : env) (_, f, args, typ, body_exp) =
   let node = node_of_cpsexp body_exp in
     try ignore (H.find envs node)
     with Not_found -> H.replace envs node env
-
-let bind_val split v absv env = match v with
-  | Id (p, x) when split -> bind x absv env
-  | _ -> env
   
 let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
   | Bind (node, x, bindexp, cont) ->
@@ -113,25 +108,23 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         | Object _ -> singleton RT.Object, heap
         | Array _ -> singleton RT.Object, heap
         | UpdateField _ -> singleton RT.Object, heap in
-        flow (bind x cpsval env) heap cont
+        flow node (bind x cpsval env) heap cont
   | If (node, v1, true_cont, false_cont) ->
       let absv1 = abs_of_cpsval node env v1 in
-      let heap2, heap3, split = match absv1 with
+      let heap2, heap3, split, true_set, false_set = match absv1 with
         | ALocTypeIs (loc, true_set) ->
             let false_set = RTSet.diff (deref loc heap) true_set in
               (set_ref loc true_set heap,
                set_ref loc false_set heap,
-               true)
+               true, true_set, false_set)
         | _ -> 
-            (heap, heap, false) in
+            (heap, heap, false, RTSet.empty, RTSet.empty) in
         (match absv1 with
              ABool false -> ()
-           | _ ->
-               flow (bind_val split v1 (ABool true) env) heap2 true_cont);
+           | _ -> flow node env heap2 true_cont);
         (match absv1 with
            | ABool true -> ()
-           | _ ->
-               flow (bind_val split v1 (ABool false) env) heap3 false_cont)
+           | _ -> flow node env heap3 false_cont)
   | Fix (n, binds, cont) ->
       let esc_set = esc_cpsexp cpsexp in
       let is_escaping (boundary, f, _, _, _) = 
@@ -140,15 +133,13 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
       let env' = fold_left bind_lambda env nonesc_binds in
       let env' = fold_left bind_esc_lambda env' esc_binds in
         List.iter (mk_closure env') nonesc_binds;
-        flow env' heap cont; 
+        flow n env' heap cont; 
         List.iter (sub_flow (node_of_cpsexp cont)) binds
   | App (n, f, args) ->
       begin match abs_of_cpsval n env f, map (abs_of_cpsval n env) args with
         | AClosure (_, formals, body), argvs -> 
-            let node = node_of_cpsexp body in
-              H.replace envs node (narrow_env heap (H.find envs node));
               let flow_env = List.fold_right2 bind formals argvs empty_env in
-                flow flow_env heap body
+                flow n flow_env heap body
         | _ -> ()
       end
 
@@ -170,7 +161,7 @@ and sub_flow (env_node : node) (_, f, args, typ, body_exp) =
        end
     | _ -> failwith "expected TArrow in sub_flow"
 
-and flow (env : env) (heap : heap) (cpsexp : cpsexp) = 
+and flow prev_node (env : env) (heap : heap) (cpsexp : cpsexp) = 
   let node = node_of_cpsexp cpsexp in
   let old_env, reflow  = 
     try H.find envs node, false
@@ -179,7 +170,7 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) =
     try H.find heaps node, reflow 
     with Not_found -> empty_heap, true in
   let new_heap = union_heap old_heap heap in
-  let new_env = union_env new_heap old_env env in
+  let new_env = union_env old_env env in
     if (compare_env old_env new_env != 0 || 
         compare_heap old_heap new_heap != 0 ||
         reflow) then
@@ -194,7 +185,7 @@ and flow (env : env) (heap : heap) (cpsexp : cpsexp) =
 
               
 let typed_cfa (env : env) (cpsexp : cpsexp) : unit =
-  flow env empty_heap cpsexp;
+  flow (-1) env empty_heap cpsexp;
   let rec sub_flows () =
     if H.length lambdas > 0 then 
       let sub node (env_node, arg_env, exp) =
@@ -204,7 +195,7 @@ let typed_cfa (env : env) (cpsexp : cpsexp) : unit =
             let heap = escape_heap (H.find heaps env_node) in
             let env = escape_env heap (H.find envs env_node) in
               H.remove envs node;
-              flow (union_env heap arg_env env) heap exp
+              flow (-1) (union_env arg_env env) heap exp
           end in
         H.iter sub lambdas;
 
