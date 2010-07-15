@@ -65,7 +65,45 @@ contracts.flat = function(name) {
   };
 };
 
-contracts.union = function(name) { 
+contracts.obj = function(name) {
+  return function(fields) {
+    return {
+      pred: function(v) { return typeof v === "object"; },
+      server: function(s,loc) {
+        return function(val) {
+          if (typeof val !== "object") {
+            contracts.blame(s,name,val, "is not an object");
+          }
+
+          var ret = { };
+          for (var f in fields) {
+            if (fields[f] != fields.__proto__[f]) {
+                ret[f] = fields[f].server(s,loc)(val[f]);
+            }
+          }
+          return ret;
+        };
+      },
+      client: function(s,loc) {
+        return function(val) {
+          if (typeof val !== "object") {
+            return val;
+          }
+
+          var ret = { };
+          for (var f in fields) {
+            if (fields[f] != fields.__proto__[f]) {
+                ret[f] = fields[f].client(s,loc)(val[f]);
+            }
+          }
+          return ret;
+        };
+      }
+    };
+  };
+};
+
+contracts.union = function(name) {
   return function() {
     var ctcs = map(function(x) { return x; }, arguments);
     var ctc = undefined;
@@ -73,7 +111,7 @@ contracts.union = function(name) {
         if (ctc != undefined) {
             return ctc;
         }
-        
+
         for (var i = 0; i < ctcs.length; i++) {
             if (ctcs[i].pred(val)) {
                 ctc = ctcs[i];
@@ -81,8 +119,8 @@ contracts.union = function(name) {
             }
         };
         return false;
-    };            
-   
+    };
+
     return {
       pred: function(v) { return pickPred(v) && pickPred(v).pred(v); },
       server: function(s,loc) {
@@ -91,16 +129,16 @@ contracts.union = function(name) {
         };
         },
       client: function(s,loc) {
-        return function(val) {     
+        return function(val) {
             return pickPred(val).server(s,loc)(val);
         }
       }
     };
   };
 };
-    
-    
-   
+
+
+
 
 contracts.varArityFunc = function(name) {
   return function(fixedArgs,restArgs,result) {
@@ -169,13 +207,13 @@ contracts.Bool = contracts.flat("Bool")(function(v) {
     return typeof v === "boolean";
 });
 
-contracts.Instanceof = function(klass) { 
+contracts.Instanceof = function(klass) {
   return contracts.flat("instanceof")(function(v) {
     return v instanceof klass;
   });
 };
 
-contracts.Any = contracts.flat("Any")(function(v) { 
+contracts.Any = contracts.flat("Any")(function(v) {
   return true;
 });
 

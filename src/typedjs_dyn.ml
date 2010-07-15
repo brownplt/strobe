@@ -39,6 +39,7 @@ type contract =
   | CPred of string * expr
   | CArrow of contract list * contract
   | CUnion of contract * contract
+  | CObject of (string * contract) list
 
 let p = (Lexing.dummy_pos, Lexing.dummy_pos)
 
@@ -64,6 +65,12 @@ let rec ctc_of_typ p (typ : typ) = match typ with
       else 
         flat p "None"
   | TUnion (s, t) -> CUnion (ctc_of_typ p s, ctc_of_typ p t)
+  | TObject fields ->
+      CObject (map (fun (f, t) -> (f, ctc_of_typ p t)) fields)
+  | TRef t -> ctc_of_typ p t (* \JS artifacts, source and sinks are moot since
+                                contracts don't preserve identity *)
+  | TSource t -> ctc_of_typ p t 
+  | TSink t -> ctc_of_typ p t
   | _ -> 
       failwith (sprintf "cannot create a contract for the type %s"
                   (FormatExt.to_string Typedjs_syntax.Pretty.p_typ typ))
@@ -79,9 +86,15 @@ let rec cc p (ctc : contract) : expr = match ctc with
          [ ArrayExpr (p, map (cc p) args); 
            ArrayExpr (p, []); (* zero var-arity arguments *)
            cc p result ])
+  | CObject fields ->
+      let f (x, ctc) = (p, PropString x, cc p ctc) in
+        CallExpr
+          (p, CallExpr (p, DotExpr (p, contract_lib, "obj"),
+                        [ ConstExpr (p, CString "object") ]),
+           [ ObjectExpr (p, map f fields) ])
   | CUnion (lhs, rhs) ->
       CallExpr
-        (p, CallExpr (p, DotExpr (p, contract_lib, "varArityFunc"),
+        (p, CallExpr (p, DotExpr (p, contract_lib, "union"),
                       [ ConstExpr (p, CString "union") ]),
          [ cc p lhs; cc p rhs ])
 
