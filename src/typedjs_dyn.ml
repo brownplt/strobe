@@ -38,6 +38,7 @@ let transform_exprs fs cin cout : unit =
 type contract =
   | CPred of string * expr
   | CArrow of contract list * contract
+  | CUnion of contract * contract
 
 let p = (Lexing.dummy_pos, Lexing.dummy_pos)
 
@@ -57,8 +58,12 @@ let rec ctc_of_typ p (typ : typ) = match typ with
   | TConstr ("Undef", []) -> flat p "Undef"
   | TConstr ("NotUndef", []) -> flat p "NotUndef"
   | TConstr ("Bool", []) -> flat p "Bool"
-  | TConstr (name, []) when is_instanceof_contract name ->
-      instanceof p name
+  | TConstr (name, []) -> 
+      if is_instanceof_contract name then
+        instanceof p name
+      else 
+        flat p "None"
+  | TUnion (s, t) -> CUnion (ctc_of_typ p s, ctc_of_typ p t)
   | _ -> 
       failwith (sprintf "cannot create a contract for the type %s"
                   (FormatExt.to_string Typedjs_syntax.Pretty.p_typ typ))
@@ -74,6 +79,11 @@ let rec cc p (ctc : contract) : expr = match ctc with
          [ ArrayExpr (p, map (cc p) args); 
            ArrayExpr (p, []); (* zero var-arity arguments *)
            cc p result ])
+  | CUnion (lhs, rhs) ->
+      CallExpr
+        (p, CallExpr (p, DotExpr (p, contract_lib, "varArityFunc"),
+                      [ ConstExpr (p, CString "union") ]),
+         [ cc p lhs; cc p rhs ])
 
 let pp expr = FormatExt.to_string Pretty.p_expr expr
 

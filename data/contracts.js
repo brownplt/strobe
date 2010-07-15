@@ -47,6 +47,7 @@ contracts.blame = function(guilty,expected,received,message,loc) {
 contracts.flat = function(name) {
   return function(pred) {
     return {
+      pred: pred,
       server: function(s,loc) {
         return function(val) {
           if (pred(val)) {
@@ -64,9 +65,47 @@ contracts.flat = function(name) {
   };
 };
 
+contracts.union = function(name) { 
+  return function() {
+    var ctcs = map(function(x) { return x; }, arguments);
+    var ctc = undefined;
+    var pickPred = function(v) {
+        if (ctc != undefined) {
+            return ctc;
+        }
+        
+        for (var i = 0; i < ctcs.length; i++) {
+            if (ctcs[i].pred(val)) {
+                ctc = ctcs[i];
+                return ctc;
+            }
+        };
+        return false;
+    };            
+   
+    return {
+      pred: function(v) { return pickPred(v) && pickPred(v).pred(v); },
+      server: function(s,loc) {
+        return function(val) {
+            return pickPred(val).server(s,loc)(val);
+        };
+        },
+      client: function(s,loc) {
+        return function(val) {     
+            return pickPred(val).server(s,loc)(val);
+        }
+      }
+    };
+  };
+};
+    
+    
+   
+
 contracts.varArityFunc = function(name) {
   return function(fixedArgs,restArgs,result) {
     return {
+      pred: function(v) { return typeof v === "function"; },
       server: function(s,loc) {
         return function(proc) {
           if (typeof(proc) == "function") {
@@ -135,6 +174,10 @@ contracts.Instanceof = function(klass) {
     return v instanceof klass;
   });
 };
+
+contracts.Any = contracts.flat("Any")(function(v) { 
+  return true;
+});
 
 // pos is the name of val.  neg should be the name of the calling context.
 // loc is the location where the contract is declared.

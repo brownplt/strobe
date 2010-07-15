@@ -71,13 +71,13 @@ done
 cd ../tests/contracts
 for file in *.js
 do
-  echo "Test $file ..."
+  echo "Test ../tests/contracts/$file ..."
   ./runtest.sh $file
 done
 
 cd ../gadgets
 for file in *.js
 do
-    echo "Test $file ..."
+    echo "Test ../tests/gadgets/$file ..."
   ./runtest.sh $file
 done
