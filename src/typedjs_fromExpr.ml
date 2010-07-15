@@ -155,6 +155,7 @@ let rec exp (env : env) expr = match expr with
            Some (_, e) -> e
          | None -> failwith "match_func returned None on a FuncExpr (1)")
   | HintExpr (p, text, e) -> 
+      printf "Hint at %s\n" (string_of_position p);
       let e' = exp env e in
         begin match parse_annotation p text with
           | AUpcast typ -> ESubsumption (p, typ, e')

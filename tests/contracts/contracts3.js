@@ -1,2 +1,2 @@
 var x = /*:downcast Int */23;
-var y = /*:downcast Str */"sdfsdf";
+var y = /*:downcast Bool */false;

@@ -2,7 +2,6 @@
 
 P=`dirname $0`
 FILE=$1
-echo "Running on $FILE"
 
 #get the environment from the XML:
 BASE=`echo $FILE | cut -d'.' -f1`

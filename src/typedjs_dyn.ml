@@ -25,7 +25,7 @@ let transform_exprs fs cin cout : unit =
     | (start_ix, (stop_ix, prefix, suffix)) :: rest ->
         output_string cout (String.sub cin !curr_ix (start_ix - !curr_ix));
         let expr_buf = String.sub cin start_ix (stop_ix - start_ix) in
-          ignore (parse_expr expr_buf "<expr_transformer.ml>"); (* sanity *)
+          ignore (parse_expr expr_buf "<expr_transformer.ml>");
           output_string cout prefix;
           let nested, next = take_while (is_before stop_ix) rest in
             curr_ix := start_ix;
