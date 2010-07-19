@@ -2,7 +2,7 @@
 P=`dirname $0`
 if [ -f $P/build/main.native ]; then
   $P/build/main.native $@
-elif [ -f $p/build/main.d.byte ]; then
+elif [ -f $P/build/main.d.byte ]; then
   $P/build/main.d.byte $@
 else
   echo "Compile Typed JavaScript first (make or make opt)"
