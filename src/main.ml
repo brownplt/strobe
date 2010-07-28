@@ -24,7 +24,13 @@ let string_of_cin cin =
     Buffer.add_channel buf cin (in_channel_length cin);
     Buffer.contents buf
   
-  
+
+let mk_flag flag desc (default : bool) = 
+  let value = ref default in
+  let set_flag () = value := not default in
+  let get_flag () = !value in
+  let spec = (flag, Arg.Unit set_flag, desc) in
+    (spec, get_flag)
 
 module Input : sig
   val get_cin : unit -> string
@@ -33,13 +39,6 @@ module Input : sig
   val get_env : unit -> Env.env
   val load_env : string -> unit
   val set_global_object : string -> unit
-  (** Skip flow analysis? *)
-  val set_no_cf : unit -> unit
-  val get_no_cf : unit -> bool
-  val set_simpl_cps : unit -> unit
-  val get_simpl_cps : unit -> bool
-  val get_print_contracts : unit -> bool
-  val set_print_contracts: unit -> unit
 end = struct
 
   let env = ref Env.empty_env
@@ -71,33 +70,18 @@ end = struct
     | None -> Env.set_global_object !env "Global"
     | Some c -> Env.set_global_object !env c
 
-  let no_cf = ref false
-
-  let set_no_cf () = match !no_cf with
-    | false -> no_cf := true
-    | true -> failwith "-skipcf already set"
-
-  let get_no_cf () = !no_cf
-
-  let simpl_cps = ref false
-
-  let set_simpl_cps () = match !simpl_cps with
-    | false -> simpl_cps := true
-    | true -> failwith "-simplcps already set"
-
-  let get_simpl_cps () = !simpl_cps
-
-  let print_contracts = ref false
-
-  let set_print_contracts () = match !print_contracts with
-    | false -> print_contracts := true
-    | true -> failwith "-contracts already set"
-
-  let get_print_contracts () = !print_contracts
-
 end
 
 open Input
+
+let (set_no_cf, get_no_cf) = 
+  mk_flag "-noflows" "disable flow analysis (debugging and benchmarking)" false
+
+let (set_print_contracts, get_print_contracts) =
+  mk_flag "-contracts" "insert contracts (prints to stdout)" false
+
+let (set_simpl_cps, get_simpl_cps) =
+  mk_flag "-simplcps" "use simplified, but slower CPS (broken)" false
 
 let get_cps exp = match get_simpl_cps () with
   | true -> Typedjs_cps.simpl_cps exp
@@ -122,7 +106,7 @@ let action_pretypecheck () : unit =
     Typedjs_syntax.Pretty.p_def typedjs std_formatter
 
 let annotate_exp exp = 
-  if Input.get_no_cf () then
+  if get_no_cf () then
     exp
   else 
     let cpstypedjs = get_cps exp in
@@ -180,8 +164,6 @@ let main () : unit =
        "<file> read environment types from <file>");
       ("-global", Arg.String (fun s -> set_global_object s),
        "<class> use <class> as the global object");
-      ("-simpl", Arg.Unit Input.set_simpl_cps,
-       "use simplified but slower CPS (broken)");
       ("-pretty", Arg.Unit (set_action action_pretty),
        "pretty-print JavaScript");
       ("-expr", Arg.Unit (set_action action_expr),
@@ -192,10 +174,9 @@ let main () : unit =
        "convert program to CPS");
       ("-df", Arg.Unit (set_action action_df),
        "convert program to CPS, then apply flow analysis");
-      ("-contracts", Arg.Unit set_print_contracts,
-       "insert contracts (prints to stdout)");
-      ("-noflows", Arg.Unit Input.set_no_cf,
-       "disable flow analysis (for debugging and benchmarking)")
+      set_simpl_cps;
+      set_print_contracts;
+      set_no_cf;
     ]
     (fun s -> set_cin (open_in s) s)
     "Usage: jst [options] [file]\noptions are:\n";;
