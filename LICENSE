@@ -1,11 +1,13 @@
 Typed JavaScript
-Copyright (c) 2009-2010 Arjun Guha and Claudiu Saftoiu.
+Copyright (c) 2009-2010 Brown University and Claudiu Saftoiu
 All Rights Reserved.
 
 /tests/browser and /tests/gadgets contains 3rd-party code that is not
 covered by this license.
 
 /javascript-trace is not covered by this license.
+
+Typed JavaScript uses ML-LambdaJS-es3, which is not covered by this license.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 this file except in compliance with the License, which appears below.
