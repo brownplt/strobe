@@ -52,6 +52,7 @@ type annotation =
   | ATypAbs of id * typ
   | ATypApp of typ
   | AAssertTyp of typ
+  | ACheat of typ
 
 type ref_kind =
   | RefCell
@@ -101,6 +102,7 @@ type exp =
   | ETypApp of pos * exp * typ
       (** [ETypApp (_, e, t)] e t *)
   | EForInIdx of pos
+  | ECheat of pos * typ * exp
 
 type constr_exp = { 
   constr_pos : pos;

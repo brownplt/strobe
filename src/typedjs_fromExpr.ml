@@ -157,6 +157,7 @@ let rec exp (env : env) expr = match expr with
   | HintExpr (p, text, e) ->
       let e' = exp env e in
         begin match parse_annotation p text with
+	  | ACheat typ -> ECheat (p, typ, e')
           | AUpcast typ -> ESubsumption (p, typ, e')
           | ADowncast typ -> EDowncast (p, typ, e')
           | ATypAbs (x, t) -> ETypAbs (p, x, t, e')

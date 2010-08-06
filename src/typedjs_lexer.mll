@@ -51,6 +51,7 @@ rule token = parse
    | "downcast" { DOWNCAST }
    | "operator" { OPERATOR }
    | "is" { IS }
+   | "cheat" { CHEAT }
    | "val" { VAL }
    | "<" { LANGLE }
    | ">" { RANGLE }

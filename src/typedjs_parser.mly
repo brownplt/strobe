@@ -10,7 +10,7 @@ open Typedjs_types
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
-       CHECKED
+       CHECKED CHEAT
 
 %right UNION
 
@@ -66,6 +66,7 @@ typs :
 
 annotation :
   | typ { ATyp $1 }
+  | CHEAT typ { ACheat $2 }
   | UPCAST typ { AUpcast $2 }
   | DOWNCAST typ { ADowncast $2 }
   | CONSTRUCTOR typ { AConstructor $2 }

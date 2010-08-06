@@ -56,6 +56,7 @@ type annotation =
   | ATypAbs of id * typ
   | ATypApp of typ
   | AAssertTyp of typ
+  | ACheat of typ
 
 type ref_kind =
   | RefCell
@@ -97,6 +98,7 @@ type exp
   | ETypAbs of pos * id * typ * exp 
   | ETypApp of pos * exp * typ
   | EForInIdx of pos
+  | ECheat of pos * typ * exp
 
 type constr_exp = { 
   constr_pos : pos;
@@ -164,7 +166,7 @@ module Exp = struct
     | ETypApp (p, _, _) -> p
     | ETypAbs (p, _, _, _) -> p
     | EForInIdx p -> p
-
+    | ECheat (p, _, _) -> p
 end
 
 module Pretty = struct
@@ -252,6 +254,7 @@ module Pretty = struct
     | ETypAbs (_, x, t, e) -> 
         parens (horz [ text "typ-abs"; text x; text "<:"; typ t; exp e ])
     | EForInIdx _ -> text "for-in-idx"
+    | ECheat (_, t, e) -> parens (horz [ text "cheat"; typ t; exp e ])
 
   and prop (s, e) =
     parens (horz [ text s; text ":"; exp e ])
