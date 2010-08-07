@@ -5,6 +5,8 @@ open Typedjs_dyn
 
 val contracts : (int * typ) IntMap.t ref
 
+val disable_unreachable_check : unit -> unit
+
 val tc_exp : Env.env -> exp -> typ
 
 val typecheck : Env.env -> def -> unit

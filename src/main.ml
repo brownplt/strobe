@@ -174,6 +174,8 @@ let main () : unit =
        "convert program to CPS");
       ("-df", Arg.Unit (set_action action_df),
        "convert program to CPS, then apply flow analysis");
+      ("-disable-unreachable", Arg.Unit Typedjs_tc.disable_unreachable_check,
+       "do not signal an error on unreachable code");
       set_simpl_cps;
       set_print_contracts;
       set_no_cf;

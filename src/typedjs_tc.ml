@@ -8,6 +8,11 @@ open Typedjs_tc_util
 
 let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
 
+let error_on_unreachable = ref true
+
+let disable_unreachable_check () =
+  error_on_unreachable := false
+
 let rec skip n l = if n == 0 then l else (skip (n-1) (List.tl l))
 let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 
@@ -362,7 +367,7 @@ and tc_thist env e = match e with
    
 and tc_exp_ret env e = 
   let t = tc_exp env e in
-    if t = TBot then
+    if !error_on_unreachable && t = TBot then
       error (Exp.pos e) "unreachable code"
     else 
       t
