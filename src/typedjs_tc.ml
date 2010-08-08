@@ -139,6 +139,14 @@ let rec tc_exp (env : Env.env) exp = match exp with
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
+      | TObjStar (fs, cname, other_typ), EConst (_, JavaScript_syntax.CString x) ->
+	  (try
+	     snd2 (List.find (fun (x', _) -> x = x') fs)
+	   with Not_found ->
+	     begin match Env.field_typ env cname x with
+	       | Some t -> t
+	       | None -> other_typ
+	     end)
       | TConstr ("Array", [tarr]), eidx ->
           let (p1, p2) = p in 
             contracts := IntMap.add p1.Lexing.pos_cnum 

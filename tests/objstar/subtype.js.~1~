@@ -1,0 +1,2 @@
+var a = (/*: cheat {x:Num, #proto: Object, *:Str} */ 4);
+var b = (/*: cheat {x:Num+Str, #proto: Object, *:Str} */ 4);
