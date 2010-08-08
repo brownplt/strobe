@@ -151,12 +151,12 @@ let rec tc_exp (env : Env.env) exp = match exp with
 	     end)
       | TObjStar (fs, cname, other_typ), e ->
 	  let t_field = tc_exp env e in
-	    match t_field with
+	    (match t_field with
 	      | TConstr ("Str", []) -> 
 		  List.fold_right (fun t typ -> TUnion (t, typ))
-		    ((map snd2 fs)@(class_types cname))
+		    ((map snd2 fs)@(class_types env cname))
 		    other_typ
-	      | _ -> error p ("Need to have a string for dictionary lookup")
+	      | _ -> error p ("Need to have a string for dictionary lookup"))
       | TConstr ("Array", [tarr]), eidx ->
           let (p1, p2) = p in 
             contracts := IntMap.add p1.Lexing.pos_cnum 
