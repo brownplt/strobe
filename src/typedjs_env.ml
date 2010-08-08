@@ -59,6 +59,12 @@ module Env = struct
 
   let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)
 
+  let class_fields env constr = (IdMap.find constr env.classes).fields
+
+  let cmp_props (k1, _) (k2, _) = match String.compare k1 k2 with
+    | 0 -> raise (Not_wf_typ ("the field " ^ k1 ^ " is repeated"))
+    | n -> n
+        
   let rec subtype env s t = 
     let subtype = subtype env in
     let subtypes = subtypes env in
@@ -100,13 +106,15 @@ module Env = struct
 	    TObjStar (fs2, cname2, other_typ2) ->
 	    subtype_fields env fs1 fs2 &&
 	      subtype_fields env
-	      (IdMapExt.to_list (IdMap.find cname1 env.classes).fields)
-	      (IdMapExt.to_list (IdMap.find cname2 env.classes).fields) &&
+	      (IdMapExt.to_list (class_fields env cname1))
+	      (IdMapExt.to_list (class_fields env cname2)) &&
 	      subtype other_typ1 other_typ2
 (*	| TObjStar (fs, cname, other_typ), TObject fso ->
-	    subtype_fields env fs fso
+	    subtype_fields env fs fso *)
 	| TObject fso, TObjStar (fs, cname, other_typ) ->
-	    subtype_fields env fso fs*)
+	    let all_fields = List.fast_sort cmp_props 
+	      fs@(IdMapExt.to_list (class_fields env cname)) in
+	      subtype_star env fso all_fields other_typ
         | TRef s', TRef t' -> subtype s' t' && subtype t' s'
         | TSource s, TSource t -> subtype s t
         | TSink s, TSink t -> subtype t s
@@ -134,6 +142,25 @@ module Env = struct
                     (* otherwise, y is a field that x does not have *)
                 else (printf "lhs doesnt have %s" y; false))
             
+  and subtype_star env fso fs_star other_typ = match fso, fs_star with
+    | [], [] -> true
+    (* extra things need to be subtypes of other_typ *)
+    | (x, s) :: fs1', [] -> subtype env s other_typ && 
+	subtype_star env fs1' fs_star other_typ
+    (* named things exist in the ObjStar that aren't in the object *)
+    | [], _ -> false
+    (* otherwise, same as normal objects *)
+    | (x, s) :: fs1', (y, t) :: fs2' ->
+	let cmp = String.compare x y in
+	  if cmp = 0 then subtype env s t && 
+	    subtype_star env fs1' fs2' other_typ
+          else (if cmp < 0 then 
+                  (printf "%s is extra field" x; 
+                   subtype_star env fs1' fs_star other_typ)
+                else (printf "lhs doesnt have %s" y; false))
+
+
+
   and subtypes env (ss : typ list) (ts : typ list) : bool = 
     try List.for_all2 (subtype env) ss ts
     with Invalid_argument _ -> false (* unequal lengths *)
@@ -144,10 +171,6 @@ module Env = struct
     | false, true -> s (* t <: s *)
     | false, false -> TUnion (s, t)
 
-  let cmp_props (k1, _) (k2, _) = match String.compare k1 k2 with
-    | 0 -> raise (Not_wf_typ ("the field " ^ k1 ^ " is repeated"))
-    | n -> n
-        
   let rec normalize_typ env typ = match typ with
     | TUnion (s, t) -> 
         typ_union env (normalize_typ env s) (normalize_typ env t)
