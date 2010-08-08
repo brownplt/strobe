@@ -10,7 +10,7 @@ open Typedjs_types
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
-       CHECKED CHEAT
+       CHECKED CHEAT HASHPROTO
 
 %right UNION
 
@@ -36,6 +36,12 @@ fields
   | field COMMA fields { $1 :: $3 }
   | COMMA { [] }
 
+proto
+  : HASHPROTO COLON ID { $3 }
+
+star
+  : STAR COLON typ { $3 }
+
 arg_typ
   : ANY { TTop }
   | INT { typ_int }
@@ -45,6 +51,7 @@ arg_typ
   | UNDEF { typ_undef }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | LBRACE fields RBRACE { TObject $2 }
+  | LBRACE fields proto COMMA star RBRACE { TObjStar ($2, $3, $5) }
   | LPAREN typ RPAREN { $2 }
   | ID { TConstr ( $1, [] ) }
   | ID LANGLE typs RANGLE { TConstr ($1, map (fun t -> TRef t) $3) }
