@@ -168,6 +168,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
   | Typedjs_syntax.TTop -> rtany
   | Typedjs_syntax.TBot -> RTSet.empty
   | Typedjs_syntax.TForall _ -> rtany
+  | Typedjs_syntax.TRec (x, t) -> rtany (* just do any to be sound... probably something better to do *)
   | Typedjs_syntax.TId _ -> rtany (* TODO: should be empty!!! *)
   | Typedjs_syntax.TField -> rtany
 

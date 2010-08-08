@@ -207,6 +207,7 @@ module Pretty = struct
     | TSink s -> horz [ text "sink"; parens (typ s) ]
     | TForall (x, s, t) -> 
         horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
+    | TRec (x, t) -> horz [ text "trec"; text x; text "."; typ t ] 
     | TId x -> text x
     | TField -> text "field"
 
