@@ -1,4 +1,4 @@
-function foo(a, str) /*: {#proto: Object, *:Num} *  Str -> Num + (-> Str) */ {
+function foo(a, str) /*: {#proto: Object, *:Num} *  Str -> Num + (-> Str) + Undef */ {
     return a[str];
 }
 
