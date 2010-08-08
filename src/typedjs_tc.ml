@@ -145,7 +145,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
 	   with Not_found ->
 	     begin match Env.field_typ env cname x with
 	       | Some t -> t
-	       | None -> other_typ
+	       | None -> TRef other_typ
 	     end)
       | TConstr ("Array", [tarr]), eidx ->
           let (p1, p2) = p in 
