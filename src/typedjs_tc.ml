@@ -155,10 +155,10 @@ let rec tc_exp (env : Env.env) exp = match exp with
 	      | TConstr ("Str", []) -> 
 		  List.fold_right (fun t typ -> TUnion (t, typ))
 		    ((map snd2 fs)@(class_types env cname))
-		    other_typ
+		    TUnion(other_typ, TConstr ("Undef", []))
 	      | _ -> error p ("Need to have a string for dictionary lookup"))
       | TConstr ("Array", [tarr]), eidx ->
-          let (p1, p2) = p in 
+          let (p1, p2) = p in
             contracts := IntMap.add p1.Lexing.pos_cnum 
               (* TODO: NotUndef is not a type, but just a contract *)
               (p2.Lexing.pos_cnum, TConstr ("NotUndef", []))
@@ -178,7 +178,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
                              TRef (TArrow (TConstr ("Array", [tarr]),
                                            [typ_str], typ_str))
                          | _ -> error p ("expected array of strings"))
-                             
+
                   | _ -> error p ("unknown array method")
                 end
               | _ -> error p 
