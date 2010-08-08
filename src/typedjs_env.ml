@@ -4,7 +4,15 @@ open Typedjs_types
 
 exception Not_wf_typ of string
 
+
 module Env = struct
+
+  module TypPairOrderedType = struct
+    type t = typ * typ
+    let compare = Pervasives.compare
+  end
+    
+  module TypSet = Set.Make (TypPairOrderedType)
 
   type class_info = {
     fields : typ IdMap.t;
@@ -159,6 +167,10 @@ module Env = struct
   and subtypes env (ss : typ list) (ts : typ list) : bool = 
     try List.for_all2 (subtype env) ss ts
     with Invalid_argument _ -> false (* unequal lengths *)
+
+  let r_subtype rel env s t =
+    if (TypSet.mem (s,t) rel) then true
+     else false
 
   let typ_union cs s t = match subtype cs s t, subtype cs t s with
       true, true -> s (* t = s *)
