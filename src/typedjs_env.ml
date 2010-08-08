@@ -109,7 +109,7 @@ module Env = struct
 	      subtype other_typ1 other_typ2
 	| TObject fso, TObjStar (fs, cname, other_typ) ->
 	    let all_fields = List.fast_sort cmp_props 
-	      fs@(IdMapExt.to_list (class_fields env cname)) in
+	      (List.rev (fs@(IdMapExt.to_list (class_fields env cname)))) in
 	      subtype_star env fso all_fields other_typ
         | TRef s', TRef t' -> subtype s' t' && subtype t' s'
         | TSource s, TSource t -> subtype s t
@@ -147,13 +147,14 @@ module Env = struct
     | [], _ -> false
     (* otherwise, same as normal objects *)
     | (x, s) :: fs1', (y, t) :: fs2' ->
+	(printf "%s %s\n" x y;
 	let cmp = String.compare x y in
 	  if cmp = 0 then subtype env s t && 
 	    subtype_star env fs1' fs2' other_typ
           else (if cmp < 0 then 
                   (printf "%s is extra field" x; 
                    subtype_star env fs1' fs_star other_typ)
-                else (printf "lhs doesnt have %s" y; false))
+                else (printf "lhs doesnt have %s, checked v %s\n" y x; false)))
 
   and subtypes env (ss : typ list) (ts : typ list) : bool = 
     try List.for_all2 (subtype env) ss ts
