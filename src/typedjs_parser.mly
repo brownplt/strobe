@@ -10,7 +10,7 @@ open Typedjs_types
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
-       CHECKED CHEAT HASHPROTO
+       CHECKED CHEAT HASHPROTO TREC
 
 %right UNION
 
@@ -56,7 +56,7 @@ arg_typ
   | ID { TConstr ( $1, [] ) }
   | ID LANGLE typs RANGLE { TConstr ($1, map (fun t -> TRef t) $3) }
   | TID { TId $1 }
-
+  | TREC ID DOT LPAREN typ RPAREN { TRec ($2, $5) }
 
 typ 
   : arg_typ { $1 }
