@@ -40,7 +40,7 @@ proto
   : HASHPROTO COLON ID { $3 }
 
 star
-  : STAR COLON typ { $3 }
+  : STAR COLON typ { TRef $3 }
 
 arg_typ
   : ANY { TTop }
