@@ -105,9 +105,7 @@ module Env = struct
 	| TObjStar (fs1, cname1, other_typ1), 
 	    TObjStar (fs2, cname2, other_typ2) ->
 	    subtype_fields env fs1 fs2 &&
-	      subtype_fields env
-	      (IdMapExt.to_list (class_fields env cname1))
-	      (IdMapExt.to_list (class_fields env cname2)) &&
+	      cname1 = cname2 &&
 	      subtype other_typ1 other_typ2
 (*	| TObjStar (fs, cname, other_typ), TObject fso ->
 	    subtype_fields env fs fso *)
