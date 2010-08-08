@@ -4,6 +4,7 @@ open Typedjs_types
 
 exception Not_wf_typ of string
 
+let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
 
 
 let rec typ_subst x s typ = match typ with
@@ -94,6 +95,7 @@ module Env = struct
     | n -> n
         
   let rec subtype env s t = 
+    if r_subtype TypSet.empty env s t then true else
     let subtype = subtype env in
     let subtypes = subtypes env in
       match s, t with
@@ -180,7 +182,7 @@ module Env = struct
 	  if cmp = 0 then subtype env s t && 
 	    subtype_star env fs1' fs2' other_typ
           else (if cmp < 0 then 
-                  (printf "%s is extra field" x; 
+                  (printf "%s is extra field\n" x; 
                    subtype_star env fs1' fs_star other_typ)
                 else (printf "lhs doesnt have %s, checked v %s\n" y x; false)))
 
@@ -188,28 +190,77 @@ module Env = struct
     try List.for_all2 (subtype env) ss ts
     with Invalid_argument _ -> false (* unequal lengths *)
 
-  let rec r_subtype rel env s t =
-    if (TypSet.mem (s,t) rel) then true
-    else match s, t with
-      | TId x, TId y -> x = y
-      | TId x, t ->
-	  let s = IdMap.find x env.typ_ids in
-	    r_subtype rel env s t
-      | TConstr (c1, []), TConstr (c2, []) ->
-	  let rec is_subclass sub sup =
-            if sub = sup then
-              true
-            else if not (IdMap.mem sub env.subclasses) then
-              false (* sub is a root class *)
-            else 
-              is_subclass (IdMap.find sub env.subclasses) sup in
-          is_subclass c1 c2
-      | s, TRec (x, t') -> 
-	  r_subtype (TypSet.add (s,t) rel) env s (typ_subst x t t')
-      | TRec (x, s'), t ->
-	  r_subtype (TypSet.add (s,t) rel) env (typ_subst x s s') t
-      | TObject fs1, TObject fs2 -> subtype_fields env fs1 fs2
-      | _ -> raise (Not_wf_typ ("Don't handle this yet"))
+  and r_subtype rel env s t =
+    let st = r_subtype rel env in
+      if (TypSet.mem (s,t) rel) then (printf "matching from set: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); true)
+      else match s, t with
+	| TId x, TId y -> x = y
+	| TId x, t ->
+	    let s = IdMap.find x env.typ_ids in
+	      r_subtype rel env s t
+	| TConstr (c1, []), TConstr (c2, []) ->
+	    let rec is_subclass sub sup =
+              if sub = sup then
+		true
+              else if not (IdMap.mem sub env.subclasses) then
+		false (* sub is a root class *)
+              else 
+		is_subclass (IdMap.find sub env.subclasses) sup in
+              is_subclass c1 c2
+	| s, TRec (x, t') -> 
+	    r_subtype (TypSet.add (s,t) rel) env s (typ_subst x t t')
+	| TRec (x, s'), t ->
+	    r_subtype (TypSet.add (s,t) rel) env (typ_subst x s s') t
+	| TObject fs1, TObject fs2 -> r_subtype_fields rel env fs1 fs2
+	| TObject fs, TConstr (cn, args) -> false
+	| TConstr (cn, args), TObject fs -> false
+	| TUnion (s1, s2), t -> st s1 t && st s2 t
+	| s, TUnion (t1, t2) -> st s t1 || st s t2
+	| TRef s, TRef t -> st s t && st t s
+        | TArrow (_, args1, r1), TArrow (_, args2, r2) ->
+            r_subtypes rel env args2 args1 && r_subtype rel env r1 r2
+	| TBot, _ -> true
+	| _, TTop -> true
+	| _ -> (printf "r_subtype failed on: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); false) 
+(*raise (Not_wf_typ ("Don't handle this yet"))*)
+
+  (* assumes fs1 and fs2 are ordered 
+     fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
+  and r_subtype_fields rel env fs1 fs2 = match fs1, fs2 with
+    | [], [] -> true
+    | [], _ -> false (* fs1 is missing some things fs2 has *)
+    | _, [] -> true (* can have many extra fields, doesn't matter *)
+    | (x, s) :: fs1', (y, t) :: fs2' ->
+        let cmp = String.compare x y in
+          if cmp = 0 then r_subtype rel env s t && r_subtype_fields rel env fs1' fs2'
+            (* if cmp < 0, x is an extra field, so just move on *)
+          else (if cmp < 0 then 
+                  (printf "%s is extra field\n" x; 
+                   r_subtype_fields rel env fs1' fs2)
+                    (* otherwise, y is a field that x does not have *)
+                else (printf "lhs doesnt have %s\n" y; false))
+            
+  and r_subtype_star rel env fso fs_star other_typ = match fso, fs_star with
+    | [], [] -> true
+    (* extra things need to be r_subtypes of other_typ *)
+    | (x, s) :: fs1', [] -> r_subtype rel env s other_typ && 
+	r_subtype_star rel env fs1' fs_star other_typ
+    (* named things exist in the ObjStar that aren't in the object *)
+    | [], _ -> false
+    (* otherwise, same as normal objects *)
+    | (x, s) :: fs1', (y, t) :: fs2' ->
+	(printf "%s %s\n" x y;
+	let cmp = String.compare x y in
+	  if cmp = 0 then r_subtype rel env s t && 
+	    r_subtype_star rel env fs1' fs2' other_typ
+          else (if cmp < 0 then 
+                  (printf "%s is extra field" x; 
+                   r_subtype_star rel env fs1' fs_star other_typ)
+                else (printf "lhs doesnt have %s, checked v %s\n" y x; false)))
+
+  and r_subtypes rel env (ss : typ list) (ts : typ list) : bool = 
+    try List.for_all2 (r_subtype rel env) ss ts
+    with Invalid_argument _ -> false (* unequal lengths *)
 
 
   let typ_union cs s t = match subtype cs s t, subtype cs t s with
