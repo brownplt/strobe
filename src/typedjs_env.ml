@@ -95,7 +95,8 @@ module Env = struct
     | n -> n
         
   let rec subtype env s t = 
-    if r_subtype TypSet.empty env s t then true else
+    if r_subtype TypSet.empty env s t then (printf "r_subtype worked: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t);true) else 
+      (printf "r_subtype failed: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t);
     let subtype = subtype env in
     let subtypes = subtypes env in
       match s, t with
@@ -150,7 +151,7 @@ module Env = struct
             List.mem constr [ "Num"; "Int"; "Str"; "Undef"; "Bool" ]
         | _, TTop -> true
         | TBot, _ -> true
-        | _ -> s = t
+        | _ -> s = t)
 
   (* assumes fs1 and fs2 are ordered 
      fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
@@ -269,28 +270,28 @@ module Env = struct
     | false, true -> s (* t <: s *)
     | false, false -> TUnion (s, t)
 
-  let rec normalize_typ recs env typ = 
-    let normalize_typ' = normalize_typ recs in match typ with
+  let rec normalize_typ env typ = 
+    match typ with 
       | TUnion (s, t) -> 
-          typ_union env (normalize_typ' env s) (normalize_typ' env t)
+          typ_union env (normalize_typ env s) (normalize_typ env t)
       | TObject fs ->
           let fs = List.fast_sort cmp_props fs in
-            TObject (map (second2 (normalize_typ' env)) fs)
+            TObject (map (second2 (normalize_typ env)) fs)
       | TObjStar (fs, cname, other_typ) ->
 	  let fs = List.fast_sort cmp_props fs in
 	  let tconstr = 
-	    if IdMap.mem cname env.classes || IdMap.mem cname recs then typ
+	    if IdMap.mem cname env.classes then typ
             else 
               begin
 		raise (Not_wf_typ (cname ^ " is not a type constructor"))
               end in
-	  let other_typ = normalize_typ' env other_typ in
+	  let other_typ = normalize_typ env other_typ in
 	    TObjStar (fs, cname, other_typ)
-      | TConstr ("Array", [t]) -> TConstr ("Array", [normalize_typ' env t])
+      | TConstr ("Array", [t]) -> TConstr ("Array", [normalize_typ env t])
       | TConstr ("Array", (t:_)) -> 
           raise (Not_wf_typ ("Array only takes one argument"))
       | TConstr (constr, []) ->
-          if IdMap.mem constr env.classes || IdMap.mem constr recs then typ
+          if IdMap.mem constr env.classes then typ
           else 
             begin
               raise (Not_wf_typ (constr ^ " is not a type constructor"))
@@ -298,11 +299,11 @@ module Env = struct
       | TConstr (constr, _) ->
           raise (Not_wf_typ (constr ^ " does not take arguments"))
       | TArrow (this, args, result) ->
-          TArrow (normalize_typ' env this, map (normalize_typ' env) args,
-                  normalize_typ' env result)
-      | TRef t -> TRef (normalize_typ' env t)
-      | TSource t -> TSource (normalize_typ' env t)
-      | TSink t -> TSink (normalize_typ' env t)
+          TArrow (normalize_typ env this, map (normalize_typ env) args,
+                  normalize_typ env result)
+      | TRef t -> TRef (normalize_typ env t)
+      | TSource t -> TSource (normalize_typ env t)
+      | TSink t -> TSink (normalize_typ env t)
       | TTop -> TTop
       | TBot -> TBot
       | TField -> TField
@@ -310,11 +311,11 @@ module Env = struct
           if IdMap.mem x env.typ_ids then typ
           else raise (Not_wf_typ ("the type variable " ^ x ^ " is unbound"))
       | TForall (x, s, t) -> 
-          let s = normalize_typ' env s in
-            TForall (x, s, normalize_typ' (bind_typ_id x s env) t)
+          let s = normalize_typ env s in
+            TForall (x, s, normalize_typ (bind_typ_id x s env) t)
 	      (* This is a hack to actually have the recursive identifiers bound to something *)
       | TRec (x, t) -> 
-	  let t' = normalize_typ (IdMap.add x TBot recs) env t in
+	  let t' = normalize_typ (bind_typ_id x t env) t in
 	    TRec (x, t')
 	      
   let check_typ p env t = 
@@ -324,8 +325,8 @@ module Env = struct
             if subtype env Typedjs_types.typ_undef tarr 
             then raise (Typ_error (
                           p, "array type can't be supertype of undefined"))
-            else normalize_typ IdMap.empty env t
-        | _ -> normalize_typ IdMap.empty env t
+            else normalize_typ env t
+        | _ -> normalize_typ env t
     with Not_wf_typ s -> raise (Typ_error (p, s))
 
   let basic_static env (typ : typ) (rt : RT.t) : typ = match rt with
