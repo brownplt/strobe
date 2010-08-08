@@ -14,6 +14,8 @@ let rec typ_subst x s typ = match typ with
   | TArrow (t1, t2s, t3)  ->
       TArrow (typ_subst x s t1, map (typ_subst x s) t2s, typ_subst x s t3)
   | TObject fs -> TObject (map (second2 (typ_subst x s)) fs)
+  | TObjStar (fs, cname, other_typ) ->
+      TObjStar ((map (second2 (typ_subst x s)) fs), cname, typ_subst x s other_typ)
   | TRef t -> TRef (typ_subst x s t)
   | TSource t -> TSource (typ_subst x s t)
   | TSink t -> TSink (typ_subst x s t)
@@ -25,6 +27,11 @@ let rec typ_subst x s typ = match typ with
         TForall (y, typ_subst x s t1, t2)
       else 
         failwith "TODO: capture-free substitution"
+  | TRec (y, t) ->
+      if x = y then
+	failwith "TODO: capture-free (TRec)"
+      else
+	TRec (y, typ_subst x s t)
 
 module Env = struct
 
@@ -194,8 +201,7 @@ module Env = struct
   and r_subtype rel env s t =
     let st = r_subtype rel env in
       if (TypSet.mem (s,t) rel) then (printf "matching from set: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); true)
-      else 
-	 match s, t with
+      else match s, t with
 	| TId x, TId y -> x = y
 	| TId x, t ->
 	    let s = IdMap.find x env.typ_ids in
@@ -209,20 +215,45 @@ module Env = struct
               else 
 		is_subclass (IdMap.find sub env.subclasses) sup in
               is_subclass c1 c2
-	| s, TRec (x, t') -> 
-	    r_subtype (TypSet.add (s,t) rel) env s (typ_subst x t t')
-	| TRec (x, s'), t ->
-	    r_subtype (TypSet.add (s,t) rel) env (typ_subst x s s') t
 	| TObject fs1, TObject fs2 -> r_subtype_fields rel env fs1 fs2
-	| TObject fs, TConstr (cn, args) -> false
-	| TConstr (cn, args), TObject fs -> false
 	| TUnion (s1, s2), t -> st s1 t && st s2 t
 	| s, TUnion (t1, t2) -> st s t1 || st s t2
 	| TRef s', TRef t' -> st s' t' && st t' s'
         | TArrow (_, args1, r1), TArrow (_, args2, r2) ->
             r_subtypes rel env args2 args1 && r_subtype rel env r1 r2
-	| TBot, _ -> true
+        | TConstr (c_name, []), TObject fs2 ->
+            (* Classes can be turned into objects. However, this drops
+               all fields in the prototype. *)
+            let fs1 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
+            let fs1 = List.rev fs1 in
+              r_subtype_fields rel env fs1 fs2
+        | TObject fs1, TConstr (c_name, []) ->
+            (* Same for the other direction. This must be double-checked. *)
+            let fs2 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
+            let fs2 = List.rev fs2 in
+              r_subtype_fields rel env fs1 fs2
+	| TObjStar (fs1, cname1, other_typ1), 
+	    TObjStar (fs2, cname2, other_typ2) ->
+	    r_subtype_fields rel env fs1 fs2 &&
+	      cname1 = cname2 &&
+	      st other_typ1 other_typ2
+	| TObject fso, TObjStar (fs, cname, other_typ) ->
+	    let all_fields = List.fast_sort cmp_props 
+	      (List.rev (fs@(IdMapExt.to_list (class_fields env cname)))) in
+	      r_subtype_star rel env fso all_fields other_typ
+        | TSource s, TSource t -> st s t
+        | TSink s, TSink t -> st t s
+        | TRef s, TSource t -> st s t
+        | TRef s, TSink t -> st t s
+        | TConstr (constr, []), TField ->
+            List.mem constr [ "Num"; "Int"; "Str"; "Undef"; "Bool" ]
 	| _, TTop -> true
+	| TBot, _ -> true
+	| s, TRec (x, t') -> 
+	    r_subtype (TypSet.add (s,t) rel) env s (typ_subst x t t')
+	| TRec (x, s'), t ->
+	    r_subtype (TypSet.add (s,t) rel) env (typ_subst x s s') t
+	| _ -> s = t
 	| _ -> (printf "r_subtype missed on: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); false) 
 (*raise (Not_wf_typ ("Don't handle this yet"))*)
 
