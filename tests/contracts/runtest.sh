@@ -1,7 +1,14 @@
 #!/bin/bash
 
+V8="../v8/`uname`"
+
 SRC=$1
-DEST=`mktemp`
+
+if [[ `uname` = "Darwin" ]]; then
+  DEST=`mktemp -t jst`
+else
+  DEST=`mktemp`
+fi
 
 set -o pipefail
 
@@ -9,13 +16,13 @@ cat ../../data/contracts.js > $DEST
 ../../tc $SRC >> $DEST
 
 if [[ $(head -n1 $SRC) == "// succeeds" ]]; then
-  OUTPUT=`./v8 -f $DEST 2>&1`
+  OUTPUT=`$V8 -f $DEST 2>&1`
   if [ $? -ne 0 ]; then
     echo -e "[ FAILED ] $SRC aborted with exit code $?\nResult was $OUTPUT"
     exit 0
   fi
 else
-  OUTPUT=$(./v8 -f $DEST 2>&1 | head -n1)
+  OUTPUT=$($V8 -f $DEST 2>&1 | head -n1)
   EXITCODE=$?
   if [ $EXITCODE -ne 1 ]; then
     echo "[ FAILED ] $SRC aborted with exit code $EXITCODE"

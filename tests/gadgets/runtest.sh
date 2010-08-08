@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 P=`dirname $0`
 FILE=$1
 
@@ -10,7 +11,11 @@ XML=$BASE.xml
 ENVCMD=
 if [ -f $XML ]
 then
-  ENV=`mktemp`
+  if [[ `uname` = "Darwin" ]]; then
+    ENV=`mktemp -t jst`
+  else
+    ENV=`mktemp`
+  fi
   trap 'rm -f $ENV' EXIT
   $P/../../env-scrapers/google-desktop-gadget-env.ss < $XML > $ENV
   ENVCMD="-env $ENV"
@@ -20,7 +25,11 @@ STRXML="$BASE.strings.xml"
 STRENVCMD=
 if [ -f $STRXML ]
 then
-  STRENV=`mktemp`
+  if [[ `uname` = "Darwin" ]]; then
+    STRENV=`mktemp -t jst`
+  else
+    STRENV=`mktemp`
+  fi
   trap 'rm -f $STRENV' EXIT
   $P/../../env-scrapers/google-desktop-gadget-strings.ss < $STRXML > $STRENV
   STRENVCMD="-env $STRENV"
