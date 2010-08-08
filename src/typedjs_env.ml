@@ -194,7 +194,8 @@ module Env = struct
   and r_subtype rel env s t =
     let st = r_subtype rel env in
       if (TypSet.mem (s,t) rel) then (printf "matching from set: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); true)
-      else match s, t with
+      else 
+	 match s, t with
 	| TId x, TId y -> x = y
 	| TId x, t ->
 	    let s = IdMap.find x env.typ_ids in
@@ -217,12 +218,12 @@ module Env = struct
 	| TConstr (cn, args), TObject fs -> false
 	| TUnion (s1, s2), t -> st s1 t && st s2 t
 	| s, TUnion (t1, t2) -> st s t1 || st s t2
-	| TRef s, TRef t -> st s t && st t s
+	| TRef s', TRef t' -> st s' t' && st t' s'
         | TArrow (_, args1, r1), TArrow (_, args2, r2) ->
             r_subtypes rel env args2 args1 && r_subtype rel env r1 r2
 	| TBot, _ -> true
 	| _, TTop -> true
-	| _ -> (printf "r_subtype failed on: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); false) 
+	| _ -> (printf "r_subtype missed on: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); false) 
 (*raise (Not_wf_typ ("Don't handle this yet"))*)
 
   (* assumes fs1 and fs2 are ordered 
