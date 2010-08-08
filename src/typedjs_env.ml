@@ -96,6 +96,17 @@ module Env = struct
             let fs2 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
             let fs2 = List.rev fs2 in
               subtype_fields env fs1 fs2
+	| TObjStar (fs1, cname1, other_typ1), 
+	    TObjStar (fs2, cname2, other_typ2) ->
+	    subtype_fields env fs1 fs2 &&
+	      subtype_fields env
+	      (IdMapExt.to_list (IdMap.find cname1 env.classes).fields)
+	      (IdMapExt.to_list (IdMap.find cname2 env.classes).fields) &&
+	      subtype other_typ1 other_typ2
+(*	| TObjStar (fs, cname, other_typ), TObject fso ->
+	    subtype_fields env fs fso
+	| TObject fso, TObjStar (fs, cname, other_typ) ->
+	    subtype_fields env fso fs*)
         | TRef s', TRef t' -> subtype s' t' && subtype t' s'
         | TSource s, TSource t -> subtype s t
         | TSink s, TSink t -> subtype t s
@@ -143,6 +154,16 @@ module Env = struct
     | TObject fs ->
         let fs = List.fast_sort cmp_props fs in
           TObject (map (second2 (normalize_typ env)) fs)
+    | TObjStar (fs, cname, other_typ) ->
+	let fs = List.fast_sort cmp_props fs in
+	let tconstr = 
+	  if IdMap.mem cname env.classes then typ
+          else 
+            begin
+              raise (Not_wf_typ (cname ^ " is not a type constructor"))
+            end in
+	let other_typ = normalize_typ env other_typ in
+	  TObjStar (fs, cname, other_typ)
     | TConstr ("Array", [t]) -> TConstr ("Array", [normalize_typ env t])
     | TConstr ("Array", (t:_)) -> 
         raise (Not_wf_typ ("Array only takes one argument"))

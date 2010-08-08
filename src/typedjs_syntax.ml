@@ -196,6 +196,12 @@ module Pretty = struct
     | TObject fs ->
         let f (k, t) = horz [ text k; text ":"; typ t ] in
           braces (horz (intersperse (text ",") (map f fs)))
+    | TObjStar (fs, cname, other_typ) ->
+	let f (k, t) = horz [ text k; text ":"; typ t ] in
+	let constr = horz [ text "#proto"; text ":"; text cname ] in
+	let star = horz [ text "*"; text ":"; typ other_typ ] in
+	let fields = map f fs in
+	  braces (horz (intersperse (text ",") (fields@[constr;star])))
     | TRef s -> horz [ text "ref"; parens (typ s) ]
     | TSource s -> horz [ text "source"; parens (typ s) ]
     | TSink s -> horz [ text "sink"; parens (typ s) ]
