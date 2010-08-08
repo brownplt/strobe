@@ -28,6 +28,8 @@ module Env : sig
 
   val dom : env -> IdSet.t
 
+  val class_fields : env -> constr -> typ IdMap.t
+
   (** A new class with no methods. *)
   val new_root_class : env -> id -> env
 

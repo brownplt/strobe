@@ -20,6 +20,8 @@ let error p s = raise (Typ_error (p, s))
 
 let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
 
+let class_types (env : Env.env) constr = IdMapExt.values (Env.class_fields env constr)
+
 let un_null t = match t with
   | TUnion (TConstr ("Undef", []), t') -> t'
   | TUnion (t', TConstr ("Undef", [])) -> t'
@@ -147,6 +149,14 @@ let rec tc_exp (env : Env.env) exp = match exp with
 	       | Some t -> t
 	       | None -> other_typ
 	     end)
+      | TObjStar (fs, cname, other_typ), e ->
+	  let t_field = tc_exp env e in
+	    match t_field with
+	      | TConstr ("Str", []) -> 
+		  List.fold_right (fun t typ -> TUnion (t, typ))
+		    ((map snd2 fs)@(class_types cname))
+		    other_typ
+	      | _ -> error p ("Need to have a string for dictionary lookup")
       | TConstr ("Array", [tarr]), eidx ->
           let (p1, p2) = p in 
             contracts := IntMap.add p1.Lexing.pos_cnum 
