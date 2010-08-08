@@ -155,7 +155,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
 	      | TConstr ("Str", []) -> 
 		  List.fold_right (fun t typ -> TUnion (t, typ))
 		    ((map snd2 fs)@(class_types env cname))
-		    TUnion(other_typ, TConstr ("Undef", []))
+		    (TUnion (other_typ, TConstr ("Undef", [])))
 	      | _ -> error p ("Need to have a string for dictionary lookup"))
       | TConstr ("Array", [tarr]), eidx ->
           let (p1, p2) = p in
