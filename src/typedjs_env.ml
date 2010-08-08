@@ -107,8 +107,6 @@ module Env = struct
 	    subtype_fields env fs1 fs2 &&
 	      cname1 = cname2 &&
 	      subtype other_typ1 other_typ2
-(*	| TObjStar (fs, cname, other_typ), TObject fso ->
-	    subtype_fields env fs fso *)
 	| TObject fso, TObjStar (fs, cname, other_typ) ->
 	    let all_fields = List.fast_sort cmp_props 
 	      fs@(IdMapExt.to_list (class_fields env cname)) in
@@ -156,8 +154,6 @@ module Env = struct
                   (printf "%s is extra field" x; 
                    subtype_star env fs1' fs_star other_typ)
                 else (printf "lhs doesnt have %s" y; false))
-
-
 
   and subtypes env (ss : typ list) (ts : typ list) : bool = 
     try List.for_all2 (subtype env) ss ts

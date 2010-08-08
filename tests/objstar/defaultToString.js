@@ -1,3 +1,2 @@
 var a = {};
 a.toString();
-
