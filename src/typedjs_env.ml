@@ -102,7 +102,6 @@ module Env = struct
     | n -> n
 
   let rec r_subtype rel env s t =
-    (printf "Asking subtype\n %s <:\n %s\n\n" (string_of_typ s) (string_of_typ t);
     let st = r_subtype rel env in
       if (TypSet.mem (s,t) rel) then 
 	(printf "matching from set: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); true)
@@ -158,7 +157,7 @@ module Env = struct
             List.mem constr [ "Num"; "Int"; "Str"; "Undef"; "Bool" ]
 	| _, TTop -> true
 	| TBot, _ -> true
-	| _ -> s = t)
+	| _ -> s = t
 
   (* assumes fs1 and fs2 are ordered 
      fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
