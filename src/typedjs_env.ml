@@ -7,7 +7,9 @@ exception Not_wf_typ of string
 let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
 
 
-let rec typ_subst x s typ = match typ with
+let rec typ_subst x s typ = 
+(printf "Substing: %s for \n %s in\n%s\n\n" x (string_of_typ s) (string_of_typ typ);
+match typ with
   | TId y -> if x = y then s else typ
   | TConstr (c, ts) -> TConstr (c, map (typ_subst x s) ts)
   | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
@@ -31,7 +33,7 @@ let rec typ_subst x s typ = match typ with
       if x = y then
 	failwith "TODO: capture-free (TRec)"
       else
-	TRec (y, typ_subst x s t)
+	TRec (y, typ_subst x s t))
 
 module Env = struct
 
@@ -100,105 +102,8 @@ module Env = struct
   let cmp_props (k1, _) (k2, _) = match String.compare k1 k2 with
     | 0 -> raise (Not_wf_typ ("the field " ^ k1 ^ " is repeated"))
     | n -> n
-        
-  let rec subtype env s t = 
-    if r_subtype TypSet.empty env s t then (printf "r_subtype worked: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t);true) else 
-      (printf "r_subtype failed: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t);
-    let subtype = subtype env in
-    let subtypes = subtypes env in
-      match s, t with
-        | TId x, TId y -> x = y
-        | TId x, t ->
-            let s = IdMap.find x env.typ_ids in (* S-TVar *)
-              subtype s t (* S-Trans *)
-        | TConstr (c1, []), TConstr (c2, []) ->
-            let rec is_subclass sub sup =
-              if sub = sup then
-                true
-              else if not (IdMap.mem sub env.subclasses) then
-                false (* sub is a root class *)
-              else 
-                is_subclass (IdMap.find sub env.subclasses) sup in
-            is_subclass c1 c2
-        | TConstr (c1, args1), TConstr (c2, args2) ->
-            if c1 = c2 then subtypes args1 args2 else false
-        | TUnion (s1, s2), _ -> 
-            subtype s1 t && subtype s2 t
-        | _, TUnion (t1, t2) ->
-            subtype s t1 || subtype s t2
-        | TArrow (_, args1, r1), TArrow (_, args2, r2) ->
-            subtypes args2 args1 && subtype r1 r2
-        | TObject fs1, TObject fs2 -> subtype_fields env fs1 fs2
-        | TConstr (c_name, []), TObject fs2 ->
-            (* Classes can be turned into objects. However, this drops
-               all fields in the prototype. *)
-            let fs1 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
-            let fs1 = List.rev fs1 in
-              subtype_fields env fs1 fs2
-        | TObject fs1, TConstr (c_name, []) ->
-            (* Same for the other direction. This must be double-checked. *)
-            let fs2 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
-            let fs2 = List.rev fs2 in
-              subtype_fields env fs1 fs2
-	| TObjStar (fs1, cname1, other_typ1), 
-	    TObjStar (fs2, cname2, other_typ2) ->
-	    subtype_fields env fs1 fs2 &&
-	      cname1 = cname2 &&
-	      subtype other_typ1 other_typ2
-	| TObject fso, TObjStar (fs, cname, other_typ) ->
-	    let all_fields = List.fast_sort cmp_props 
-	      (List.rev (fs@(IdMapExt.to_list (class_fields env cname)))) in
-	      subtype_star env fso all_fields other_typ
-        | TRef s', TRef t' -> subtype s' t' && subtype t' s'
-        | TSource s, TSource t -> subtype s t
-        | TSink s, TSink t -> subtype t s
-        | TRef s, TSource t -> subtype s t
-        | TRef s, TSink t -> subtype t s
-        | TConstr (constr, []), TField ->
-            List.mem constr [ "Num"; "Int"; "Str"; "Undef"; "Bool" ]
-        | _, TTop -> true
-        | TBot, _ -> true
-        | _ -> s = t)
 
-  (* assumes fs1 and fs2 are ordered 
-     fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
-  and subtype_fields env fs1 fs2 = match fs1, fs2 with
-    | [], [] -> true
-    | [], _ -> false (* fs1 is missing some things fs2 has *)
-    | _, [] -> true (* can have many extra fields, doesn't matter *)
-    | (x, s) :: fs1', (y, t) :: fs2' ->
-        let cmp = String.compare x y in
-          if cmp = 0 then subtype env s t && subtype_fields env fs1' fs2'
-            (* if cmp < 0, x is an extra field, so just move on *)
-          else (if cmp < 0 then 
-                  (printf "%s is extra field" x; 
-                   subtype_fields env fs1' fs2)
-                    (* otherwise, y is a field that x does not have *)
-                else (printf "lhs doesnt have %s" y; false))
-            
-  and subtype_star env fso fs_star other_typ = match fso, fs_star with
-    | [], [] -> true
-    (* extra things need to be subtypes of other_typ *)
-    | (x, s) :: fs1', [] -> subtype env s other_typ && 
-	subtype_star env fs1' fs_star other_typ
-    (* named things exist in the ObjStar that aren't in the object *)
-    | [], _ -> false
-    (* otherwise, same as normal objects *)
-    | (x, s) :: fs1', (y, t) :: fs2' ->
-	(printf "%s %s\n" x y;
-	let cmp = String.compare x y in
-	  if cmp = 0 then subtype env s t && 
-	    subtype_star env fs1' fs2' other_typ
-          else (if cmp < 0 then 
-                  (printf "%s is extra field\n" x; 
-                   subtype_star env fs1' fs_star other_typ)
-                else (printf "lhs doesnt have %s, checked v %s\n" y x; false)))
-
-  and subtypes env (ss : typ list) (ts : typ list) : bool = 
-    try List.for_all2 (subtype env) ss ts
-    with Invalid_argument _ -> false (* unequal lengths *)
-
-  and r_subtype rel env s t =
+  let rec r_subtype rel env s t =
     let st = r_subtype rel env in
       if (TypSet.mem (s,t) rel) then (printf "matching from set: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); true)
       else match s, t with
@@ -254,8 +159,6 @@ module Env = struct
 	| TRec (x, s'), t ->
 	    r_subtype (TypSet.add (s,t) rel) env (typ_subst x s s') t
 	| _ -> s = t
-	| _ -> (printf "r_subtype missed on: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); false) 
-(*raise (Not_wf_typ ("Don't handle this yet"))*)
 
   (* assumes fs1 and fs2 are ordered 
      fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
@@ -287,14 +190,17 @@ module Env = struct
 	  if cmp = 0 then r_subtype rel env s t && 
 	    r_subtype_star rel env fs1' fs2' other_typ
           else (if cmp < 0 then 
-                  (printf "%s is extra field" x; 
-                   r_subtype_star rel env fs1' fs_star other_typ)
+                  (printf "%s is extra field (star)\n" x; 
+		   r_subtype rel env s other_typ &&
+                     (r_subtype_star rel env fs1' fs_star other_typ))
                 else (printf "lhs doesnt have %s, checked v %s\n" y x; false)))
 
   and r_subtypes rel env (ss : typ list) (ts : typ list) : bool = 
     try List.for_all2 (r_subtype rel env) ss ts
     with Invalid_argument _ -> false (* unequal lengths *)
 
+  let rec subtype env s t = r_subtype TypSet.empty env s t
+  let rec subtypes env ss ts = r_subtypes TypSet.empty env ss ts
 
   let typ_union cs s t = match subtype cs s t, subtype cs t s with
       true, true -> s (* t = s *)
@@ -347,7 +253,7 @@ module Env = struct
             TForall (x, s, normalize_typ (bind_typ_id x s env) t)
 	      (* This is a hack to actually have the recursive identifiers bound to something *)
       | TRec (x, t) -> 
-	  let t' = normalize_typ (bind_typ_id x t env) t in
+	  let t' = normalize_typ (bind_typ_id x typ env) t in
 	    TRec (x, t')
 	      
   let check_typ p env t = 

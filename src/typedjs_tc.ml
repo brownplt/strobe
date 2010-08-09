@@ -320,7 +320,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
         if Env.subtype env s t then
           t
         else 
-          raise (Typ_error (p, "subsumption error"))
+          raise (Typ_error (p, sprintf "subsumption error: %s <: %s\n" (string_of_typ s) (string_of_typ t)))
   | EAssertTyp (p, raw_t, e) ->
       let s = tc_exp env e in
       let t = Env.check_typ p env raw_t in
