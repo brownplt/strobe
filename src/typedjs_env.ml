@@ -102,6 +102,7 @@ module Env = struct
     | n -> n
 
   let rec r_subtype rel env s t =
+    (printf "Asking subtype\n %s <:\n %s\n\n" (string_of_typ s) (string_of_typ t);
     let st = r_subtype rel env in
       if (TypSet.mem (s,t) rel) then 
 	(printf "matching from set: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); true)
@@ -120,6 +121,10 @@ module Env = struct
 		is_subclass (IdMap.find sub env.subclasses) sup in
               is_subclass c1 c2
 	| TObject fs1, TObject fs2 -> r_subtype_fields rel env fs1 fs2
+	| s, TRec (x, t') -> 
+	    r_subtype (TypSet.add (s,t) rel) env s (typ_subst x t t')
+	| TRec (x, s'), t ->
+	    r_subtype (TypSet.add (s,t) rel) env (typ_subst x s s') t
 	| TUnion (s1, s2), t -> st s1 t && st s2 t
 	| s, TUnion (t1, t2) -> st s t1 || st s t2
 	| TRef s', TRef t' -> st s' t' && st t' s'
@@ -153,11 +158,7 @@ module Env = struct
             List.mem constr [ "Num"; "Int"; "Str"; "Undef"; "Bool" ]
 	| _, TTop -> true
 	| TBot, _ -> true
-	| s, TRec (x, t') -> 
-	    r_subtype (TypSet.add (s,t) rel) env s (typ_subst x t t')
-	| TRec (x, s'), t ->
-	    r_subtype (TypSet.add (s,t) rel) env (typ_subst x s s') t
-	| _ -> s = t
+	| _ -> s = t)
 
   (* assumes fs1 and fs2 are ordered 
      fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
