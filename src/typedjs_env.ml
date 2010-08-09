@@ -7,9 +7,7 @@ exception Not_wf_typ of string
 let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
 
 
-let rec typ_subst x s typ = 
-(printf "Substing: %s for \n %s in\n%s\n\n" x (string_of_typ s) (string_of_typ typ);
-match typ with
+let rec typ_subst x s typ = match typ with
   | TId y -> if x = y then s else typ
   | TConstr (c, ts) -> TConstr (c, map (typ_subst x s) ts)
   | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
@@ -33,7 +31,7 @@ match typ with
       if x = y then
 	failwith "TODO: capture-free (TRec)"
       else
-	TRec (y, typ_subst x s t))
+	TRec (y, typ_subst x s t)
 
 module Env = struct
 
@@ -217,14 +215,11 @@ module Env = struct
             TObject (map (second2 (normalize_typ env)) fs)
       | TObjStar (fs, cname, other_typ) ->
 	  let fs = List.fast_sort cmp_props fs in
-	  let tconstr = 
-	    if IdMap.mem cname env.classes then typ
-            else 
-              begin
+	    if not (IdMap.mem cname env.classes) then
 		raise (Not_wf_typ (cname ^ " is not a type constructor"))
-              end in
-	  let other_typ = normalize_typ env other_typ in
-	    TObjStar (fs, cname, other_typ)
+	    else
+	      let other_typ = normalize_typ env other_typ in
+		TObjStar (fs, cname, other_typ)
       | TConstr ("Array", [t]) -> TConstr ("Array", [normalize_typ env t])
       | TConstr ("Array", (t:_)) -> 
           raise (Not_wf_typ ("Array only takes one argument"))
@@ -251,7 +246,6 @@ module Env = struct
       | TForall (x, s, t) -> 
           let s = normalize_typ env s in
             TForall (x, s, normalize_typ (bind_typ_id x s env) t)
-	      (* This is a hack to actually have the recursive identifiers bound to something *)
       | TRec (x, t) -> 
 	  let t' = normalize_typ (bind_typ_id x typ env) t in
 	    TRec (x, t')
