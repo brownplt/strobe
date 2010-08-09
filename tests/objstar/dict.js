@@ -1,5 +1,6 @@
-function foo(a, str) /*: {#proto: Object, *:Num} *  Str -> Num + (-> Str) + Undef */ {
+function foo(a, str) /*: {#proto: Object, *:Int} * Str -> Int + (-> Str) + Undef */ {
     return a[str];
 }
 
-foo({a: "Entry for a", b: "Entry for b", toString: function() /*: -> Str */ { return "String"; }});
+foo({a: 5, b: 10, toString: function() /*: -> Str */ { return "String"; }},
+    "str");

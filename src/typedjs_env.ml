@@ -103,7 +103,8 @@ module Env = struct
 
   let rec r_subtype rel env s t =
     let st = r_subtype rel env in
-      if (TypSet.mem (s,t) rel) then (printf "matching from set: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); true)
+      if (TypSet.mem (s,t) rel) then 
+	(printf "matching from set: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); true)
       else match s, t with
 	| TId x, TId y -> x = y
 	| TId x, t ->

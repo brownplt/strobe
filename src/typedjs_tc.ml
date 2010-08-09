@@ -61,8 +61,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | TSource t -> t
       | TField -> TField
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
-                                 (string_of_typ t)))
-    end 
+				 (string_of_typ t)))
+    end
   | ESetRef (p, e1, e2) -> begin match tc_exp env e1, tc_exp env e2 with
       | TRef s, t
       | TSink s, t ->
@@ -155,7 +155,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
 	      | TConstr ("Str", []) -> 
 		  List.fold_right (fun t typ -> TUnion (t, typ))
 		    ((map snd2 fs)@(class_types env cname))
-		    (TUnion (other_typ, TConstr ("Undef", [])))
+		    (TUnion (other_typ, TRef (TConstr ("Undef", []))))
 	      | _ -> error p ("Need to have a string for dictionary lookup"))
       | TConstr ("Array", [tarr]), eidx ->
           let (p1, p2) = p in

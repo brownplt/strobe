@@ -13,6 +13,3 @@ var d = (/*: cheat Bool + Num */ {x:5});
 if(typeof d === "boolean") {
 
 }
-
-
-
