@@ -56,6 +56,13 @@ module Env : sig
 
   val bind_typ : env -> typ -> env * typ
 
+
+  module Pretty : sig
+
+    val p_env : env -> FormatExt.printer
+
+  end
+
 end
 
 

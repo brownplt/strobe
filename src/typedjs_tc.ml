@@ -391,7 +391,7 @@ and tc_exp_ret env e =
       t
 
 let rec tc_def env def = match def with
-    DEnd -> ()
+    DEnd -> env
   | DExp (e, d) -> 
       let _ = tc_exp env e in
         tc_def env d
@@ -479,4 +479,5 @@ let rec tc_def env def = match def with
         
 let typecheck = tc_def
 
+  
 

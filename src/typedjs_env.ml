@@ -344,6 +344,37 @@ module Env = struct
     | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) t
     | typ -> (env, typ)
 
+      
+  module Pretty = struct
+      
+    open Format
+    open FormatExt
+    open Typedjs_syntax.Pretty
+      
+    let empty : printer = fun _ -> ()
+      
+    let p_id_bind x t fmt = match t with
+      | TRef s -> vert [ horz [ text x; text ":"; p_typ s ]; fmt ]
+      | _ -> vert [ horz [ text "val"; text x; text ":"; p_typ t ]; fmt ]
+
+    let p_field x t fmt =
+      vert [ horz [ text x; text ":"; p_typ t; text "," ]; fmt ]
+
+    (* TODO: Does not print "checked". *)
+    let p_class_def c_name c_info fmt =
+      let class_line = match c_info.sup with
+        | None -> horz [ text "class"; text c_name ]
+        | Some sup ->
+          horz [ text "class"; text c_name; text "prototype"; text sup ] in
+      vert [ class_line; braces (IdMap.fold p_field c_info.fields empty); fmt ]
+
+    (* TODO: warn if lbl_typs or typ_ids are non-empty *)
+    let p_env (env : env) = 
+      let ids = IdMap.fold p_id_bind env.id_typs empty in
+      let classes =  IdMap.fold p_class_def env.classes empty in
+      vert [ ids; classes ]
+
+  end
 
 end
 

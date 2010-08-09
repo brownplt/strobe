@@ -80,6 +80,10 @@ let (set_no_cf, get_no_cf) =
 let (set_print_contracts, get_print_contracts) =
   mk_flag "-contracts" "insert contracts (prints to stdout)" false
 
+let (set_print_env, get_print_env) =
+  mk_flag "-penv" "print top-level types and classes (for separate compilation)"
+    false
+
 let (set_simpl_cps, get_simpl_cps) =
   mk_flag "-simplcps" "use simplified, but slower CPS (broken)" false
 
@@ -120,10 +124,14 @@ let annotate_exp exp =
     insert_typecasts exp
 
 let action_tc () : unit = 
-  let _ = Typedjs_tc.typecheck (get_env ()) (annotate_exp (get_typedjs ())) in
-    if get_print_contracts () then
-      let tr_map = mk_contract_transformers !contracts in
-        transform_exprs tr_map (get_cin ()) stdout
+  let env = Typedjs_tc.typecheck (get_env ()) (annotate_exp (get_typedjs ())) in
+  if get_print_contracts () then begin
+    let tr_map = mk_contract_transformers !contracts in
+    transform_exprs tr_map (get_cin ()) stdout
+  end;
+  if get_print_env () then begin
+    Env.Pretty.p_env env Format.std_formatter
+  end
 
 let action_cps () : unit =
   let typedjs = get_typedjs () in
@@ -178,6 +186,7 @@ let main () : unit =
        "do not signal an error on unreachable code");
       set_simpl_cps;
       set_print_contracts;
+      set_print_env;
       set_no_cf;
     ]
     (fun s -> set_cin (open_in s) s)
