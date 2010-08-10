@@ -2,6 +2,8 @@ function foo(a) /*: {x:Int, #proto:Object, *:Bool} -> Undef*/
 {
 }
 
-var arg = {x:4, toString: function() /*: -> Str */ { return "foo"; }, y:true};
+foo({x:4, y:true}); // passes
 
-foo(arg); // should this work?
+var arg = {x:4, y:true};
+
+foo(arg); // doesn't

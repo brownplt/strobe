@@ -134,7 +134,10 @@ let rec tc_exp (env : Env.env) exp = match exp with
                                 (string_of_typ t)))
     end
   | EObject (p, fields) ->
-      Env.check_typ p env (TObject (map (second2 (tc_exp env)) fields))
+      let obj_proto_fields = IdMapExt.to_list (Env.class_fields env "Object") in
+	printf "obj_proto_field 1st el: %s" (string_of_typ (snd2 (List.hd obj_proto_fields)));
+	let res = Env.check_typ p env (TObject ((map (second2 (tc_exp env)) fields)@obj_proto_fields)) in
+	  printf "type of literal was: %s\n" (string_of_typ res); res
   | EBracket (p, obj, field) -> begin match un_null (tc_exp env obj), field with
       | TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
           (try
@@ -156,7 +159,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
 		  List.fold_right (fun t typ -> TUnion (t, typ))
 		    ((map snd2 fs)@(class_types env cname))
 		    (TUnion (other_typ, TRef (TConstr ("Undef", []))))
-	      | _ -> error p ("Need to have a string for dictionary lookup"))
+	      | t -> error p (sprintf "Index was type %s in dictionary lookup\n" (string_of_typ t)))
       | TConstr ("Array", [tarr]), eidx ->
           let (p1, p2) = p in
             contracts := IntMap.add p1.Lexing.pos_cnum 
