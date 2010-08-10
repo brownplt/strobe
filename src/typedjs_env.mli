@@ -56,6 +56,8 @@ module Env : sig
 
   val bind_typ : env -> typ -> env * typ
 
+  val diff : env -> env -> env
+
 
   module Pretty : sig
 

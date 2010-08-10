@@ -477,7 +477,9 @@ let rec tc_def env def = match def with
       with Not_found -> raise (
         Typ_error (p, "class " ^ cname ^ " doesnt exist"))
         
-let typecheck = tc_def
+let typecheck init_env defs = 
+  let final_env = tc_def init_env defs in
+  Env.diff final_env init_env
 
   
 

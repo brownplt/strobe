@@ -376,6 +376,15 @@ module Env = struct
 
   end
 
+  let rec diff final_env init_env =
+    { 
+      id_typs = IdMapExt.diff final_env.id_typs init_env.id_typs;
+      lbl_typs = IdMapExt.diff final_env.lbl_typs init_env.lbl_typs;
+      classes = IdMapExt.diff final_env.classes init_env.classes;
+      subclasses = IdMapExt.diff final_env.subclasses init_env.subclasses;
+      typ_ids = IdMapExt.diff final_env.typ_ids init_env.typ_ids
+    }
+
 end
 
 open Lexing
