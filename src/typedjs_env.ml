@@ -88,10 +88,18 @@ module Env = struct
 
   let id_env env = env.id_typs
 
-  let clear_labels env = { env with lbl_typs = 
-      try 
-        IdMap.add "%return" (IdMap.find "%return" env.lbl_typs) IdMap.empty
-      with Not_found -> IdMap.empty }
+  let rec pick_typs ids typ_map = match ids with
+    | [] -> IdMap.empty
+    | x :: rest -> 
+      if IdMap.mem x typ_map then
+        IdMap.add x (IdMap.find x typ_map) (pick_typs rest typ_map)
+      else
+        pick_typs rest typ_map
+        
+  let clear_labels env = 
+    { env with 
+      lbl_typs = pick_typs [ "%return"; "%break"; "%continue" ] env.lbl_typs
+    }
 
   let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)
 
