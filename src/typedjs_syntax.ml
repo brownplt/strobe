@@ -194,13 +194,11 @@ module Pretty = struct
         horz [ text s; 
                angles (horz (intersperse (text ",") (map typ ts))) ]
     | TObject fs ->
-        let f (k, t) = horz [ text k; text ":"; typ t ] in
-          braces (horz (intersperse (text ",") (map f fs)))
+      braces (horz (intersperse (text ",") (map field fs)))
     | TObjStar (fs, cname, other_typ) ->
-	let f (k, t) = horz [ text k; text ":"; typ t ] in
 	let constr = horz [ text "#proto"; text ":"; text cname ] in
 	let star = horz [ text "*"; text ":"; typ other_typ ] in
-	let fields = map f fs in
+	let fields = map field fs in
 	  braces (horz (intersperse (text ",") (fields@[constr;star])))
     | TRef s -> horz [ text "ref"; parens (typ s) ]
     | TSource s -> horz [ text "source"; parens (typ s) ]
@@ -210,6 +208,14 @@ module Pretty = struct
     | TRec (x, t) -> horz [ text "trec"; (parens (horz [text x; text "."; typ t ] )) ]
     | TId x -> text x
     | TField -> text "field"
+
+  and field (x, t) =  
+    horz 
+      [ text x; text ":"; 
+        match t with
+          | TRef t' -> typ t'
+          | _ -> typ t (* strange case! *) ]
+  
 
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
