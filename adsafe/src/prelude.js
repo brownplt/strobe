@@ -110,3 +110,18 @@ function error(message) /*: Str + Undef -> Undef */ {
 }
 
 
+    function walkTheDOM(node, func, skip) 
+    /*: Node * (Node -> Undef) * Bool + Undef -> Undef */ {
+
+// Recursively traverse the DOM tree, starting with the node, in document
+// source order, calling the func on each node visisted.
+
+        if (/*:cheat Bool */(!skip)) {
+            func(node);
+        }
+        node = /*:cheat Node */(node.firstChild);
+        while (/*: cheat Bool */node) {
+            walkTheDOM(node, func);
+            node = /*: cheat Node*/(node.nextSibling);
+        }
+    }

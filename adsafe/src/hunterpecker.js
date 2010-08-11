@@ -2,6 +2,7 @@
 var name = /*: cheat Str*/undefined; 
 var value = /*: upcast Any*/undefined;
 var result = /*: HTMLElement*/ [];
+var star = false;
 
 var hunter = {
 
@@ -52,13 +53,14 @@ var hunter = {
         for (var i = 0; i < e.length; i += 1) {
             result.push(e[i]);
         }
-    }, /* TODO: walkTheDOM
-    '*': function (node) {
+    },
+
+    '*': function (node) /*: HTMLElement -> Undef */{
         star = true;
-        walkTheDOM(node, function (node) {
-            result.push(node);
+        walkTheDOM(node, function (node) /*: Node -> Undef */ {
+            result.push(/*:cheat HTMLElement */node);
         }, true);
-    }*/
+    }
 };
 
 var pecker = {

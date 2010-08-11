@@ -17,7 +17,7 @@ var ADSAFE = (function () {
         interceptors = [],
 
         result,
-        star,
+
         the_range,
         value;
 
