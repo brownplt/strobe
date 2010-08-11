@@ -1,6 +1,7 @@
 open Prelude
 open Typedjs_syntax
 open Typedjs_types
+open Typedjs_env
 
 let tc_const (const : JavaScript_syntax.const) = match const with
     JavaScript_syntax.CString _ -> typ_str

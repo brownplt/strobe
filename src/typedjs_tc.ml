@@ -128,16 +128,16 @@ let rec tc_exp (env : Env.env) exp = match exp with
         Env.check_typ p env (TConstr ("Array", [u]))
   | EIf (p, e1, e2, e3) -> begin
       match tc_exp env e1, tc_exp env e2, tc_exp env e3 with
-          TConstr ("Bool", []), t2, t3 -> Env.typ_union env t2 t3
+	| TConstr ("Bool", []), t2, t3 
+	| TObject _, t2, t3
+	| TConstr ("Undef", []), t2, t3 -> Env.typ_union env t2 t3
         | t, _, _ -> 
             raise (Typ_error (p, "expected condition to have type Bool, but got a " ^ 
                                 (string_of_typ t)))
     end
   | EObject (p, fields) ->
       let obj_proto_fields = IdMapExt.to_list (Env.class_fields env "Object") in
-	printf "obj_proto_field 1st el: %s" (string_of_typ (snd2 (List.hd obj_proto_fields)));
-	let res = Env.check_typ p env (TObject ((map (second2 (tc_exp env)) fields)@obj_proto_fields)) in
-	  printf "type of literal was: %s\n" (string_of_typ res); res
+	Env.check_typ p env (TObject ((map (second2 (tc_exp env)) fields)@obj_proto_fields))
   | EBracket (p, obj, field) -> begin match un_null (tc_exp env obj), field with
       | TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
           (try
