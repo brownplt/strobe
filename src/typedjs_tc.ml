@@ -358,7 +358,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
                          (string_of_typ t))
         end
   | EForInIdx _ -> TField
-  | ECheat (p, t, _) -> t
+  | ECheat (p, t, _) -> Env.check_typ p env t
 
 and tc_exps env es = map (tc_exp env) es
 
