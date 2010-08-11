@@ -1,11 +1,19 @@
 #!/bin/bash
 P=`dirname $0`
+ARGS=$@
+
 if [ -f $P/obj/main.native ]; then
-  $P/obj/main.native $@
+  CMD=$P/obj/main.native
 elif [ -f $P/obj/main.d.byte ]; then
-  $P/obj/main.d.byte $@
+  CMD=$P/obj/main.d.byte
 else
   echo "Compile first"
   exit 100
 fi
-  
+
+
+if [[ $VERBOSE == "true" ]]; then
+  echo "$CMD $ARGS"
+fi
+
+$CMD $ARGS
