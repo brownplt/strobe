@@ -178,7 +178,7 @@ module Env = struct
           if cmp = 0 then r_subtype rel env s t && r_subtype_fields rel env fs1' fs2'
             (* if cmp < 0, x is an extra field, so just move on *)
           else (if cmp < 0 then 
-                  (printf "%s is extra field\n" x; 
+                  (
                    r_subtype_fields rel env fs1' fs2)
                     (* otherwise, y is a field that x does not have *)
                 else (printf "lhs doesnt have %s\n" y; false))

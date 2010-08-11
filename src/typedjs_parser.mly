@@ -27,8 +27,9 @@ args
   | arg_typ { [$1] }
   | arg_typ STAR args { $1 :: $3 }
 
-field
-  : ID COLON typ { ($1, TRef $3) }
+field :
+  | ID COLON typ { ($1, TRef $3) }
+  | STRING COLON typ { ($1, TRef $3) }
 
 fields
   : { [] }

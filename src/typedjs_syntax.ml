@@ -211,7 +211,7 @@ module Pretty = struct
 
   and field (x, t) =  
     horz 
-      [ text x; text ":"; 
+      [ text ("\"" ^ x ^ "\""); text ":"; 
         match t with
           | TRef t' -> typ t'
           | _ -> typ t (* strange case! *) ]
