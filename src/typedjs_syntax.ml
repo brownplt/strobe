@@ -49,6 +49,7 @@ type typ =
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list
   | EnvBind of id * typ
+  | EnvTypSyn of id * typ
 
 type annotation =
     ATyp of typ

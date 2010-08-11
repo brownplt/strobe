@@ -53,6 +53,7 @@ module Env = struct
     classes : class_info IdMap.t;
     subclasses : id IdMap.t; (* direct subclasses *)
     typ_ids: typ IdMap.t; (* bounded type variables *)
+    synonyms : typ IdMap.t
   }
 
 
@@ -62,6 +63,7 @@ module Env = struct
     classes = IdMap.empty;
     subclasses = IdMap.empty;
     typ_ids = IdMap.empty;
+    synonyms = IdMap.empty;
   }
 
   let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
@@ -233,11 +235,12 @@ module Env = struct
       | TConstr ("Array", (t:_)) -> 
           raise (Not_wf_typ ("Array only takes one argument"))
       | TConstr (constr, []) ->
-          if IdMap.mem constr env.classes then typ
-          else 
-            begin
-              raise (Not_wf_typ (constr ^ " is not a type constructor"))
-            end
+          if IdMap.mem constr env.classes then 
+            typ
+          else if IdMap.mem constr env.synonyms then
+            IdMap.find constr env.synonyms
+          else
+            raise (Not_wf_typ (constr ^ " is not a type constructor"))
       | TConstr (constr, _) ->
           raise (Not_wf_typ (constr ^ " does not take arguments"))
       | TArrow (this, args, result) ->
@@ -390,7 +393,8 @@ module Env = struct
       lbl_typs = IdMapExt.diff final_env.lbl_typs init_env.lbl_typs;
       classes = IdMapExt.diff final_env.classes init_env.classes;
       subclasses = IdMapExt.diff final_env.subclasses init_env.subclasses;
-      typ_ids = IdMapExt.diff final_env.typ_ids init_env.typ_ids
+      typ_ids = IdMapExt.diff final_env.typ_ids init_env.typ_ids;
+      synonyms = IdMapExt.diff final_env.synonyms init_env.synonyms; 
     }
 
 end
@@ -449,6 +453,13 @@ let rec mk_env' (lst : env_decl list) (env : Env.env) : Env.env =
           raise (Not_wf_typ ("error adding class " ^ class_name ^ "; " ^ s)) in
           (* TODO account for prototype *)
           mk_env' rest env
+    | EnvTypSyn (x, typ) :: rest -> 
+      let typ' = Env.normalize_typ env typ in
+      if IdMap.mem x env.Env.synonyms then
+        raise (Not_wf_typ (sprintf "%s is already used as a type-synonym" x))
+      else
+        mk_env' rest
+          ({ env with Env.synonyms = IdMap.add x typ' env.Env.synonyms })
 
 let extend_global_env env lst = mk_env' lst (add_classes lst env)
 

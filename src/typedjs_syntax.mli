@@ -45,6 +45,7 @@ type typ =
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list
   | EnvBind of id * typ
+  | EnvTypSyn of id * typ
 
 type annotation =
     ATyp of typ
@@ -100,9 +101,9 @@ type exp =
   | ESubsumption of pos * typ * exp
   | EDowncast of pos * typ * exp
   | ETypAbs of pos * id * typ * exp 
-      (** [ETypAbs (_, x, t, e)] Lambda x <: t . e *)
+  (** [ETypAbs (_, x, t, e)] Lambda x <: t . e *)
   | ETypApp of pos * exp * typ
-      (** [ETypApp (_, e, t)] e t *)
+  (** [ETypApp (_, e, t)] e t *)
   | EForInIdx of pos
   | ECheat of pos * typ * exp
 
