@@ -53,14 +53,6 @@ var ADSAFE = (function () {
 //  the banned names, or names that are not strings or positive numbers,
 //  or strings that start or end with _ or strings that start with -.
 
-    function reject(object, name) {
-        return typeof object !== 'object'  || banned[name] ||
-                ((typeof name !== 'number' || name < 0) &&
-                (typeof name !== 'string'  || name.charAt(0) === '_' ||
-                name.slice(-1) === '_'     || name.charAt(0) === '-'));
-    }
-
-
     function getStyleObject(node) {
 
 // The getStyleObject function returns the computed style object for a node.
@@ -73,23 +65,6 @@ var ADSAFE = (function () {
             node.currentStyle || defaultView.getComputedStyle(node, '');
         return cache_style_object;
     }
-
-
-    function walkTheDOM(node, func, skip) {
-
-// Recursively traverse the DOM tree, starting with the node, in document
-// source order, calling the func on each node visisted.
-
-        if (!skip) {
-            func(node);
-        }
-        node = node.firstChild;
-        while (node) {
-            walkTheDOM(node, func);
-            node = node.nextSibling;
-        }
-    }
-
 
     function purge_event_handlers(node) {
 
@@ -1295,12 +1270,7 @@ var ADSAFE = (function () {
 
 //  ADSAFE.get retrieves a value from an object.
 
-        get: function (object, name) {
-            if (arguments.length === 2 && !reject(object, name)) {
-                return object[name];
-            }
-            return error();
-        },
+        get: ADSAFE_get,
 
 //  ADSAFE.go allows a guest widget to get access to a wrapped dom node and
 //  approved ADsafe libraries. It is passed an id and a function. The function
