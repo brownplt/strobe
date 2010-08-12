@@ -18,12 +18,10 @@ let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 
 let error p s = raise (Typ_error (p, s))
 
-let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
-
 let class_types (env : Env.env) constr = IdMapExt.values (Env.class_fields env constr)
 
 let un_null t = match t with
-  | TUnion (TConstr ("Undef", []), t') -> t'
+  | TUnion (TConstr ("Undef", []), t') -> printf "%s\n" (string_of_typ t'); t'
   | TUnion (t', TConstr ("Undef", [])) -> t'
   | TUnion (TConstr ("Null", []), t') -> t'
   | TUnion (t', TConstr ("Null", [])) -> t'

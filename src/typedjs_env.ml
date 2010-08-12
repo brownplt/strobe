@@ -4,9 +4,6 @@ open Typedjs_types
 
 exception Not_wf_typ of string
 
-let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
-
-
 let rec typ_subst x s typ = match typ with
   | TId y -> if x = y then s else typ
   | TConstr (c, ts) -> TConstr (c, map (typ_subst x s) ts)

@@ -156,3 +156,6 @@ module Pretty : sig
   val pp_typ : formatter -> typ -> unit
 
 end
+
+val string_of_typ : typ -> string
+

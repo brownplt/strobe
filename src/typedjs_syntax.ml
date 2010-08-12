@@ -313,3 +313,5 @@ module Pretty = struct
   let pp_typ ppf t = p_typ t ppf
    
 end
+
+let string_of_typ = FormatExt.to_string Pretty.p_typ
