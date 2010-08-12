@@ -57,7 +57,6 @@ arg_typ
   | ID { TConstr ( $1, [] ) }
   | ID LANGLE typs RANGLE { TConstr ($1, map (fun t -> TRef t) $3) }
   | TID { TId $1 }
-  | TREC ID DOT LPAREN typ RPAREN { TRec ($2, $5) }
 
 typ 
   : arg_typ { $1 }
@@ -65,6 +64,7 @@ typ
   | LBRACK typ RBRACK args ARROW typ { TArrow ($2, $4, $6) }
   | FORALL ID LTCOLON typ DOT typ { TForall ($2, $4, $6) }
   | FORALL ID DOT typ { TForall ($2, TTop, $4) }
+  | TREC ID DOT typ { TRec ($2, $4) }
 
 
 typs :
