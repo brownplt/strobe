@@ -2,7 +2,6 @@
 
 for file in ../tests/not-well-formed/*.js
 do
-  echo "Test $file ..."
   result=`../tc -pretc $file 2>&1`
   exitcode=$?
   if [ $exitcode -ne 2 ]; then
@@ -17,7 +16,6 @@ done
 
 for file in ../tests/well-formed/*.js
 do
-  echo "Test $file ..."
   result=`../tc -pretc $file 2>&1`
   if [ $? -ne 0 ]; then
       echo -e "$file: aborted with exit code $?; output was:\n$result\n"
@@ -27,7 +25,6 @@ done
 
 for file in ../tests/untypable/*.js
 do
-  echo "Test $file ..."
   result=`../tc -tc $file 2>&1`
   exitcode=$?
   if [ $exitcode -ne 2 ]; then
@@ -42,7 +39,6 @@ done
 
 for file in ../tests/typable/*.js
 do
-  echo "Test $file ..."
   result=`../tc -tc $file 2>&1`
   if [ $? -ne 0 ]; then
       echo -e "$file: aborted with exit code $?; output was:\n$result\n"
@@ -51,7 +47,6 @@ done
 
 for file in ../tests/browser/*.js
 do
-  echo "Test $file ..."
   result=`../tcb -tc $file 2>&1`
   if [ $? -ne 0 ]; then
       echo -e "$file: aborted with exit code $?; output was:\n$result\n"
@@ -61,7 +56,6 @@ done
 
 for file in ../tests/parsing/*.js
 do
-  echo "Test $file ..."
   result=`../tc -pretty $file 2>&1`
   if [ $? -ne 0 ]; then
       echo -e "$file: aborted with exit code $?; output was:\n$result\n"
@@ -71,13 +65,11 @@ done
 cd ../tests/contracts
 for file in *.js
 do
-  echo "Test ../tests/contracts/$file ..."
   ./runtest.sh $file
 done
 
 cd ../gadgets
 for file in *.js
 do
-    echo "Test ../tests/gadgets/$file ..."
   ./runtest.sh $file
 done

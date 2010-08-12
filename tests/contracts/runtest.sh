@@ -13,7 +13,7 @@ fi
 set -o pipefail
 
 cat ../../data/contracts.js > $DEST
-../../tc $SRC >> $DEST
+../../tc -contracts $SRC >> $DEST
 
 if [[ $(head -n1 $SRC) == "// succeeds" ]]; then
   OUTPUT=`$V8 -f $DEST 2>&1`
