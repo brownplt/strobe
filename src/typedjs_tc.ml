@@ -50,12 +50,12 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | _ -> tc_exp env e2
     end
   | ERef (p, k, e) ->
-      let t = tc_exp env e in
-        begin match k with
-          | SourceCell -> TSource t
-          | SinkCell -> TSink t
-          | RefCell -> TRef t
-        end
+    let t = tc_exp env e in
+    begin match k with
+      | SourceCell -> TSource t
+      | SinkCell -> TSink t
+      | RefCell -> TRef t
+    end
   | EDeref (p, e) -> begin match tc_exp env e with
       | TRef t -> t
       | TSource t -> t
@@ -137,7 +137,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
     end
   | EObject (p, fields) ->
       let obj_proto_fields = IdMapExt.to_list (Env.class_fields env "Object") in
-	Env.check_typ p env (TObject ((map (second2 (tc_exp env)) fields)@obj_proto_fields))
+	Env.check_typ p env 
+          (TObject ((map (second2 (tc_exp env)) fields)@obj_proto_fields))
   | EBracket (p, obj, field) -> begin match un_null (tc_exp env obj), field with
       | TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
           (try
@@ -190,7 +191,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | TConstr (cname, []), EConst (_, JavaScript_syntax.CString fname) ->
           begin match Env.field_typ env cname fname with
             | Some t -> t
-            | None -> error p ("object does not have a field " ^ fname)
+            | None -> 
+              error p (sprintf "%s-object does not have a field %s"
+                         cname fname)
           end
       | TField, field -> begin match tc_exp env field with
           | TField -> TField
@@ -320,10 +323,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ESubsumption (p, t, e) ->
       let s = tc_exp env e in
       let t = Env.check_typ p env t in
-        if Env.subtype env s t then
-          t
-        else 
-          raise (Typ_error (p, sprintf "subsumption error: %s <: %s\n" (string_of_typ s) (string_of_typ t)))
+      if Env.subtype env s t then
+        t
+      else 
+        error p (sprintf "%s is not a subtype of %s" 
+                   (string_of_typ s) (string_of_typ t))
   | EAssertTyp (p, raw_t, e) ->
       let s = tc_exp env e in
       let t = Env.check_typ p env raw_t in

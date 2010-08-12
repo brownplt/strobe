@@ -228,7 +228,8 @@ module Pretty = struct
     | EObject (_, ps) -> brackets (vert (map prop ps))
     | EThis _ -> text "this"
     | EId (_, x) -> text x
-    | EBracket (_, e1, e2) -> squish [ exp e1; brackets (exp e2) ]
+    | EBracket (_, e1, e2) ->
+      parens (horz [ text "bracket"; exp e1; exp e2 ])
     | ENew (_, c_id, args) ->
         parens (horz (text "new" :: text c_id :: map exp args))
     | EIf (_, e1, e2, e3) ->

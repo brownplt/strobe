@@ -145,11 +145,6 @@ module Env = struct
             let fs1 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
             let fs1 = List.rev fs1 in
               r_subtype_fields rel env fs1 fs2
-        | TObject fs1, TConstr (c_name, []) ->
-            (* Same for the other direction. This must be double-checked. *)
-            let fs2 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
-            let fs2 = List.rev fs2 in
-              r_subtype_fields rel env fs1 fs2
 	| TObjStar (fs1, cname1, other_typ1), 
 	    TObjStar (fs2, cname2, other_typ2) ->
 	    r_subtype_fields rel env fs1 fs2 &&
@@ -219,8 +214,8 @@ module Env = struct
 
   let rec normalize_typ env typ = 
     match typ with 
-      | TUnion (s, t) -> 
-          typ_union env (normalize_typ env s) (normalize_typ env t)
+      | TUnion (s, t) ->
+        typ_union env (normalize_typ env s) (normalize_typ env t)
       | TObject fs ->
           let fs = List.fast_sort cmp_props fs in
             TObject (map (second2 (normalize_typ env)) fs)
