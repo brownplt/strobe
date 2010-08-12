@@ -37,7 +37,7 @@ module Env = struct
     let compare = Pervasives.compare
   end
     
-  module TypSet = Set.Make (TypPairOrderedType)
+  module TypPairSet = Set.Make (TypPairOrderedType)
 
   type class_info = {
     fields : typ IdMap.t;
@@ -110,7 +110,7 @@ module Env = struct
 
   let rec r_subtype rel env s t =
     let st = r_subtype rel env in
-      if (TypSet.mem (s,t) rel) then 
+      if (TypPairSet.mem (s,t) rel) then 
 	(printf "matching from set: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); true)
       else match s, t with
 	| TId x, TId y -> x = y
@@ -128,9 +128,9 @@ module Env = struct
               is_subclass c1 c2
 	| TObject fs1, TObject fs2 -> r_subtype_fields rel env fs1 fs2
 	| s, TRec (x, t') -> 
-	    r_subtype (TypSet.add (s,t) rel) env s (typ_subst x t t')
+	    r_subtype (TypPairSet.add (s,t) rel) env s (typ_subst x t t')
 	| TRec (x, s'), t ->
-	    r_subtype (TypSet.add (s,t) rel) env (typ_subst x s s') t
+	    r_subtype (TypPairSet.add (s,t) rel) env (typ_subst x s s') t
 	| TUnion (s1, s2), t -> st s1 t && st s2 t
 	| s, TUnion (t1, t2) -> st s t1 || st s t2
 	| TRef s', TRef t' -> st s' t' && st t' s'
@@ -200,8 +200,8 @@ module Env = struct
     try List.for_all2 (r_subtype rel env) ss ts
     with Invalid_argument _ -> false (* unequal lengths *)
 
-  let rec subtype env s t = r_subtype TypSet.empty env s t
-  let rec subtypes env ss ts = r_subtypes TypSet.empty env ss ts
+  let rec subtype env s t = r_subtype TypPairSet.empty env s t
+  let rec subtypes env ss ts = r_subtypes TypPairSet.empty env ss ts
 
   let typ_union cs s t = match subtype cs s t, subtype cs t s with
       true, true -> s (* t = s *)
