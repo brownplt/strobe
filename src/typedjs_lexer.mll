@@ -40,6 +40,7 @@ rule token = parse
    | "Str" { STR }
    | "Bool" { BOOL }
    | "Undef" { UNDEF }
+   | "Bot" { BOT }
    | "*" { STAR }
    | ":" { COLON }
    | "+" { UNION }
