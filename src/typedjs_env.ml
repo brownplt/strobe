@@ -117,6 +117,10 @@ module Env = struct
 	| TId x, t ->
 	    let s = IdMap.find x env.typ_ids in
 	      r_subtype rel env s t
+	| s, TRec (x, t') -> 
+	    r_subtype (TypPairSet.add (s,t) rel) env s (typ_subst x t t')
+	| TRec (x, s'), t ->
+	    r_subtype (TypPairSet.add (s,t) rel) env (typ_subst x s s') t
 	| TConstr (c1, []), TConstr (c2, []) ->
 	    let rec is_subclass sub sup =
               if sub = sup then
@@ -127,10 +131,6 @@ module Env = struct
 		is_subclass (IdMap.find sub env.subclasses) sup in
               is_subclass c1 c2
 	| TObject fs1, TObject fs2 -> r_subtype_fields rel env fs1 fs2
-	| s, TRec (x, t') -> 
-	    r_subtype (TypPairSet.add (s,t) rel) env s (typ_subst x t t')
-	| TRec (x, s'), t ->
-	    r_subtype (TypPairSet.add (s,t) rel) env (typ_subst x s s') t
 	| TUnion (s1, s2), t -> st s1 t && st s2 t
 	| s, TUnion (t1, t2) -> st s t1 || st s t2
 	| TRef s', TRef t' -> st s' t' && st t' s'
@@ -175,7 +175,7 @@ module Env = struct
                   (
                    r_subtype_fields rel env fs1' fs2)
                     (* otherwise, y is a field that x does not have *)
-                else (printf "lhs doesnt have %s\n" y; false))
+                else (printf "lhs doesnt have %s, tried %s\n" y x; false))
             
   and r_subtype_star rel env fso fs_star other_typ = match fso, fs_star with
     | [], [] -> true
@@ -300,7 +300,7 @@ module Env = struct
     | TSink t -> TSink t
     | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
     | TForall _ -> typ
-    | TRec (s, t) -> typ
+    | TRec (x, t) -> TRec (x, static cs rt t)
     | TField -> List.fold_left (basic_static cs) TBot (RTSetExt.to_list rt)
     | TTop -> 
         if RTSet.equal rt Typedjs_lattice.rtany then
@@ -474,7 +474,6 @@ let operator_env_of_tc_env tc_env =
   let fn x t env = IdMap.add x (df_func_of_typ t) env in
     IdMap.fold fn (Env.id_env tc_env) IdMap.empty
   
-
 let apply_subst subst typ = IdMap.fold typ_subst subst typ
 
  (* TODO: occurs check *)

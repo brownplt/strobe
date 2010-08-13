@@ -32,7 +32,7 @@ let un_ref t = match t with
   | TSource s -> s
   | TSink s -> s
   | _ -> failwith ("un_ref got " ^ string_of_typ t)
- 
+
 let rec tc_exp (env : Env.env) exp = match exp with
   | EConst (_, c) -> tc_const c
   | EBot _ -> TBot
@@ -138,6 +138,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
 	Env.check_typ p env 
           (TObject ((map (second2 (tc_exp env)) fields)@obj_proto_fields))
   | EBracket (p, obj, field) -> begin match un_null (tc_exp env obj), field with
+      | TRec (_, TObject fs), EConst (_, JavaScript_syntax.CString x) 
       | TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
           (try
              snd2 (List.find (fun (x', _) -> x = x') fs)

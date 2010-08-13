@@ -1,6 +1,6 @@
-var n = /*: upcast trec X . Int + {left: Int, right: 'X, toString: -> Str} */ 5;
 var o = /*: upcast trec X . Int + {left: Int, right: 'X, toString: -> Str} */ 
-{left:4, right:n};
+{left:4, right:
+/*: upcast trec X . Int + {left: Int, right: 'X, toString: -> Str} */ 5};
 
 var d = 0;
 
