@@ -114,9 +114,11 @@ module Env = struct
 	(printf "matching from set: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); true)
       else match s, t with
 	| TId x, TId y -> x = y
-	| TId x, t ->
+	| TId x, t -> begin try
 	    let s = IdMap.find x env.typ_ids in
 	      r_subtype rel env s t
+          with Not_found -> failwith ("Unbound id (in subtype, shouldn't happen): " ^ x)
+          end
 	| s, TRec (x, t') -> 
 	    r_subtype (TypPairSet.add (s,t) rel) env s (typ_subst x t t')
 	| TRec (x, s'), t ->
@@ -300,7 +302,7 @@ module Env = struct
     | TSink t -> TSink t
     | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
     | TForall _ -> typ
-    | TRec (x, t) -> TRec (x, static cs rt t)
+    | TRec (x, t) -> static cs rt (typ_subst x typ t)
     | TField -> List.fold_left (basic_static cs) TBot (RTSetExt.to_list rt)
     | TTop -> 
         if RTSet.equal rt Typedjs_lattice.rtany then
