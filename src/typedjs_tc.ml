@@ -20,6 +20,10 @@ let error p s = raise (Typ_error (p, s))
 
 let class_types (env : Env.env) constr = IdMapExt.values (Env.class_fields env constr)
 
+let roll t = match t with
+  | TRec (x, t') -> typ_subst x t' t
+  | _ -> t
+
 let un_null t = match t with
   | TUnion (TConstr ("Undef", []), t') -> printf "%s\n" (string_of_typ t'); t'
   | TUnion (t', TConstr ("Undef", [])) -> t'
@@ -137,8 +141,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let obj_proto_fields = IdMapExt.to_list (Env.class_fields env "Object") in
 	Env.check_typ p env 
           (TObject ((map (second2 (tc_exp env)) fields)@obj_proto_fields))
-  | EBracket (p, obj, field) -> begin match un_null (tc_exp env obj), field with
-      | TRec (_, TObject fs), EConst (_, JavaScript_syntax.CString x) 
+  | EBracket (p, obj, field) -> begin match roll (un_null (tc_exp env obj)), field with
       | TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
           (try
              snd2 (List.find (fun (x', _) -> x = x') fs)
