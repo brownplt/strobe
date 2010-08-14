@@ -58,6 +58,7 @@ module Env : sig
 
   val diff : env -> env -> env
 
+  val normalize_typ : env -> typ -> typ
 
   module Pretty : sig
 
