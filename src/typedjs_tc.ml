@@ -24,6 +24,8 @@ let unfold_typ t = match t with
   | TRec (x, t') -> typ_subst x t' t
   | _ -> t
 
+
+
 let un_null t = match t with
   | TUnion (TConstr ("Undef", []), t') -> t'
   | TUnion (t', TConstr ("Undef", [])) -> t'
