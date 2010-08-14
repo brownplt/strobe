@@ -26,9 +26,9 @@ let rec typ_subst x s typ = match typ with
         failwith "TODO: capture-free substitution"
   | TRec (y, t) ->
       if x = y then
-	failwith "TODO: capture-free (TRec)"
-      else
 	TRec (y, typ_subst x s t)
+      else
+	failwith "TODO: capture-free (TRec)"
 
 module Env = struct
 
@@ -110,8 +110,7 @@ module Env = struct
 
   let rec r_subtype rel env s t =
     let st = r_subtype rel env in
-      if (TypPairSet.mem (s,t) rel) then 
-	(printf "matching from set: (%s, %s)\n\n" (string_of_typ s) (string_of_typ t); true)
+      if (TypPairSet.mem (s,t) rel) then true
       else match s, t with
 	| TId x, TId y -> x = y
 	| TId x, t -> begin try
