@@ -8,7 +8,7 @@ function sum(t) /*: (trec X . Int + {left: Int, right: 'X}) -> Int */ {
     }
 }
 
-var o = /*: upcast trec X . Int + {left: Int, right: 'X} */ 
+var o = 
 {left: 5,
  right: /*: upcast trec X . Int + {left: Int, right: 'X} */
  {left: 10,
