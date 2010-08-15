@@ -1,8 +1,4 @@
-function simple(val) /*: Ad -> Ad */ {
+function simple(val) /*: (trec X . Undef + Num + {#proto: Object, *:'X}) -> (trec X . Undef + Num + {#proto: Object, *:'X}) */ {
     return val.foo;
 }
 
-function ths(val) /*: [Ad] Ad -> Ad */ {
-    var b = this.something;
-    return b;
-}
