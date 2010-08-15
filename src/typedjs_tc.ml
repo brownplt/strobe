@@ -21,7 +21,7 @@ let error p s = raise (Typ_error (p, s))
 let class_types (env : Env.env) constr = IdMapExt.values (Env.class_fields env constr)
 
 let unfold_typ t = match t with
-  | TRec (x, t') -> typ_subst x t' t
+  | TRec (x, t') -> typ_subst x t t'
   | _ -> t
 
 
