@@ -184,7 +184,7 @@ module Env = struct
 	r_subtype_star rel env fs1' fs_star other_typ
     (* named things exist in the ObjStar that aren't in the object *)
     | [], _ -> false
-    (* otherwise, same as normal objects *)
+    (* like normal objects, but extra fields must subtype the star *)
     | (x, s) :: fs1', (y, t) :: fs2' ->
 	let cmp = String.compare x y in
 	  if cmp = 0 then r_subtype rel env s t && 
