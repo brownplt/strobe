@@ -111,14 +111,14 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         flow node (bind x cpsval env) heap cont
   | If (node, v1, true_cont, false_cont) ->
       let absv1 = abs_of_cpsval node env v1 in
-      let heap2, heap3, split, true_set, false_set = match absv1 with
+      let heap2, heap3 = match absv1 with
         | ALocTypeIs (loc, true_set) ->
-            let false_set = RTSet.diff (deref loc heap) true_set in
-              (set_ref loc true_set heap,
-               set_ref loc false_set heap,
-               true, true_set, false_set)
-        | _ -> 
-            (heap, heap, false, RTSet.empty, RTSet.empty) in
+          let false_set = RTSet.diff (deref loc heap) true_set in
+          (set_ref loc true_set heap, set_ref loc false_set heap)
+        | ADeref (loc, loc_set) when RTSet.mem RT.Undefined loc_set ->
+          let true_set = RTSet.remove RT.Undefined loc_set in
+          (set_ref loc true_set heap, heap)
+        | _ ->  (heap, heap) in
         (match absv1 with
              ABool false -> ()
            | _ -> flow node env heap2 true_cont);

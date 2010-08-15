@@ -130,15 +130,12 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let u = fold_left f (tc_exp env e) (map (tc_exp env) es) in
         (* hack to make arrays not have undefined elements: *)
         Env.check_typ p env (TConstr ("Array", [u]))
-  | EIf (p, e1, e2, e3) -> begin
-      match tc_exp env e1, tc_exp env e2, tc_exp env e3 with
-	| TConstr ("Bool", []), t2, t3 
-	| TObject _, t2, t3
-	| TConstr ("Undef", []), t2, t3 -> Env.typ_union env t2 t3
-        | t, _, _ -> 
-            raise (Typ_error (p, "expected condition to have type Bool, but got a " ^ 
-                                (string_of_typ t)))
-    end
+  | EIf (p, e1, e2, e3) ->
+    let t1 = tc_exp env e1 in
+    if Env.subtype env t1 typ_bool || Env.subtype env typ_undef t1 then
+      Env.typ_union env (tc_exp env e2) (tc_exp env e3)
+    else
+      error p (sprintf "condition has type %s" (string_of_typ t1))
   | EObject (p, fields) ->
       let obj_proto_fields = IdMapExt.to_list (Env.class_fields env "Object") in
 	Env.check_typ p env 
