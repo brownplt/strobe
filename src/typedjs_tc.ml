@@ -43,6 +43,7 @@ let un_ref t = match t with
   | TRef s -> s
   | TSource s -> s
   | TSink s -> s
+  | TField -> TField
   | _ -> failwith ("un_ref got " ^ string_of_typ t)
 
 let rec tc_exp (env : Env.env) exp = match exp with
