@@ -20,7 +20,7 @@ let error p s = raise (Typ_error (p, s))
 
 let class_types (env : Env.env) constr = IdMapExt.values (Env.class_fields env constr)
 
-let unfold t = match t with
+let unfold_typ t = match t with
   | TRec (x, t') -> typ_subst x t' t
   | _ -> t
 
@@ -141,7 +141,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let obj_proto_fields = IdMapExt.to_list (Env.class_fields env "Object") in
 	Env.check_typ p env 
           (TObject ((map (second2 (tc_exp env)) fields)@obj_proto_fields))
-  | EBracket (p, obj, field) -> begin match unfold (un_null (tc_exp env obj)), field with
+  | EBracket (p, obj, field) -> begin match unfold_typ (un_null (tc_exp env obj)), field with
       | TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
           (try
              snd2 (List.find (fun (x', _) -> x = x') fs)
