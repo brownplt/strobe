@@ -1,4 +1,4 @@
-var n = /*: upcast trec X . (Int + {left: Int, right: 'X}) */ 5;
-var o = /*: upcast trec X . (Int + {left: Int, right: 'X}) */ 
-{left:5, right:n};
-
+var f = function(val) /*: (trec X . Int + {left: Int, right: 'X, toString:-> Str}) -> 
+(trec X . Int + {left: Int, right: 'X, toString: -> Str}) */ {
+    return {left:5, right:val};
+};
