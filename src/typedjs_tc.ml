@@ -25,7 +25,7 @@ let unfold t = match t with
   | _ -> t
 
 let un_null t = match t with
-  | TUnion (TConstr ("Undef", []), t') -> printf "%s\n" (string_of_typ t'); t'
+  | TUnion (TConstr ("Undef", []), t') -> t'
   | TUnion (t', TConstr ("Undef", [])) -> t'
   | TUnion (TConstr ("Null", []), t') -> t'
   | TUnion (t', TConstr ("Null", [])) -> t'
