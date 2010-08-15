@@ -21,10 +21,8 @@ let error p s = raise (Typ_error (p, s))
 let class_types (env : Env.env) constr = IdMapExt.values (Env.class_fields env constr)
 
 let unfold_typ t = match t with
-  | TRec (x, t') -> typ_subst x t' t
+  | TRec (x, t') -> typ_subst x t t'
   | _ -> t
-
-
 
 let un_null t = match t with
   | TUnion (TConstr ("Undef", []), t') -> t'
@@ -60,7 +58,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | SinkCell -> TSink t
       | RefCell -> TRef t
     end
-  | EDeref (p, e) -> begin match tc_exp env e with
+  | EDeref (p, e) -> begin match un_null (tc_exp env e) with
       | TRef t -> t
       | TSource t -> t
       | TField -> TField
@@ -143,71 +141,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let obj_proto_fields = IdMapExt.to_list (Env.class_fields env "Object") in
 	Env.check_typ p env 
           (TObject ((map (second2 (tc_exp env)) fields)@obj_proto_fields))
-  | EBracket (p, obj, field) -> begin match unfold_typ (un_null (tc_exp env obj)), field with
-      | TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
-          (try
-             snd2 (List.find (fun (x', _) -> x = x') fs)
-           with Not_found ->
-             raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
-      | TObjStar (fs, cname, other_typ), EConst (_, JavaScript_syntax.CString x) ->
-	  (try
-	     snd2 (List.find (fun (x', _) -> x = x') fs)
-	   with Not_found ->
-	     begin match Env.field_typ env cname x with
-	       | Some t -> t
-	       | None -> other_typ
-	     end)
-      | TObjStar (fs, cname, other_typ), e ->
-	  let t_field = tc_exp env e in
-	    (match t_field with
-	      | TConstr ("Str", []) -> 
-		  List.fold_right (fun t typ -> TUnion (t, typ))
-		    ((map snd2 fs)@(class_types env cname))
-		    (TUnion (other_typ, TRef (TConstr ("Undef", []))))
-	      | t -> error p (sprintf "Index was type %s in dictionary lookup\n" (string_of_typ t)))
-      | TConstr ("Array", [tarr]), eidx ->
-          let (p1, p2) = p in
-            contracts := IntMap.add p1.Lexing.pos_cnum 
-              (* TODO: NotUndef is not a type, but just a contract *)
-              (p2.Lexing.pos_cnum, TConstr ("NotUndef", []))
-              !contracts;
-          let tidx = tc_exp env eidx in
-            begin match tidx with
-              | TConstr ("Int", []) -> tarr
-              | TConstr ("Str", []) -> begin match eidx with
-                  | EConst (_, JavaScript_syntax.CString "length") -> 
-                      TRef typ_int
-                  | EConst (_, JavaScript_syntax.CString "push") ->
-                      TRef (TArrow (TConstr ("Array", [tarr]),
-                                    [un_ref tarr], typ_undef))
-                  | EConst (_, JavaScript_syntax.CString "join") ->
-                      (match un_ref tarr with
-                         | TConstr ("Str", []) ->
-                             TRef (TArrow (TConstr ("Array", [tarr]),
-                                           [typ_str], typ_str))
-                         | _ -> error p ("expected array of strings"))
-
-                  | _ -> error p ("unknown array method")
-                end
-              | _ -> error p 
-                  ("array index requires Int, got " ^ string_of_typ tidx)
-            end
-      | TConstr (cname, []), EConst (_, JavaScript_syntax.CString fname) ->
-          begin match Env.field_typ env cname fname with
-            | Some t -> t
-            | None -> 
-              error p (sprintf "%s-object does not have a field %s"
-                         cname fname)
-          end
-      | TField, field -> begin match tc_exp env field with
-          | TField -> TField
-          | _ -> error p "expected a TField index"
-        end
-      | t, EConst (_, JavaScript_syntax.CString _) ->
-          error p ("expected object, but got " ^ string_of_typ t)
-      | _ -> 
-          error p "field-lookup requires a string literal"
-    end
+  | EBracket (p, obj, field) -> 
+      let t = unfold (un_null (tc_exp env obj)) in
+        bracket p field env t
   | EThis p -> begin
       try 
         Env.lookup_id "this" env
@@ -400,6 +336,74 @@ and tc_exp_ret env e =
       error (Exp.pos e) "unreachable code"
     else 
       t
+
+and bracket p f env t = 
+  let bracket = bracket p f env in
+    begin match t, f with
+      | TUnion (t1, t2), _ -> Env.normalize_typ env (TUnion (bracket t1, bracket t2))
+      | TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
+          (try
+             snd2 (List.find (fun (x', _) -> x = x') fs)
+           with Not_found ->
+             raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
+      | TObjStar (fs, cname, other_typ), EConst (_, JavaScript_syntax.CString x) ->
+	  (try
+	     snd2 (List.find (fun (x', _) -> x = x') fs)
+	   with Not_found ->
+	     begin match Env.field_typ env cname x with
+	       | Some t -> t
+	       | None -> other_typ
+	     end)
+      | TObjStar (fs, cname, other_typ), e ->
+	  let t_field = tc_exp env e in
+	    (match t_field with
+	      | TConstr ("Str", []) -> 
+		  List.fold_right (fun t typ -> TUnion (t, typ))
+		    ((map snd2 fs)@(class_types env cname))
+		    (TUnion (other_typ, TRef (TConstr ("Undef", []))))
+	      | t -> error p (sprintf "Index was type %s in dictionary lookup\n" (string_of_typ t)))
+      | TConstr ("Array", [tarr]), eidx ->
+          let (p1, p2) = p in
+            contracts := IntMap.add p1.Lexing.pos_cnum 
+              (* TODO: NotUndef is not a type, but just a contract *)
+              (p2.Lexing.pos_cnum, TConstr ("NotUndef", []))
+              !contracts;
+          let tidx = tc_exp env eidx in
+            begin match tidx with
+              | TConstr ("Int", []) -> tarr
+              | TConstr ("Str", []) -> begin match eidx with
+                  | EConst (_, JavaScript_syntax.CString "length") -> 
+                      TRef typ_int
+                  | EConst (_, JavaScript_syntax.CString "push") ->
+                      TRef (TArrow (TConstr ("Array", [tarr]),
+                                    [un_ref tarr], typ_undef))
+                  | EConst (_, JavaScript_syntax.CString "join") ->
+                      (match un_ref tarr with
+                         | TConstr ("Str", []) ->
+                             TRef (TArrow (TConstr ("Array", [tarr]),
+                                           [typ_str], typ_str))
+                         | _ -> error p ("expected array of strings"))
+
+                  | _ -> error p ("unknown array method")
+                end
+              | _ -> error p 
+                  ("array index requires Int, got " ^ string_of_typ tidx)
+            end
+      | TConstr (cname, []), EConst (_, JavaScript_syntax.CString fname) ->
+          begin match Env.field_typ env cname fname with
+            | Some t -> t
+            | None -> TConstr ("Undef", [])
+          end
+      | TField, field -> begin match tc_exp env field with
+          | TField -> TField
+          | _ -> error p "expected a TField index"
+        end
+      | t, EConst (_, JavaScript_syntax.CString s) ->
+          error p ("expected object, but got " ^ string_of_typ t ^ " while looking up " ^ s)
+      | _ -> 
+          error p "field-lookup requires a string literal"
+    end
+
 
 let rec tc_def env def = match def with
     DEnd -> env
