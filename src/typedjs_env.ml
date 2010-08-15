@@ -173,10 +173,9 @@ module Env = struct
           if cmp = 0 then r_subtype rel env s t && r_subtype_fields rel env fs1' fs2'
             (* if cmp < 0, x is an extra field, so just move on *)
           else (if cmp < 0 then 
-                  (
-                   r_subtype_fields rel env fs1' fs2)
+                  r_subtype_fields rel env fs1' fs2
                     (* otherwise, y is a field that x does not have *)
-                else (printf "lhs doesnt have %s, tried %s\n" y x; false))
+                else false)
             
   and r_subtype_star rel env fso fs_star other_typ = match fso, fs_star with
     | [], [] -> true
@@ -187,15 +186,13 @@ module Env = struct
     | [], _ -> false
     (* otherwise, same as normal objects *)
     | (x, s) :: fs1', (y, t) :: fs2' ->
-	(printf "%s %s\n" x y;
 	let cmp = String.compare x y in
 	  if cmp = 0 then r_subtype rel env s t && 
 	    r_subtype_star rel env fs1' fs2' other_typ
           else (if cmp < 0 then 
-                  (printf "%s is extra field (star)\n" x; 
-		   r_subtype rel env s other_typ &&
-                     (r_subtype_star rel env fs1' fs_star other_typ))
-                else (printf "lhs doesnt have %s, checked v %s\n" y x; false)))
+		  r_subtype rel env s other_typ &&
+                    (r_subtype_star rel env fs1' fs_star other_typ)
+                else false)
 
   and r_subtypes rel env (ss : typ list) (ts : typ list) : bool = 
     try List.for_all2 (r_subtype rel env) ss ts
