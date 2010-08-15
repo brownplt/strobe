@@ -34,9 +34,9 @@ var hunter = {
     '>': function (node) /*: HTMLElement + Undef -> Undef */ {
         node = node.firstChild;
         name = name.toUpperCase();
-        while (/*:cheat Bool*/node) {
+        while (node) {
             if (node.tagName === name) {
-                result.push(/*: cheat HTMLElement*/node);
+                result.push(node);
             }
             node = node.nextSibling;
         }
