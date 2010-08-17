@@ -398,7 +398,11 @@ and bracket p env field t =
     | TConstr (cname, []), EConst (_, JavaScript_syntax.CString fname) ->
         begin match Env.field_typ env cname fname with
           | Some t -> t
-          | None -> TRef (TConstr ("Undef", []))
+          | None -> begin match cname with 
+              | "Undef" -> TRef TBot
+              | "Null" -> TRef TBot
+              | _ -> TRef (TConstr ("Undef", []))
+            end
         end
     | TField, field -> begin match tc_exp env field with
         | TField -> TField
