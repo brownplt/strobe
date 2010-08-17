@@ -46,7 +46,7 @@ let un_ref t = match t with
   | TField -> TField
   | _ -> failwith ("un_ref got " ^ string_of_typ t)
 
-let rec tc_exp (env : Env.env) exp = match exp with
+let rec tc_exp_simple (env : Env.env) exp = match exp with
   | EConst (_, c) -> tc_const c
   | EBot _ -> TBot
   | EId (p, x) -> begin
@@ -147,7 +147,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let obj_proto_fields = IdMapExt.to_list (Env.class_fields env "Object") in
 	Env.check_typ p env 
           (TObject ((map (second2 (tc_exp env)) fields)@obj_proto_fields))
-  | EBracket (p, obj, field) -> let typ = unfold_typ (un_null (tc_exp env obj)) in
+  | EBracket (p, obj, field) -> let typ = un_null (tc_exp env obj) in
     let t_list = typ_to_list typ in
     let f_list = map (bracket p env field) t_list in
     let unref_list = map un_ref f_list in
@@ -413,6 +413,7 @@ and bracket p env field t =
     | _ -> 
         error p "field-lookup requires a string literal"
 
+and tc_exp (env : Env.env) exp = unfold_typ (tc_exp_simple env exp)
 
 let rec tc_def env def = match def with
     DEnd -> env
