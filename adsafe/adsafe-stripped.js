@@ -746,22 +746,6 @@ var ADSAFE = (function () {
                 }
                 return a.length === 1 ? a[0] : a;
             },
-            getValue: function () {
-                var a = [], b = this.___nodes___, i, node;
-                for (i = 0; i < b.length; i += 1) {
-                    node = b[i];
-                    if (node.nodeName === '#text') {
-                        a[i] = node.nodeValue;
-                    } else if (node.tagName && node.type !== 'password') {
-                        a[i] = node.value;
-                        if (a[i] === undefined && node.firstChild &&
-                                node.firstChild.nodeName === '#text') {
-                            a[i] = node.firstChild.nodeValue;
-                        }
-                    }
-                }
-                return a.length === 1 ? a[0] : a;
-            },
             klass: function (value) {
                 if (this === this.window || /url/i.test(value)) {
                     return error('ADsafe error.');
@@ -1082,52 +1066,6 @@ var ADSAFE = (function () {
                         node = b[i];
                         if (node.tagName) {
                             node.title = String(value);
-                        }
-                    }
-                }
-                return this;
-            },
-            value: function (value) {
-                if (this === this.window || value === undefined) {
-                    return error();
-                }
-                var b = this.___nodes___, i, node;
-                if (value instanceof Array && b.length === value.length) {
-                    for (i = 0; i < b.length; i += 1) {
-                        node = b[i];
-                        if (node.tagName) {
-                            if (node.type !== 'password') {
-                                if (typeof node.value === 'string') {
-                                    node.value = value[i];
-                                } else {
-                                    while (node.firstChild) {
-                                        purge_event_handlers(node);
-                                        node.removeChild(node.firstChild);
-                                    }
-                                    node.appendChild(document.createTextNode(
-                                        String(value[i])));
-                                }
-                            }
-                        } else if (node.nodeName === '#text') {
-                            node.nodeValue = String(value[i]);
-                        }
-                    }
-                } else {
-                    for (i = 0; i < b.length; i += 1) {
-                        node = b[i];
-                        if (node.tagName) {
-                            if (typeof node.value === 'string') {
-                                node.value = value;
-                            } else {
-                                while (node.firstChild) {
-                                    purge_event_handlers(node);
-                                    node.removeChild(node.firstChild);
-                                }
-                                node.appendChild(document.createTextNode(
-                                    String(value)));
-                            }
-                        } else if (node.nodeName === '#text') {
-                            node.nodeValue = String(value);
                         }
                     }
                 }
