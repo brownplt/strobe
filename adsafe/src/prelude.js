@@ -111,7 +111,7 @@ function error(message) /*: Str + Undef -> Undef */ {
 
 
     function walkTheDOM(node, func, skip) 
-    /*: Node * (Node -> Undef) * Bool + Undef -> Undef */ {
+    /*: ASNode * (ASNode -> Undef) * Bool + Undef -> Undef */ {
 
 // Recursively traverse the DOM tree, starting with the node, in document
 // source order, calling the func on each node visisted.
@@ -119,9 +119,27 @@ function error(message) /*: Str + Undef -> Undef */ {
         if (/*:cheat Bool */(!skip)) {
             func(node);
         }
-        node = /*:cheat Node */(node.firstChild);
+        node = /*:cheat ASNode */(node.firstChild);
         while (/*: cheat Bool */node) {
             walkTheDOM(node, func);
-            node = /*: cheat Node*/(node.nextSibling);
+            node = /*: cheat ASNode*/(node.nextSibling);
         }
     }
+
+function purge_event_handlers(node) 
+/*: ASNode -> Undef */ {
+
+// We attach all event handlers to a ___ on ___ property. The property name
+// contains spaces to insure that there is no collision with HTML attribues.
+// Keeping the handlers in a single property makes it easy to remove them
+// all at once. Removal is required to avoid memory leakage on IE6 and IE7.
+
+    walkTheDOM(node, 
+               function (node) /*: ASNode -> Undef */ {
+                   if (/*: cheat Bool */ node.tagName) {
+                       //            node['___ on ___'] = node.change = null;
+                   }
+               },
+               undefined // Added by Joe to avoid arity mismatch
+              );
+}
