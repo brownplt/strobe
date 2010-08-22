@@ -79,6 +79,10 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
   | Op2Infix "!=", AStr str, ALocTypeof loc
   | Op2Infix "!==",  AStr str, ALocTypeof loc ->
       mk_type_is_not loc str, heap
+  | Op2Infix "instanceof", ADeref (loc, _), AStr constr_name ->
+    (AInstanceof (loc, constr_name), heap)
+  | Op2Infix "instanceof", _, _ ->
+    (singleton RT.Bool, heap)
   | SetRef, ARef l, v ->
       v, set_ref l (to_set v) heap
   | Op2Infix "+", _, _ -> 
@@ -107,11 +111,15 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
               (abs_of_cpsval node env v2)
         | Object _ -> singleton RT.Object, heap
         | Array _ -> singleton RT.Object, heap
-        | UpdateField _ -> singleton RT.Object, heap in
+        | UpdateField (obj, _, _) -> (abs_of_cpsval node env obj, heap) in
         flow node (bind x cpsval env) heap cont
   | If (node, v1, true_cont, false_cont) ->
       let absv1 = abs_of_cpsval node env v1 in
       let heap2, heap3 = match absv1 with
+        | AInstanceof (loc, constr_name) ->
+          let true_set = RTSet.singleton (RT.ConstrObj constr_name) in
+          let false_set = RTSet.diff (deref loc heap) true_set in
+          (set_ref loc true_set heap, set_ref loc false_set heap)
         | ALocTypeIs (loc, true_set) ->
           let false_set = RTSet.diff (deref loc heap) true_set in
           (set_ref loc true_set heap, set_ref loc false_set heap)

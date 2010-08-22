@@ -164,6 +164,13 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       let _ = tc_exp env (EApp (p, EDeref (p, EId (p, cid)), args)) in
         TConstr (cid, [])
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
+  | EInfixOp (p, "instanceof", e1,
+              EConst (_, JavaScript_syntax.CString constr_name)) ->
+    let _ = tc_exp env e1 in
+    if Env.is_class env constr_name then
+      typ_bool
+    else
+      error p (sprintf "%s is not a known constructor" constr_name)
   | EInfixOp (p, "+", e1, e2) -> 
       let t1 = tc_exp env e1 in
       let t2 = tc_exp env e2 in

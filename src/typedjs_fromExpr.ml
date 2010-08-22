@@ -90,6 +90,13 @@ let rec exp (env : env) expr = match expr with
   | NewExpr (p, _, _) ->
       raise (Not_well_formed (p, "new expressions much name the constructor"))
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
+  | InfixExpr (p, "instanceof", e1, e2) -> begin match e2 with
+      | VarExpr (p2, constr_name) ->
+        EInfixOp (p, "instanceof", exp env e1, 
+                  EConst (p2, S.CString constr_name))
+      | _ ->
+        raise (Not_well_formed (p, "expected a constructor name on RHS"))
+  end
   | InfixExpr (p, "&&", e1, e2) -> 
       EIf (p, exp env e1, exp env e2, EConst (p, S.CBool false))
   | InfixExpr (p, "||", e1, e2) ->

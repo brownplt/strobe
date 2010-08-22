@@ -29,6 +29,7 @@ type av =
   | ARef of Loc.t
   | ALocTypeof of Loc.t
   | ALocTypeIs of Loc.t * RTSet.t
+  | AInstanceof of Loc.t * string
   | AStr of string
   | ABool of bool
   | AClosure of int * id list * cpsexp
@@ -58,6 +59,8 @@ let rec p_av av = match av with
   | ALocTypeof x -> horz [ text "LocTypeof"; Loc.pp x ]
   | ALocTypeIs (x, t) -> 
       horz [ text "LocType"; Loc.pp x; RTSetExt.p_set RT.pp t ]
+  | AInstanceof (loc, constr_name) ->
+    horz [ text "Instanceof"; Loc.pp loc; text constr_name ]
   | AClosure _ -> text "#closure"
   | AStr s -> text ("\"" ^ s ^ "\"")
   | ABool b -> text (string_of_bool b)
@@ -80,6 +83,7 @@ let rec to_set v = match v with
   | ASet set -> set
   | ALocTypeof _ -> RTSet.singleton RT.Str
   | ALocTypeIs _ -> RTSet.singleton RT.Bool
+  | AInstanceof _ -> RTSet.singleton RT.Bool
   | AStr _ -> RTSet.singleton RT.Str
   | AClosure _ -> RTSet.singleton RT.Function
   | ARef _ -> rtany
@@ -104,6 +108,9 @@ let rec av_union av1 av2 = match av1, av2 with
   | ALocTypeof x, ALocTypeof y when x = y -> ALocTypeof x
   | ALocTypeIs (x, s), ALocTypeIs (y, t) when x = y -> 
       ALocTypeIs (x, RTSet.union s t)
+  | AInstanceof (loc1, constr_name1), AInstanceof (loc2, constr_name2) 
+    when loc1 = loc2 && constr_name1 = constr_name2 ->
+    AInstanceof (loc1, constr_name1)
   | AStr str1, AStr str2 when str1 = str2 -> AStr str1
   | AClosure (m, _, _), AClosure (n, _, _) -> 
       if m = n then av1
@@ -148,16 +155,17 @@ let set_ref loc value heap =
 let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
     Typedjs_syntax.TArrow _ -> RTSet.singleton RT.Function
   | Typedjs_syntax.TUnion (t1, t2) -> RTSet.union (rt_of_typ t1) (rt_of_typ t2)
-  | Typedjs_syntax.TConstr (s, []) -> begin match s with
+  | Typedjs_syntax.TConstr (constr_name, []) -> begin match constr_name with
         "Str" ->  RTSet.singleton RT.Str
       | "RegExp" -> RTSet.singleton RT.Object
       | "Num"  -> RTSet.singleton RT.Num
       | "Int" -> RTSet.singleton RT.Num
       | "Bool" -> RTSet.singleton RT.Bool
       | "Undef" -> RTSet.singleton RT.Undefined
-      | _ -> RTSet.singleton RT.Object
+      |  _ -> RTSet.singleton (RT.ConstrObj constr_name)
     end
-  | Typedjs_syntax.TConstr ("Array", [arrayt]) -> RTSet.singleton RT.Object
+  | Typedjs_syntax.TConstr ("Array", [arrayt]) ->
+    RTSet.singleton (RT.ConstrObj "Array")
   | Typedjs_syntax.TConstr _ -> failwith 
       (sprintf "unknown type: %s" (to_string Typedjs_syntax.Pretty.p_typ t))
   | Typedjs_syntax.TObject _ -> RTSet.singleton RT.Object
