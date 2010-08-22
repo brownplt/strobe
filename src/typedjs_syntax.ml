@@ -9,6 +9,7 @@ module RT = struct
     | Bool
     | Function
     | Object
+    | ConstrObj of string (** [ConstrObj constr_name] *)
     | Undefined
 
   let compare = Pervasives.compare
@@ -21,6 +22,7 @@ module RT = struct
     | Bool -> text "boolean"
     | Function -> text "function"
     | Object -> text "object"
+    | ConstrObj constr_name -> text (sprintf "object(%s)" constr_name)
     | Undefined -> text "undefined"
 
 end

@@ -9,6 +9,7 @@ module RT : sig
     | Bool
     | Function
     | Object
+    | ConstrObj of string (** [ConstrObj constr_name] *)
     | Undefined
 
   val compare : t -> t -> int

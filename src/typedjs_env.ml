@@ -279,6 +279,7 @@ module Env = struct
     | RT.Bool -> typ_union env typ_bool typ
     | RT.Function -> typ_union env TField typ
     | RT.Object -> typ_union env TField typ
+    | RT.ConstrObj _ -> typ_union env TField typ
     | RT.Undefined -> typ_union env typ_undef typ
 
   let basic_static2 env (typ : typ) (rt : RT.t) : typ = match rt with
@@ -287,6 +288,7 @@ module Env = struct
     | RT.Bool -> typ_union env typ_bool typ
     | RT.Function -> typ_union env (TObject []) typ
     | RT.Object -> typ_union env (TObject []) typ
+    | RT.ConstrObj _ -> typ_union env (TObject []) typ (* parameters unknown *)
     | RT.Undefined -> typ_union env typ_undef typ
 
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
@@ -300,7 +302,12 @@ module Env = struct
     | TConstr ("Undef", []) -> 
         if RTSet.mem RT.Undefined rt then typ else TBot
           (* any other app will be an object from a constructor *)
-    | TConstr _ -> if RTSet.mem RT.Object rt then typ else TBot
+    | TConstr (constr_name, _) -> 
+      (* Two conditions due to ordering in the lattice of abstract values *)
+      if RTSet.mem (RT.ConstrObj constr_name) rt || RTSet.mem RT.Object rt then
+        typ
+      else
+        TBot
     | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
     | TObjStar _ -> if RTSet.mem RT.Object rt then typ else TBot
     | TRef t -> TRef t
