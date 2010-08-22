@@ -1,7 +1,7 @@
 function Bunch_getValue() /*: [Ad] -> Ad */ {
     var a = /*: Ad */ [], b = this.___nodes___, 
     i = 0, 
-    node /*: upcast Undef + ASNode */;
+    node = /*: upcast Undef + ASNode */ undefined;
     for (i = 0; i < b.length; i += 1) {
         node = b[i];
         if (node.nodeName === '#text') {
@@ -23,7 +23,7 @@ function Bunch_value(value) /*: [Ad] Ad -> Ad */ {
     }
     var b = this.___nodes___, 
     i = 0, // Joe set this to 0 --- flow analysis doesn't like upcast Undef + Int
-    node /*: upcast Undef + ASNode */; // added undefined and upcast
+    node = /*: upcast Undef + ASNode */ undefined; // added undefined and upcast
 
     if (value instanceof Array && b.length === value.length) {
         for (i = 0; i < b.length; i += 1) {
@@ -74,7 +74,7 @@ function Bunch_title(value) /*: [Ad] Ad -> Ad */ {
     }
     var b = this.___nodes___, 
     i = 0, // added by Joe
-    node /*: upcast Undef + ASNode */;
+    node = /*: upcast Undef + ASNode */ undefined;
     if (value instanceof Array) {
         if (value.length !== b.length) {
             return error('ADsafe: Array length: ' + b.length +
