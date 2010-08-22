@@ -107,7 +107,7 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
               (abs_of_cpsval node env v2)
         | Object _ -> singleton RT.Object, heap
         | Array _ -> singleton RT.Object, heap
-        | UpdateField _ -> singleton RT.Object, heap in
+        | UpdateField (obj, _, _) -> (abs_of_cpsval node env obj, heap) in
         flow node (bind x cpsval env) heap cont
   | If (node, v1, true_cont, false_cont) ->
       let absv1 = abs_of_cpsval node env v1 in
