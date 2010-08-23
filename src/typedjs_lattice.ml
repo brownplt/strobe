@@ -33,6 +33,7 @@ type av =
   | AStr of string
   | ABool of bool
   | AClosure of int * id list * cpsexp
+  | AField of Loc.t * string
 
 module AV = struct
 
@@ -64,6 +65,10 @@ let rec p_av av = match av with
   | AClosure _ -> text "#closure"
   | AStr s -> text ("\"" ^ s ^ "\"")
   | ABool b -> text (string_of_bool b)
+  | AField (loc, field_name) ->
+    parens (horz [ text "get-field"; 
+                   parens (horz [ text "deref"; Loc.pp loc ]);
+                   text field_name ])
 
 let singleton t = ASet (RTSet.singleton t)
 
@@ -89,6 +94,7 @@ let rec to_set v = match v with
   | ARef _ -> rtany
   | ABool _ -> RTSet.singleton RT.Bool
   | ADeref (_, v) -> v
+  | AField _ -> rtany
 
 let deref loc heap  =
   try 
@@ -116,6 +122,8 @@ let rec av_union av1 av2 = match av1, av2 with
       if m = n then av1
       else failwith "av_union on distinct closures"
   | ABool b1, ABool b2 when b1 = b2 -> ABool b1
+  | AField (loc1, field_name1), AField (loc2, field_name2) when
+      loc1 = loc2 && field_name1 = field_name2 -> av1
   | _ -> av_union (ASet (to_set av1)) (ASet (to_set av2))
 
 let union_env = IdMapExt.join (fun _ -> av_union)
@@ -143,6 +151,8 @@ let escape_env (heap : heap) (env : env) : env =
 (*    | AClosure _ -> ASet (RTSet.singleton RT.Function) *)
     | ALocTypeIs _ -> ASet (RTSet.singleton RT.Bool)
     | ALocTypeof _ -> ASet (RTSet.singleton RT.Str)
+    | AInstanceof _ -> ASet (RTSet.singleton RT.Bool)
+    | AField _ -> ASet rtany
     | _ -> v in
     IdMap.map f env
 

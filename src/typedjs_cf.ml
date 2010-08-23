@@ -92,7 +92,9 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
         (fn [ v1; v2 ], heap)
     with Not_found ->
       failwith (sprintf "operator %s is unbound in calc_op2" op)
-    end
+  end
+  | GetField, ADeref (loc, _), AStr field_name ->
+    (AField (loc, field_name), heap)
   | _ -> any, heap
 
 let mk_closure (env : env) (_, f, args, typ, body_exp) =
