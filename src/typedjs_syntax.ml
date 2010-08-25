@@ -37,7 +37,9 @@ type typ =
   | TUnion of typ * typ
   | TArrow of typ * typ list * typ
   | TObject of (id * typ) list
-  | TObjStar of (id * typ) list * constr * typ
+      (** [TObjStar ([(s,t)], p, star, f)] 
+          {s: t, ... #proto: p, *: star, #code: f} *)
+  | TObjStar of (id * typ) list * constr * typ * typ
   | TRef of typ
   | TSource of typ
   | TSink of typ
@@ -198,11 +200,12 @@ module Pretty = struct
                angles (horz (intersperse (text ",") (map typ ts))) ]
     | TObject fs ->
       braces (horz (intersperse (text ",") (map field fs)))
-    | TObjStar (fs, cname, other_typ) ->
+    | TObjStar (fs, cname, other_typ, code) ->
 	let constr = horz [ text "#proto"; text ":"; text cname ] in
 	let star = horz [ text "*"; text ":"; typ other_typ ] in
+        let code = horz [ text "#code"; text":"; typ code ] in
 	let fields = map field fs in
-	  braces (horz (intersperse (text ",") (fields@[constr;star])))
+	  braces (horz (intersperse (text ",") (fields@[constr;star;code])))
     | TRef s -> horz [ text "ref"; parens (typ s) ]
     | TSource s -> horz [ text "source"; parens (typ s) ]
     | TSink s -> horz [ text "sink"; parens (typ s) ]

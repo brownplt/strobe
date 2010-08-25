@@ -179,7 +179,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
   | Typedjs_syntax.TConstr _ -> failwith 
       (sprintf "unknown type: %s" (to_string Typedjs_syntax.Pretty.p_typ t))
   | Typedjs_syntax.TObject _ -> RTSet.singleton RT.Object
-  | Typedjs_syntax.TObjStar (_, _, _) -> RTSet.singleton RT.Object
+  | Typedjs_syntax.TObjStar (_, _, _, _) -> RTSet.add RT.Object (RTSet.singleton RT.Function)
   | Typedjs_syntax.TRef t -> rt_of_typ t
   | Typedjs_syntax.TSource t -> rt_of_typ t
   | Typedjs_syntax.TSink t -> rt_of_typ t

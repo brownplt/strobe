@@ -13,8 +13,10 @@ let rec typ_subst' s_env x s typ =
       | TArrow (t1, t2s, t3)  ->
           TArrow (typ_subst x s t1, map (typ_subst x s) t2s, typ_subst x s t3)
       | TObject fs -> TObject (map (second2 (typ_subst x s)) fs)
-      | TObjStar (fs, cname, other_typ) ->
-          TObjStar ((map (second2 (typ_subst x s)) fs), cname, typ_subst x s other_typ)
+      | TObjStar (fs, cname, other_typ, code) ->
+          TObjStar ((map (second2 (typ_subst x s)) fs), cname, 
+                    typ_subst x s other_typ,
+                    typ_subst x s code)
       | TRef t -> TRef (typ_subst x s t)
       | TSource t -> TSource (typ_subst x s t)
       | TSink t -> TSink (typ_subst x s t)
@@ -153,12 +155,13 @@ module Env = struct
             let fs1 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
             let fs1 = List.rev fs1 in
               r_subtype_fields rel env fs1 fs2
-	| TObjStar (fs1, cname1, other_typ1), 
-	    TObjStar (fs2, cname2, other_typ2) ->
+	| TObjStar (fs1, cname1, other_typ1, code1), 
+	    TObjStar (fs2, cname2, other_typ2, code2) ->
 	    r_subtype_fields rel env fs1 fs2 &&
 	      cname1 = cname2 &&
-	      st other_typ1 other_typ2
-	| TObject fso, TObjStar (fs, cname, other_typ) ->
+	      st other_typ1 other_typ2 &&
+              st code1 code2
+	| TObject fso, TObjStar (fs, cname, other_typ, code) ->
 	    let all_fields = List.fast_sort cmp_props 
 	      (List.rev (fs@(IdMapExt.to_list (class_fields env cname)))) in
 	      r_subtype_star rel env fso all_fields other_typ
@@ -224,13 +227,14 @@ module Env = struct
       | TObject fs ->
           let fs = List.fast_sort cmp_props fs in
             TObject (map (second2 (normalize_typ env)) fs)
-      | TObjStar (fs, cname, other_typ) ->
+      | TObjStar (fs, cname, other_typ, code) ->
 	  let fs = List.fast_sort cmp_props fs in
 	    if not (IdMap.mem cname env.classes) then
 		raise (Not_wf_typ (cname ^ " is not a type constructor"))
 	    else
 	      let other_typ = normalize_typ env other_typ in
-		TObjStar (fs, cname, other_typ)
+              let code = normalize_typ env code in
+		TObjStar (fs, cname, other_typ, code)
       | TConstr ("Array", [t]) -> TConstr ("Array", [normalize_typ env t])
       | TConstr ("Array", (t:_)) -> 
           raise (Not_wf_typ ("Array only takes one argument"))

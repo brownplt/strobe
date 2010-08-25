@@ -359,7 +359,7 @@ and bracket p env field t =
            snd2 (List.find (fun (x', _) -> x = x') fs)
          with Not_found ->
            raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
-    | TObjStar (fs, cname, other_typ), EConst (_, JavaScript_syntax.CString x) ->
+    | TObjStar (fs, cname, other_typ, code), EConst (_, JavaScript_syntax.CString x) ->
 	(try
 	   snd2 (List.find (fun (x', _) -> x = x') fs)
 	 with Not_found ->
@@ -367,7 +367,7 @@ and bracket p env field t =
              | Some t -> t
              | None -> other_typ
 	   end)
-    | TObjStar (fs, cname, other_typ), e ->
+    | TObjStar (fs, cname, other_typ, code), e ->
 	let t_field = tc_exp env e in
 	  (match t_field with
              | TConstr ("Str", []) -> 
@@ -512,6 +512,4 @@ let rec tc_def env def = match def with
 let typecheck init_env defs = 
   let final_env = tc_def init_env defs in
   Env.diff final_env init_env
-
-  
 
