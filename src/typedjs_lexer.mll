@@ -48,6 +48,7 @@ rule token = parse
    | "constructor" { CONSTRUCTOR }
    | "prototype" { PROTOTYPE }
    | "#proto" { HASHPROTO }
+   | "#code" { CODE }
    | "trec" { TREC }
    | "class" { CLASS }
    | "upcast" { UPCAST }
