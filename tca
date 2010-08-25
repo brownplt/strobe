@@ -1,5 +1,8 @@
 #!/bin/bash
 P=`dirname $0`
-$P/run -env $P/data/javascript.env -env $P/adsafe/src/adsafe.env -env $P/data/browser.env $@
+$P/run -disable-unreachable \
+    -env $P/data/javascript.env \
+    -env $P/adsafe/src/adsafe.env \
+    -env $P/data/browser.env $@
 
 
