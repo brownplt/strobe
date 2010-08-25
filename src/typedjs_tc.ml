@@ -191,6 +191,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
               error p (sprintf "could not determine \'%s in the function type \
                                 %s" x (string_of_typ t))
             end
+      | TObjStar (_, _, _, TArrow (expected_thist, expected_typs, result_typ))
       | TArrow (expected_thist, expected_typs, result_typ) ->
           let _ = (
             let this_typ = tc_thist env f in

@@ -313,7 +313,10 @@ module Env = struct
       else
         TBot
     | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
-    | TObjStar _ -> if RTSet.mem RT.Object rt then typ else TBot
+    | TObjStar _ -> 
+        if RTSet.mem RT.Object rt or RTSet.mem RT.Function rt 
+        then typ 
+        else TBot
     | TRef t -> TRef t
     | TSource t -> TSource t
     | TSink t -> TSink t
