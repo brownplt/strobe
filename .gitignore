@@ -12,3 +12,4 @@ TAGS
 *.cmi
 src/LambdaJS
 obj
+*~
