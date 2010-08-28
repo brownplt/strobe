@@ -203,8 +203,6 @@ module Env = struct
       | TConstr (constr, []) ->
           if IdMap.mem constr env.classes then 
             typ
-          else if IdMap.mem constr env.synonyms then
-            IdMap.find constr env.synonyms
           else
             raise (Not_wf_typ (constr ^ " is not a type constructor"))
       | TConstr (constr, _) ->
@@ -220,6 +218,8 @@ module Env = struct
       | TField -> TField
       | TId x ->
           if IdMap.mem x env.typ_ids then typ
+          else if IdMap.mem x env.synonyms then
+            normalize_typ env (IdMap.find x env.synonyms)
           else raise (Not_wf_typ ("the type variable " ^ x ^ " is unbound"))
       | TForall (x, s, t) -> 
           let s = normalize_typ env s in
