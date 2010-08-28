@@ -21,7 +21,7 @@ let error p s = raise (Typ_error (p, s))
 let class_types (env : Env.env) constr = IdMapExt.values (Env.class_fields env constr)
 
 let unfold_typ t = match t with
-  | TRec (x, t') -> typ_subst x t t'
+  | TRec (x, t') -> Typedjs_syntax.Typ.typ_subst x t t'
   | _ -> t
 
 let rec typ_to_list t = match t with
@@ -309,7 +309,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         begin match tc_exp env e with
           | TForall (x, s, t) ->
               if Env.subtype env u s then
-                typ_subst x u t
+                Typedjs_syntax.Typ.typ_subst x u t
               else 
                 error p (sprintf "expected an argument of type %s, got %s"
                            (string_of_typ s) (string_of_typ u))
@@ -416,10 +416,11 @@ and bracket p env field t =
         | TField -> TField
         | _ -> error p "expected a TField index"
       end
+    | TBot, _ -> TBot
     | t, EConst (_, JavaScript_syntax.CString _) ->
         error p ("expected object, but got " ^ string_of_typ t)
-    | _ -> 
-        error p "field-lookup requires a string literal"
+    | t, f -> 
+        error p ("field-lookup requires a string literal, got " ^ (string_of_typ t) ^ "[" ^ (string_of_typ (tc_exp env f)) ^ "]")
 
 and tc_exp (env : Env.env) exp = unfold_typ (tc_exp_simple env exp)
 
