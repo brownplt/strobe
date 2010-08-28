@@ -143,6 +143,10 @@ module Typ : sig
      components. (The type of [this], quantifiers, etc.) *)
   val match_func_typ : typ -> (typ list * typ) option
 
+  (** [typ_subst x s t] is capture-free substitution of the type variable [x]
+      for the type [s] in the type [t]. *)
+  val typ_subst : id -> typ -> typ -> typ
+
 end
 
 module Pretty : sig

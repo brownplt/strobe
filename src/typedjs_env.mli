@@ -75,10 +75,6 @@ val extend_global_env : Env.env -> env_decl list -> Env.env
 
 val cf_env_of_tc_env : Env.env -> Typedjs_lattice.env
 
-(** [typ_subst x s t] is capture-free substitution of the type variable [x]
-    for the type [s] in the type [t]. *)
-val typ_subst : id -> typ -> typ -> typ
-
 val unify_typ : typ -> typ -> typ IdMap.t
 
 val operator_env_of_tc_env : Env.env 

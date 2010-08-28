@@ -4,44 +4,6 @@ open Typedjs_types
 
 exception Not_wf_typ of string
 
-let rec typ_subst' s_env x s typ = 
-  let typ_subst = typ_subst' s_env in
-    match typ with
-      | TId y -> if x = y then s else typ
-      | TConstr (c, ts) -> TConstr (c, map (typ_subst x s) ts)
-      | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
-      | TArrow (t1, t2s, t3)  ->
-          TArrow (typ_subst x s t1, map (typ_subst x s) t2s, typ_subst x s t3)
-      | TObject fs -> TObject (map (second2 (typ_subst x s)) fs)
-      | TObjStar (fs, cname, other_typ, code) ->
-          TObjStar ((map (second2 (typ_subst x s)) fs), cname, 
-                    typ_subst x s other_typ,
-                    typ_subst x s code)
-      | TRef t -> TRef (typ_subst x s t)
-      | TSource t -> TSource (typ_subst x s t)
-      | TSink t -> TSink (typ_subst x s t)
-      | TTop -> TTop
-      | TBot -> TBot
-      | TField -> TField
-      | TForall (y, t1, t2) -> 
-          begin match x = y, IdMap.mem x s_env with
-            | true, false -> 
-                TForall (y, typ_subst' (IdMap.add x typ s_env) x s t1, t2)
-            | true, true -> typ
-            | false, _ -> 
-                TForall (y, typ_subst' s_env x s t1, t2)
-          end
-      | TRec (y, t') ->
-          begin match x = y, IdMap.mem x s_env with
-            | true, false -> 
-                TRec (y, typ_subst' (IdMap.add x typ s_env) x s t')
-            | true, true -> typ
-            | false, _ -> 
-                TRec (y, typ_subst' s_env x s t')
-          end
-            
-and typ_subst x s typ = typ_subst' IdMap.empty x s typ
-
 module Env = struct
 
   module TypPairOrderedType = struct
@@ -131,9 +93,9 @@ module Env = struct
           with Not_found -> failwith ("Unbound id (in subtype, shouldn't happen): " ^ x)
           end
 	| s, TRec (x, t') -> 
-	    r_subtype (TypPairSet.add (s,t) rel) env s (typ_subst x t t')
+	    r_subtype (TypPairSet.add (s,t) rel) env s (Typedjs_syntax.Typ.typ_subst x t t')
 	| TRec (x, s'), t ->
-	    r_subtype (TypPairSet.add (s,t) rel) env (typ_subst x s s') t
+	    r_subtype (TypPairSet.add (s,t) rel) env (Typedjs_syntax.Typ.typ_subst x s s') t
 	| TConstr (c1, []), TConstr (c2, []) ->
 	    let rec is_subclass sub sup =
               if sub = sup then
@@ -230,7 +192,7 @@ module Env = struct
       | TObjStar (fs, cname, other_typ, code) ->
 	  let fs = List.fast_sort cmp_props fs in
 	    if not (IdMap.mem cname env.classes) then
-		raise (Not_wf_typ (cname ^ " is not a type constructor"))
+		raise (Not_wf_typ (cname ^ " is not a type constructor in objstar"))
 	    else
 	      let other_typ = normalize_typ env other_typ in
               let code = normalize_typ env code in
@@ -314,7 +276,7 @@ module Env = struct
         TBot
     | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
     | TObjStar _ -> 
-        if RTSet.mem RT.Object rt or RTSet.mem RT.Function rt 
+        if RTSet.mem RT.Object rt || RTSet.mem RT.Function rt 
         then typ 
         else TBot
     | TRef t -> TRef t
@@ -322,7 +284,7 @@ module Env = struct
     | TSink t -> TSink t
     | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
     | TForall _ -> typ
-    | TRec (x, t) -> static cs rt (typ_subst x typ t)
+    | TRec (x, t) -> static cs rt (Typedjs_syntax.Typ.typ_subst x typ t)
     | TField -> List.fold_left (basic_static cs) TBot (RTSetExt.to_list rt)
     | TTop -> 
         if RTSet.equal rt Typedjs_lattice.rtany then
@@ -496,7 +458,7 @@ let operator_env_of_tc_env tc_env =
   let fn x t env = IdMap.add x (df_func_of_typ t) env in
     IdMap.fold fn (Env.id_env tc_env) IdMap.empty
   
-let apply_subst subst typ = IdMap.fold typ_subst subst typ
+let apply_subst subst typ = IdMap.fold Typedjs_syntax.Typ.typ_subst subst typ
 
  (* TODO: occurs check *)
 let rec unify subst s t : typ IdMap.t = match s, t with

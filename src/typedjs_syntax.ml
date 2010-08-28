@@ -134,6 +134,44 @@ module Typ = struct
     | TArrow (_, args, ret) -> Some (args, ret)
     | _ -> None
 
+let rec typ_subst' s_env x s typ = 
+  let typ_subst = typ_subst' s_env in
+    match typ with
+      | TId y -> if x = y then s else typ
+      | TConstr (c, ts) -> TConstr (c, map (typ_subst x s) ts)
+      | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
+      | TArrow (t1, t2s, t3)  ->
+          TArrow (typ_subst x s t1, map (typ_subst x s) t2s, typ_subst x s t3)
+      | TObject fs -> TObject (map (second2 (typ_subst x s)) fs)
+      | TObjStar (fs, cname, other_typ, code) ->
+          TObjStar ((map (second2 (typ_subst x s)) fs), cname, 
+                    typ_subst x s other_typ,
+                    typ_subst x s code)
+      | TRef t -> TRef (typ_subst x s t)
+      | TSource t -> TSource (typ_subst x s t)
+      | TSink t -> TSink (typ_subst x s t)
+      | TTop -> TTop
+      | TBot -> TBot
+      | TField -> TField
+      | TForall (y, t1, t2) -> 
+          begin match x = y, IdMap.mem x s_env with
+            | true, false -> 
+                TForall (y, typ_subst' (IdMap.add x typ s_env) x s t1, t2)
+            | true, true -> typ
+            | false, _ -> 
+                TForall (y, typ_subst' s_env x s t1, t2)
+          end
+      | TRec (y, t') ->
+          begin match x = y, IdMap.mem y s_env with
+            | true, false -> 
+                TRec (y, typ_subst' (IdMap.add x typ s_env) x s t')
+            | true, true -> typ
+            | false, _ -> 
+                TRec (y, typ_subst' s_env x s t')
+          end
+            
+and typ_subst x s typ = typ_subst' IdMap.empty x s typ
+
 end
 
 module Exp = struct

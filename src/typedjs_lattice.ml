@@ -164,6 +164,8 @@ let set_ref loc value heap =
 
 let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
     Typedjs_syntax.TArrow _ -> RTSet.singleton RT.Function
+  | Typedjs_syntax.TRec (x, t') -> 
+      rt_of_typ (Typedjs_syntax.Typ.typ_subst x t t') 
   | Typedjs_syntax.TUnion (t1, t2) -> RTSet.union (rt_of_typ t1) (rt_of_typ t2)
   | Typedjs_syntax.TConstr (constr_name, []) -> begin match constr_name with
         "Str" ->  RTSet.singleton RT.Str
@@ -179,14 +181,14 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
   | Typedjs_syntax.TConstr _ -> failwith 
       (sprintf "unknown type: %s" (to_string Typedjs_syntax.Pretty.p_typ t))
   | Typedjs_syntax.TObject _ -> RTSet.singleton RT.Object
-  | Typedjs_syntax.TObjStar (_, _, _, _) -> RTSet.add RT.Object (RTSet.singleton RT.Function)
+  | Typedjs_syntax.TObjStar _ -> 
+      RTSet.add RT.Object (RTSet.singleton RT.Function)
   | Typedjs_syntax.TRef t -> rt_of_typ t
   | Typedjs_syntax.TSource t -> rt_of_typ t
   | Typedjs_syntax.TSink t -> rt_of_typ t
   | Typedjs_syntax.TTop -> rtany
   | Typedjs_syntax.TBot -> RTSet.empty
   | Typedjs_syntax.TForall _ -> rtany
-  | Typedjs_syntax.TRec (x, t) -> rtany (* just do any to be sound... probably something better to do *)
   | Typedjs_syntax.TId _ -> rtany (* TODO: should be empty!!! *)
   | Typedjs_syntax.TField -> rtany
 
