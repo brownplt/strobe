@@ -397,7 +397,8 @@ and bracket p env field t =
                              TRef (TArrow (TConstr ("Array", [tarr]),
                                            [typ_str], typ_str))
                          | _ -> error p ("expected array of strings"))
-                        
+                  | EConst (_, JavaScript_syntax.CString s) ->
+                      error p ("unknown array method " ^ s)
                   | _ -> error p ("unknown array method")
                 end
               | _ -> error p 
@@ -416,7 +417,6 @@ and bracket p env field t =
         | TField -> TField
         | _ -> error p "expected a TField index"
       end
-    | TBot, _ -> TBot
     | t, EConst (_, JavaScript_syntax.CString _) ->
         error p ("expected object, but got " ^ string_of_typ t)
     | t, f -> 
