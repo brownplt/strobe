@@ -9,7 +9,7 @@ function Bunch(nodes)
 }
 
 function Bunch_getValue() /*: ['Ad] -> 'Ad */ {
-    var a = /*: 'Ad */ [], b = (/*: cheat 'AdNoArr */ this).___nodes___, 
+    var a = /*: 'Ad */ [], b = this.___nodes___, 
     i /*: upcast Undef + Int */, 
     node /*: upcast Undef + ASNode */;
     for (i = 0; i < b.length; i += 1) {
@@ -28,17 +28,17 @@ function Bunch_getValue() /*: ['Ad] -> 'Ad */ {
 }
 
 function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
-    if (this === (/*: cheat 'AdNoArr */ this).window || value === undefined) {
+    if (this === this.window || value === undefined) {
         return error();
     }
-    var b = (/*: cheat 'AdNoArr */ this).___nodes___, 
-    i = 0, // Flow analysis doesn't like not knowing this is an int in else branch
+    var b = this.___nodes___, 
+    i /*: upcast Undef + Int */,
     node /*: upcast Undef + ASNode */;
 
-    if (value instanceof Array && b.length === value.length) {
+    if (value instanceof Array && b.length === /*: cheat Int */ value.length) {
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
-            if (/*: cheat Bool */ node.tagName) {
+            if (node.tagName) {
                 if (node.type !== 'password') {
                     if (typeof node.value === 'string') {
                         node.value = value[i];
@@ -79,11 +79,11 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
 }
 
 function Bunch_title(value) /*: ['Ad] 'Ad -> 'Ad */ {
-    if (this === (/*: cheat 'AdNoArr */this).window) {
+    if (this === this.window) {
         return error('ADsafe error.');
     }
-    var b = (/*: cheat 'AdNoArr */this).___nodes___, 
-    i =0, // Same problem with flow analysis in else branch
+    var b = this.___nodes___, 
+    i /*: upcast Undef + Int */,
     node /*: upcast Undef + ASNode */;
     if (value instanceof Array) {
         if (value.length !== b.length) {
@@ -92,14 +92,14 @@ function Bunch_title(value) /*: ['Ad] 'Ad -> 'Ad */ {
         }
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
-            if (/*: cheat Bool */ node.tagName) {
+            if (node.tagName) {
                 node.title = String(value[i]);
             }
         }
     } else {
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
-            if (/*: cheat Bool */ node.tagName) {
+            if (node.tagName) {
                 node.title = String(value);
             }
         }
@@ -109,7 +109,7 @@ function Bunch_title(value) /*: ['Ad] 'Ad -> 'Ad */ {
 
 function Bunch_getTitle() /*: ['Ad] -> 'Ad */ {
     var a = /*: 'Ad */ [], 
-    b = (/*: cheat 'AdNoArr*/this).___nodes___, 
+    b = this.___nodes___, 
     i /*: upcast Undef + Int */;
     for (i = 0; i < b.length; i += 1) {
         a[i] = b[i].title;
@@ -118,10 +118,8 @@ function Bunch_getTitle() /*: ['Ad] -> 'Ad */ {
 }
 
 function Bunch_each(func) /*: ['Ad] 'Ad -> 'Ad */ {
-    var b = (/*: cheat 'AdNoArr */ this).___nodes___, i = 0;
-    func(func);
-    if (this !== (/*: cheat 'AdNoArr */ this).window && 
-        typeof func === 'function') {
+    var b = this.___nodes___, i /*: upcast Undef + Int */;
+    if (this !== this.window && typeof func === 'function') {
         for (i = 0; i < b.length; i += 1) {
             func(new Bunch([b[i]]));
         }
