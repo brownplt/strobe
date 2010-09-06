@@ -39,7 +39,8 @@ let un_null t = match t with
   | TUnion (t', TConstr ("Null", [])) -> t'
   | _ -> t
 
-let un_ref t = match t with
+let rec un_ref t = match t with
+  | TUnion (s, t) -> TUnion (un_ref s, un_ref t)
   | TRef s -> s
   | TSource s -> s
   | TSink s -> s
