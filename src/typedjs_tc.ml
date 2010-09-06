@@ -39,8 +39,7 @@ let un_null t = match t with
   | TUnion (t', TConstr ("Null", [])) -> t'
   | _ -> t
 
-let rec un_ref t = match t with
-  | TUnion (s, t) -> TUnion (un_ref s, un_ref t)
+let un_ref t = match t with
   | TRef s -> s
   | TSource s -> s
   | TSink s -> s
@@ -373,9 +372,9 @@ and bracket p env field t =
 	let t_field = tc_exp env e in
 	  (match t_field with
              | TConstr ("Str", []) -> 
-		 List.fold_right (fun t typ -> TUnion (t, typ))
-		   ((map snd2 fs)@(class_types env cname))
-		   (TUnion (other_typ, TRef (TConstr ("Undef", []))))
+		 TRef (List.fold_right (fun t typ -> TUnion (un_ref t, typ))
+		         ((map snd2 fs)@(class_types env cname))
+		         (TUnion (un_ref other_typ, TConstr ("Undef", []))))
 	     | t -> error p (sprintf "Index was type %s in dictionary lookup\n" (string_of_typ t)))
     | TConstr ("Array", [tarr]), eidx ->
         let (p1, p2) = p in
