@@ -397,6 +397,10 @@ and bracket p env field t =
                              TRef (TArrow (TConstr ("Array", [tarr]),
                                            [typ_str], typ_str))
                          | _ -> error p ("expected array of strings"))
+                  | EConst (_, JavaScript_syntax.CString "slice") ->
+                      TRef (TArrow (TConstr ("Array", [tarr]),
+                                    [TConstr ("Int", []);
+                                     TConstr ("Int", [])], t))
                   | EConst (_, JavaScript_syntax.CString s) ->
                       error p ("unknown array method " ^ s)
                   | _ -> error p ("unknown array method")
