@@ -1,5 +1,5 @@
 // Why are these globals? Just to make our lives harder?
-var name = /*: cheat Str*/undefined; 
+var name = /*: upcast Str + Undef */undefined; 
 var value = /*: upcast Any*/undefined;
 var result = /*: HTMLElement */ [];
 var star = false;
