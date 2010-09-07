@@ -1,9 +1,7 @@
 function parse_query(text, id) 
 /*: 
 Str * Str -> 
-Array<{op: Str, name: Str, value: Str} +
-      {op: Str, name: Str} + 
-      {op: Str}> + Undef */
+Array<{op: Str + Undef, toString: -> Str}> + Undef */
 {
 
     // Convert a query string into an array of op/name/value selectors.
@@ -18,9 +16,9 @@ Array<{op: Str, name: Str, value: Str} +
     // A name must be all lower case and may contain digits, -, or _.
 
     var match /*: upcast Undef + Array<Str + Undef> */,          // A match array
-    query = /*: {op: Str + Undef, name: Str + Undef, value: Str + Undef, toString: -> Str} */ [], // The resulting query array
+    query = /*: {op: Str + Undef, toString: -> Str} */ [], // The resulting query array
     selector /*: upcast Undef + 
-                {op: Str + Undef, name: Str + Undef, value: Str + Undef, toString: -> Str} */,
+                {op: Str + Undef, toString: -> Str} */,
     qx = (/*: cheat Bool */ id) ?
         /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([A-Z]+_[A-Z0-9]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/ :
         /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([\-A-Za-z0-9_]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/;
@@ -61,11 +59,11 @@ Array<{op: Str, name: Str, value: Str} +
             // The selector is in brackets.
 
             selector = match[3] ? {
-                op: '[' + match[3],
+                op: /*: upcast Str + Undef */ ('[' + match[3]),
                 name: match[2],
                 value: match[4]
             } : {
-                op: '[',
+                op: /*: upcast Str + Undef */ '[',
                 name: match[2]
             };
         } else if (match[5]) {
@@ -77,7 +75,7 @@ Array<{op: Str, name: Str, value: Str} +
                 return error("ADsafe: Bad query: " + text);
             }
             selector = {
-                op: '#',
+                op: /*: upcast Str + Undef */ '#',
                 name: match[5]
             };
 
@@ -85,7 +83,7 @@ Array<{op: Str, name: Str, value: Str} +
 
         } else if (match[6]) {
             selector = {
-                op: ':' + match[6]
+                op: /*: upcast Str + Undef */ (':' + match[6])
             };
 
             // The selector is one of > + . & _ or a naked tag name
@@ -103,8 +101,8 @@ Array<{op: Str, name: Str, value: Str} +
 
         // Remove the selector from the text. If there is more text, have another go.
 
-        text = text.slice((/*: cheat Array<Str> */ match)[0].length);
-    } while (text);
+        text = text.slice(match[0].length);
+    } while (/*: cheat Bool */ text);
     return query;
 }
 
