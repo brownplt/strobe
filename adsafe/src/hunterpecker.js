@@ -57,8 +57,8 @@ var hunter = {
 
     '*': function (node) /*: HTMLElement -> Undef */{
         star = true;
-        walkTheDOM(node, function (node) /*: Node -> Undef */ {
-            result.push(/*:cheat HTMLElement */node);
+        walkTheDOM(/*: cheat ASNode */ node, function (node) /*: Node -> Undef */ {
+            result.push(/*:cheat ASNode */node);
         }, true);
     }
 };
