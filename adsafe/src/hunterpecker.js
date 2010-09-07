@@ -1,8 +1,9 @@
 // Why are these globals? Just to make our lives harder?
 var name = /*: cheat Str*/undefined; 
 var value = /*: upcast Any*/undefined;
-var result = /*: HTMLElement*/ [];
+var result = /*: HTMLElement */ [];
 var star = false;
+var flipflop = true;
 
 var hunter = {
 
@@ -13,7 +14,7 @@ var hunter = {
         for (var i = 0; i < 1000; i += 1) {
             // Why bound at 1000?
             if (/*: cheat Bool*/(e[i])) {
-                result.push(e[i]);
+                result.push(/*:cheat HTMLElement */ (e[i]));
             } else {
                 break;
             }
@@ -27,7 +28,7 @@ var hunter = {
             node = (/*:cheat HTMLElement */node).nextSibling;
         }
         if (/*:cheat Bool */(node && node.tagName === name)) {
-            result.push(/*: cheat HTMLElement*/node);
+            result.push(/*: cheat HTMLElement */node);
         }
     },
 
@@ -57,8 +58,8 @@ var hunter = {
 
     '*': function (node) /*: HTMLElement -> Undef */{
         star = true;
-        walkTheDOM(/*: cheat ASNode */ node, function (node) /*: Node -> Undef */ {
-            result.push(/*:cheat ASNode */node);
+        walkTheDOM(/*: cheat HTMLElement */ node, function (node) /*: Node -> Undef */ {
+            result.push(/*:cheat HTMLElement */node);
         }, true);
     }
 };

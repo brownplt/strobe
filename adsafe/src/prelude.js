@@ -111,7 +111,7 @@ function error(message) /*: Str + Undef -> Undef */ {
 
 
     function walkTheDOM(node, func, skip) 
-    /*: ASNode * (ASNode -> Undef) * Bool + Undef -> Undef */ {
+    /*: HTMLElement * (HTMLElement -> Undef) * Bool + Undef -> Undef */ {
 
 // Recursively traverse the DOM tree, starting with the node, in document
 // source order, calling the func on each node visisted.
@@ -119,15 +119,15 @@ function error(message) /*: Str + Undef -> Undef */ {
         if (/*:cheat Bool */(!skip)) {
             func(node);
         }
-        node = /*:cheat ASNode */(node.firstChild);
+        node = /*:cheat HTMLElement */(node.firstChild);
         while (/*: cheat Bool */node) {
             walkTheDOM(node, func);
-            node = /*: cheat ASNode*/(node.nextSibling);
+            node = /*: cheat HTMLElement*/(node.nextSibling);
         }
     }
 
 function purge_event_handlers(node) 
-/*: ASNode -> Undef */ {
+/*: HTMLElement -> Undef */ {
 
 // We attach all event handlers to a ___ on ___ property. The property name
 // contains spaces to insure that there is no collision with HTML attribues.
@@ -135,7 +135,7 @@ function purge_event_handlers(node)
 // all at once. Removal is required to avoid memory leakage on IE6 and IE7.
 
     walkTheDOM(node, 
-               function (node) /*: ASNode -> Undef */ {
+               function (node) /*: HTMLElement -> Undef */ {
                    if (/*: cheat Bool */ node.tagName) {
                        //            node['___ on ___'] = node.change = null;
                    }

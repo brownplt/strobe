@@ -1,6 +1,6 @@
 TC=../../tcb -penv -env adsafe.env
 
-all: hunterpecker.jsi prelude.jsi
+all: hunterpecker.jsi prelude.jsi query.jsi quest.jsi
 
 clean:
 	rm -f hunterpecker.jsi prelude.jsi query.jsi
@@ -11,5 +11,11 @@ prelude.jsi: prelude.js
 hunterpecker.jsi: hunterpecker.js prelude.jsi
 	$(TC) -env prelude.jsi hunterpecker.js > hunterpecker.jsi
 
-query.jsi: hunterpecker.jsi
-	$(TC) -env hunterpecker.jsi query.js > query.jsi
+query.jsi: hunterpecker.jsi prelude.jsi query.js 
+	$(TC) -env prelude.jsi \
+              -env hunterpecker.jsi query.js > query.jsi
+
+quest.jsi: query.jsi quest.js
+	$(TC) -env prelude.jsi \
+	      -env hunterpecker.jsi \
+	      -env query.jsi quest.js > quest.jsi
