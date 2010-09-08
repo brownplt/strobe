@@ -10,7 +10,7 @@ open Typedjs_types
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
-       CHECKED CHEAT HASHPROTO TREC TYPE EQUALS BOT CODE
+       CHECKED CHEAT HASHPROTO TREC TYPE EQUALS BOT CODE REF
 
 %right UNION
 
@@ -27,8 +27,8 @@ args
   | arg_typ { [$1] }
   | arg_typ STAR args { $1 :: $3 }
 
-field :
-  | ID COLON typ { ($1, TRef $3) }
+field 
+  : ID COLON typ { ($1, TRef $3) }
   | STRING COLON typ { ($1, TRef $3) }
 
 fields
@@ -69,7 +69,7 @@ typ
   | FORALL ID LTCOLON typ DOT typ { TForall ($2, $4, $6) }
   | FORALL ID DOT typ { TForall ($2, TTop, $4) }
   | TREC ID DOT typ { TRec ($2, $4) }
-
+  | REF typ { $2 }
 
 typs :
   | { [] }

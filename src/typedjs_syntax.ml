@@ -244,7 +244,7 @@ module Pretty = struct
         let code = horz [ text "#code"; text":"; typ code ] in
 	let fields = map field fs in
 	  braces (horz (intersperse (text ",") (fields@[constr;star;code])))
-    | TRef s -> horz [ typ s ]
+    | TRef s -> horz [ text "ref"; parens (typ s) ]
     | TSource s -> horz [ text "source"; parens (typ s) ]
     | TSink s -> horz [ text "sink"; parens (typ s) ]
     | TForall (x, s, t) -> 

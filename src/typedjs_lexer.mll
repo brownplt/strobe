@@ -54,6 +54,7 @@ rule token = parse
    | "upcast" { UPCAST }
    | "downcast" { DOWNCAST }
    | "operator" { OPERATOR }
+   | "ref" { REF }
    | "is" { IS }
    | "cheat" { CHEAT }
    | "val" { VAL }
