@@ -110,7 +110,15 @@ module Env = struct
 	| s, TUnion (t1, t2) -> st s t1 || st s t2
 	| TRef s', TRef t' -> st s' t' && st t' s'
         | TArrow (_, args1, r1), TArrow (_, args2, r2) ->
-            r_subtypes rel env args2 args1 && r_subtype rel env r1 r2
+            if (List.length args2) > (List.length args1) then
+              let args2' = (List.fold_left2 
+                                    (fun l a n -> 
+                                       if n >= List.length args1
+                                       then l else a::l)
+                                    [] args2 (iota (List.length args2))) in
+              r_subtypes rel env args2' args1 && r_subtype rel env r1 r2
+            else
+              r_subtypes rel env args2 args1 && r_subtype rel env r1 r2
         | TConstr (c_name, []), TObject fs2 ->
             (* Classes can be turned into objects. However, this drops
                all fields in the prototype. *)
