@@ -5,11 +5,19 @@ var result = /*: HTMLElement */ [];
 var star = false;
 var flipflop = true;
 
-var hunter = {
+var hunter = 
+    /*: upcast {"": HTMLElement + Undef -> Undef,
+                "+": HTMLElement + Undef -> Undef, 
+                ">": HTMLElement + Undef -> Undef,
+                "#": HTMLElement + Undef -> Undef,
+                "/": HTMLElement + Undef -> Undef,
+                "*": HTMLElement + Undef -> Undef,
+                #proto: Object, *: Undef, #code: Undef} */ 
+{
 
     // These functions implement the hunter behaviors.
 
-    '': function (node) /*: HTMLElement -> Undef */ {
+    '': function (node) /*: HTMLElement + Undef -> Undef */ {
         var e = node.getElementsByTagName(name);
         for (var i = 0; i < 1000; i += 1) {
             // Why bound at 1000?
@@ -43,20 +51,20 @@ var hunter = {
         }
     },
 
-    '#': function (node) /*: Any -> Undef */ {
+    '#': function (node) /*: HTMLElement + Undef -> Undef */ {
         var n = document.getElementById(name);
         if (/*: cheat Bool*/(n.tagName)) {
             result.push(/*: cheat HTMLElement*/n);
         }
     },
-    '/': function (node) /*: HTMLElement -> Undef */{
+    '/': function (node) /*: HTMLElement + Undef -> Undef */{
         var e = node.childNodes;
         for (var i = 0; i < e.length; i += 1) {
             result.push(e[i]);
         }
     },
 
-    '*': function (node) /*: HTMLElement -> Undef */{
+    '*': function (node) /*: HTMLElement + Undef -> Undef */{
         star = true;
         walkTheDOM(/*: cheat HTMLElement */ node, function (node) /*: Node -> Undef */ {
             result.push(/*:cheat HTMLElement */node);
@@ -64,12 +72,17 @@ var hunter = {
     }
 };
 
-var pecker = {
-    '.': function (node) /*: HTMLElement -> Bool */ {
+var pecker = 
+    /*: upcast {".": HTMLElement + Undef -> Bool ,
+                "&": HTMLElement + Undef -> Bool ,
+                #proto: Object, *: Undef, #code: Undef}
+    */
+{
+    '.': function (node) /*: HTMLElement + Undef -> Bool */ {
         return (' ' + node.className + ' ').indexOf(' ' + name + ' ') >= 0;
     },
 
-    '&': function (node) /*: HTMLElement -> Bool */ {
+    '&': function (node) /*: HTMLElement + Undef -> Bool */ {
         return node.name === name;
     }, /*
     '_': function (node) {

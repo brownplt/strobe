@@ -1,10 +1,10 @@
-function quest(query, nodes) 
+function quest(query, nodes)
 /*:  Array<{op: Str + Undef, name: Str + Undef, value: Str + Undef}> *
      Array<HTMLElement>
   -> Undef + Array<HTMLElement> */
 {
     var selector /*: upcast Undef + {op: Str + Undef, name: Str + Undef, value: Str + Undef} */, 
-    func /*: upcast Undef + (HTMLElement -> Undef + Bool) */, 
+    func /*: upcast Undef + (HTMLElement + Undef -> Any) */, 
     i /*: upcast Undef + Int */, 
     j /*: upcast Undef + Int */;
 
@@ -13,7 +13,7 @@ function quest(query, nodes)
     for (i = 0; i < query.length; /*: cheat Undef */ (i += 1)) {
         selector = query[i];
         name = selector.name;
-        func = /*: cheat HTMLElement -> Undef + Bool */ (hunter[selector.op]);
+        func = hunter[selector.op];
 
         // There are two kinds of selectors: hunters and peckers. If this is a hunter,
         // loop through the the nodes, passing each node to the hunter function.
@@ -35,7 +35,7 @@ function quest(query, nodes)
 
             value = selector.value;
             flipflop = false;
-            func = /*: cheat HTMLElement -> Bool */ (pecker[selector.op]);
+            func = pecker[selector.op];
             if (typeof func !== 'function') {
                 switch (selector.op) {
                 case ':first':
