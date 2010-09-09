@@ -371,6 +371,7 @@ and bracket p env field t =
     | TObjStar (fs, cname, other_typ, code), e ->
 	let t_field = tc_exp env e in
 	  (match t_field with
+             | TUnion (TConstr ("Str", []), TConstr ("Undef", []))
              | TConstr ("Str", []) -> 
 		 TRef (List.fold_right (fun t typ -> TUnion (un_ref t, typ))
 		         ((map snd2 fs)@(class_types env cname))
