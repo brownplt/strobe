@@ -53,33 +53,6 @@ var ADSAFE = (function () {
 //  the banned names, or names that are not strings or positive numbers,
 //  or strings that start or end with _ or strings that start with -.
 
-    function getStyleObject(node) {
-
-// The getStyleObject function returns the computed style object for a node.
-
-        if (node === cache_style_node) {
-            return cache_style_object;
-        }
-        cache_style_node = node;
-        cache_style_object =
-            node.currentStyle || defaultView.getComputedStyle(node, '');
-        return cache_style_object;
-    }
-
-    function purge_event_handlers(node) {
-
-// We attach all event handlers to a ___ on ___ property. The property name
-// contains spaces to insure that there is no collision with HTML attribues.
-// Keeping the handlers in a single property makes it easy to remove them
-// all at once. Removal is required to avoid memory leakage on IE6 and IE7.
-
-        walkTheDOM(node, function (node) {
-            if (node.tagName) {
-                node['___ on ___'] = node.change = null;
-            }
-        });
-    }
-
 
     function make_root(root, id) {
 
