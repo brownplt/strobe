@@ -4,7 +4,7 @@ var value = /*: upcast Any*/undefined;
 var result = /*: HTMLElement */ [];
 var star = false;
 var flipflop = true;
-var has_focus = true;
+var has_focus /*: upcast Undef + HTMLElement + Null */;
 
 var hunter = 
     /*: upcast {"": HTMLElement + Undef -> Undef,
