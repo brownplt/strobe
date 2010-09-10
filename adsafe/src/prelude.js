@@ -1,3 +1,6 @@
+var defaultView = document.defaultView,
+cache_style_node /*: upcast Undef + HTMLElement */,
+cache_style_object /*: upcast Undef + StyleObject */;
 
 var banned = {
     'arguments'     : true,
@@ -142,4 +145,18 @@ function purge_event_handlers(node)
                },
                undefined // Added by Joe to avoid arity mismatch
               );
+}
+
+function getStyleObject(node) /*: HTMLElement -> StyleObject + Undef */
+{
+    
+    // The getStyleObject function returns the computed style object for a node.
+    
+    if (node === cache_style_node) {
+        return cache_style_object;
+    }
+    cache_style_node = node;
+    cache_style_object =
+        node.currentStyle || defaultView.getComputedStyle(node, '');
+    return cache_style_object;
 }
