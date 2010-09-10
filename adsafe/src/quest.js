@@ -12,7 +12,7 @@ function quest(query, nodes)
 
     for (i = 0; i < query.length; /*: cheat Undef */ (i += 1)) {
         selector = query[i];
-        name = selector.name;
+        name = /*: cheat Str */ (selector.name);
         func = hunter[selector.op];
 
         // There are two kinds of selectors: hunters and peckers. If this is a hunter,
