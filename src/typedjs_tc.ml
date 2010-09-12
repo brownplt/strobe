@@ -39,11 +39,12 @@ let un_null t = match t with
   | TUnion (t', TConstr ("Null", [])) -> t'
   | _ -> t
 
-let un_ref t = match t with
+let rec un_ref t = match t with
   | TRef s -> s
   | TSource s -> s
   | TSink s -> s
   | TField -> TField
+  | TUnion (t1, t2) -> TUnion (un_ref t1, un_ref t2) 
   | _ -> failwith ("un_ref got " ^ string_of_typ t)
 
 let rec tc_exp_simple (env : Env.env) exp = match exp with
@@ -71,8 +72,9 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       | TRef t -> t
       | TSource t -> t
       | TField -> TField
+      | TUnion (t1, t2) -> TUnion (un_ref t1, un_ref t2)
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
-				 (string_of_typ t)))
+				 (string_of_typ t))) 
     end
   | ESetRef (p, e1, e2) -> begin match tc_exp env e1, tc_exp env e2 with
       | TRef s, t
@@ -150,8 +152,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
   | EBracket (p, obj, field) -> let typ = un_null (tc_exp env obj) in
     let t_list = typ_to_list typ in
     let f_list = map (bracket p env field) t_list in
-    let unref_list = map un_ref f_list in
-      TRef (list_to_typ env unref_list)
+      list_to_typ env f_list
   | EThis p -> begin
       try 
         Env.lookup_id "this" env
@@ -373,9 +374,9 @@ and bracket p env field t =
 	  (match t_field with
              | TUnion (TConstr ("Str", []), TConstr ("Undef", []))
              | TConstr ("Str", []) -> 
-		 TRef (List.fold_right (fun t typ -> TUnion (un_ref t, typ))
-		         ((map snd2 fs)@(class_types env cname))
-		         (TUnion (un_ref other_typ, TConstr ("Undef", []))))
+		 List.fold_right (fun t typ -> TUnion (t, typ))
+		   ((map snd2 fs)@(class_types env cname))
+		   (TUnion (other_typ, TRef (TConstr ("Undef", []))))
 	     | t -> error p (sprintf "Index was type %s in dictionary lookup\n" (string_of_typ t)))
     | TConstr ("Array", [tarr]), eidx ->
         let (p1, p2) = p in
