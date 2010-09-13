@@ -257,16 +257,6 @@ var ADSAFE = (function () {
                 }
                 return error();
             },
-            each: function (func) {
-                var b = this.___nodes___, i;
-                if (this !== this.window && typeof func === 'function') {
-                    for (i = 0; i < b.length; i += 1) {
-                        func(new Bunch([b[i]]));
-                    }
-                    return this;
-                }
-                return error();
-            },
             fragment: function () {
                 return new Bunch([document.createDocumentFragment()]);
             },
