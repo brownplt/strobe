@@ -1,7 +1,7 @@
 var star = false;
 
 function Bunch(nodes) 
-/*: constructor (Array<ASNode> -> {___nodes___: Array<ASNode>, ___star___: Bool}) */ 
+/*: constructor (Array<HTMLElement> -> {___nodes___: Array<HTMLElement>, ___star___: Bool}) */ 
 {
     this.___nodes___ = nodes;
     this.___star___ = star && nodes.length > 1;
@@ -11,7 +11,7 @@ function Bunch(nodes)
 function Bunch_getValue() /*: ['Ad] -> 'Ad */ {
     var a = /*: 'Ad */ [], b = this.___nodes___, 
     i /*: upcast Undef + Int */, 
-    node /*: upcast Undef + ASNode */;
+    node /*: upcast Undef + HTMLElement */;
     for (i = 0; i < b.length; i += 1) {
         node = b[i];
         if (node.nodeName === '#text') {
@@ -33,38 +33,38 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
     }
     var b = this.___nodes___, 
     i /*: upcast Undef + Int */,
-    node /*: upcast Undef + ASNode */;
+    node /*: upcast Undef + HTMLElement */;
 
     if (value instanceof Array && b.length === /*: cheat Int */ value.length) {
-        for (i = 0; i < b.length; i += 1) {
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
-            if (node.tagName) {
+            if (/*: cheat Bool */ node.tagName) {
                 if (node.type !== 'password') {
                     if (typeof node.value === 'string') {
-                        node.value = value[i];
+                        node.value = /*: cheat Undef */ (value[i]);
                     } else {
                         while (node.firstChild) {
-                            // thinks node is undef + ASNode, should just be ASNode
-                            purge_event_handlers(/*: cheat ASNode */ node); 
+                            // thinks node is undef + HTMLElement, should just be HTMLElement
+                            purge_event_handlers(/*: cheat HTMLElement */ node); 
                             node.removeChild(node.firstChild);
                         }
                         node.appendChild(document.createTextNode(
-                            String(value[i])));
+                            String(/*: cheat 'Ad */ (value[i]))));
                     }
                 }
             } else if (node.nodeName === '#text') {
-                node.nodeValue = String(value[i]);
+                node.nodeValue = String(/*: cheat 'Ad */ (value[i]));
             }
         }
     } else {
-        for (i = 0; i < b.length; i += 1) {
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
             if (/*: cheat Bool */ node.tagName) {
                 if (typeof node.value === 'string') {
-                    node.value = value;
+                    node.value = /*: cheat Undef */ value;
                 } else {
                     while (node.firstChild) {
-                        purge_event_handlers(/*: cheat ASNode */ node);
+                        purge_event_handlers(/*: cheat HTMLElement */ node);
                         node.removeChild(node.firstChild);
                     }
                     node.appendChild(document.createTextNode(
@@ -84,22 +84,22 @@ function Bunch_title(value) /*: ['Ad] 'Ad -> 'Ad */ {
     }
     var b = this.___nodes___, 
     i /*: upcast Undef + Int */,
-    node /*: upcast Undef + ASNode */;
+    node /*: upcast Undef + HTMLElement */;
     if (value instanceof Array) {
-        if (value.length !== b.length) {
+        if (/*: cheat Int */ (value.length) !== b.length) {
             return error('ADsafe: Array length: ' + b.length +
-                         '-' + value.length);
+                         '-' /*+ value.length*/);
         }
-        for (i = 0; i < b.length; i += 1) {
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
-            if (node.tagName) {
-                node.title = String(value[i]);
+            if (/*: cheat Bool */ (node.tagName)) {
+                node.title = String(/*: cheat 'Ad */ (value[i]));
             }
         }
     } else {
-        for (i = 0; i < b.length; i += 1) {
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
-            if (node.tagName) {
+            if (/*: cheat Bool */ (node.tagName)) {
                 node.title = String(value);
             }
         }
@@ -114,16 +114,54 @@ function Bunch_getTitle() /*: ['Ad] -> 'Ad */ {
     for (i = 0; i < b.length; i += 1) {
         a[i] = b[i].title;
     }
-    return a.length === 1 ? a[0] : a;
+    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
 }
 
 function Bunch_each(func) /*: ['Ad] 'Ad -> 'Ad */ {
     var b = this.___nodes___, i /*: upcast Undef + Int */;
     if (this !== this.window && typeof func === 'function') {
-        for (i = 0; i < b.length; i += 1) {
-            func(new Bunch([b[i]]));
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+            /*: cheat 'Ad -> 'Ad */ func(/*: cheat 'Ad */ (new Bunch([b[i]])));
         }
         return this;
     }
     return error();
+}
+
+function Bunch_append (appendage) /*: ['Ad] 'Ad -> 'Ad */ {
+    if (this === this.window) {
+        return error();
+    }
+    var b = this.___nodes___,
+    flag = false,
+    i /*: upcast Undef + Int */,
+    j /*: upcast Undef + Int */,
+    node /*: upcast Undef + HTMLElement */,
+    rep /*: upcast Undef + Array<HTMLElement> */;
+    if (b.length === 0 || /*: cheat Bool */ (!appendage)) {
+        return this;
+    }
+    if (appendage instanceof Array) {
+        if (/*: cheat Int */ (appendage.length) !== b.length) {
+            return error('ADsafe: Array length: ' +
+                         b.length + '-' /*+ value.length*/);
+        }
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+            rep = /*: cheat 'Ad */ (appendage[i]).___nodes___;
+            for (j = 0; j < rep.length; /*: cheat Int */ (j += 1)) {
+                b[/*: cheat Int */i].appendChild(rep[j]);
+            }
+        }
+    } else {
+        rep = appendage.___nodes___;
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+            node = b[i];
+            for (j = 0; j < rep.length; /*: cheat Int */ (j += 1)) {
+                node.appendChild(flag ?
+                                 rep[j].cloneNode(true) : rep[j]);
+            }
+            flag = true;
+        }
+    }
+    return this;
 }
