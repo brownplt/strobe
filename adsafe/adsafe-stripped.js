@@ -665,32 +665,6 @@ var ADSAFE = (function () {
                     return new Bunch(a);
                 }
                 return new Bunch([document.createTextNode(String(text))]);
-            },
-            title: function (value) {
-                if (this === this.window) {
-                    return error('ADsafe error.');
-                }
-                var b = this.___nodes___, i, node;
-                if (value instanceof Array) {
-                    if (value.length !== b.length) {
-                        return error('ADsafe: Array length: ' + b.length +
-                                '-' + value.length);
-                    }
-                    for (i = 0; i < b.length; i += 1) {
-                        node = b[i];
-                        if (node.tagName) {
-                            node.title = String(value[i]);
-                        }
-                    }
-                } else {
-                    for (i = 0; i < b.length; i += 1) {
-                        node = b[i];
-                        if (node.tagName) {
-                            node.title = String(value);
-                        }
-                    }
-                }
-                return this;
             }
         };
 
