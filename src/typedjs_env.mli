@@ -30,6 +30,8 @@ module Env : sig
 
   val class_fields : env -> constr -> typ IdMap.t
 
+  val class_sup : env -> constr -> constr option
+
   (** A new class with no methods. *)
   val new_root_class : env -> id -> env
 

@@ -78,6 +78,8 @@ module Env = struct
 
   let class_fields env constr = (IdMap.find constr env.classes).fields
 
+  let class_sup env constr = (IdMap.find constr env.classes).sup
+
   let cmp_props (k1, _) (k2, _) = match String.compare k1 k2 with
     | 0 -> raise (Not_wf_typ ("the field " ^ k1 ^ " is repeated"))
     | n -> n
