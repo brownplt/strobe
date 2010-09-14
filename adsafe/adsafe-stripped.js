@@ -84,35 +84,6 @@ var ADSAFE = (function () {
         root['___adsafe root___'] = '___adsafe root___';
 
         Bunch.prototype = {
-            check: function (value) {
-                if (this === this.window) {
-                    return error();
-                }
-                var b = this.___nodes___, i, node;
-                if (value instanceof Array) {
-                    if (value.length !== b.length) {
-                        return error('ADsafe: Array length: ' +
-                                b.length + '-' + value.length);
-                    }
-                    for (i = 0; i < b.length; i += 1) {
-                        node = b[i];
-                        if (node.tagName) {
-                            node.checked = !!value[i];
-                        }
-                    }
-                } else {
-                    for (i = 0; i < b.length; i += 1) {
-                        node = b[i];
-                        if (node.tagName) {
-                            node.checked = !!value;
-                        }
-                    }
-                }
-                return this;
-            },
-            count: function () {
-                return this.___nodes___.length;
-            },
             empty: function () {
                 if (this === this.window) {
                     return error('ADsafe error.');

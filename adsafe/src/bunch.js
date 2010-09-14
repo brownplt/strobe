@@ -180,3 +180,35 @@ function Bunch_blur () /*: ['Ad] -> 'Ad */ {
     }
     return this;
 }
+
+function Bunch_check (value) /*: ['Ad] 'Ad -> 'Ad */ {
+    if (this === this.window) {
+        return error();
+    }
+    var b = this.___nodes___, i /*: upcast Int + Undef */, node /*: upcast Undef + HTMLElement */;
+    if (value instanceof Array) {
+        if (value.length !== b.length) {
+            return error('ADsafe: Array length: ' +
+                         b.length + '-' + /*: cheat Int */ (value.length));
+        }
+        for (i = 0; i < b.length; i += 1) {
+            node = b[i];
+            if (node.tagName) {
+                node.checked = !!/*: cheat 'Ad */(value[i]);
+            }
+        }
+    } else {
+        for (i = 0; i < b.length; i += 1) {
+            node = b[i];
+            if (node.tagName) {
+                node.checked = !!value;
+            }
+        }
+    }
+    return this;
+}
+
+function Bunch_count () /*: ['Ad] -> Int */ {
+    return this.___nodes___.length;
+}
+
