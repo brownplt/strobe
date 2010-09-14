@@ -146,9 +146,8 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
     else
       error p (sprintf "condition has type %s" (string_of_typ t1))
   | EObject (p, fields) ->
-      let obj_proto_fields = IdMapExt.to_list (Env.class_fields env "Object") in
-	Env.check_typ p env 
-          (TObject ((map (second2 (tc_exp env)) fields)@obj_proto_fields))
+      Env.check_typ p env 
+        (TObject (map (second2 (tc_exp env)) fields))
   | EBracket (p, obj, field) -> let typ = un_null (tc_exp env obj) in
     let t_list = typ_to_list typ in
     let f_list = map (bracket p env field) t_list in
@@ -294,6 +293,36 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
           error p 
             (sprintf "expression has type %s, which is incompatible with the \
                       annotation" (string_of_typ s))
+  | EObjCast (p, t, e) ->
+      let proto = begin match e with
+        | ENew (p, cid, args) -> begin match Env.class_sup env cid with
+            | Some c -> c
+            | None -> "Object"
+          end
+        | EObject _ -> "Object"
+        | e -> error p "Not an object literal or new for ObjCast"
+      end in
+      let s = tc_exp env e in
+      let t = Env.check_typ p env t in
+        begin match t with
+          | TObjStar (fs, cname, other_typ, code) -> 
+              if String.compare cname proto != 0 then
+                error p (sprintf "Mismatched prototypes in ObjCast: %s, %s" cname proto)
+              else
+                begin match s with 
+                  | TObject (fs') -> 
+                      let fss = List.fast_sort cmp_props fs in
+                      let fso = List.fast_sort cmp_props fs' in
+                      let cmp_typs (k1, t1) (k2, t2) =
+                        String.compare k1 k2 = 0 && t1 = t2 in
+                        if List.for_all2 cmp_typs fss fso then t else
+                          error p "Must list all the fields for ObjCast"
+                  | t -> 
+                      error p (sprintf "This shouldn't happen, %s wasn't an \
+                                Object type in ObjCast" (string_of_typ t))
+                end
+          | t -> error p "Must be an objstar to ObjCast"
+        end
   | EDowncast (p, t, e) -> 
       let t = Env.check_typ p env t in
       let (p1, p2) = Exp.pos e in 
