@@ -307,7 +307,8 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         begin match t with
           | TObjStar (fs, cname, other_typ, code) -> 
               if String.compare cname proto != 0 then
-                error p (sprintf "Mismatched prototypes in ObjCast: %s, %s" cname proto)
+                error p (sprintf "Mismatched prototypes in ObjCast: \ 
+                                 %s, %s" cname proto)
               else
                 begin match s with 
                   | TObject (fs') -> 
@@ -390,7 +391,8 @@ and bracket p env field t =
            snd2 (List.find (fun (x', _) -> x = x') fs)
          with Not_found ->
            raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
-    | TObjStar (fs, cname, other_typ, code), EConst (_, JavaScript_syntax.CString x) ->
+    | TObjStar (fs, cname, other_typ, code), 
+        EConst (_, JavaScript_syntax.CString x) ->
 	(try
 	   snd2 (List.find (fun (x', _) -> x = x') fs)
 	 with Not_found ->
@@ -406,7 +408,8 @@ and bracket p env field t =
 		 List.fold_right (fun t typ -> TUnion (t, typ))
 		   ((map snd2 fs)@(class_types env cname))
 		   (TRef (TUnion (un_ref other_typ, TConstr ("Undef", []))))
-	     | t -> error p (sprintf "Index was type %s in dictionary lookup\n" (string_of_typ t)))
+	     | t -> error p (sprintf "Index was type %s in \
+                                      dictionary lookup\n" (string_of_typ t)))
     | TConstr ("Array", [tarr]), eidx ->
         let (p1, p2) = p in
           contracts := IntMap.add p1.Lexing.pos_cnum 
@@ -455,7 +458,9 @@ and bracket p env field t =
     | t, EConst (_, JavaScript_syntax.CString _) ->
         error p ("expected object, but got " ^ string_of_typ t)
     | t, f -> 
-        error p ("field-lookup requires a string literal, got " ^ (string_of_typ t) ^ "[" ^ (string_of_typ (tc_exp env f)) ^ "]")
+        error p ("field-lookup requires a string literal, got " ^ 
+                   (string_of_typ t) ^ "[" ^ 
+                   (string_of_typ (tc_exp env f)) ^ "]")
 
 and tc_exp (env : Env.env) exp = unfold_typ (tc_exp_simple env exp)
 
