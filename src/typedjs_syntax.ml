@@ -63,6 +63,7 @@ type annotation =
   | ATypAbs of id * typ
   | ATypApp of typ
   | AAssertTyp of typ
+  | AObjCast of typ
   | ACheat of typ
 
 type ref_kind =
@@ -76,6 +77,7 @@ type exp
   = EConst of pos * JavaScript_syntax.const
   | EBot of pos
   | EAssertTyp of pos * typ * exp
+  | EObjCast of pos * typ * exp
   | EArray of pos * exp list
   | EEmptyArray of pos * typ
   | EObject of pos * (string * exp) list
