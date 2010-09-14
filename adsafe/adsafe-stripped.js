@@ -84,20 +84,6 @@ var ADSAFE = (function () {
         root['___adsafe root___'] = '___adsafe root___';
 
         Bunch.prototype = {
-            blur: function () {
-                if (this === this.window) {
-                    return error('ADsafe error.');
-                }
-                var b = this.___nodes___, i, node;
-                has_focus = null;
-                for (i = 0; i < b.length; i += 1) {
-                    node = b[i];
-                    if (node.blur) {
-                        node.blur();
-                    }
-                }
-                return this;
-            },
             check: function (value) {
                 if (this === this.window) {
                     return error();

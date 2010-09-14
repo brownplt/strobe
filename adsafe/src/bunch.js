@@ -165,3 +165,18 @@ function Bunch_append (appendage) /*: ['Ad] 'Ad -> 'Ad */ {
     }
     return this;
 }
+
+function Bunch_blur () /*: ['Ad] -> 'Ad */ {
+    if (this === this.window) {
+        return error('ADsafe error.');
+    }
+    var b = this.___nodes___, i /*: upcast Int + Undef */, node /*: upcast Undef + HTMLElement */;
+    has_focus = null;
+    for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+        node = b[i];
+        if (node.blur) {
+            /*:cheat -> 'Ad */ (node.blur)();
+        }
+    }
+    return this;
+}
