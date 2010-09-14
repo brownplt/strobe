@@ -140,11 +140,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         (* hack to make arrays not have undefined elements: *)
         Env.check_typ p env (TConstr ("Array", [u]))
   | EIf (p, e1, e2, e3) ->
-    let t1 = tc_exp env e1 in
-    if Env.subtype env t1 typ_bool || Env.subtype env typ_undef t1 then
       Env.typ_union env (tc_exp env e2) (tc_exp env e3)
-    else
-      error p (sprintf "condition has type %s" (string_of_typ t1))
   | EObject (p, fields) ->
       Env.check_typ p env 
         (TObject (map (second2 (tc_exp env)) fields))
