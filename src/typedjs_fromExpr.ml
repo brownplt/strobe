@@ -169,6 +169,7 @@ let rec exp (env : env) expr = match expr with
           | ADowncast typ -> EDowncast (p, typ, e')
           | ATypAbs (x, t) -> ETypAbs (p, x, t, e')
           | ATypApp t -> ETypApp (p, e', t)
+          | AObjCast t -> EObjCast (p, t, e')
           | AAssertTyp t -> EAssertTyp (p, t, e')
           | _ -> error p "unexpected hint"
         end
