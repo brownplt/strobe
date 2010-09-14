@@ -1,7 +1,7 @@
 function parse_query(text, id) 
 /*: 
 Str * Str -> 
-Array<{op: Str + Undef, toString: -> Str}> + Undef */
+Array<{op: Str + Undef}> + Undef */
 {
 
     // Convert a query string into an array of op/name/value selectors.
@@ -16,9 +16,9 @@ Array<{op: Str + Undef, toString: -> Str}> + Undef */
     // A name must be all lower case and may contain digits, -, or _.
 
     var match /*: upcast Undef + Array<Str + Undef> */,          // A match array
-    query = /*: {op: Str + Undef, toString: -> Str} */ [], // The resulting query array
+    query = /*: {op: Str + Undef} */ [], // The resulting query array
     selector /*: upcast Undef + 
-                {op: Str + Undef, toString: -> Str} */,
+                {op: Str + Undef} */,
     qx = (/*: cheat Bool */ id) ?
         /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([A-Z]+_[A-Z0-9]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/ :
         /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([\-A-Za-z0-9_]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/;

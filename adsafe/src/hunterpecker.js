@@ -7,7 +7,7 @@ var flipflop = true;
 var has_focus /*: upcast Undef + HTMLElement + Null */;
 
 var hunter = 
-    /*: upcast {"": HTMLElement + Undef -> Undef,
+    /*: obj* {"": HTMLElement + Undef -> Undef,
                 "+": HTMLElement + Undef -> Undef, 
                 ">": HTMLElement + Undef -> Undef,
                 "#": HTMLElement + Undef -> Undef,
@@ -74,7 +74,7 @@ var hunter =
 };
 
 var pecker = 
-    /*: upcast {".":   HTMLElement + Undef -> Bool ,
+    /*: obj* {".":   HTMLElement + Undef -> Bool ,
                 "&":   HTMLElement + Undef -> Bool ,
                 "_":   HTMLElement + Undef -> Bool ,
                 "[":   HTMLElement + Undef -> Bool ,
