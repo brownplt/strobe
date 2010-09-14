@@ -63,6 +63,7 @@ let rec a_exp (exp : exp) : exp = match exp with
   | ETypAbs (p, x, t, e) -> ETypAbs (p, x, t, a_exp e)
   | ETypApp (p, e, t) -> ETypApp (p, a_exp e, t)
   | ECheat (p, t, e) -> ECheat (p, t, a_exp e)
+  | EObjCast (p, t, e) -> EObjCast (p, t, a_exp e)
   | EForInIdx _ -> exp
 
 and a_bind (i, t, e) = (i, t, a_exp e)

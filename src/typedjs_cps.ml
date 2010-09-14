@@ -234,6 +234,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
   | ETypAbs (_, _, _, e) -> cps_exp e throw k
   | ETypApp (_, e, _) -> cps_exp e throw k
   | ECheat (_, _, e) -> cps_exp e throw k
+  | EObjCast (_, _, e) -> cps_exp e throw k
   | ETryCatch (p, body, exn, catch_body) ->
       let throw' = mk_name "throw-cont" in
         bind_cont k
