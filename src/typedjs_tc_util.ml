@@ -13,6 +13,7 @@ let tc_const (const : JavaScript_syntax.const) = match const with
   | JavaScript_syntax.CUndefined -> typ_undef
 
 exception Not_value of string
+exception Not_wf_typ of string
 
 let typ_of_value (exp : exp) : typ = 
   let rec f e = match e with
@@ -27,3 +28,7 @@ let typ_of_value (exp : exp) : typ =
       end
     | _ -> raise (Not_value (FormatExt.to_string Pretty.p_exp e)) in
     f exp
+
+let cmp_props (k1, _) (k2, _) = match String.compare k1 k2 with
+  | 0 -> raise (Not_wf_typ ("the field " ^ k1 ^ " is repeated"))
+  | n -> n
