@@ -131,10 +131,6 @@ module Env = struct
 	      cname1 = cname2 &&
 	      st other_typ1 other_typ2 &&
               st code1 code2
-	| TObject fso, TObjStar (fs, cname, other_typ, code) ->
-	    let all_fields = List.fast_sort cmp_props 
-	      (List.rev (fs@(IdMapExt.to_list (class_fields env cname)))) in
-	      r_subtype_star rel env fso all_fields other_typ
         | TSource s, TSource t -> st s t
         | TSink s, TSink t -> st t s
         | TRef s, TSource t -> st s t
