@@ -56,6 +56,7 @@ rule token = parse
    | "operator" { OPERATOR }
    | "ref" { REF }
    | "is" { IS }
+   | "obj*" { OBJCAST }
    | "cheat" { CHEAT }
    | "val" { VAL }
    | "<" { LANGLE }

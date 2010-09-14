@@ -86,6 +86,7 @@ annotation :
   | FORALL ID { ATypAbs ($2, TTop) }
   | LBRACK typ RBRACK { ATypApp $2 }
   | IS typ { AAssertTyp $2 }
+  | OBJCAST typ { AObjCast $2 }
 
 typ_ann :
   | annotation EOF { $1 }
