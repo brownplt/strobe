@@ -376,7 +376,7 @@ and bracket p env field t =
              | TConstr ("Str", []) -> 
 		 List.fold_right (fun t typ -> TUnion (t, typ))
 		   ((map snd2 fs)@(class_types env cname))
-		   (TUnion (other_typ, TRef (TConstr ("Undef", []))))
+		   (TRef (TUnion (un_ref other_typ, TConstr ("Undef", []))))
 	     | t -> error p (sprintf "Index was type %s in dictionary lookup\n" (string_of_typ t)))
     | TConstr ("Array", [tarr]), eidx ->
         let (p1, p2) = p in
