@@ -156,6 +156,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         (* hack to make arrays not have undefined elements: *)
         Env.check_typ p env (TConstr ("Array", [u]))
   | EIf (p, e1, e2, e3) ->
+      tc_exp env e1;
       Env.typ_union env (tc_exp env e2) (tc_exp env e3)
   | EObject (p, fields) ->
       Env.check_typ p env 
@@ -468,7 +469,7 @@ and bracket p env field t =
               | "Null" 
               | "Num"
               | "Bool"
-              | "Str" -> TBot
+              | "Str" -> TRef (TConstr ("Undef", []))
               | _ -> error p 
                   (sprintf "Constructor %s doesn't have field %s" cname fname)
             end
