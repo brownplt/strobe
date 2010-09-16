@@ -23,7 +23,7 @@ function dom_event (e) /*: Event -> Undef */ {
 
     the_target = the_actual_event.target ||
         the_actual_event.srcElement;
-    target = /*:cheat 'Ad */ (new Bunch([/*: cheat HTMLElement */ the_target]));
+    target = /*:obj* 'AdObj */ (new Bunch([/*: cheat HTMLElement */ the_target]));
     that = target;
 
     // Use the PPK hack to make focus bubbly on IE.
@@ -97,9 +97,9 @@ function dom_event (e) /*: Event -> Undef */ {
 
                 if (/*: cheat Bool */ (b['___ on ___'] &&
                                        b['___ on ___'][type])) {
-                    //that.fire(the_event);
+                    that.fire(the_event);
                 } else {
-                    //the_event.bubble();
+                    the_event.bubble();
                 }
             } catch (e) {
                 return error(/*: cheat Undef */ e);
@@ -119,12 +119,12 @@ function dom_event (e) /*: Event -> Undef */ {
         x: /*: upcast 'Ad */ (the_actual_event.clientX),
         y: /*: upcast 'Ad */ (the_actual_event.clientY)
     };
-    /*: cheat 'Ad -> 'Ad */ (that.fire)(/*: cheat 'Ad */ the_event);
+    that.fire(the_event);
     // If the target has event handlers, then fire them. Otherwise, bubble up.
 
     if (/*: cheat Bool */ (the_target['___ on ___'] &&
                            the_target['___ on ___'][the_event.type])) {
-        /*: cheat 'Ad -> 'Ad */ (target.fire)(/*: cheat 'Ad */the_event);
+        target.fire(the_event);
     } else {
         for (;;) {
             the_target = the_target.parentNode;
@@ -135,7 +135,7 @@ function dom_event (e) /*: Event -> Undef */ {
                                    the_target['___ on ___'][the_event.type])) {
                 that = /*: obj* 'AdObj */ (new Bunch([/*: cheat HTMLElement */ the_target]));
                 the_event.that = that;
-                /*: cheat 'Ad -> 'Ad */ (that.fire)(/*: cheat 'Ad */ the_event);
+                that.fire(the_event);
                 break;
             }
             if (the_target['___adsafe root___']) {
@@ -145,7 +145,7 @@ function dom_event (e) /*: Event -> Undef */ {
     }
     if (the_event.type === 'escapekey') {
         if (ephemeral) {
-            /*: cheat -> 'Ad */ (ephemeral.remove)();
+            ephemeral.remove();
         }
         ephemeral = null;
     }
