@@ -16,9 +16,15 @@ let disable_unreachable_check () =
 let rec skip n l = if n == 0 then l else (skip (n-1) (List.tl l))
 let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 
+let map_to_list m = 
+  IdMap.fold (fun k v l -> (k,v)::l) m []
+
 let error p s = raise (Typ_error (p, s))
 
 let class_types (env : Env.env) constr = IdMapExt.values (Env.class_fields env constr)
+
+let string_of_typ_list ts = 
+  fold_left (^) "" (intersperse "," (map string_of_typ ts))
 
 let unfold_typ t = match t with
   | TRec (x, t') -> Typedjs_syntax.Typ.typ_subst x t t'
@@ -31,6 +37,15 @@ let rec typ_to_list t = match t with
 let rec list_to_typ env ts = match ts with
   | (t::rest) -> Env.normalize_typ env (TUnion (t, list_to_typ env rest))
   | [] -> TBot
+
+(* Things that lead to errors when applied *)
+let applicable t = match t with
+  | TConstr _ -> false (* no constructor is applicable *)
+  | t -> true
+
+let applicables env t = 
+  let filtered = (List.filter applicable (typ_to_list t)) in
+    list_to_typ env filtered
 
 let un_null t = match t with
   | TUnion (TConstr ("Undef", []), t') -> t'
@@ -72,7 +87,8 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       | TRef t -> t
       | TSource t -> t
       | TField -> TField
-      | TUnion (t1, t2) -> TUnion (un_ref t1, un_ref t2)
+      | TUnion (t1, t2) -> 
+          TUnion (unfold_typ (un_ref t1), unfold_typ (un_ref t2))
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
 				 (string_of_typ t))) 
     end
@@ -145,9 +161,9 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       Env.check_typ p env 
         (TObject (map (second2 (tc_exp env)) fields))
   | EBracket (p, obj, field) -> let typ = un_null (tc_exp env obj) in
-    let t_list = typ_to_list typ in
-    let f_list = map (bracket p env field) t_list in
-      list_to_typ env f_list
+      let t_list = typ_to_list typ in
+      let f_list = map (bracket p env field) t_list in
+        list_to_typ env f_list
   | EThis p -> begin
       try 
         Env.lookup_id "this" env
@@ -175,7 +191,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         else 
           tc_exp env (EApp (p, EId (p, "+"), [e1; e2]))
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
-  | EApp (p, f, args) -> begin match un_null (tc_exp env f) with
+  | EApp (p, f, args) -> begin match applicables env (tc_exp env f) with
       | TForall (x, _, TArrow (obj_typ, expected_typ, result_typ)) ->
           let subst = unify_typ (TArrow (obj_typ, expected_typ, result_typ))
             (TArrow (obj_typ, map (tc_exp env) args, result_typ)) in
@@ -306,16 +322,21 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                 error p (sprintf "Mismatched prototypes in ObjCast: \ 
                                  %s, %s" cname proto)
               else
-                begin match s with 
-                  | TObject (fs') -> 
-                      let fss = List.fast_sort cmp_props fs in
-                      let fso = List.fast_sort cmp_props fs' in
-                      let cmp_typs (k1, t1) (k2, t2) =
-                        String.compare k1 k2 = 0 && t1 = t2 in
-                        if List.for_all2 cmp_typs fss fso then t else
-                          error p "Must list all the fields for ObjCast"
-                  | t -> 
-                      error p (sprintf "This shouldn't happen, %s wasn't an \
+                let ok_field fss (k, t) =
+                  if List.mem_assoc k fss then
+                    Env.subtype env t (List.assoc k fss)
+                  else Env.subtype env t other_typ
+                in
+                  begin match s with 
+                    | TObject (fs') -> 
+                        if List.for_all (ok_field fs) fs' then t else
+                          error p "Invalid ObjCast"
+                    | TConstr (cname, []) ->
+                        let fs' = (map_to_list (Env.class_fields env cname)) in
+                          if List.for_all (ok_field fs) fs' then t else
+                            error p "Invalid ObjCast"
+                    | t ->
+                        error p (sprintf "This shouldn't happen, %s wasn't an \
                                 Object type in ObjCast" (string_of_typ t))
                 end
           | t -> error p "Must be an objstar to ObjCast"
@@ -394,16 +415,17 @@ and bracket p env field t =
 	 with Not_found ->
 	   begin match Env.field_typ env cname x with
              | Some t -> t
-             | None -> other_typ
+             | None -> TRef (TUnion (unfold_typ (un_ref other_typ), 
+                                     TConstr ("Undef", [])))
 	   end)
     | TObjStar (fs, cname, other_typ, code), e ->
 	let t_field = tc_exp env e in
 	  (match t_field with
              | TUnion (TConstr ("Str", []), TConstr ("Undef", []))
              | TConstr ("Str", []) -> 
-		 List.fold_right (fun t typ -> TUnion (t, typ))
+		 List.fold_right (fun t typ -> TUnion (unfold_typ t, unfold_typ typ))
 		   ((map snd2 fs)@(class_types env cname))
-		   (TRef (TUnion (un_ref other_typ, TConstr ("Undef", []))))
+		   (TRef (TUnion (unfold_typ (un_ref other_typ), TConstr ("Undef", []))))
 	     | t -> error p (sprintf "Index was type %s in \
                                       dictionary lookup\n" (string_of_typ t)))
     | TConstr ("Array", [tarr]), eidx ->
@@ -442,9 +464,13 @@ and bracket p env field t =
         begin match Env.field_typ env cname fname with
           | Some t -> t
           | None -> begin match cname with 
-              | "Undef" -> TRef TBot
-              | "Null" -> TRef TBot
-              | _ -> TRef (TConstr ("Undef", []))
+              | "Undef" 
+              | "Null" 
+              | "Num"
+              | "Bool"
+              | "Str" -> TBot
+              | _ -> error p 
+                  (sprintf "Constructor %s doesn't have field %s" cname fname)
             end
         end
     | TField, field -> begin match tc_exp env field with
@@ -458,7 +484,7 @@ and bracket p env field t =
                    (string_of_typ t) ^ "[" ^ 
                    (string_of_typ (tc_exp env f)) ^ "]")
 
-and tc_exp (env : Env.env) exp = unfold_typ (tc_exp_simple env exp)
+and tc_exp (env : Env.env) exp = Env.normalize_typ env (unfold_typ (tc_exp_simple env exp))
 
 let rec tc_def env def = match def with
     DEnd -> env
