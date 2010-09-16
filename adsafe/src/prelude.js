@@ -1,6 +1,8 @@
 var defaultView = document.defaultView,
 cache_style_node /*: upcast Undef + HTMLElement */,
-cache_style_object /*: upcast Undef + StyleObject */;
+cache_style_object /*: upcast Undef + Style */,
+has_focus /*: upcast Undef + Null + HTMLElement */,
+value /*: upcast Undef + Str */ ;
 
 var banned = {
     'arguments'     : true,
@@ -147,7 +149,7 @@ function purge_event_handlers(node)
               );
 }
 
-function getStyleObject(node) /*: HTMLElement -> StyleObject + Undef */
+function getStyleObject(node) /*: HTMLElement -> Style + Undef */
 {
     
     // The getStyleObject function returns the computed style object for a node.
