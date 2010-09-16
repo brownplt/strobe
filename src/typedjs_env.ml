@@ -197,6 +197,7 @@ module Env = struct
             TObject (map (second2 (normalize_typ env)) fs)
       | TObjStar (fs, cname, other_typ, code) ->
 	  let fs = List.fast_sort cmp_props fs in
+          let fs = map (second2 (normalize_typ env)) fs in
 	    if not (IdMap.mem cname env.classes) then
 		raise (Not_wf_typ (cname ^ " is not a type constructor in objstar"))
 	    else
@@ -233,7 +234,7 @@ module Env = struct
       | TRec (x, t) -> 
 	  let t' = normalize_typ (bind_typ_id x typ env) t in
 	    TRec (x, t')
-	      
+
   let check_typ p env t = 
     try
       match t with
