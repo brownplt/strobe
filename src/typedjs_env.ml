@@ -158,23 +158,6 @@ module Env = struct
                     (* otherwise, y is a field that x does not have *)
                 else false)
             
-  and r_subtype_star rel env fso fs_star other_typ = match fso, fs_star with
-    | [], [] -> true
-    (* extra things need to be r_subtypes of other_typ *)
-    | (x, s) :: fs1', [] -> r_subtype rel env s other_typ && 
-	r_subtype_star rel env fs1' fs_star other_typ
-    (* named things exist in the ObjStar that aren't in the object *)
-    | [], _ -> false
-    (* like normal objects, but extra fields must subtype the star *)
-    | (x, s) :: fs1', (y, t) :: fs2' ->
-	let cmp = String.compare x y in
-	  if cmp = 0 then r_subtype rel env s t && 
-	    r_subtype_star rel env fs1' fs2' other_typ
-          else (if cmp < 0 then 
-		  r_subtype rel env s other_typ &&
-                    (r_subtype_star rel env fs1' fs_star other_typ)
-                else false)
-
   and r_subtypes rel env (ss : typ list) (ts : typ list) : bool = 
     try List.for_all2 (r_subtype rel env) ss ts
     with Invalid_argument _ -> false (* unequal lengths *)
