@@ -142,10 +142,9 @@ function purge_event_handlers(node)
     walkTheDOM(node, 
                function (node) /*: HTMLElement -> Undef */ {
                    if (/*: cheat Bool */ node.tagName) {
-                       //            node['___ on ___'] = node.change = null;
+                       /*: cheat Null */ (node['___ on ___'] = node.change = null);
                    }
                },
-               undefined // Added by Joe to avoid arity mismatch
               );
 }
 
