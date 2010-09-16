@@ -144,7 +144,7 @@ function purge_event_handlers(node)
                    if (/*: cheat Bool */ node.tagName) {
                        /*: cheat Null */ (node['___ on ___'] = node.change = null);
                    }
-               },
+               }
               );
 }
 

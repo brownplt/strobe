@@ -1,13 +1,5 @@
 var star = false;
 
-function Bunch(nodes) 
-/*: constructor (Array<HTMLElement> -> {___nodes___: Array<HTMLElement>, ___star___: Bool}) */ 
-{
-    this.___nodes___ = nodes;
-    this.___star___ = star && nodes.length > 1;
-    star = false;
-}
-
 function Bunch_getValue() /*: ['Ad] -> 'Ad */ {
     var a = /*: 'Ad */ [], b = this.___nodes___, 
     i /*: upcast Undef + Int */, 
@@ -175,7 +167,7 @@ function Bunch_blur () /*: ['Ad] -> 'Ad */ {
     for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
         node = b[i];
         if (node.blur) {
-            /*:cheat -> 'Ad */ (node.blur)();
+            node.blur();
         }
     }
     return this;
@@ -187,7 +179,7 @@ function Bunch_check (value) /*: ['Ad] 'Ad -> 'Ad */ {
     }
     var b = this.___nodes___, i /*: upcast Int + Undef */, node /*: upcast Undef + HTMLElement */;
     if (value instanceof Array) {
-        if (value.length !== b.length) {
+        if ((/*: cheat Int */ value.length) !== b.length) {
             return error('ADsafe: Array length: ' +
                          b.length + '-' + /*: cheat Int */ (value.length));
         }
@@ -212,3 +204,121 @@ function Bunch_count () /*: ['Ad] -> Int */ {
     return this.___nodes___.length;
 }
 
+function Bunch_empty () /*: ['Ad] -> 'Ad */ {
+    if (this === this.window) {
+        return error('ADsafe error.');
+    }
+    var b = this.___nodes___, i /*: upcast Undef + Int */, node /*: upcast Undef + HTMLElement */;
+    if (value instanceof Array) {
+        if (value.length !== b.length) {
+            return error('ADsafe: Array length: ' +
+                         b.length + '-' + value.length);
+        }
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+            node = b[i];
+            while (node.firstChild) {
+                purge_event_handlers(/*: cheat HTMLElement */ node);
+                node.removeChild(node.firstChild);
+            }
+        }
+    } else {
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+            node = b[i];
+            while (node.firstChild) {
+                purge_event_handlers(/*: cheat HTMLElement */ node);
+                node.removeChild(node.firstChild);
+            }
+        }
+    }
+    return this;
+}
+
+function Bunch_enable (enable) /*: ['Ad] 'Ad -> 'Ad */ {
+    if (this === this.window) {
+        return error('ADsafe error.');
+    }
+    var b = this.___nodes___, i /*: upcast Undef + Int */, node /*: upcast Undef + HTMLElement */;
+    if (enable instanceof Array) {
+        if (/*:cheat 'Ad */ (enable.length) !== b.length) {
+            return error('ADsafe: Array length: ' +
+                         b.length + '-' + /*: cheat Int */ (enable.length));
+        }
+        for (i = 0; i < b.length; i += 1) {
+            node = b[i];
+            if (node.tagName) {
+                node.disabled = !/*: cheat 'Ad */ (enable[i]);
+            }
+        }
+    } else {
+        for (i = 0; i < b.length; i += 1) {
+            node = b[i];
+            if (node.tagName) {
+                node.disabled = !enable;
+            }
+        }
+    }
+    return this;
+}
+
+function Bunch_ephemeral () /*: ['Ad] -> 'Ad */ {
+//    if (this === this.window) {
+//        return error('ADsafe error.');
+//    }
+//    if (ephemeral) {
+//        ephemeral.remove();
+//    }
+//    ephemeral = this;
+    return this;
+}
+
+function Bunch_explode () /*: ['Ad] -> 'Ad */ {
+    var a = /*: 'Ad */ [], b = this.___nodes___, i /*: upcast Undef + Int */;
+    for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+        a[i] = /*: obj* 'AdObj */ (new Bunch([b[i]]));
+    }
+    return /*: cheat 'Ad */ a;
+}
+
+function Bunch_focus () /*: ['Ad] -> 'Ad */ {
+    var b = this.___nodes___;
+    if (this !== this.window) {
+        if (b.length === 1 && allow_focus) {
+            has_focus = b[0].focus();
+            return this;
+        }
+    }
+    return error();
+}
+
+function Bunch_fragment () /*: ['Ad] -> 'Ad */ {
+    return /*: obj* 'AdObj */ (new Bunch([document.createDocumentFragment()]));
+}
+
+function Bunch_getCheck () /*: ['Ad] -> 'Ad */ {
+    var a = /*: 'Ad */ [], b = this.___nodes___, i /*: upcast Undef + Int */;
+    for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+        a[i] = b[i].checked;
+    }
+    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+}
+function Bunch_getClass () /*: ['Ad] -> 'Ad */ {
+    var a = /*: 'Ad */ [], b = this.___nodes___, i /*: upcast Undef + Int */;
+    for (i = 0; i < b.length; i += 1) {
+        a[i] = b[i].className;
+    }
+    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+}
+function Bunch_getMark () /*: ['Ad] -> 'Ad */ {
+    var a = /*: 'Ad */ [], b = this.___nodes___, i /*: upcast Undef + Int */;
+    for (i = 0; i < b.length; i += 1) {
+        a[i] = /*: cheat 'Ad */ (b[i]['_adsafe mark_']);
+    }
+    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+}
+function Bunch_getName () /*: ['Ad] -> 'Ad */ {
+    var a = /*: 'Ad */ [], b = this.___nodes___, i /*: upcast Undef + Int */;
+    for (i = 0; i < b.length; i += 1) {
+        a[i] = b[i].name;
+    }
+    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+}

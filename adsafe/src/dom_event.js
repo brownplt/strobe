@@ -16,14 +16,14 @@ function dom_event (e) /*: Event -> Undef */ {
     that /*: upcast 'Ad */,
     the_event /*: upcast 'Ad */,
     the_target /*: upcast Undef + HTMLElement */,
-    the_actual_event = /*: cheat Event */ (e || event),
+    the_actual_event = e || event,
     type = the_actual_event.type;
 
     // Get the target node and wrap it in a bunch.
 
     the_target = the_actual_event.target ||
         the_actual_event.srcElement;
-    target = /*:obj* 'AdObj */ (new Bunch([/*: cheat HTMLElement */ the_target]));
+    target = /*: obj* 'AdObj */ (new Bunch([/*: cheat HTMLElement */ the_target]));
     that = target;
 
     // Use the PPK hack to make focus bubbly on IE.
@@ -32,7 +32,7 @@ function dom_event (e) /*: Event -> Undef */ {
     switch (type) {
     case 'mousedown':
         allow_focus = true;
-        if (/*: cheat Bool */ (document.selection)) {
+        if (document.selection) {
             the_range = document.selection.createRange();
         }
         break;
@@ -52,8 +52,8 @@ function dom_event (e) /*: Event -> Undef */ {
     case 'keypress':
         allow_focus = true;
         has_focus = the_target;
-        key = String.fromCharCode(/*: cheat Int */ (the_actual_event.charCode ||
-                                                    the_actual_event.keyCode));
+        key = String.fromCharCode(the_actual_event.charCode ||
+                                  the_actual_event.keyCode);
         switch (key) {
         case '\u000d':
         case '\u000a':
@@ -70,8 +70,8 @@ function dom_event (e) /*: Event -> Undef */ {
     case 'click':
         allow_focus = true;
     }
-    if (/*: cheat Bool */ (the_actual_event.cancelBubble &&
-                           the_actual_event.stopPropagation)) {
+    if (the_actual_event.cancelBubble &&
+        the_actual_event.stopPropagation) {
         the_actual_event.stopPropagation();
     }
 
@@ -107,7 +107,7 @@ function dom_event (e) /*: Event -> Undef */ {
         }),
         key: /*: upcast 'Ad */ key,
         preventDefault: /*: cheat 'Ad */ (function () /*: -> Undef */ {
-            if (/*: cheat Bool */ (the_actual_event.preventDefault)) {
+            if (the_actual_event.preventDefault) {
                 the_actual_event.preventDefault();
             }
             the_actual_event.returnValue = false;
@@ -128,17 +128,17 @@ function dom_event (e) /*: Event -> Undef */ {
     } else {
         for (;;) {
             the_target = the_target.parentNode;
-            if (/*: cheat Bool */ (!the_target)) {
+            if (!the_target) {
                 break;
             }
             if (/*: cheat Bool */ (the_target['___ on ___'] &&
                                    the_target['___ on ___'][the_event.type])) {
                 that = /*: obj* 'AdObj */ (new Bunch([/*: cheat HTMLElement */ the_target]));
-                the_event.that = that;
+                /*: cheat 'Ad */ (the_event.that = that);
                 that.fire(the_event);
                 break;
             }
-            if (the_target['___adsafe root___']) {
+            if (/*: cheat Bool */ (the_target['___adsafe root___'])) {
                 break;
             }
         }
