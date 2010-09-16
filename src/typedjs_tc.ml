@@ -466,9 +466,10 @@ and bracket p env field t =
           | Some t -> t
           | None -> begin match cname with 
               | "Undef" 
-              | "Null" 
+              | "Null" -> TBot
               | "Num"
               | "Bool"
+              | "Int"
               | "Str" -> TRef (TConstr ("Undef", []))
               | _ -> error p 
                   (sprintf "Constructor %s doesn't have field %s" cname fname)
