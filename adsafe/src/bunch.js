@@ -322,3 +322,51 @@ function Bunch_getName () /*: ['Ad] -> 'Ad */ {
     }
     return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
 }
+
+function Bunch_getOffsetHeight () /*: ['Ad] -> 'Ad */ {
+    var a = /*: 'Ad */ [], b = this.___nodes___, i /*: upcast Undef + Int */;
+    for (i = 0; i < b.length; i += 1) {
+        a[i] = b[i].offsetHeight;
+    }
+    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+}
+function Bunch_getOffsetWidth () /*: ['Ad] -> 'Ad */ {
+    var a = /*: 'Ad */ [], b = this.___nodes___, i /*: upcast Undef + Int */;
+    for (i = 0; i < b.length; i += 1) {
+        a[i] = b[i].offsetWidth;
+    }
+    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+}
+function Bunch_getParent () /*: ['Ad] -> 'Ad */ {
+    var a = /*: HTMLElement */ [], b = this.___nodes___, i /*: upcast Undef + Int */, n /*: upcast Undef + HTMLElement */;
+    for (i = 0; i < b.length; i += 1) {
+        n = b[i].parentNode;
+        if (/*: cheat Bool */ (n['___adsafe root___'])) {
+            return error('ADsafe parent violation.');
+        }
+        a[i] = /*: cheat HTMLElement */ n;
+    }
+    return /*: obj* 'AdObj */ (new Bunch(a));
+}
+
+function Bunch_getSelection () /*: ['Ad] -> 'Ad */ {
+    if (this === this.window) {
+        return error();
+    }
+    var b = this.___nodes___, end /*: upcast Undef + Int */, node /*: upcast Undef + HTMLElement */, start /*: upcast Undef + Int */, range /*: upcast Undef + Range */;
+    if (b.length === 1 && allow_focus) {
+        node = b[0];
+        if (typeof node.selectionStart === 'number') {
+            start = node.selectionStart;
+            end = node.selectionEnd;
+            return node.value.slice(/*: cheat Int */ start, /*: cheat Int */ end);
+        } else {
+            range = node.createTextRange();
+            range.expand('textedit');
+            if (range.inRange(/*: cheat Range */ the_range)) {
+                return the_range.text;
+            }
+        }
+    }
+    return null;
+}
