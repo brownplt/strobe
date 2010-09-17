@@ -751,3 +751,15 @@ function Bunch_replace (replacement) /*: ['Ad] 'Ad -> 'Ad */ {
     }
     return this;
 }
+function Bunch_select () /*: ['Ad] -> 'Ad */ {
+    if (this === this.window) {
+        return error();
+    }
+    var b = this.___nodes___;
+    if (b.length !== 1 || !allow_focus) {
+        return error();
+    }
+    b[0].focus();
+    b[0].select();
+    return this;
+}
