@@ -84,59 +84,6 @@ var ADSAFE = (function () {
         root['___adsafe root___'] = '___adsafe root___';
 
         Bunch.prototype = {
-            off: function (type) {
-                if (this === this.window) {
-                    return error();
-                }
-                var b = this.___nodes___, i, node;
-                for (i = 0; i < b.length; i += 1) {
-                    node = b[i];
-                    if (typeof type === 'string') {
-                        if (typeof node['___ on ___']) {
-                            node['___ on ___'][type] = null;
-                        }
-                    } else {
-                        node['___ on ___'] = null;
-                    }
-                }
-                return this;
-            },
-            on: function (type, func) {
-                if (this === this.window || typeof type !== 'string' ||
-                        typeof func !== 'function') {
-                    return error();
-                }
-
-                var b = this.___nodes___, i, node, on, ontype;
-                for (i = 0; i < b.length; i += 1) {
-                    node = b[i];
-
-// The change event does not propogate, so we must put the handler on the
-// instance.
-
-                    if (type === 'change') {
-                        ontype = 'on' + type;
-                        if (node[ontype] !== dom_event) {
-                            node[ontype] = dom_event;
-                        }
-                    }
-
-// Register an event. Put the function in a handler array, making one if it
-// doesn't yet exist for this type on this node.
-
-                    on = node['___ on ___'];
-                    if (!on) {
-                        on = {};
-                        node['___ on ___'] = on;
-                    }
-                    if (on.hasOwnProperty(type)) {
-                        on[type].push(func);
-                    } else {
-                        on[type] = [func];
-                    }
-                }
-                return this;
-            },
             protect: function () {
                 if (this === this.window) {
                     return error('ADsafe error.');

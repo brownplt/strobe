@@ -606,3 +606,59 @@ function Bunch_mark (value) /*: ['Ad] 'Ad -> 'Ad */ {
     }
     return this;
 }
+
+function Bunch_off (type) /*: ['Ad] 'Ad -> 'Ad */ {
+    if (this === this.window) {
+        return error();
+    }
+    var b = this.___nodes___, i /*: upcast Undef + Int */, node /*: upcast Undef + HTMLElement */;
+    for (i = 0; i < b.length; i += 1) {
+        node = b[i];
+        if (typeof type === 'string') {
+            if (typeof /*: cheat Array<'Ad> */(node['___ on ___'])) {
+                /*: cheat Null */ (node['___ on ___'][type] = null);
+            }
+        } else {
+            /*: cheat Null */ (node['___ on ___'] = null);
+        }
+    }
+    return this;
+}
+
+function Bunch_on (type, func) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
+    if (this === this.window || typeof type !== 'string' ||
+        typeof func !== 'function') {
+        return error();
+    }
+
+    var b = this.___nodes___, i /*: upcast Undef + Int */, node /*: upcast Undef + HTMLElement */, on /*: upcast Undef + {#proto: Object, *: Array<'Ad>, #code: Bot} */, ontype /*: upcast Undef + Str */;
+    for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+        node = b[i];
+
+        // The change event does not propogate, so we must put the handler on the
+        // instance.
+
+        if (type === 'change') {
+            ontype = /*: cheat Str */ ('on' + type);
+            if (/*: cheat Bool */ (node[ontype] !== dom_event)) {
+                /*: cheat Null */ (node[ontype] = dom_event);
+            }
+        }
+
+        // Register an event. Put the function in a handler array, making one if it
+        // doesn't yet exist for this type on this node.
+
+        on = /*: cheat {#proto: Object, *: Array<'Ad>, #code: Bot} */ (node['___ on ___']);
+        if (!on) {
+            on = /*: obj* {#proto: Object, *: Array<'Ad>, #code: Bot} */ {};
+            /*: cheat {#proto: Object, *: Array<'Ad>, #code: Bot} */ (node['___ on ___'] = on);
+        }
+        if (on.hasOwnProperty(type)) {
+            /*: cheat Array<'Ad> */ (on[/*: cheat Str */ type].push(func));
+        } else {
+            /*: cheat Array<'Ad> */ (on[/*: cheat Str */ type] = [func]);
+        }
+    }
+    return this;
+}
+
