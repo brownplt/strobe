@@ -261,13 +261,13 @@ function Bunch_enable (enable) /*: ['Ad] 'Ad -> 'Ad */ {
 }
 
 function Bunch_ephemeral () /*: ['Ad] -> 'Ad */ {
-//    if (this === this.window) {
-//        return error('ADsafe error.');
-//    }
-//    if (ephemeral) {
-//        ephemeral.remove();
-//    }
-//    ephemeral = this;
+    if (this === this.window) {
+        return error('ADsafe error.');
+    }
+    if (ephemeral) {
+        ephemeral.remove();
+    }
+    ephemeral = this;
     return this;
 }
 
@@ -475,4 +475,54 @@ function Bunch_text (text) /*: ['Ad] 'Ad -> 'Ad */ {
         return /*: obj* 'AdObj */ (new Bunch(/*: cheat Array<HTMLElement> */ a));
     }
     return /*: obj* 'AdObj */ (new Bunch([document.createTextNode(String(text))]));
+}
+
+function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
+
+    // Fire an event on an object. The event can be either
+    // a string containing the name of the event, or an
+    // object containing a type property containing the
+    // name of the event. Handlers registered by the 'on'
+    // method that match the event name will be invoked.
+
+    var array /*: upcast Undef + Array<'Ad> */,
+    b /*: upcast Undef + Array<HTMLElement> */,
+    i /*: upcast Undef + Int */,
+    j /*: upcast Undef + Int */,
+    n /*: upcast Undef + Int */,
+    node /*: upcast Undef + HTMLElement */,
+    on /*: upcast Undef + {#proto: Object, *: Array<'Ad>, #code: Bot} */,
+    type /*: upcast 'Ad */;
+
+    if (this === this.window) {
+        return error();
+    }
+    if (typeof event === 'string') {
+        type = event;
+        event = /*: obj* 'AdObj */ {type: /*: upcast 'Ad */ type};
+    } else if (typeof event === 'object') {
+        type = event.type;
+    } else {
+        return error();
+    }
+    b = this.___nodes___;
+    n = b.length;
+    for (i = 0; /*: cheat Bool */ (i < n); /*: cheat Int */ (i += 1)) {
+        node = b[i];
+        on = /*: cheat {#proto: Object, *: Array<'Ad>, #code: Bot} */ (node['___ on ___']);
+
+        // If an array of handlers exist for this event, then
+        // loop through it and execute the handlers in order.
+
+        if (on && on.hasOwnProperty(type)) {
+            array = /*: cheat Array<'Ad> */ (on[type]);
+            for (j = 0; j < array.length; /*: cheat Int */ (j += 1)) {
+
+                // Invoke a handler. Pass the event object.
+
+                /*: cheat 'Ad */ (array[j].call(this, event));
+            }
+        }
+    }
+    return this;
 }
