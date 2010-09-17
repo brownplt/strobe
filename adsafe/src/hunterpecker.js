@@ -1,8 +1,8 @@
 // Why are these globals? Just to make our lives harder?
 var name = ""; 
 var value = /*: upcast Any*/undefined;
-var result = /*: HTMLElement */ [];
-var star = false;
+var result /*: upcast Undef + Array<HTMLElement> */;
+var star /*: upcast Undef + Bool */;
 var flipflop = true;
 var has_focus /*: upcast Undef + HTMLElement + Null */;
 

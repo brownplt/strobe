@@ -1,6 +1,6 @@
 function parse_query(text, id) 
 /*: 
-Str * Str -> 
+'Ad * Str + Undef -> 
 Array<{op: Str + Undef}> + Undef */
 {
 
@@ -19,7 +19,7 @@ Array<{op: Str + Undef}> + Undef */
     query = /*: {op: Str + Undef} */ [], // The resulting query array
     selector /*: upcast Undef + 
                 {op: Str + Undef} */,
-    qx = (/*: cheat Bool */ id) ?
+    qx = id ?
         /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([A-Z]+_[A-Z0-9]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/ :
         /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([\-A-Za-z0-9_]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/;
 
@@ -40,7 +40,7 @@ Array<{op: Str + Undef}> + Undef */
         //          match[7]  . & _ > +
         //          match[8]      name
 
-        match = qx.exec(text);
+        match = /*: cheat Array<Str + Undef> */ (qx.exec(text));
         if (!(/*: cheat Bool */ match)) {
             return error("ADsafe: Bad query:" + text);
         }
@@ -101,8 +101,8 @@ Array<{op: Str + Undef}> + Undef */
 
         // Remove the selector from the text. If there is more text, have another go.
 
-        text = text.slice(match[0].length);
-    } while (/*: cheat Bool */ text);
+        text = /*: cheat 'Ad */ (text.slice(match[0].length));
+    } while (text);
     return query;
 }
 

@@ -1,6 +1,6 @@
 function quest(query, nodes)
 /*:  Array<{op: Str + Undef, name: Str + Undef, value: Str + Undef}> *
-     Array<HTMLElement>
+     Undef + Array<HTMLElement>
   -> Undef + Array<HTMLElement> */
 {
     var selector /*: upcast Undef + {op: Str + Undef, name: Str + Undef, value: Str + Undef} */, 

@@ -8,7 +8,8 @@ function Bunch(nodes)
 
 var allow_focus = true,
 ephemeral /*: upcast 'Ad */,
-the_range /*: upcast Undef + Range */;
+the_range /*: upcast Undef + Range */,
+id /*: upcast Undef + Str */;
 
 function dom_event (e) /*: Event -> Undef */ {
     var key /*: upcast Undef + Str */,
