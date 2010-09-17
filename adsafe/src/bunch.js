@@ -526,3 +526,19 @@ function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
     }
     return this;
 }
+
+function Bunch_getStyle (name) /*: ['Ad] 'Ad -> 'Ad */ {
+    var a = /*: Str */ [], b = this.___nodes___, i /*: upcast Undef + Int */, node /*: upcast Undef + HTMLElement */, s /*: upcast Any */;
+    for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+        node = b[i];
+        if (node.tagName) {
+            s = name !== 'float' ? /*: cheat Any */ (getStyleObject(node)[name]) :
+		getStyleObject(/*: cheat HTMLElement */ node).cssFloat ||
+                getStyleObject(/*: cheat HTMLElement */ node).styleFloat;
+	    if (typeof s === 'string') {
+		a[/*: cheat Int */i] = s;
+	    }
+        }
+    }
+    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+}

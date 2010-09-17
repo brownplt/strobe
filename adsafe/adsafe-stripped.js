@@ -84,21 +84,6 @@ var ADSAFE = (function () {
         root['___adsafe root___'] = '___adsafe root___';
 
         Bunch.prototype = {
-            getStyle: function (name) {
-                var a = [], b = this.___nodes___, i, node, s;
-                for (i = 0; i < b.length; i += 1) {
-                    node = b[i];
-                    if (node.tagName) {
-                        s = name !== 'float' ? getStyleObject(node)[name] :
-								getStyleObject(node).cssFloat ||
-                                getStyleObject(node).styleFloat;
-						if (typeof s === 'string') {
-							a[i] = s;
-						}
-                    }
-                }
-                return a.length === 1 ? a[0] : a;
-            },
             getTagName: function () {
                 var a = [], b = this.___nodes___, i, name;
                 for (i = 0; i < b.length; i += 1) {
