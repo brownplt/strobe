@@ -84,55 +84,6 @@ var ADSAFE = (function () {
         root['___adsafe root___'] = '___adsafe root___';
 
         Bunch.prototype = {
-            fire: function (event) {
-
-    // Fire an event on an object. The event can be either
-    // a string containing the name of the event, or an
-    // object containing a type property containing the
-    // name of the event. Handlers registered by the 'on'
-    // method that match the event name will be invoked.
-
-                var array,
-                    b,
-                    i,
-                    j,
-                    n,
-                    node,
-                    on,
-                    type;
-
-                if (this === this.window) {
-                    return error();
-                }
-                if (typeof event === 'string') {
-                    type = event;
-                    event = {type: type};
-                } else if (typeof event === 'object') {
-                    type = event.type;
-                } else {
-                    return error();
-                }
-                b = this.___nodes___;
-                n = b.length;
-                for (i = 0; i < n; i += 1) {
-                    node = b[i];
-                    on = node['___ on ___'];
-
-    // If an array of handlers exist for this event, then
-    // loop through it and execute the handlers in order.
-
-                    if (on && on.hasOwnProperty(type)) {
-                        array = on[type];
-                        for (j = 0; j < array.length; j += 1) {
-
-    // Invoke a handler. Pass the event object.
-
-                            array[j].call(this, event);
-                        }
-                    }
-                }
-                return this;
-            },
             getStyle: function (name) {
                 var a = [], b = this.___nodes___, i, node, s;
                 for (i = 0; i < b.length; i += 1) {
