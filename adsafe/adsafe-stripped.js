@@ -345,7 +345,7 @@ var ADSAFE = (function () {
                         }
                     }
                 }
-                return this;
+p                return this;
             },
             select: function () {
                 if (this === this.window) {
@@ -402,7 +402,7 @@ var ADSAFE = (function () {
                     }
                     for (i = 0; i < b.length; i += 1) {
                         node = b[i];
-						v = String(value[i]);
+			v = String(value[i]);
                         if (node.tagName) {
                             if (name !== 'float') {
                                 node.style[name] = v;
@@ -426,35 +426,6 @@ var ADSAFE = (function () {
                 }
                 return this;
             },
-            tag: function (tag, type, name) {
-                var node;
-                if (typeof tag !== 'string') {
-                    return error();
-                }
-                if (makeableTagName[tag] !== true) {
-                    return error('ADsafe: Bad tag: ' + tag);
-                }
-                node = document.createElement(tag);
-                if (name) {
-                    node.autocomplete = 'off';
-                    node.name = name;
-                }
-                if (type) {
-                    node.type = type;
-                }
-                return new Bunch([node]);
-            },
-            text: function (text) {
-                var a, i;
-                if (text instanceof Array) {
-                    a = [];
-                    for (i = 0; i < text.length; i += 1) {
-                        a[i] = document.createTextNode(String(text[i]));
-                    }
-                    return new Bunch(a);
-                }
-                return new Bunch([document.createTextNode(String(text))]);
-            }
         };
 
 // Return an ADsafe dom object.

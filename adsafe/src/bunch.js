@@ -370,3 +370,35 @@ function Bunch_getSelection () /*: ['Ad] -> 'Ad */ {
     }
     return null;
 }
+
+
+function Bunch_tag (tag, type, name) /*: ['Ad] 'Ad * 'Ad * 'Ad-> 'Ad */ {
+    var node /*: upcast Undef + HTMLElement */ ;
+    if (typeof tag !== 'string') {
+        return error();
+    }
+    if (makeableTagName[tag] !== true) {
+        return error('ADsafe: Bad tag: ' + tag);
+    }
+    node = document.createElement(tag);
+    if (name) {
+        node.autocomplete = 'off';
+        /*: cheat 'Ad */ (node.name = name);
+    }
+    if (type) {
+        /*: cheat 'Ad */ (node.type = type);
+    }
+    return /*: obj* 'AdObj */ (new Bunch([/*: cheat HTMLElement */ node]));
+}
+
+function Bunch_text (text) /*: ['Ad] 'Ad -> 'Ad */ {
+    var a /*: upcast Undef + Array<HTMLElement> */, i /*: upcast Undef + Int */;
+    if (text instanceof Array) {
+        a = /*: HTMLElement */ [];
+        for (i = 0; /*: cheat Bool */ (i < text.length); /*: cheat Int */ (i += 1)) {
+            a[i] = document.createTextNode(String(/*: cheat 'Ad */ (text[i])));
+        }
+        return /*: obj* 'AdObj */ (new Bunch(/*: cheat Array<HTMLElement> */ a));
+    }
+    return /*: obj* 'AdObj */ (new Bunch([document.createTextNode(String(text))]));
+}
