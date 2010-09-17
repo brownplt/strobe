@@ -372,6 +372,80 @@ function Bunch_getSelection () /*: ['Ad] -> 'Ad */ {
 }
 
 
+function Bunch_selection (string) /*: ['Ad] 'Ad -> 'Ad */ {
+    if (this === this.window) {
+        return error();
+    }
+    var b = this.___nodes___, 
+    end /*: upcast Undef + Int */, 
+    node /*: upcast Undef + HTMLElement */, 
+    old /*: upcast Undef + Str */, 
+    start /*: upcast Undef + Int */, 
+    range /*: upcast Undef + Range */;
+    if (b.length === 1 && allow_focus) {
+        node = b[0];
+        if (typeof node.selectionStart === 'number') {
+            start = node.selectionStart;
+            end = node.selectionEnd;
+            old = node.value;
+            node.value = old.slice(0, start) + string + /*: cheat Str */ (old.slice(end));
+            /*: cheat 'Ad */ (node.selectionStart = node.selectionEnd = start +
+                              string.length);
+            node.focus();
+        } else {
+            range = node.createTextRange();
+            range.expand('textedit');
+            if (range.inRange(/*: cheat Range */ the_range)) {
+                the_range.select();
+                /*: cheat 'Ad */ (the_range.text = string);
+                the_range.select();
+            }
+        }
+    }
+    return this;
+}
+
+function Bunch_style (name, value) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
+    if (this === this.window ||
+        value === undefined || /*: cheat Bool */ (/url/i.test(value))) {
+        return error();
+    }
+    var b = this.___nodes___,
+    i /*: upcast Undef + Int */,
+    node /*: upcast Undef + HTMLElement */,
+    v /*: upcast Undef + Str */;
+    if (value instanceof Array) {
+        if (/*: cheat Bool */ (value.length !== b.length)) {
+            return error('ADsafe: Array length: ' +
+                         b.length + '-' + /*: cheat Str */ (value.length));
+        }
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+            node = b[i];
+	    v = String(/*: cheat 'Ad */ (value[i]));
+            if (node.tagName) {
+                if (name !== 'float') {
+                    /*: cheat Str */ (node.style[name] = v);
+                } else {
+                    node.style.cssFloat = node.style.styleFloat = /*: cheat Str */ v;
+                }
+            }
+        }
+    } else {
+	v = String(value);
+        for (i = 0; i < b.length; i += 1) {
+            node = b[i];
+            if (node.tagName) {
+                if (name !== 'float') {
+                    /*: cheat Str */ (node.style[name] = v);
+                } else {
+                    node.style.cssFloat = node.style.styleFloat = /*: cheat Str */v;
+                }
+            }
+        }
+    }
+    return this;
+}
+
 function Bunch_tag (tag, type, name) /*: ['Ad] 'Ad * 'Ad * 'Ad-> 'Ad */ {
     var node /*: upcast Undef + HTMLElement */ ;
     if (typeof tag !== 'string') {

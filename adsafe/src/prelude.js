@@ -18,7 +18,8 @@ var banned = {
 };
 
 
-var makeableTagName = {
+var makeableTagName = /*: obj* {#proto: Object, *: Bool, #code: Bot} */
+{
 
 // This is the whitelist of elements that may be created with the .tag(tagName)
 // method.
