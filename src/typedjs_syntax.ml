@@ -305,6 +305,8 @@ module Pretty = struct
     | EInfixOp (_, op, e1, e2) -> parens (horz [ text op; exp e1; exp e2 ])
     | ETypecast (_, t, e) ->
         parens (vert [ text "cast"; RTSetExt.p_set RT.pp t; exp e ])
+    | EObjCast (_, t, e) ->
+        parens (vert [ text "obj*"; parens (typ t); exp e])
     | ERef (_, _, e) -> parens (horz [ text "ref"; exp e ])
     | EDeref (_, e) -> parens (horz [ text "deref"; exp e ])
     | ESetRef (_, e1, e2) -> parens (horz [ text "set-ref!"; exp e1; exp e2 ])
