@@ -681,3 +681,73 @@ function Bunch_q (text) /*: ['Ad] 'Ad -> 'Ad */ {
 function Bunch_remove () /*: ['Ad] -> 'Ad */ {
     this.replace();
 }
+
+function Bunch_replace (replacement) /*: ['Ad] 'Ad -> 'Ad */ {
+    if (this === this.window) {
+        return error();
+    }
+    var b = this.___nodes___,
+    flag = false,
+    i /*: upcast Undef + Int */,
+    j /*: upcast Undef + Int */,
+    newnode /*: upcast Undef + HTMLElement */,
+    node /*: upcast Undef + HTMLElement */,
+    parent /*: upcast Undef + HTMLElement */,
+    rep /*: upcast Undef + Array<HTMLElement> */;
+    if (b.length === 0) {
+        return;
+    }
+    purge_event_handlers(/*: cheat HTMLElement */ b);
+    if (!replacement ||
+        replacement.length === 0 ||
+        replacement.___nodes___.length === 0) {
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+            node = b[i];
+            purge_event_handlers(/*: cheat HTMLElement */ node);
+            if (node.parentNode) {
+                node.parentNode.removeChild(/*: cheat HTMLElement */ node);
+            }
+        }
+    } else if (replacement instanceof Array) {
+        if (/*: cheat 'Ad */ (replacement.length) !== b.length) {
+            return error('ADsafe: Array length: ' +
+                         b.length + '-' /*+ value.length*/);
+        }
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+            node = b[i];
+            parent = node.parentNode;
+            purge_event_handlers(/*: cheat HTMLElement */node);
+            if (parent) {
+                rep = /*: cheat 'Ad */ (replacement[i]).___nodes___;
+                if (rep.length > 0) {
+                    newnode = rep[0];
+                    parent.replaceNode(/*: cheat HTMLElement */ newnode);
+                    for (j = 1; j < rep.length; /*: cheat Int */ (j += 1)) {
+                        node = newnode;
+                        newnode = rep[j];
+                        parent.insertBefore(/*: cheat HTMLElement */ newnode, /*: cheat HTMLElement */ (node.nextSibling));
+                    }
+                } else {
+                    parent.removeChild(node);
+                }
+            }
+        }
+    } else {
+        rep = replacement.___nodes___;
+        for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+            node = b[i];
+            purge_event_handlers(/*: cheat HTMLElement */node);
+            if (node.parentNode) {
+                newnode = flag ? rep[0].cloneNode(true) : rep[0];
+                parent.replaceNode(/*: cheat HTMLElement */newnode);
+                for (j = 1; j < rep.length; /*: cheat Int */ (j += 1)) {
+                    node = newnode;
+                    newnode = flag ? rep[j].clone(true) : rep[j];
+                    parent.insertBefore(/*: cheat HTMLElement */ newnode, /*: cheat HTMLElement */ (node.nextSibling));
+                }
+                flag = true;
+            }
+        }
+    }
+    return this;
+}
