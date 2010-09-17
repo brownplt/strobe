@@ -223,7 +223,7 @@ module Pretty = struct
 
   let rec typ t  = match t with
     | TTop -> text "Any"
-    | TBot -> text "DoesNotReturn"
+    | TBot -> text "Bot"
     | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
     | TArrow (tt, arg_typs, r_typ) ->
         horz[ brackets (typ tt);
