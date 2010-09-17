@@ -542,3 +542,12 @@ function Bunch_getStyle (name) /*: ['Ad] 'Ad -> 'Ad */ {
     }
     return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
 }
+
+function Bunch_getTagName () /*: ['Ad] -> 'Ad */ {
+    var a = /*: Undef + Str */ [], b = this.___nodes___, i /*: upcast Undef + Int */, name /*: upcast Undef + Str */;
+    for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+        name = b[i].tagName;
+        a[i] = typeof name === 'string' ? name.toLowerCase() : name;
+    }
+    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+}

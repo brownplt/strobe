@@ -84,14 +84,6 @@ var ADSAFE = (function () {
         root['___adsafe root___'] = '___adsafe root___';
 
         Bunch.prototype = {
-            getTagName: function () {
-                var a = [], b = this.___nodes___, i, name;
-                for (i = 0; i < b.length; i += 1) {
-                    name = b[i].tagName;
-                    a[i] = typeof name === 'string' ? name.toLowerCase() : name;
-                }
-                return a.length === 1 ? a[0] : a;
-            },
             klass: function (value) {
                 if (this === this.window || /url/i.test(value)) {
                     return error('ADsafe error.');
