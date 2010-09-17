@@ -84,18 +84,6 @@ var ADSAFE = (function () {
         root['___adsafe root___'] = '___adsafe root___';
 
         Bunch.prototype = {
-            select: function () {
-                if (this === this.window) {
-                    return error();
-                }
-                var b = this.___nodes___;
-                if (b.length !== 1 || !allow_focus) {
-                    return error();
-                }
-                b[0].focus();
-                b[0].select();
-                return this;
-            },
         };
 
 // Return an ADsafe dom object.
