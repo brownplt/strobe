@@ -89,24 +89,6 @@ var ADSAFE = (function () {
 // Return an ADsafe dom object.
 
         dom = {
-            q: function (text) {
-                star = false;
-                var query = parse_query(text, id);
-                if (typeof hunter[query[0].op] !== 'function') {
-                    return error('ADsafe: Bad query: ' + query[0]);
-                }
-                return new Bunch(quest(query, [root]));
-            },
-            combine: function (array) {
-                if (!array || !array.length) {
-                    return error('ADsafe: Bad combination.');
-                }
-                var b = array[0].___nodes___, i;
-                for (i = i; i < array.length; i += 1) {
-                    b = b.concat(array[i].___nodes___);
-                }
-                return new Bunch(b);
-            },
             count: function () {
                 return 1;
             },
