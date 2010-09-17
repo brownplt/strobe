@@ -84,58 +84,6 @@ var ADSAFE = (function () {
         root['___adsafe root___'] = '___adsafe root___';
 
         Bunch.prototype = {
-            klass: function (value) {
-                if (this === this.window || /url/i.test(value)) {
-                    return error('ADsafe error.');
-                }
-                var b = this.___nodes___, i, node;
-                if (value instanceof Array) {
-                    if (value.length !== b.length) {
-                        return error('ADsafe: Array length: ' +
-                                b.length + '-' + value.length);
-                    }
-                    for (i = 0; i < b.length; i += 1) {
-                        node = b[i];
-                        if (node.tagName) {
-                            node.className = String(value[i]);
-                        }
-                    }
-                } else {
-                    for (i = 0; i < b.length; i += 1) {
-                        node = b[i];
-                        if (node.tagName) {
-                            node.className = String(value);
-                        }
-                    }
-                }
-                return this;
-            },
-            mark: function (value) {
-                if (this === this.window || /url/i.test(value)) {
-                    return error('ADsafe error.');
-                }
-                var b = this.___nodes___, i, node;
-                if (value instanceof Array) {
-                    if (value.length !== b.length) {
-                        return error('ADsafe: Array length: ' +
-                                b.length + '-' + value.length);
-                    }
-                    for (i = 0; i < b.length; i += 1) {
-                        node = b[i];
-                        if (node.tagName) {
-                            node['_adsafe mark_'] = value[i];
-                        }
-                    }
-                } else {
-                    for (i = 0; i < b.length; i += 1) {
-                        node = b[i];
-                        if (node.tagName) {
-                            node['_adsafe mark_'] = value;
-                        }
-                    }
-                }
-                return this;
-            },
             off: function (type) {
                 if (this === this.window) {
                     return error();
