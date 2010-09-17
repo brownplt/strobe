@@ -1,5 +1,3 @@
-var star = false;
-
 function Bunch_getValue() /*: ['Ad] -> 'Ad */ {
     var a = /*: 'Ad */ [], b = this.___nodes___, 
     i /*: upcast Undef + Int */, 
@@ -113,7 +111,7 @@ function Bunch_each(func) /*: ['Ad] 'Ad -> 'Ad */ {
     var b = this.___nodes___, i /*: upcast Undef + Int */;
     if (this !== this.window && typeof func === 'function') {
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
-            /*: cheat 'Ad -> 'Ad */ func(/*: cheat 'Ad */ (new Bunch([b[i]])));
+            func(/*: obj* 'AdObj */ (new Bunch([b[i]])));
         }
         return this;
     }
@@ -671,4 +669,15 @@ function Bunch_protect () /*: ['Ad] -> 'Ad */ {
         /*: cheat Str */ (b[i]['___adsafe root___'] = '___adsafe root___');
     }
     return this;
+}
+
+function Bunch_q (text) /*: ['Ad] 'Ad -> 'Ad */ {
+    star = this.___star___;
+    return /*: cheat 'AdObj */ (new Bunch(
+        quest(/*: cheat Array<{op: Str + Undef, name: Str + Undef, value: Str + Undef}> */ (
+            parse_query(text, id)), 
+            this.___nodes___)));
+}
+function Bunch_remove () /*: ['Ad] -> 'Ad */ {
+    this.replace();
 }
