@@ -427,6 +427,9 @@ and bracket p env field t =
 		 List.fold_right (fun t typ -> TUnion (unfold_typ t, unfold_typ typ))
 		   ((map snd2 fs)@(class_types env cname))
 		   (TRef (TUnion (unfold_typ (un_ref other_typ), TConstr ("Undef", []))))
+             | TConstr ("Int", []) ->
+                 TRef (TUnion (unfold_typ (un_ref other_typ),
+                               TConstr ("Undef", [])))
 	     | t -> error p (sprintf "Index was type %s in \
                                       dictionary lookup\n" (string_of_typ t)))
     | TConstr ("Array", [tarr]), eidx ->
@@ -475,6 +478,20 @@ and bracket p env field t =
                   (sprintf "Constructor %s doesn't have field %s" cname fname)
             end
         end
+    | TConstr (cname, []), e ->
+        let te = tc_exp env e in
+          begin match te with
+            | TConstr ("Int", []) -> begin match cname with
+                | "Undef"
+                | "Null" -> TBot
+                | "Num"
+                | "Bool"
+                | "Int"
+                | "Str" -> TRef (TConstr ("Undef", []))
+                | _ -> error p (sprintf "Can't look up %s[Int]" cname)
+              end
+            | t -> error p (sprintf "Can't look up %s[%s]" cname (string_of_typ te))
+          end
     | TField, field -> begin match tc_exp env field with
         | TField -> TField
         | _ -> error p "expected a TField index"
