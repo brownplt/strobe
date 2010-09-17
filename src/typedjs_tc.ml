@@ -374,7 +374,7 @@ and tc_exps env es = map (tc_exp env) es
 (* find the first bracketref, return type of lhs, or none otherwise 
 obj.foo() --> (deref (deref obj)["foo"]), so we look for this pattern *)
 and tc_thist env e = match e with 
-  | EDeref (_, EBracket (_, obj, prop)) -> tc_exp env obj
+  | EDeref (_, EBracket (_, obj, prop)) -> un_null (tc_exp env obj)
   (* let falls through, same w/ seq, labels, etc *)
   | ELet (_, x, e1, e2) -> tc_thist (Env.bind_id x (tc_exp env e1) env) e2
   | ESeq (_, e1, e2) -> begin match tc_exp env e1 with
