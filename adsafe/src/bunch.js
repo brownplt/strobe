@@ -662,3 +662,13 @@ function Bunch_on (type, func) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
     return this;
 }
 
+function Bunch_protect () /*: ['Ad] -> 'Ad */ {
+    if (this === this.window) {
+        return error('ADsafe error.');
+    }
+    var b = this.___nodes___, i /*: upcast Undef + Int */;
+    for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
+        /*: cheat Str */ (b[i]['___adsafe root___'] = '___adsafe root___');
+    }
+    return this;
+}

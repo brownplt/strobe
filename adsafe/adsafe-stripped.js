@@ -84,16 +84,6 @@ var ADSAFE = (function () {
         root['___adsafe root___'] = '___adsafe root___';
 
         Bunch.prototype = {
-            protect: function () {
-                if (this === this.window) {
-                    return error('ADsafe error.');
-                }
-                var b = this.___nodes___, i;
-                for (i = 0; i < b.length; i += 1) {
-                    b[i]['___adsafe root___'] = '___adsafe root___';
-                }
-                return this;
-            },
             q: function (text) {
                 star = this.___star___;
                 return new Bunch(quest(parse_query(text, id), this.___nodes___));
