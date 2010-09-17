@@ -345,7 +345,7 @@ var ADSAFE = (function () {
                         }
                     }
                 }
-p                return this;
+                return this;
             },
             select: function () {
                 if (this === this.window) {
