@@ -480,17 +480,20 @@ and bracket p env field t =
         end
     | TConstr (cname, []), e ->
         let te = tc_exp env e in
-          begin match te with
-            | TConstr ("Int", []) -> begin match cname with
-                | "Undef"
-                | "Null" -> TBot
-                | "Num"
-                | "Bool"
-                | "Int"
-                | "Str" -> TRef (TConstr ("Undef", []))
-                | _ -> error p (sprintf "Can't look up %s[Int]" cname)
-              end
-            | t -> error p (sprintf "Can't look up %s[%s]" cname (string_of_typ te))
+          begin match cname with
+            | "Undef"
+            | "Null" -> TBot
+            | "Num"
+            | "Bool"
+            | "Int"
+            | "Str" -> 
+                begin match te with 
+                  | TConstr ("Int", []) -> TRef (TConstr ("Undef", []))
+                  | _ -> error p (sprintf "Can't look up %s[%s]" 
+                                    cname (string_of_typ te))
+                end
+            | _ -> error p (sprintf "Can't look up %s[%s]" 
+                                    cname (string_of_typ te))
           end
     | TField, field -> begin match tc_exp env field with
         | TField -> TField
