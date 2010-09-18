@@ -174,3 +174,10 @@ function getStyleObject(node) /*: HTMLElement -> Style + Undef */
         node.currentStyle || defaultView.getComputedStyle(node, '');
     return cache_style_object;
 }
+
+function lib (name, f) {
+    if (!adsafe_id) {
+        return error();
+    }
+    adsafe_lib[name] = f(adsafe_lib);
+},

@@ -47,8 +47,6 @@ var ADSAFE = (function () {
     mozilla('some');
     mozilla('sort');
 
-
-
     function make_root(root, id) {
 
         if (id) {
@@ -79,6 +77,44 @@ var ADSAFE = (function () {
         root['___adsafe root___'] = '___adsafe root___';
 
         Bunch.prototype = {
+            append: Bunch_append,
+            blur: Bunch_blur,
+            check: Bunch_check,
+            count: Bunch_count,
+            empty: Bunch_empty,
+            enable: Bunch_enable,
+            ephemeral: Bunch_ephemeral,
+            explode: Bunch_explode,
+            fire: Bunch_fire,
+            focus: Bunch_focus,
+            each: Bunch_each,
+            fragment: Bunch_fragment,
+            getCheck: Bunch_getCheck,
+            getClass: Bunch_getClass,
+            getMark: Bunch_getMark,
+            getName: Bunch_getName,
+            getOffsetHeight: Bunch_getOffsetHeight,
+            getParent: Bunch_getParent,
+            getSelection: Bunch_getSelection,
+            getStyle: Bunch_getStyle,
+            getTagName: Bunch_getTagName,
+            getTitle: Bunch_getTitle,
+            getValue: Bunch_getValue,
+            klass: Bunch_klass,
+            mark: Bunch_mark,
+            off: Bunch_off,
+            on: Bunch_on,
+            protect: Bunch_protect,
+            q: Bunch_q,
+            remove: Bunch_remove,
+            replace: Bunch_replace,
+            select: Bunch_select,
+            selection: Bunch_selection,
+            style: Bunch_style,
+            tag: Bunch_tag,
+            text: Bunch_text,
+            title: Bunch_title,
+            value: Bunch_value
         };
 
 // Return an ADsafe dom object.
@@ -225,13 +261,7 @@ var ADSAFE = (function () {
 //  to a widget. The library provides a name and a function. The result of
 //  calling that function will be made available to the widget via the name.
 
-        lib: function (name, f) {
-            if (!adsafe_id) {
-                return error();
-            }
-            adsafe_lib[name] = f(adsafe_lib);
-        },
-
+        lib: lib,
 
 //  ADSAFE.log is a debugging aid that spams text to the browser's log.
 
