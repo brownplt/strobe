@@ -133,6 +133,7 @@ var ADSAFE = (function () {
 //  approved ADsafe libraries. It is passed an id and a function. The function
 //  will be passed the wrapped dom node and an object containing the libraries.
 
+
         go: function (id, f) {
             var dom, fun, root, i, scripts;
 
@@ -241,27 +242,9 @@ var ADSAFE = (function () {
 
         log: log,
 
+        remove: ADSAFE_remove,
 
-//  ADSAFE.remove deletes a value from an object.
-
-        remove: function (object, name) {
-            if (arguments.length === 2 && !reject(object, name)) {
-                delete object[name];
-                return;
-            }
-            return error();
-        },
-
-
-//  ADSAFE.set stores a value in an object.
-
-        set: function (object, name, value) {
-            if (arguments.length === 3 && !reject(object, name)) {
-                object[name] = value;
-                return;
-            }
-            return error();
-        },
+        set: ADSAFE_set,
 
 //  ADSAFE._intercept allows the page to register a function that will
 //  see the widget's capabilities.

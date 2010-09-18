@@ -4,7 +4,19 @@ cache_style_object /*: upcast Undef + Style */,
 has_focus /*: upcast Undef + Null + HTMLElement */,
 value /*: upcast Undef + Str */ ;
 
-var banned = {
+var banned = 
+    /*: obj* {arguments     : Bool,
+              callee        : Bool,
+              caller        : Bool,
+              "constructor" : Bool,
+              "eval"        : Bool,
+              "prototype"   : Bool,
+              stack         : Bool,
+              unwatch       : Bool,
+              valueOf       : Bool,
+              watch         : Bool,
+              #proto: Object, *:Bool, #code: Bot} */
+{
     'arguments'     : true,
     callee          : true,
     caller          : true,
@@ -116,21 +128,21 @@ function error(message) /*: Str + Undef -> Undef */ {
 }
 
 
-    function walkTheDOM(node, func, skip) 
-    /*: HTMLElement * (HTMLElement -> Undef) * Bool + Undef -> Undef */ {
-
-// Recursively traverse the DOM tree, starting with the node, in document
-// source order, calling the func on each node visisted.
-
-        if (/*:cheat Bool */(!skip)) {
-            func(node);
-        }
-        node = /*:cheat HTMLElement */(node.firstChild);
-        while (/*: cheat Bool */node) {
-            walkTheDOM(node, func);
-            node = /*: cheat HTMLElement*/(node.nextSibling);
-        }
+function walkTheDOM(node, func, skip) 
+/*: HTMLElement * (HTMLElement -> Undef) * Bool + Undef -> Undef */ {
+    
+    // Recursively traverse the DOM tree, starting with the node, in document
+    // source order, calling the func on each node visisted.
+    
+    if (/*:cheat Bool */(!skip)) {
+        func(node);
     }
+    node = /*:cheat HTMLElement */(node.firstChild);
+    while (/*: cheat Bool */node) {
+        walkTheDOM(node, func);
+        node = /*: cheat HTMLElement*/(node.nextSibling);
+    }
+}
 
 function purge_event_handlers(node) 
 /*: HTMLElement -> Undef */ {
