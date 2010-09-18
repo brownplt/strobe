@@ -2,7 +2,9 @@ var defaultView = document.defaultView,
 cache_style_node /*: upcast Undef + HTMLElement */,
 cache_style_object /*: upcast Undef + Style */,
 has_focus /*: upcast Undef + Null + HTMLElement */,
-value /*: upcast Undef + Str */ ;
+value /*: upcast Undef + Str */,
+adsafe_lib /*: upcast Undef + 'Ad */,
+adsafe_id /*: upcast Undef + Str */ ;
 
 var banned = 
     /*: obj* {arguments     : Bool,
@@ -175,9 +177,12 @@ function getStyleObject(node) /*: HTMLElement -> Style + Undef */
     return cache_style_object;
 }
 
-function lib (name, f) {
+// JSlint ensures that calls to lib have a string here
+function lib (name, f) 
+/*: Str * 'Ad -> 'Ad */
+{
     if (!adsafe_id) {
         return error();
     }
     adsafe_lib[name] = f(adsafe_lib);
-},
+}

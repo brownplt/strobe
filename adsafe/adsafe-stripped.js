@@ -119,8 +119,7 @@ var ADSAFE = (function () {
 
 // Return an ADsafe dom object.
 
-        dom = {
-        };
+        dom = dom_outer;
 
         if (typeof root.addEventListener === 'function') {
             root.addEventListener('focus', dom_event, true);
