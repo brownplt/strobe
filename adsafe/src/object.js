@@ -1,3 +1,8 @@
+//  The reject function enforces the restriction on get and put.
+//  It allows access only to objects and arrays. It does not allow use of
+//  the banned names, or names that are not strings or positive numbers,
+//  or strings that start or end with _ or strings that start with -.
+
 function reject(object, name) 
 /*: 'Ad * 'Ad -> Any */ 
 {
