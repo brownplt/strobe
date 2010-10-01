@@ -67,7 +67,7 @@ var hunter =
 
     '*': function (node) /*: HTMLElement + Undef -> Undef */{
         star = true;
-        walkTheDOM(/*: cheat HTMLElement */ node, function (node) /*: Node -> Undef */ {
+        walkTheDOM(node, function (node) /*: HTMLElement + Undef -> Undef */ {
             result.push(/*:cheat HTMLElement */node);
         }, true);
     }

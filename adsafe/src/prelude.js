@@ -131,18 +131,18 @@ function error(message) /*: Str + Undef -> Undef */ {
 
 
 function walkTheDOM(node, func, skip) 
-/*: HTMLElement * (HTMLElement -> Undef) * Bool + Undef -> Undef */ {
+/*: HTMLElement + Undef * (HTMLElement + Undef -> Undef) * Bool + Undef -> Undef */ {
     
     // Recursively traverse the DOM tree, starting with the node, in document
     // source order, calling the func on each node visisted.
     
-    if (/*:cheat Bool */(!skip)) {
+    if (!skip) {
         func(node);
     }
-    node = /*:cheat HTMLElement */(node.firstChild);
-    while (/*: cheat Bool */node) {
+    node = node.firstChild;
+    while (node) {
         walkTheDOM(node, func);
-        node = /*: cheat HTMLElement*/(node.nextSibling);
+        node = node.nextSibling;
     }
 }
 
@@ -155,8 +155,8 @@ function purge_event_handlers(node)
 // all at once. Removal is required to avoid memory leakage on IE6 and IE7.
 
     walkTheDOM(node, 
-               function (node) /*: HTMLElement -> Undef */ {
-                   if (/*: cheat Bool */ node.tagName) {
+               function (node) /*: HTMLElement + Undef -> Undef */ {
+                   if (node.tagName) {
                        /*: cheat Null */ (node['___ on ___'] = node.change = null);
                    }
                }

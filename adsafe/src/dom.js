@@ -1,4 +1,5 @@
 var root /*: upcast Undef + Null + HTMLElement */;
+var dom /*: upcast 'Ad */;
 var dom_outer /*: upcast 'Ad */;
 dom_outer = /*: cheat 'AdObj */ {
     q: function (text) /*: ['Ad] 'Ad -> 'Ad */ {
