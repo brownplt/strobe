@@ -6,7 +6,7 @@ function Bunch_getValue() /*: ['Ad] -> 'Ad */ {
         node = b[i];
         if (node.nodeName === '#text') {
             a[i] = node.nodeValue;
-        } else if ((/*: cheat Bool */ node.tagName) && node.type !== 'password') {
+        } else if (node.tagName && node.type !== 'password') {
             a[i] = node.value;
             if (a[i] === undefined && node.firstChild &&
                 node.firstChild.nodeName === '#text') {
@@ -31,19 +31,19 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
             if (/*: cheat Bool */ node.tagName) {
                 if (node.type !== 'password') {
                     if (typeof node.value === 'string') {
-                        node.value = /*: cheat Undef */ (value[i]);
+                        node.value = /*: cheat Str + Undef */ (value[i]); // value needs to be an ADsafeNode
                     } else {
                         while (node.firstChild) {
                             // thinks node is undef + HTMLElement, should just be HTMLElement
-                            purge_event_handlers(/*: cheat HTMLElement */ node); 
+                            purge_event_handlers(node); 
                             node.removeChild(node.firstChild);
                         }
                         node.appendChild(document.createTextNode(
-                            String(/*: cheat 'Ad */ (value[i]))));
+                            String(value[/*: cheat Int */i])));
                     }
                 }
             } else if (node.nodeName === '#text') {
-                node.nodeValue = String(/*: cheat 'Ad */ (value[i]));
+                node.nodeValue = String(value[/*: cheat Int */ i]);
             }
         }
     } else {
@@ -51,10 +51,10 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
             node = b[i];
             if (/*: cheat Bool */ node.tagName) {
                 if (typeof node.value === 'string') {
-                    node.value = /*: cheat Undef */ value;
+                    node.value = /*: cheat Str */ value;
                 } else {
                     while (node.firstChild) {
-                        purge_event_handlers(/*: cheat HTMLElement */ node);
+                        purge_event_handlers(node);
                         node.removeChild(node.firstChild);
                     }
                     node.appendChild(document.createTextNode(
@@ -82,14 +82,14 @@ function Bunch_title(value) /*: ['Ad] 'Ad -> 'Ad */ {
         }
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
-            if (/*: cheat Bool */ (node.tagName)) {
-                node.title = String(/*: cheat 'Ad */ (value[i]));
+            if (node.tagName) {
+                node.title = String(value[/*: cheat Int */ i]);
             }
         }
     } else {
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
-            if (/*: cheat Bool */ (node.tagName)) {
+            if (node.tagName) {
                 node.title = String(value);
             }
         }
@@ -128,7 +128,7 @@ function Bunch_append (appendage) /*: ['Ad] 'Ad -> 'Ad */ {
     j /*: upcast Undef + Int */,
     node /*: upcast Undef + HTMLElement */,
     rep /*: upcast Undef + Array<HTMLElement> */;
-    if (b.length === 0 || /*: cheat Bool */ (!appendage)) {
+    if (b.length === 0 || !appendage) {
         return this;
     }
     if (appendage instanceof Array) {

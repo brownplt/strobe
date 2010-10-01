@@ -147,7 +147,7 @@ function walkTheDOM(node, func, skip)
 }
 
 function purge_event_handlers(node) 
-/*: HTMLElement -> Undef */ {
+/*: HTMLElement + Undef -> Undef */ {
 
 // We attach all event handlers to a ___ on ___ property. The property name
 // contains spaces to insure that there is no collision with HTML attribues.
