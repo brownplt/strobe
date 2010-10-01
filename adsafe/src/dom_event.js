@@ -1,5 +1,5 @@
 function Bunch(nodes) 
-/*: constructor (Array<HTMLElement> -> {___nodes___: Array<HTMLElement> + Undef, ___star___: Bool + Undef}) */ 
+/*: constructor (Undef + Array<HTMLElement> -> {___nodes___: Array<HTMLElement> + Undef, ___star___: Bool + Undef}) */ 
 {
     this.___nodes___ = nodes;
     this.___star___ = star && nodes.length > 1;

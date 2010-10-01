@@ -34,7 +34,6 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
                         node.value = /*: cheat Str + Undef */ (value[i]); // value needs to be an ADsafeNode
                     } else {
                         while (node.firstChild) {
-                            // thinks node is undef + HTMLElement, should just be HTMLElement
                             purge_event_handlers(node); 
                             node.removeChild(node.firstChild);
                         }
@@ -49,7 +48,7 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
     } else {
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
-            if (/*: cheat Bool */ node.tagName) {
+            if (node.tagName) {
                 if (typeof node.value === 'string') {
                     node.value = /*: cheat Str */ value;
                 } else {
@@ -184,7 +183,7 @@ function Bunch_check (value) /*: ['Ad] 'Ad -> 'Ad */ {
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
             if (node.tagName) {
-                node.checked = !!/*: cheat 'Ad */(value[i]);
+                node.checked = !!/*: cheat 'Ad */value[i];
             }
         }
     } else {
@@ -215,7 +214,7 @@ function Bunch_empty () /*: ['Ad] -> 'Ad */ {
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
             while (node.firstChild) {
-                purge_event_handlers(/*: cheat HTMLElement */ node);
+                purge_event_handlers(node);
                 node.removeChild(node.firstChild);
             }
         }
@@ -223,7 +222,7 @@ function Bunch_empty () /*: ['Ad] -> 'Ad */ {
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
             while (node.firstChild) {
-                purge_event_handlers(/*: cheat HTMLElement */ node);
+                purge_event_handlers(node);
                 node.removeChild(node.firstChild);
             }
         }
@@ -244,7 +243,7 @@ function Bunch_enable (enable) /*: ['Ad] 'Ad -> 'Ad */ {
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
             if (node.tagName) {
-                node.disabled = !/*: cheat 'Ad */ (enable[i]);
+                node.disabled = !/*: cheat 'Ad */(enable[i]);
             }
         }
     } else {
@@ -386,9 +385,9 @@ function Bunch_selection (string) /*: ['Ad] 'Ad -> 'Ad */ {
             start = node.selectionStart;
             end = node.selectionEnd;
             old = node.value;
-            node.value = old.slice(0, start) + string + /*: cheat Str */ (old.slice(end));
+            node.value = old.slice(0, start) + string + old.slice(/*: cheat Int */end);
             /*: cheat 'Ad */ (node.selectionStart = node.selectionEnd = start +
-                              string.length);
+                              string.length); // this is actually pretty badly typed
             node.focus();
         } else {
             range = node.createTextRange();
@@ -405,7 +404,7 @@ function Bunch_selection (string) /*: ['Ad] 'Ad -> 'Ad */ {
 
 function Bunch_style (name, value) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
     if (this === this.window ||
-        value === undefined || /*: cheat Bool */ (/url/i.test(value))) {
+        value === undefined || /url/i.test(/*: cheat Str */value)) { // url test isn't doing anything
         return error();
     }
     var b = this.___nodes___,
@@ -419,7 +418,7 @@ function Bunch_style (name, value) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
         }
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
-	    v = String(/*: cheat 'Ad */ (value[i]));
+	    v = String(value[/*: cheat Int */ i]);
             if (node.tagName) {
                 if (name !== 'float') {
                     /*: cheat Str */ (node.style[name] = v);
@@ -460,7 +459,7 @@ function Bunch_tag (tag, type, name) /*: ['Ad] 'Ad * 'Ad * 'Ad-> 'Ad */ {
     if (type) {
         /*: cheat 'Ad */ (node.type = type);
     }
-    return /*: obj* 'AdObj */ (new Bunch([/*: cheat HTMLElement */ node]));
+    return /*: obj* 'AdObj */ (new Bunch([/*: cheat HTMLElement */node]));
 }
 
 function Bunch_text (text) /*: ['Ad] 'Ad -> 'Ad */ {
@@ -470,7 +469,7 @@ function Bunch_text (text) /*: ['Ad] 'Ad -> 'Ad */ {
         for (i = 0; /*: cheat Bool */ (i < text.length); /*: cheat Int */ (i += 1)) {
             a[i] = document.createTextNode(String(/*: cheat 'Ad */ (text[i])));
         }
-        return /*: obj* 'AdObj */ (new Bunch(/*: cheat Array<HTMLElement> */ a));
+        return /*: obj* 'AdObj */ (new Bunch(a));
     }
     return /*: obj* 'AdObj */ (new Bunch([document.createTextNode(String(text))]));
 }
@@ -512,7 +511,7 @@ function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
         // If an array of handlers exist for this event, then
         // loop through it and execute the handlers in order.
 
-        if (on && on.hasOwnProperty(type)) {
+        if (on && on.hasOwnProperty(type)) {  // broken because of event.type being an object
             array = /*: cheat Array<'Ad> */ (on[type]);
             for (j = 0; j < array.length; /*: cheat Int */ (j += 1)) {
 
@@ -673,7 +672,7 @@ function Bunch_protect () /*: ['Ad] -> 'Ad */ {
 
 function Bunch_q (text) /*: ['Ad] 'Ad -> 'Ad */ {
     star = this.___star___;
-    return /*: cheat 'AdObj */ (new Bunch(
+    return /*: obj* 'AdObj */ (new Bunch(
         quest(/*: cheat Array<{op: Str + Undef, name: Str + Undef, value: Str + Undef}> */ (
             parse_query(text, id)), 
             this.___nodes___)));
@@ -697,13 +696,13 @@ function Bunch_replace (replacement) /*: ['Ad] 'Ad -> 'Ad */ {
     if (b.length === 0) {
         return;
     }
-    purge_event_handlers(/*: cheat HTMLElement */ b);
+    /*: cheat Undef */ (purge_event_handlers(b)); // broken, p_e_h takes a DOM, not a list of DOM
     if (!replacement ||
         replacement.length === 0 ||
         replacement.___nodes___.length === 0) {
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
-            purge_event_handlers(/*: cheat HTMLElement */ node);
+            purge_event_handlers(node);
             if (node.parentNode) {
                 node.parentNode.removeChild(/*: cheat HTMLElement */ node);
             }
@@ -716,7 +715,7 @@ function Bunch_replace (replacement) /*: ['Ad] 'Ad -> 'Ad */ {
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
             parent = node.parentNode;
-            purge_event_handlers(/*: cheat HTMLElement */node);
+            purge_event_handlers(node);
             if (parent) {
                 rep = /*: cheat 'Ad */ (replacement[i]).___nodes___;
                 if (rep.length > 0) {
@@ -736,7 +735,7 @@ function Bunch_replace (replacement) /*: ['Ad] 'Ad -> 'Ad */ {
         rep = replacement.___nodes___;
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
-            purge_event_handlers(/*: cheat HTMLElement */node);
+            purge_event_handlers(node);
             if (node.parentNode) {
                 newnode = flag ? rep[0].cloneNode(true) : rep[0];
                 parent.replaceNode(/*: cheat HTMLElement */newnode);
