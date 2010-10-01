@@ -244,17 +244,7 @@ var ADSAFE = (function () {
             return Object.prototype.toString.apply(value) === '[object Array]';
         },
 
-
-//  ADSAFE.later calls a function at a later time.
-
-        later: function (func, timeout) {
-            if (typeof func === 'function') {
-                setTimeout(func, timeout || 0);
-            } else {
-                return error();
-            }
-        },
-
+        later: later,
 
 //  ADSAFE.lib allows an approved ADsafe library to make itself available
 //  to a widget. The library provides a name and a function. The result of

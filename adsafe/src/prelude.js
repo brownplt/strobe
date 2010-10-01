@@ -184,5 +184,19 @@ function lib (name, f)
     if (!adsafe_id) {
         return error();
     }
-    adsafe_lib[name] = f(adsafe_lib);
+    /*: cheat 'Ad */ (adsafe_lib[name] = f(adsafe_lib));
 }
+
+
+//  ADSAFE.later calls a function at a later time.
+
+function later (func, timeout) 
+/*: 'Ad * 'Ad -> 'Ad */
+{
+    if (typeof func === 'function') {
+        setTimeout(/*: cheat (-> Undef) */ func, /*: cheat Int */ (timeout || 0));
+    } else {
+        return error();
+    }
+}
+
