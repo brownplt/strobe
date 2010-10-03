@@ -25,7 +25,7 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
     i /*: upcast Undef + Int */,
     node /*: upcast Undef + HTMLElement */;
 
-    if (value instanceof Array && b.length === /*: cheat Int */ value.length) {
+    if (value instanceof Array && b.length === value.length) {
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
             if (/*: cheat Bool */ node.tagName) {
@@ -75,9 +75,9 @@ function Bunch_title(value) /*: ['Ad] 'Ad -> 'Ad */ {
     i /*: upcast Undef + Int */,
     node /*: upcast Undef + HTMLElement */;
     if (value instanceof Array) {
-        if (/*: cheat Int */ (value.length) !== b.length) {
+        if (value.length !== b.length) {
             return error('ADsafe: Array length: ' + b.length +
-                         '-' /*+ value.length*/);
+                         '-' + value.length);
         }
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
@@ -131,12 +131,12 @@ function Bunch_append (appendage) /*: ['Ad] 'Ad -> 'Ad */ {
         return this;
     }
     if (appendage instanceof Array) {
-        if (/*: cheat Int */ (appendage.length) !== b.length) {
+        if (appendage.length !== b.length) {
             return error('ADsafe: Array length: ' +
-                         b.length + '-' /*+ value.length*/);
+                         b.length + '-' + value.length);
         }
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
-            rep = /*: cheat 'Ad */ (appendage[i]).___nodes___;
+            rep = appendage[i].___nodes___;
             for (j = 0; j < rep.length; /*: cheat Int */ (j += 1)) {
                 b[/*: cheat Int */i].appendChild(rep[j]);
             }
@@ -176,9 +176,9 @@ function Bunch_check (value) /*: ['Ad] 'Ad -> 'Ad */ {
     }
     var b = this.___nodes___, i /*: upcast Int + Undef */, node /*: upcast Undef + HTMLElement */;
     if (value instanceof Array) {
-        if ((/*: cheat Int */ value.length) !== b.length) {
+        if (value.length !== b.length) {
             return error('ADsafe: Array length: ' +
-                         b.length + '-' + /*: cheat Int */ (value.length));
+                         b.length + '-' + value.length);
         }
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
@@ -236,14 +236,14 @@ function Bunch_enable (enable) /*: ['Ad] 'Ad -> 'Ad */ {
     }
     var b = this.___nodes___, i /*: upcast Undef + Int */, node /*: upcast Undef + HTMLElement */;
     if (enable instanceof Array) {
-        if (/*:cheat 'Ad */ (enable.length) !== b.length) {
+        if (enable.length !== b.length) {
             return error('ADsafe: Array length: ' +
-                         b.length + '-' + /*: cheat Int */ (enable.length));
+                         b.length + '-' + enable.length);
         }
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
             if (node.tagName) {
-                node.disabled = !/*: cheat 'Ad */(enable[i]);
+                node.disabled = !enable[i];
             }
         }
     } else {
@@ -338,7 +338,7 @@ function Bunch_getParent () /*: ['Ad] -> 'Ad */ {
     var a = /*: HTMLElement */ [], b = this.___nodes___, i /*: upcast Undef + Int */, n /*: upcast Undef + HTMLElement */;
     for (i = 0; i < b.length; i += 1) {
         n = b[i].parentNode;
-        if (/*: cheat Bool */ (n['___adsafe root___'])) {
+        if (/*: cheat Str */ (n['___adsafe root___'])) {
             return error('ADsafe parent violation.');
         }
         a[i] = /*: cheat HTMLElement */ n;
@@ -412,9 +412,9 @@ function Bunch_style (name, value) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
     node /*: upcast Undef + HTMLElement */,
     v /*: upcast Undef + Str */;
     if (value instanceof Array) {
-        if (/*: cheat Bool */ (value.length !== b.length)) {
+        if (value.length !== b.length) {
             return error('ADsafe: Array length: ' +
-                         b.length + '-' + /*: cheat Str */ (value.length));
+                         b.length + '-' + value.length);
         }
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
@@ -529,7 +529,7 @@ function Bunch_getStyle (name) /*: ['Ad] 'Ad -> 'Ad */ {
     for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
         node = b[i];
         if (node.tagName) {
-            s = name !== 'float' ? /*: cheat Any */ (getStyleObject(node)[name]) :
+            s = name !== 'float' ? /*: cheat Any */ (getStyleObject(/*: cheat HTMLElement */ node)[name]) :
 		getStyleObject(/*: cheat HTMLElement */ node).cssFloat ||
                 getStyleObject(/*: cheat HTMLElement */ node).styleFloat;
 	    if (typeof s === 'string') {
@@ -556,9 +556,9 @@ function Bunch_klass (value) /*: ['Ad] 'Ad -> 'Ad */ {
     }
     var b = this.___nodes___, i /*: upcast Undef + Int */, node /*: upcast Undef + HTMLElement */;
     if (value instanceof Array) {
-        if (/*: cheat 'Ad */ (value.length) !== b.length) {
+        if (value.length !== b.length) {
             return error('ADsafe: Array length: ' +
-                         b.length + '-' /*+ value.length*/);
+                         b.length + '-' + value.length);
         }
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
@@ -583,9 +583,9 @@ function Bunch_mark (value) /*: ['Ad] 'Ad -> 'Ad */ {
     }
     var b = this.___nodes___, i /*: upcast Undef + Int */, node /*: upcast Undef + HTMLElement */;
     if (value instanceof Array) {
-        if (/*: cheat 'Ad */ (value.length) !== b.length) {
+        if (value.length !== b.length) {
             return error('ADsafe: Array length: ' +
-                         b.length + '-' /*+ value.length*/);
+                         b.length + '-' + value.length);
         }
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
@@ -708,16 +708,16 @@ function Bunch_replace (replacement) /*: ['Ad] 'Ad -> 'Ad */ {
             }
         }
     } else if (replacement instanceof Array) {
-        if (/*: cheat 'Ad */ (replacement.length) !== b.length) {
+        if (replacement.length !== b.length) {
             return error('ADsafe: Array length: ' +
-                         b.length + '-' /*+ value.length*/);
+                         b.length + '-' + value.length);
         }
         for (i = 0; i < b.length; /*: cheat Int */ (i += 1)) {
             node = b[i];
             parent = node.parentNode;
             purge_event_handlers(node);
             if (parent) {
-                rep = /*: cheat 'Ad */ (replacement[i]).___nodes___;
+                rep = replacement[/*: cheat Int */i].___nodes___;
                 if (rep.length > 0) {
                     newnode = rep[0];
                     parent.replaceNode(/*: cheat HTMLElement */ newnode);

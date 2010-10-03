@@ -244,7 +244,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                                (string_of_typ expected_typ)))
             else raise (Typ_error 
                           (p, sprintf "arity-mismatch: the function expects %d \
-                                arguments, but %d arguments given"
+                                arguments, but %d arguments given."
                              (List.length expected_typs) (List.length args)))
       | t -> 
           raise 
@@ -313,6 +313,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
             | None -> "Object"
           end
         | EObject _ -> "Object"
+        | EFunc _ -> error p "Can't do functions yet"
         | e -> error p "Not an object literal or new for ObjCast"
       end in
       let s = tc_exp env e in
@@ -456,7 +457,7 @@ and bracket p env field t =
                   | EConst (_, JavaScript_syntax.CString "slice") ->
                       TRef (TArrow (TConstr ("Array", [tarr]),
                                     [TConstr ("Int", []);
-                                     TConstr ("Int", [])], t))
+                                     TUnion (TConstr ("Int", []), TConstr ("Undef", []))], t))
                   | EConst (_, JavaScript_syntax.CString s) ->
                       error p ("unknown array method " ^ s)
                   | _ -> error p ("unknown array method")
