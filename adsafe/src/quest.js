@@ -10,7 +10,7 @@ function quest(query, nodes)
 
     // Step through each selector.
 
-    for (i = 0; i < query.length; /*: cheat Undef */ (i += 1)) {
+    for (i = 0; i < query.length; /*: cheat Int */ (i += 1)) {
         selector = query[i];
         name = /*: cheat Str */ (selector.name);
         func = hunter[selector.op];
@@ -42,7 +42,7 @@ function quest(query, nodes)
                     result = nodes.slice(0, 1);
                     break;
                 case ':rest':
-                    result = /*: cheat Array<HTMLElement> */ (nodes.slice(1));
+                    result = nodes.slice(1);
                     break;
                 default:
                     return error('ADsafe: Query violation: :' + selector.op);
@@ -53,7 +53,7 @@ function quest(query, nodes)
                 // the pecker function.
 
                 result = /*: HTMLElement */ [];
-                for (j = 0; j < nodes.length; /*:cheat Undef */ (j += 1)) {
+                for (j = 0; j < nodes.length; /*:cheat Int */ (j += 1)) {
                     if (func(nodes[j])) {
                         result.push(nodes[/*: cheat Int */ j]);
                     }

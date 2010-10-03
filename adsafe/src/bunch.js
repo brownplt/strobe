@@ -738,7 +738,7 @@ function Bunch_replace (replacement) /*: ['Ad] 'Ad -> 'Ad */ {
             purge_event_handlers(node);
             if (node.parentNode) {
                 newnode = flag ? rep[0].cloneNode(true) : rep[0];
-                parent.replaceNode(/*: cheat HTMLElement */newnode);
+                parent.replaceNode(/*: cheat HTMLElement */ newnode);
                 for (j = 1; j < rep.length; /*: cheat Int */ (j += 1)) {
                     node = newnode;
                     newnode = flag ? rep[j].clone(true) : rep[j];
