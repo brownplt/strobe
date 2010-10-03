@@ -22,7 +22,7 @@ var hunter =
         var e = node.getElementsByTagName(name);
         for (var i = 0; i < 1000; i += 1) {
             // Why bound at 1000?
-            if (/*: cheat Bool*/(e[i])) {
+            if (e[i]) {
                 result.push(/*:cheat HTMLElement */ (e[i]));
             } else {
                 break;
@@ -33,10 +33,10 @@ var hunter =
     '+': function (node) /*: HTMLElement + Undef -> Undef */ {
         node = node.nextSibling;
         name = name.toUpperCase();
-        while (/*: cheat Bool*/(node && !node.tagName)) {
+        while (node && !node.tagName) {
             node = node.nextSibling;
         }
-        if (/*:cheat Bool */(node && node.tagName === name)) {
+        if (node && node.tagName === name) {
             result.push(/*: cheat HTMLElement */node);
         }
     },
@@ -54,7 +54,7 @@ var hunter =
 
     '#': function (node) /*: HTMLElement + Undef -> Undef */ {
         var n = document.getElementById(name);
-        if (/*: cheat Bool*/(n.tagName)) {
+        if (n.tagName) {
             result.push(/*: cheat HTMLElement*/n);
         }
     },
@@ -176,7 +176,7 @@ var pecker =
             getStyleObject(/*: cheat HTMLElement */ node).visibility !== 'visible';
     },
     ':odd': function (node) /*: HTMLElement + Undef -> Bool */  {
-        if (/*: cheat Bool */ node.tagName) {
+        if (node.tagName) {
             flipflop = !flipflop;
             return flipflop;
         } else {
@@ -193,9 +193,9 @@ var pecker =
         return node.nodeName !== '#text' || /\W/.test(node.nodeValue);
     },
     ':unchecked': function (node) /*: HTMLElement + Undef -> Bool */  {
-        return /*: cheat Bool */ node.tagName && !node.checked;
+        return node.tagName && !node.checked;
     },
     ':visible': function (node) /*: HTMLElement + Undef -> Bool */  {
-        return /*: cheat Bool */ node.tagName && getStyleObject(/*: cheat HTMLElement */ node).visibility === 'visible';
+        return node.tagName && getStyleObject(/*: cheat HTMLElement */ node).visibility === 'visible';
     }
 };
