@@ -50,7 +50,7 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
             node = b[i];
             if (node.tagName) {
                 if (typeof node.value === 'string') {
-                    node.value = /*: cheat Str */ value;
+                    node.value = String(value);
                 } else {
                     while (node.firstChild) {
                         purge_event_handlers(node);
