@@ -13,7 +13,7 @@ function quest(query, nodes)
     for (i = 0; i < query.length; /*: cheat Int */ (i += 1)) {
         selector = query[i];
         name = /*: cheat Str */ (selector.name);
-        func = hunter[selector.op];
+        func = /*: cheat -> Any */ (hunter[selector.op]);
 
         // There are two kinds of selectors: hunters and peckers. If this is a hunter,
         // loop through the the nodes, passing each node to the hunter function.
@@ -35,7 +35,7 @@ function quest(query, nodes)
 
             value = selector.value;
             flipflop = false;
-            func = pecker[selector.op];
+            func = /*: cheat -> Any */ (pecker[selector.op]);
             if (typeof func !== 'function') {
                 switch (selector.op) {
                 case ':first':
