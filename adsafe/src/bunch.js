@@ -369,7 +369,7 @@ function Bunch_getSelection () /*: ['Ad] -> 'Ad */ {
 }
 
 
-function Bunch_selection (string) /*: ['Ad] 'Ad -> 'Ad */ {
+function Bunch_selection (string_in) /*: ['Ad] 'Ad -> 'Ad */ {
     if (this === this.window) {
         return error();
     }
@@ -378,7 +378,8 @@ function Bunch_selection (string) /*: ['Ad] 'Ad -> 'Ad */ {
     node /*: upcast Undef + HTMLElement */, 
     old /*: upcast Undef + Str */, 
     start = 0, 
-    range /*: upcast Undef + Range */;
+    range /*: upcast Undef + Range */,
+    string = String(string_in);
     if (b.length === 1 && allow_focus) {
         node = b[0];
         if (typeof node.selectionStart === 'number') {
@@ -386,8 +387,8 @@ function Bunch_selection (string) /*: ['Ad] 'Ad -> 'Ad */ {
             end = node.selectionEnd;
             old = node.value;
             node.value = old.slice(0, start) + string + old.slice(/*: cheat Int */end);
-            /*: cheat 'Ad */ (node.selectionStart = node.selectionEnd = start +
-                              string.length); // this is actually pretty badly typed
+            node.selectionStart = node.selectionEnd = start +
+                              string.length;
             node.focus();
         } else {
             range = node.createTextRange();
