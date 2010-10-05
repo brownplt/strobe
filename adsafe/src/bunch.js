@@ -467,7 +467,7 @@ function Bunch_text (text) /*: ['Ad] 'Ad -> 'Ad */ {
     var a /*: upcast Undef + Array<HTMLElement> */, i = 0;
     if (text instanceof Array) {
         a = /*: HTMLElement */ [];
-        for (i = 0; /*: cheat Bool */ (i < text.length); i += 1) {
+        for (i = 0; i < Number(text.length); i += 1) {
             a[i] = document.createTextNode(String(text[i]));
         }
         return /*: obj* 'AdObj */ (new Bunch(a));
