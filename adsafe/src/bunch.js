@@ -489,7 +489,8 @@ function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
     n = 0,
     node /*: upcast Undef + HTMLElement */,
     on /*: upcast Undef + {#proto: Object, *: Array<'Ad>, #code: Bot} */,
-    type /*: upcast 'Ad */;
+    type = "",
+    check_typ /*: upcast Any */;
 
     if (this === this.window) {
         return error();
@@ -498,7 +499,13 @@ function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
         type = event;
         event = /*: obj* 'AdObj */ {type: /*: upcast 'Ad */ type};
     } else if (typeof event === 'object') {
-        type = event.type;
+        check_typ = event.type;
+        if (typeof check_typ === 'string') {
+            type = check_typ;
+        }
+        else {
+            return error();
+        }
     } else {
         return error();
     }
@@ -511,7 +518,7 @@ function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
         // If an array of handlers exist for this event, then
         // loop through it and execute the handlers in order.
 
-        if (on && on.hasOwnProperty(/*: cheat Str */ type)) {  // broken because of event.type being an object
+        if (on && on.hasOwnProperty(type)) {  // broken because of event.type being an object
             array = /*: cheat Array<'Ad> */ (on[type]);
             for (j = 0; j < array.length; j += 1) {
 
