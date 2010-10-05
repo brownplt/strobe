@@ -571,7 +571,7 @@ function Bunch_klass (value) /*: ['Ad] 'Ad -> 'Ad */ {
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
             if (node.tagName) {
-                node.className = String(/*: cheat 'Ad */ (value[i]));
+                node.className = String(value[i]);
             }
         }
     } else {
