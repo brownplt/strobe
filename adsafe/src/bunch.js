@@ -31,7 +31,7 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
             if (node.tagName) {
                 if (node.type !== 'password') {
                     if (typeof node.value === 'string') {
-                        node.value = /*: cheat Str + Undef */ (value[i]); // value needs to be an ADsafeNode
+                        node.value = String(value[i]);
                     } else {
                         while (node.firstChild) {
                             purge_event_handlers(node); 
