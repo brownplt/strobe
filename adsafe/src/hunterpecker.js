@@ -8,12 +8,12 @@ var has_focus /*: upcast Undef + HTMLElement + Null */;
 
 var hunter = 
     /*: obj* {"": HTMLElement + Undef -> Undef,
-                "+": HTMLElement + Undef -> Undef, 
-                ">": HTMLElement + Undef -> Undef,
-                "#": HTMLElement + Undef -> Undef,
-                "/": HTMLElement + Undef -> Undef,
-                "*": HTMLElement + Undef -> Undef,
-                #proto: Object, *: Undef, #code: Undef} */ 
+              "+": HTMLElement + Undef -> Undef, 
+              ">": HTMLElement + Undef -> Undef,
+              "#": HTMLElement + Undef -> Undef,
+              "/": HTMLElement + Undef -> Undef,
+              "*": HTMLElement + Undef -> Undef,
+              #proto: Object, *: Undef, #code: Undef} */ 
 {
 
     // These functions implement the hunter behaviors.
