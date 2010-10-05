@@ -411,7 +411,7 @@ function Bunch_style (name, value) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
     var b = this.___nodes___,
     i = 0,
     node /*: upcast Undef + HTMLElement */,
-    v /*: upcast Undef + Str */;
+    v = "";
     if (value instanceof Array) {
         if (value.length !== b.length) {
             return error('ADsafe: Array length: ' +
@@ -424,7 +424,7 @@ function Bunch_style (name, value) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
                 if (name !== 'float') {
                     /*: cheat Str */ (node.style[name] = v);
                 } else {
-                    node.style.cssFloat = node.style.styleFloat = /*: cheat Str */ v;
+                    node.style.cssFloat = node.style.styleFloat = v;
                 }
             }
         }
@@ -436,7 +436,7 @@ function Bunch_style (name, value) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
                 if (name !== 'float') {
                     /*: cheat Str */ (node.style[name] = v);
                 } else {
-                    node.style.cssFloat = node.style.styleFloat = /*: cheat Str */v;
+                    node.style.cssFloat = node.style.styleFloat = v;
                 }
             }
         }
