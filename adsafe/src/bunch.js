@@ -455,10 +455,10 @@ function Bunch_tag (tag, type, name) /*: ['Ad] 'Ad * 'Ad * 'Ad-> 'Ad */ {
     node = document.createElement(tag);
     if (name) {
         node.autocomplete = 'off';
-        /*: cheat 'Ad */ (node.name = name);
+        node.name = String(name);
     }
     if (type) {
-        /*: cheat 'Ad */ (node.type = type);
+        node.type = String(type);
     }
     return /*: obj* 'AdObj */ (new Bunch([/*: cheat HTMLElement */node]));
 }
