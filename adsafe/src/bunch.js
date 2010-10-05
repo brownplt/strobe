@@ -630,13 +630,13 @@ function Bunch_off (type) /*: ['Ad] 'Ad -> 'Ad */ {
     return this;
 }
 
-function Bunch_on (type, func) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
-    if (this === this.window || typeof type !== 'string' ||
+function Bunch_on (type_in, func) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
+    if (this === this.window || typeof type_in !== 'string' ||
         typeof func !== 'function') {
         return error();
     }
 
-    var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */, on /*: upcast Undef + {#proto: Object, *: Array<'Ad>, #code: Bot} */, ontype /*: upcast Undef + Str */;
+    var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */, on /*: upcast Undef + {#proto: Object, *: Array<'Ad>, #code: Bot} */, ontype /*: upcast Undef + Str */, type = String(type_in);
     for (i = 0; i < b.length; i += 1) {
         node = b[i];
 
@@ -657,10 +657,10 @@ function Bunch_on (type, func) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
             on = /*: obj* {#proto: Object, *: Array<'Ad>, #code: Bot} */ {};
             /*: cheat {#proto: Object, *: Array<'Ad>, #code: Bot} */ (node['___ on ___'] = on);
         }
-        if (on.hasOwnProperty(/*: cheat Str */ type)) {
-            /*: cheat Array<'Ad> */ (on[/*: cheat Str */ type].push(func));
+        if (on.hasOwnProperty(type)) {
+            /*: cheat Array<'Ad> */ (on[type].push(func));
         } else {
-            /*: cheat Array<'Ad> */ (on[/*: cheat Str */ type] = [func]);
+            /*: cheat Array<'Ad> */ (on[type] = [func]);
         }
     }
     return this;
