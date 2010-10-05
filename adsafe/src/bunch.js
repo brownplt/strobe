@@ -644,9 +644,8 @@ function Bunch_on (type, func) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
         // instance.
 
         if (type === 'change') {
-            ontype = /*: cheat Str */ ('on' + type);
-            if (/*: cheat Bool */ (node[ontype] !== dom_event)) {
-                /*: cheat Null */ (node[ontype] = dom_event);
+            if (node.onchange !== dom_event) {
+                node.onchange = dom_event;
             }
         }
 
