@@ -28,7 +28,7 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
     if (value instanceof Array && b.length === value.length) {
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
-            if (/*: cheat Bool */ node.tagName) {
+            if (node.tagName) {
                 if (node.type !== 'password') {
                     if (typeof node.value === 'string') {
                         node.value = /*: cheat Str + Undef */ (value[i]); // value needs to be an ADsafeNode
