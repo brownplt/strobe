@@ -138,6 +138,19 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                     v1, 
                     cps_exp e2 throw (Jmp k'),
                     cps_exp e3 throw (Jmp k'))))
+  | EApp (_, EDeref (_, EBracket (_, obj, 
+                                  EConst (_, 
+                                          JavaScript_syntax.CString 
+                                            "hasOwnProperty"))), 
+          [arg]) ->
+      cps' obj throw
+        (fun vo ->
+           cps' arg throw
+             (fun va ->
+                let x = new_name () in
+                  Bind (new_node (), x, 
+                        Op2 (Op2Infix "hasOwnProperty", vo, va),
+                        ret k (mk_id x))))
   | EApp (_, EDeref (_, EBracket (_, obj, prop)), args) ->
       bind_cont k
         (fun k' ->
