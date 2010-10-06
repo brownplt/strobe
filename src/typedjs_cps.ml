@@ -138,7 +138,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                     v1, 
                     cps_exp e2 throw (Jmp k'),
                     cps_exp e3 throw (Jmp k'))))
-  | EApp (_, EBracket (_, obj, prop), args) ->
+  | EApp (_, EDeref (_, EBracket (_, obj, prop)), args) ->
       bind_cont k
         (fun k' ->
            cps' obj throw
