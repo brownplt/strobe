@@ -82,7 +82,7 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
 (*  | Op2Infix "instanceof", ADeref (loc, _), AStr constr_name ->
     (AInstanceof (loc, constr_name), heap) *)
   | Op2Infix "instanceof", _, _ ->
-    (singleton RT.Bool, heap)
+      (singleton RT.Bool, heap)
   | SetRef, ARef l, v ->
       v, set_ref l (to_set v) heap
   | Op2Infix "+", _, _ -> 
