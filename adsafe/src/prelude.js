@@ -112,6 +112,14 @@ var makeableTagName = /*: obj* {#proto: Object, *: Bool, #code: Bot} */
     'var'     : true
 };
 
+function reject_name(name) /*: Any -> Any */ {
+    return /*: cheat Any */ (banned[name]) ||
+        /*: cheat Bool */(        ((typeof name !== 'number' || name < 0) &&
+         (typeof name !== 'string'  || name.charAt(0) === '_' ||
+          name.slice(-1) === '_'     || name.charAt(0) === '-')));
+}
+
+
 function log(s) /*: Str -> Undef */ {
     return /*: cheat Undef*/undefined;
     // if (window.console) {
@@ -163,7 +171,7 @@ function purge_event_handlers(node)
               );
 }
 
-function getStyleObject(node) /*: HTMLElement -> Style + Undef */
+function getStyleObject(node) /*: HTMLElement + Undef -> Style + Undef */
 {
     
     // The getStyleObject function returns the computed style object for a node.
