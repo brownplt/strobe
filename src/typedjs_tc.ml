@@ -111,7 +111,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       let t = Env.check_typ p env t in
       let s = tc_exp (Env.bind_lbl l (Env.check_typ p env t) env) e in
         if Env.subtype env s t then t
-        else raise (Typ_error (p, "label type mismatch"))
+        else raise (Typ_error (p, sprintf "label type mismatch, expected %s, got %s" (string_of_typ t) (string_of_typ s)))
   | EBreak (p, l, e) ->
       let s = 
         try Env.lookup_lbl l env
