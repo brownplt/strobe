@@ -1,4 +1,5 @@
 function Bunch_getValue() /*: ['Ad] -> 'Ad */ {
+    reject_global(this);
     var a = /*: 'Ad */ [], b = this.___nodes___, 
     i = 0, 
     node /*: upcast Undef + HTMLElement */;
@@ -18,7 +19,8 @@ function Bunch_getValue() /*: ['Ad] -> 'Ad */ {
 }
 
 function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
-    if (this === this.window || value === undefined) {
+    reject_global(this);
+    if (value === undefined) {
         return error();
     }
     var b = this.___nodes___, 
@@ -31,7 +33,7 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
             if (node.tagName) {
                 if (node.type !== 'password') {
                     if (typeof node.value === 'string') {
-                        node.value = String(value[i]);
+                        node.value = string_check(value[i]);
                     } else {
                         while (node.firstChild) {
                             purge_event_handlers(node); 
@@ -46,18 +48,18 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
             }
         }
     } else {
+        value = String(value);
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
             if (node.tagName) {
                 if (typeof node.value === 'string') {
-                    node.value = String(value);
+                    node.value = string_check(value); // modified from adsafe
                 } else {
                     while (node.firstChild) {
                         purge_event_handlers(node);
                         node.removeChild(node.firstChild);
                     }
-                    node.appendChild(document.createTextNode(
-                        String(value)));
+                    node.appendChild(document.createTextNode(string_check(value))); // modified from adsafe
                 }
             } else if (node.nodeName === '#text') {
                 node.nodeValue = String(value);
@@ -68,9 +70,7 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
 }
 
 function Bunch_title(value) /*: ['Ad] 'Ad -> 'Ad */ {
-    if (this === this.window) {
-        return error('ADsafe error.');
-    }
+    reject_global(this);
     var b = this.___nodes___, 
     i = 0,
     node /*: upcast Undef + HTMLElement */;
@@ -82,14 +82,14 @@ function Bunch_title(value) /*: ['Ad] 'Ad -> 'Ad */ {
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
             if (node.tagName) {
-                node.title = String(value[i]);
+                node.title = string_check(value[i]);
             }
         }
     } else {
         for (i = 0; i < b.length; i += 1) {
             node = b[i];
             if (node.tagName) {
-                node.title = String(value);
+                node.title = string_check(value);
             }
         }
     }
@@ -97,6 +97,7 @@ function Bunch_title(value) /*: ['Ad] 'Ad -> 'Ad */ {
 }
 
 function Bunch_getTitle() /*: ['Ad] -> 'Ad */ {
+    reject_global(this);
     var a = /*: 'Ad */ [], 
     b = this.___nodes___, 
     i = 0;
@@ -107,8 +108,9 @@ function Bunch_getTitle() /*: ['Ad] -> 'Ad */ {
 }
 
 function Bunch_each(func) /*: ['Ad] 'Ad -> 'Ad */ {
+    reject_global(this);
     var b = this.___nodes___, i = 0;
-    if (this !== this.window && typeof func === 'function') {
+    if (typeof func === 'function') {
         for (i = 0; i < b.length; i += 1) {
             func(/*: obj* 'AdObj */ (new Bunch([b[i]])));
         }
@@ -118,9 +120,7 @@ function Bunch_each(func) /*: ['Ad] 'Ad -> 'Ad */ {
 }
 
 function Bunch_append (appendage) /*: ['Ad] 'Ad -> 'Ad */ {
-    if (this === this.window) {
-        return error();
-    }
+    reject_global(this);
     var b = this.___nodes___,
     flag = false,
     i = 0,
@@ -156,9 +156,7 @@ function Bunch_append (appendage) /*: ['Ad] 'Ad -> 'Ad */ {
 }
 
 function Bunch_blur () /*: ['Ad] -> 'Ad */ {
-    if (this === this.window) {
-        return error('ADsafe error.');
-    }
+    reject_global(this);
     var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
     has_focus = null;
     for (i = 0; i < b.length; i += 1) {
@@ -171,9 +169,7 @@ function Bunch_blur () /*: ['Ad] -> 'Ad */ {
 }
 
 function Bunch_check (value) /*: ['Ad] 'Ad -> 'Ad */ {
-    if (this === this.window) {
-        return error();
-    }
+    reject_global(this);
     var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
     if (value instanceof Array) {
         if (value.length !== b.length) {
@@ -198,13 +194,12 @@ function Bunch_check (value) /*: ['Ad] 'Ad -> 'Ad */ {
 }
 
 function Bunch_count () /*: ['Ad] -> Int */ {
+    reject_global(this);
     return this.___nodes___.length;
 }
 
 function Bunch_empty () /*: ['Ad] -> 'Ad */ {
-    if (this === this.window) {
-        return error('ADsafe error.');
-    }
+    reject_global(this);
     var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
     if (value instanceof Array) {
         if (value.length !== b.length) {
@@ -231,9 +226,7 @@ function Bunch_empty () /*: ['Ad] -> 'Ad */ {
 }
 
 function Bunch_enable (enable) /*: ['Ad] 'Ad -> 'Ad */ {
-    if (this === this.window) {
-        return error('ADsafe error.');
-    }
+    reject_global(this);
     var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
     if (enable instanceof Array) {
         if (enable.length !== b.length) {
@@ -258,9 +251,7 @@ function Bunch_enable (enable) /*: ['Ad] 'Ad -> 'Ad */ {
 }
 
 function Bunch_ephemeral () /*: ['Ad] -> 'Ad */ {
-    if (this === this.window) {
-        return error('ADsafe error.');
-    }
+    reject_global(this);
     if (ephemeral) {
         ephemeral.remove();
     }
@@ -490,7 +481,7 @@ function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
     n = 0,
     node /*: upcast Undef + HTMLElement */,
     on /*: upcast Undef + {#proto: Object, *: Array<'Ad>, #code: Bot} */,
-    type = "",
+    type /*: upcast 'Ad */,
     check_typ /*: upcast Any */;
 
     if (this === this.window) {
@@ -500,13 +491,7 @@ function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
         type = event;
         event = /*: obj* 'AdObj */ {type: /*: upcast 'Ad */ type};
     } else if (typeof event === 'object') {
-        check_typ = event.type;
-        if (typeof check_typ === 'string') {
-            type = check_typ;
-        }
-        else {
-            return error();
-        }
+        type = event.type;
     } else {
         return error();
     }
@@ -519,7 +504,7 @@ function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
         // If an array of handlers exist for this event, then
         // loop through it and execute the handlers in order.
 
-        if (on && on.hasOwnProperty(type)) {  // broken because of event.type being an object
+        if (on && on.hasOwnProperty(/*: cheat Str */ type)) {  // broken because of event.type being an object
             array = /*: cheat Array<'Ad> */ (on[type]);
             for (j = 0; j < array.length; j += 1) {
 
