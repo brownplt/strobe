@@ -200,3 +200,23 @@ function later (func, timeout)
     }
 }
 
+function reject_global(that) 
+/*: 'Ad -> Undef */
+{
+    if (that.window) {
+	error();
+    }
+}
+
+//	Some of JavaScript's implicit string conversions can grant extraordinary
+//	powers to untrusted code. So we use the string_check function to prevent
+//  such abuses.
+
+function string_check(string) 
+/*: Any -> Str */
+{
+    if (typeof string !== 'string') {
+	error("ADsafe string violation.");
+    }
+    return /*: cheat Str */ string;
+}
