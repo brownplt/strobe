@@ -136,6 +136,13 @@ let rec exp (env : env) expr = match expr with
                                     EConst (a, S.CUndefined)))))],
               EApp (a, EId (a, "%loop"), []))
 
+  | HintExpr (a, txt, LabelledExpr (a', x, e)) ->
+      let t = parse_annotation a txt in
+        begin match t with
+          | AUpcast typ -> ELabel(a', x, typ, exp env e)
+          | _ -> failwith ("Unexpected hint on a label")
+        end
+
   | LabelledExpr (a, x, e) -> 
       (** We assume that this [LabelledExpr] is from a [LabelledStmt]. 
           Therefore, the return type is [ty_undef]. *)
@@ -160,7 +167,8 @@ let rec exp (env : env) expr = match expr with
   | HintExpr (p, txt, FuncExpr _) -> 
       (match match_func env expr with
            Some (_, e) -> e
-         | None -> failwith "match_func returned None on a FuncExpr (1)")
+         | None -> failwith ("match_func returned None on a FuncExpr (1) at " ^
+                            (string_of_position p)))
   | HintExpr (p, text, e) ->
       let e' = exp env e in
         begin match parse_annotation p text with
