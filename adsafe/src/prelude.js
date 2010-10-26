@@ -224,5 +224,5 @@ function string_check(string)
 
 function owns(object, string) /*: Any * Any -> Bool */ {
     return object && typeof object === 'object' &&
-	Object.prototype.hasOwnProperty.call(object, string_check(string));
+	/*:cheat Bool */ (Object.prototype.hasOwnProperty.call(object, string_check(string)));
 }
