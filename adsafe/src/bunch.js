@@ -347,11 +347,11 @@ function Bunch_getSelection () /*: ['Ad] -> 'Ad */ {
         if (typeof node.selectionStart === 'number') {
             start = node.selectionStart;
             end = node.selectionEnd;
-            return node.value.slice(/*: cheat Int */ start, /*: cheat Int */ end);
+            return node.value.slice(start, end);
         } else {
             range = node.createTextRange();
             range.expand('textedit');
-            if (range.inRange(/*: cheat Range */ the_range)) {
+            if (range.inRange(the_range)) {
                 return the_range.text;
             }
         }
@@ -370,23 +370,23 @@ function Bunch_selection (string_in) /*: ['Ad] 'Ad -> 'Ad */ {
     old /*: upcast Undef + Str */, 
     start = 0, 
     range /*: upcast Undef + Range */,
-    string = String(string_in);
+    string = string_check(string_in);
     if (b.length === 1 && allow_focus) {
         node = b[0];
         if (typeof node.selectionStart === 'number') {
             start = node.selectionStart;
             end = node.selectionEnd;
             old = node.value;
-            node.value = old.slice(0, start) + string + old.slice(/*: cheat Int */end);
+            node.value = old.slice(0, start) + string + old.slice(end);
             node.selectionStart = node.selectionEnd = start +
                               string.length;
             node.focus();
         } else {
             range = node.createTextRange();
             range.expand('textedit');
-            if (range.inRange(/*: cheat Range */ the_range)) {
+            if (range.inRange(the_range)) {
                 the_range.select();
-                /*: cheat 'Ad */ (the_range.text = string);
+                the_range.text = string;
                 the_range.select();
             }
         }
