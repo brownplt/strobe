@@ -220,3 +220,9 @@ function string_check(string)
     }
     return /*: cheat Str */ string;
 }
+
+
+function owns(object, string) /*: Any * Any -> Bool */ {
+    return object && typeof object === 'object' &&
+	Object.prototype.hasOwnProperty.call(object, string_check(string));
+}
