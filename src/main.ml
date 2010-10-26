@@ -15,7 +15,7 @@ open Typedjs_cf
 open Typedjs_cftc
 open Lexing
 open Typedjs_dyn
-
+open Typedjs_JSlint
 
 module Lat = Typedjs_lattice
 
@@ -87,9 +87,16 @@ let (set_print_env, get_print_env) =
 let (set_simpl_cps, get_simpl_cps) =
   mk_flag "-simplcps" "use simplified, but slower CPS (broken)" false
 
+let (set_lint_annots, get_lint_annots) =
+  mk_flag "-lint" "add jslint annotations" false
+
 let get_cps exp = match get_simpl_cps () with
   | true -> Typedjs_cps.simpl_cps exp
   | false -> Typedjs_cps.cps exp
+
+let get_lint exp = match get_lint_annots () with
+  | true -> Typedjs_JSlint.lint_annotate exp
+  | false -> exp
 
 let action_pretty () : unit = 
   let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
@@ -98,12 +105,21 @@ let action_pretty () : unit =
 
 let action_expr () : unit =
   let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
-  let e = from_javascript prog in
+  let e = get_lint (from_javascript prog) in
     Exprjs.Pretty.p_expr e std_formatter
 
 let get_typedjs () =
   Typedjs_fromExpr.from_exprjs (get_env ())
-    (from_javascript (parse_javascript (get_cin ()) (get_cin_name ())))
+    ((match get_lint_annots () with
+      | true -> Typedjs_JSlint.lint_annotate
+      | false -> (fun x->x))
+          (from_javascript (parse_javascript (get_cin ()) (get_cin_name ()))))
+
+let get_linted_js () =
+  Typedjs_fromExpr.from_exprjs (get_env ())
+    (Typedjs_JSlint.lint_annotate
+       (from_javascript 
+          (parse_javascript (get_cin ()) (get_cin_name ()))))
 
 let action_pretypecheck () : unit = 
   let typedjs = get_typedjs () in
@@ -184,6 +200,7 @@ let main () : unit =
        "convert program to CPS, then apply flow analysis");
       ("-disable-unreachable", Arg.Unit Typedjs_tc.disable_unreachable_check,
        "do not signal an error on unreachable code");
+      set_lint_annots;
       set_simpl_cps;
       set_print_contracts;
       set_print_env;
