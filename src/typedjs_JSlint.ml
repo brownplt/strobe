@@ -15,6 +15,8 @@ let rec upcast_map e =
   let ad = "'Ad" in
   let objcast = "obj* 'AdObj" in
     match e with
+      | BracketExpr (p, o, ConstExpr (p', S.CString s)) -> 
+          HintExpr (p, adcast, BracketExpr (p, upcast_map o, ConstExpr (p', S.CString s)))
       | ConstExpr (p, _) -> HintExpr (p, adcast, e)
       | ArrayExpr (p, []) ->
           HintExpr (p, ad, ArrayExpr (p, []))
