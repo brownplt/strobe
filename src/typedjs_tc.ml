@@ -331,7 +331,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       let t = Env.check_typ p env t in
         begin match t with
           | TObjStar (fs, cnames, other_typ, code) -> 
-              if not (List.exists (fun cname -> String.compare cname proto != 0) cnames) then
+              if not (List.exists (fun cname -> String.compare cname proto = 0) cnames) then
                 error p (sprintf "Mismatched prototypes in ObjCast: \ 
                                  %s" proto)
               else
@@ -343,11 +343,11 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                   begin match s with 
                     | TObject (fs') -> 
                         if List.for_all (ok_field fs) fs' then t else
-                          error p "Invalid ObjCast"
+                          error p "Invalid ObjCast---bad named fields"
                     | TConstr (cname, []) ->
-                        let fs' = class_fields_list env cnames in
+                        let fs' = map_to_list (Env.class_fields env cname) in
                           if List.for_all (ok_field fs) fs' then t else
-                            error p "Invalid ObjCast"
+                            error p "Invalid ObjCast---constructor missing something"
                     | t ->
                         error p (sprintf "This shouldn't happen, %s wasn't an \
                                 Object type in ObjCast" (string_of_typ t))
@@ -431,7 +431,7 @@ and bracket p env field t =
                                  list_to_typ env (List.fold_right 
                                                     (fun cname l ->
                                                        match Env.field_typ env cname x with
-                                                         | Some t -> t::l
+                                                         | Some t -> (un_ref t)::l
                                                          | None -> l)
                                                     cnames []))))))
     | TObjStar (fs, cnames, other_typ, code), e ->
