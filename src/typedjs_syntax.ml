@@ -245,7 +245,7 @@ module Pretty = struct
       braces (horz (intersperse (text ",") (map field fs)))
     | TObjStar (fs, cnames, other_typ, code) ->
 	let constr = horz [ text "#proto"; text ":" ;
-                            horz (intersperse (text ",") (map text cnames)) ] in
+                            horz (intersperse (text ";") (map text cnames)) ] in
 	let star = horz [ text "*"; text ":"; typ other_typ ] in
         let code = horz [ text "#code"; text":"; typ code ] in
 	let fields = map field fs in
