@@ -39,7 +39,7 @@ type typ =
   | TObject of (id * typ) list
       (** [TObjStar ([(s,t)], p, star, f)] 
           {s: t, ... #proto: p, *: star, #code: f} *)
-  | TObjStar of (id * typ) list * constr * typ * typ
+  | TObjStar of (id * typ) list * constr list * typ * typ
   | TRef of typ
   | TSource of typ
   | TSink of typ
@@ -145,8 +145,8 @@ let rec typ_subst' s_env x s typ =
       | TArrow (t1, t2s, t3)  ->
           TArrow (typ_subst x s t1, map (typ_subst x s) t2s, typ_subst x s t3)
       | TObject fs -> TObject (map (second2 (typ_subst x s)) fs)
-      | TObjStar (fs, cname, other_typ, code) ->
-          TObjStar ((map (second2 (typ_subst x s)) fs), cname, 
+      | TObjStar (fs, cnames, other_typ, code) ->
+          TObjStar ((map (second2 (typ_subst x s)) fs), cnames, 
                     typ_subst x s other_typ,
                     typ_subst x s code)
       | TRef t -> TRef (typ_subst x s t)
@@ -240,8 +240,9 @@ module Pretty = struct
                angles (horz (intersperse (text ",") (map typ ts))) ]
     | TObject fs ->
       braces (horz (intersperse (text ",") (map field fs)))
-    | TObjStar (fs, cname, other_typ, code) ->
-	let constr = horz [ text "#proto"; text ":"; text cname ] in
+    | TObjStar (fs, cnames, other_typ, code) ->
+	let constr = horz [ text "#proto"; text ":" ;
+                            horz (intersperse (text ",") (map text cnames)) ] in
 	let star = horz [ text "*"; text ":"; typ other_typ ] in
         let code = horz [ text "#code"; text":"; typ code ] in
 	let fields = map field fs in

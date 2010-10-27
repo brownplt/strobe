@@ -21,7 +21,18 @@ let map_to_list m =
 
 let error p s = raise (Typ_error (p, s))
 
+let class_fields_list env cnames = 
+  List.fold_right (fun cname l -> 
+                     l@(map_to_list (Env.class_fields env cname)))
+    cnames []
+
 let class_types (env : Env.env) constr = IdMapExt.values (Env.class_fields env constr)
+
+let class_types_list env cnames = 
+  List.fold_right (fun cname l -> 
+                     l@(class_types env cname))
+    cnames []
+  
 
 let string_of_typ_list ts = 
   fold_left (^) "" (intersperse "," (map string_of_typ ts))
@@ -319,10 +330,10 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       let s = tc_exp env e in
       let t = Env.check_typ p env t in
         begin match t with
-          | TObjStar (fs, cname, other_typ, code) -> 
-              if String.compare cname proto != 0 then
+          | TObjStar (fs, cnames, other_typ, code) -> 
+              if not (List.exists (fun cname -> String.compare cname proto != 0) cnames) then
                 error p (sprintf "Mismatched prototypes in ObjCast: \ 
-                                 %s, %s" cname proto)
+                                 %s" proto)
               else
                 let ok_field fss (k, t) =
                   if List.mem_assoc k fss then
@@ -334,7 +345,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                         if List.for_all (ok_field fs) fs' then t else
                           error p "Invalid ObjCast"
                     | TConstr (cname, []) ->
-                        let fs' = (map_to_list (Env.class_fields env cname)) in
+                        let fs' = class_fields_list env cnames in
                           if List.for_all (ok_field fs) fs' then t else
                             error p "Invalid ObjCast"
                     | t ->
@@ -410,23 +421,26 @@ and bracket p env field t =
            snd2 (List.find (fun (x', _) -> x = x') fs)
          with Not_found ->
            raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
-    | TObjStar (fs, cname, other_typ, code), 
+    | TObjStar (fs, cnames, other_typ, code), 
         EConst (_, JavaScript_syntax.CString x) ->
 	(try
 	   snd2 (List.find (fun (x', _) -> x = x') fs)
 	 with Not_found ->
-	   begin match Env.field_typ env cname x with
-             | Some t -> t
-             | None -> TRef (TUnion (unfold_typ (un_ref other_typ), 
-                                     TConstr ("Undef", [])))
-	   end)
-    | TObjStar (fs, cname, other_typ, code), e ->
+	   (TRef (TUnion (unfold_typ (un_ref other_typ), 
+                          TUnion(TConstr ("Undef", []),
+                                 list_to_typ env (List.fold_right 
+                                                    (fun cname l ->
+                                                       match Env.field_typ env cname x with
+                                                         | Some t -> t::l
+                                                         | None -> l)
+                                                    cnames []))))))
+    | TObjStar (fs, cnames, other_typ, code), e ->
 	let t_field = tc_exp env e in
 	  (match t_field with
              | TUnion (TConstr ("Str", []), TConstr ("Undef", []))
              | TConstr ("Str", []) -> 
 		 List.fold_right (fun t typ -> TUnion (unfold_typ t, unfold_typ typ))
-		   ((map snd2 fs)@(class_types env cname))
+		   ((map snd2 fs)@(class_types_list env cnames))
 		   (TRef (TUnion (unfold_typ (un_ref other_typ), TConstr ("Undef", []))))
              | TConstr ("Int", []) ->
                  TRef (TUnion (unfold_typ (un_ref other_typ),
