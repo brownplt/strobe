@@ -129,9 +129,11 @@ type def =
 
 (******************************************************************************)
 
+
 module Typ = struct
 
-  let rec match_func_typ (typ : typ) : (typ list * typ) option = match typ with
+  let rec match_func_typ (typ : typ) : (typ list * typ) option = 
+    match typ with
     | TForall (_, _, t) -> match_func_typ t
     | TArrow (_, args, ret) -> Some (args, ret)
     | _ -> None
@@ -214,6 +216,7 @@ module Exp = struct
     | ETypAbs (p, _, _, _) -> p
     | EForInIdx p -> p
     | ECheat (p, _, _) -> p
+    | EObjCast (p, _, _) -> p
 end
 
 module Pretty = struct
@@ -363,3 +366,5 @@ module Pretty = struct
 end
 
 let string_of_typ = FormatExt.to_string Pretty.p_typ
+let string_of_exp = FormatExt.to_string Pretty.p_exp
+

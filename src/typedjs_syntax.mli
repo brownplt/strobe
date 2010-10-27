@@ -165,4 +165,4 @@ module Pretty : sig
 end
 
 val string_of_typ : typ -> string
-
+val string_of_exp : exp -> string

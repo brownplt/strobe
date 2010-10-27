@@ -269,6 +269,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       let env = fold_left f env binds in
       let tc_bind (x, t, e)=
         let s = tc_exp env e in
+        let t = Env.check_typ (Exp.pos e) env t in
           if Env.subtype env s t then ()
           else (* this should not happen; rec-annotation is a copy of the
                   function's type annotation. *)
@@ -324,8 +325,10 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
             | None -> "Object"
           end
         | EObject _ -> "Object"
-        | EFunc _ -> error p "Can't do functions yet"
-        | e -> error p "Not an object literal or new for ObjCast"
+        | ERec ([fn_name, fn_typ, 
+                EFunc (p, args, fn_typ', fn_body)], 
+                rec_body) -> "Function"
+        | e -> error p (sprintf "Not an object literal or new for ObjCast: %s" (Typedjs_syntax.string_of_exp e))
       end in
       let s = tc_exp env e in
       let t = Env.check_typ p env t in

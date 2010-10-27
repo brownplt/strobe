@@ -14,7 +14,14 @@ let rec upcast_map e =
   let adcast = "upcast 'Ad" in
   let ad = "'Ad" in
   let objcast = "obj* 'AdObj" in
+  let adtoad = "'Ad -> 'Ad" in
     match e with
+      | FuncExpr (p, xs, e') ->
+          HintExpr (p, objcast, HintExpr (p, adtoad, FuncExpr (p, xs, upcast_map e')))
+      | FuncStmtExpr (p, x, xs, e') ->
+          HintExpr (p, objcast,
+                    HintExpr (p, adtoad, 
+                              FuncStmtExpr (p, x, xs, upcast_map e')))
       | BracketExpr (p, o, ConstExpr (p', S.CString s)) -> 
           HintExpr (p, adcast, BracketExpr (p, upcast_map o, ConstExpr (p', S.CString s)))
       | ConstExpr (p, _) -> HintExpr (p, adcast, e)
@@ -44,8 +51,6 @@ let rec upcast_map e =
           HintExpr (p, adcast, AssignExpr (p, x, upcast_map e'))
       | AppExpr (p, f, es) ->
           HintExpr (p, adcast, AppExpr (p, upcast_map f, map upcast_map es))
-      | FuncExpr (p, xs, e') ->
-          HintExpr (p, objcast, FuncExpr (p, xs, upcast_map e'))
       | LetExpr (p, x, e1, e2) ->
           HintExpr (p, adcast, LetExpr (p, x, upcast_map e1, upcast_map e2))
       | SeqExpr (p, e1, e2) ->
@@ -55,7 +60,7 @@ let rec upcast_map e =
       | DoWhileExpr (p, e1, e2) ->
           HintExpr (p, adcast, DoWhileExpr (p, upcast_map e1, upcast_map e2))
       | LabelledExpr (p, x, e') ->
-          HintExpr (p, adcast, LabelledExpr (p, x, upcast_map e'))
+          LabelledExpr (p, x, upcast_map e')
       | BreakExpr (p, x, e') ->
           HintExpr (p, adcast, BreakExpr (p, x, upcast_map e'))
       | ForInExpr (p, x, e1, e2) ->
@@ -71,9 +76,6 @@ let rec upcast_map e =
       | ThrowExpr (p, e') ->
           HintExpr (p, adcast,
                     ThrowExpr (p, upcast_map e'))
-      | FuncStmtExpr (p, x, xs, e') ->
-          HintExpr (p, objcast,
-                    FuncStmtExpr (p, x, xs, upcast_map e'))
       | HintExpr (p, s, e') ->
           HintExpr (p, adcast, HintExpr (p, s, upcast_map e'))
 
