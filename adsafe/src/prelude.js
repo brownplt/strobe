@@ -5,7 +5,7 @@ cache_style_object /*: upcast Undef + Style */,
 has_focus /*: upcast Undef + Null + HTMLElement */,
 value /*: upcast Undef + Str */,
 adsafe_lib /*: upcast Undef + 'Ad */,
-adsafe_id /*: upcast Undef + Str */ ;
+adsafe_id /*: upcast Undef + Str + Null */ ;
 
 var banned = 
     /*: obj* {arguments     : Bool,

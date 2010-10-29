@@ -44,5 +44,9 @@ dom.jsi: hunterpecker.jsi prelude.jsi query.jsi quest.jsi dom_event.jsi bunch.js
 	      -env bunch.jsi \
 		dom.js > dom.jsi
 
-object.jsi: prelude.jsi object.js
-	$(TC) -env prelude.jsi object.js > object.jsi
+object.jsi: prelude.jsi dom.jsi dom_event.jsi bunch.jsi object.js
+	$(TC) -env prelude.jsi \
+	      -env dom.jsi \
+	      -env dom_event.jsi \
+	      -env bunch.jsi \
+	      object.js > object.jsi

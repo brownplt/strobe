@@ -1,6 +1,6 @@
 var root /*: upcast HTMLElement + Undef */;
 var dom /*: upcast 'Ad */;
-var dom_outer = {
+var dom_outer = /*: cheat 'Ad */ {
     q: function (text) /*: ['Ad] 'Ad -> 'Ad */ {
         star = false;
         var query = parse_query(text, id);
