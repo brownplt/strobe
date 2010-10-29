@@ -1,5 +1,5 @@
 function Bunch(nodes) 
-/*: constructor (Undef + Array<HTMLElement> -> {___nodes___: Array<HTMLElement> + Undef, ___star___: Bool + Undef}) */ 
+/*: constructor (Undef + Array<HTMLElement + Undef> -> {___nodes___: Array<HTMLElement + Undef> + Undef, ___star___: Bool + Undef}) */ 
 {
     this.___nodes___ = nodes;
     this.___star___ = star && nodes.length > 1;
@@ -16,7 +16,7 @@ function dom_event (e) /*: Event -> Undef */ {
     target /*: upcast 'Ad */,
     that /*: upcast 'Ad */,
     the_event /*: upcast 'Ad */,
-    the_target /*: upcast Undef + HTMLElement */,
+    the_target /*: upcast HTMLElement + Undef */,
     the_actual_event = e || event,
     type = the_actual_event.type;
 
@@ -24,7 +24,7 @@ function dom_event (e) /*: Event -> Undef */ {
 
     the_target = the_actual_event.target ||
         the_actual_event.srcElement;
-    target = /*: obj* 'AdObj */ (new Bunch([/*: cheat HTMLElement */ the_target]));
+    target = /*: obj* 'AdObj */ (new Bunch([the_target]));
     that = target;
 
     // Use the PPK hack to make focus bubbly on IE.
@@ -134,7 +134,7 @@ function dom_event (e) /*: Event -> Undef */ {
             }
             if (/*: cheat Bool */ (the_target['___ on ___'] &&
                                    the_target['___ on ___'][the_event.type])) {
-                that = /*: obj* 'AdObj */ (new Bunch([/*: cheat HTMLElement */ the_target]));
+                that = /*: obj* 'AdObj */ (new Bunch([the_target]));
                 /*: cheat 'Ad */ (the_event.that = that);
                 that.fire(the_event);
                 break;

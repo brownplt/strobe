@@ -1,7 +1,7 @@
-function parse_query(text, id) 
+function parse_query(text_in, id) 
 /*: 
 'Ad * Str + Undef -> 
-Array<{op: Str + Undef}> + Undef */
+Array<'Selector> + Undef */
 {
 
     // Convert a query string into an array of op/name/value selectors.
@@ -16,12 +16,13 @@ Array<{op: Str + Undef}> + Undef */
     // A name must be all lower case and may contain digits, -, or _.
 
     var match /*: upcast Undef + Array<Str + Undef> */,          // A match array
-    query = /*: {op: Str + Undef} */ [], // The resulting query array
+    query = /*: 'Selector */ [], // The resulting query array
     selector /*: upcast Undef + 
-                {op: Str + Undef} */,
+                'Selector */,
     qx = id ?
         /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([A-Z]+_[A-Z0-9]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/ :
-        /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([\-A-Za-z0-9_]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/;
+        /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([\-A-Za-z0-9_]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/,
+    text = string_check(text_in); // Added by Joe
 
     // Loop over all of the selectors in the text.
 
@@ -40,8 +41,8 @@ Array<{op: Str + Undef}> + Undef */
         //          match[7]  . & _ > +
         //          match[8]      name
 
-        match = /*: cheat Array<Str + Undef> */ (qx.exec(text));
-        if (!(/*: cheat Bool */ match)) {
+        match = qx.exec(string_check(text));
+        if (!match) {
             return error("ADsafe: Bad query:" + text);
         }
 
@@ -51,18 +52,18 @@ Array<{op: Str + Undef}> + Undef */
 
             // The selector is * or /
 
-            selector = {
+            selector = /*: obj* 'Selector */ {
                 op: match[1]
             };
         } else if (match[2]) {
 
             // The selector is in brackets.
 
-            selector = match[3] ? {
+            selector = match[3] ? /*: obj* 'Selector */ {
                 op: /*: upcast Str + Undef */ ('[' + match[3]),
                 name: match[2],
                 value: match[4]
-            } : {
+            } : /*: obj* 'Selector */ {
                 op: /*: upcast Str + Undef */ '[',
                 name: match[2]
             };
@@ -74,7 +75,7 @@ Array<{op: Str + Undef}> + Undef */
                 match[5].slice(0, id.length) !== id) {
                 return error("ADsafe: Bad query: " + text);
             }
-            selector = {
+            selector = /*: obj* 'Selector */ {
                 op: /*: upcast Str + Undef */ '#',
                 name: match[5]
             };
@@ -82,14 +83,14 @@ Array<{op: Str + Undef}> + Undef */
             // The selector is a colon.
 
         } else if (match[6]) {
-            selector = {
+            selector = /*: obj* 'Selector */ {
                 op: /*: upcast Str + Undef */ (':' + match[6])
             };
 
             // The selector is one of > + . & _ or a naked tag name
 
         } else {
-            selector = {
+            selector = /*: obj* 'Selector */ {
                 op: match[7],
                 name: match[8]
             };
@@ -101,7 +102,7 @@ Array<{op: Str + Undef}> + Undef */
 
         // Remove the selector from the text. If there is more text, have another go.
 
-        text = /*: cheat 'Ad */ (text.slice(match[0].length));
+        text = text.slice(match[0].length);
     } while (text);
     return query;
 }

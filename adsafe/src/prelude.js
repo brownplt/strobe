@@ -1,3 +1,4 @@
+
 var defaultView = document.defaultView,
 cache_style_node /*: upcast Undef + HTMLElement */,
 cache_style_object /*: upcast Undef + Style */,
@@ -30,6 +31,7 @@ var banned =
     valueOf         : true,
     watch           : true
 };
+
 
 
 var makeableTagName = /*: obj* {#proto: Object, *: Bool, #code: Bot} */
@@ -112,12 +114,45 @@ var makeableTagName = /*: obj* {#proto: Object, *: Bool, #code: Bot} */
     'var'     : true
 };
 
+function reject_lookup(obj, name) /*: 'Ad * 'Ad -> 'Ad */ {
+    return /*: cheat 'Ad */ (banned[name] || 
+                             ((typeof name !== 'number' || name < 0) &&
+                              (typeof name !== 'string' || name.charAt(0) === '_' ||
+                               name.slice(-1) === '_'   || name.charAt(0) === '-')) ?
+                             error() :
+                             obj[name]);
+}
+
+function reject_mutate(obj, name, value) /*: 'Ad * 'Ad * 'Ad -> 'Ad */ {
+    return /*: cheat 'Ad */ (banned[name] || 
+                             ((typeof name !== 'number' || name < 0) &&
+                              (typeof name !== 'string' || name.charAt(0) === '_' ||
+                               name.slice(-1) === '_'   || name.charAt(0) === '-')) ?
+                             error() :
+                             obj[name] = value);
+}
+
+function make_safe_tag(tag) /*: Str -> HTMLElement + Undef */ {
+    if(makeableTagName[tag] === true) {
+        return document.createElement(tag);
+    }
+    else {
+        return error();
+    }
+}
+
+
+
 function reject_name(name) /*: Any -> Any */ {
     return /*: cheat Any */ (banned[name]) ||
         /*: cheat Bool */(        ((typeof name !== 'number' || name < 0) &&
          (typeof name !== 'string'  || name.charAt(0) === '_' ||
           name.slice(-1) === '_'     || name.charAt(0) === '-')));
 }
+
+
+
+
 
 
 function log(s) /*: Str -> Undef */ {
@@ -187,12 +222,13 @@ function getStyleObject(node) /*: HTMLElement + Undef -> Style + Undef */
 
 // JSlint ensures that calls to lib have a string here
 function lib (name, f) 
-/*: Str * 'Ad -> 'Ad */
+/*: 'Ad * 'Ad -> 'Ad */
 {
-    if (!adsafe_id) {
-        return error();
+    if (!adsafe_id || reject_name(name)) {
+	error("ADsafe lib violation.");
     }
-    /*: cheat 'Ad */ (adsafe_lib[name] = f(adsafe_lib));
+    //adsafe_lib[name] = f(adsafe_lib);
+    reject_mutate(adsafe_lib, name, f(adsafe_lib));
 }
 
 
@@ -202,7 +238,7 @@ function later (func, timeout)
 /*: 'Ad * 'Ad -> 'Ad */
 {
     if (typeof func === 'function') {
-        setTimeout(/*: cheat (-> Undef) */ func, /*: cheat Int */ (timeout || 0));
+        setTimeout(func, timeout || 0);
     } else {
         return error();
     }
@@ -223,7 +259,7 @@ function reject_global(that)
 function string_check(string) 
 /*: Any -> Str */
 {
-    if (typeof string !== 'string') {
+    if (typeof string === 'string') {
 	error("ADsafe string violation.");
     }
     return /*: cheat Str */ string;
@@ -233,4 +269,8 @@ function string_check(string)
 function owns(object, string) /*: Any * Any -> Bool */ {
     return object && typeof object === 'object' &&
 	/*:cheat Bool */ (Object.prototype.hasOwnProperty.call(object, string_check(string)));
+}
+
+
+function getOwnProperty() /*: -> Undef */ {
 }

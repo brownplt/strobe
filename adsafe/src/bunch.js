@@ -126,7 +126,7 @@ function Bunch_append (appendage) /*: ['Ad] 'Ad -> 'Ad */ {
     i = 0,
     j = 0,
     node /*: upcast Undef + HTMLElement */,
-    rep /*: upcast Undef + Array<HTMLElement> */;
+    rep /*: upcast Undef + Array<HTMLElement + Undef> */;
     if (b.length === 0 || !appendage) {
         return this;
     }
@@ -279,7 +279,7 @@ function Bunch_focus () /*: ['Ad] -> 'Ad */ {
 }
 
 function Bunch_fragment () /*: ['Ad] -> 'Ad */ {
-    return /*: obj* 'AdObj */ (new Bunch([document.createDocumentFragment()]));
+    return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ (document.createDocumentFragment())]));
 }
 
 function Bunch_getCheck () /*: ['Ad] -> 'Ad */ {
@@ -326,7 +326,7 @@ function Bunch_getOffsetWidth () /*: ['Ad] -> 'Ad */ {
     return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
 }
 function Bunch_getParent () /*: ['Ad] -> 'Ad */ {
-    var a = /*: HTMLElement */ [], b = this.___nodes___, i = 0, n /*: upcast Undef + HTMLElement */;
+    var a = /*: HTMLElement + Undef */ [], b = this.___nodes___, i = 0, n /*: upcast Undef + HTMLElement */;
     for (i = 0; i < b.length; i += 1) {
         n = b[i].parentNode;
         if (/*: cheat Str */ (n['___adsafe root___'])) {
@@ -437,7 +437,7 @@ function Bunch_style (name, value) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
 }
 
 function Bunch_tag (tag, type, name) /*: ['Ad] 'Ad * 'Ad * 'Ad-> 'Ad */ {
-    var node /*: upcast Undef + HTMLElement */ ;
+    var node /*: upcast HTMLElement + Undef */ ;
     if (typeof tag !== 'string') {
         return error();
     }
@@ -452,19 +452,19 @@ function Bunch_tag (tag, type, name) /*: ['Ad] 'Ad * 'Ad * 'Ad-> 'Ad */ {
     if (type) {
         node.type = String(type);
     }
-    return /*: obj* 'AdObj */ (new Bunch([/*: cheat HTMLElement */node]));
+    return /*: obj* 'AdObj */ (new Bunch([node]));
 }
 
 function Bunch_text (text) /*: ['Ad] 'Ad -> 'Ad */ {
-    var a /*: upcast Undef + Array<HTMLElement> */, i = 0;
+    var a /*: upcast Undef + Array<HTMLElement + Undef> */, i = 0;
     if (text instanceof Array) {
-        a = /*: HTMLElement */ [];
+        a = /*: HTMLElement + Undef*/ [];
         for (i = 0; i < Number(text.length); i += 1) {
             a[i] = document.createTextNode(String(text[i]));
         }
         return /*: obj* 'AdObj */ (new Bunch(a));
     }
-    return /*: obj* 'AdObj */ (new Bunch([document.createTextNode(String(text))]));
+    return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ (document.createTextNode(String(text)))]));
 }
 
 function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
@@ -476,11 +476,11 @@ function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
     // method that match the event name will be invoked.
 
     var array /*: upcast Undef + Array<'Ad> */,
-    b /*: upcast Undef + Array<HTMLElement> */,
+    b /*: upcast Undef + Array<HTMLElement + Undef> */,
     i = 0,
     j = 0,
     n = 0,
-    node /*: upcast Undef + HTMLElement */,
+    node /*: upcast  HTMLElement + Undef */,
     on /*: upcast Undef + {#proto: Object, *: Array<'Ad>, #code: Bot} */,
     type /*: upcast 'Ad */,
     check_typ /*: upcast Any */;
@@ -666,7 +666,7 @@ function Bunch_protect () /*: ['Ad] -> 'Ad */ {
 function Bunch_q (text) /*: ['Ad] 'Ad -> 'Ad */ {
     star = this.___star___;
     return /*: obj* 'AdObj */ (new Bunch(
-        quest(/*: cheat Array<{op: Str + Undef, name: Str + Undef, value: Str + Undef}> */ (
+        quest(/*: cheat Array<'Selector> */ (
             parse_query(text, id)), 
             this.___nodes___)));
 }
@@ -683,10 +683,10 @@ function Bunch_replace (replacement) /*: ['Ad] 'Ad -> 'Ad */ {
     flag = false,
     i = 0,
     j = 0,
-    newnode /*: upcast Undef + HTMLElement */,
-    node /*: upcast Undef + HTMLElement */,
-    parent /*: upcast Undef + HTMLElement */,
-    rep /*: upcast Undef + Array<HTMLElement> */;
+    newnode /*: upcast HTMLElement + Undef */,
+    node /*: upcast HTMLElement + Undef */,
+    parent /*: upcast HTMLElement + Undef */,
+    rep /*: upcast Undef + Array<HTMLElement + Undef> */;
     if (b.length === 0) {
         return;
     }

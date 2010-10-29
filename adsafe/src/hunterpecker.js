@@ -1,19 +1,13 @@
 // Why are these globals? Just to make our lives harder?
-var name = ""; 
+var name /*: upcast Str + Undef */; 
 var value = /*: upcast Any*/undefined;
-var result /*: upcast Undef + Array<HTMLElement> */;
+var result /*: upcast Undef + Array<HTMLElement + Undef> */;
 var star /*: upcast Undef + Bool */;
 var flipflop = true;
 var has_focus /*: upcast Undef + HTMLElement + Null */;
 
 var hunter = 
-    /*: obj* {"": HTMLElement + Undef -> Undef,
-              "+": HTMLElement + Undef -> Undef, 
-              ">": HTMLElement + Undef -> Undef,
-              "#": HTMLElement + Undef -> Undef,
-              "/": HTMLElement + Undef -> Undef,
-              "*": HTMLElement + Undef -> Undef,
-              #proto: Object, *: Undef, #code: Undef} */ 
+    /*: obj* {#proto: Object, *: HTMLElement + Undef -> Undef, #code: Undef} */ 
 {
 
     // These functions implement the hunter behaviors.
@@ -23,7 +17,7 @@ var hunter =
         for (var i = 0; i < 1000; i += 1) {
             // Why bound at 1000?
             if (e[i]) {
-                result.push(/*:cheat HTMLElement */ (e[i]));
+                result.push(e[i]);
             } else {
                 break;
             }
@@ -37,7 +31,7 @@ var hunter =
             node = node.nextSibling;
         }
         if (node && node.tagName === name) {
-            result.push(/*: cheat HTMLElement */node);
+            result.push(node);
         }
     },
 
@@ -55,7 +49,7 @@ var hunter =
     '#': function (node) /*: HTMLElement + Undef -> Undef */ {
         var n = document.getElementById(name);
         if (n.tagName) {
-            result.push(/*: cheat HTMLElement*/n);
+            result.push(/*: cheat HTMLElement */ n); // problem with returning Null
         }
     },
     '/': function (node) /*: HTMLElement + Undef -> Undef */{
@@ -68,7 +62,7 @@ var hunter =
     '*': function (node) /*: HTMLElement + Undef -> Undef */{
         star = true;
         walkTheDOM(node, function (node) /*: HTMLElement + Undef -> Undef */ {
-            result.push(/*:cheat HTMLElement */node);
+            result.push(node);
         }, true);
     }
 };
@@ -153,17 +147,17 @@ var pecker =
         return node.checked;
     },
     ':disabled': function (node) /*: HTMLElement + Undef -> Bool */  {
-        return /*: cheat Bool */(node.tagName && node.disabled);
+        return node.tagName && node.disabled;
     },
     ':enabled': function (node) /*: HTMLElement + Undef -> Bool */  {
-        return /*: cheat Bool */ (node.tagName && !node.disabled);
+        return node.tagName && !node.disabled;
     },
     ':even': function (node) /*: HTMLElement + Undef -> Bool */  {
-        var f /*: upcast Bool + Undef */;
-        if (/*: cheat Bool */ (node.tagName)) {
+        var f = false; // added initialization
+        if (node.tagName) {
             f = flipflop;
             flipflop = !flipflop;
-            return /*: cheat Bool */ f;
+            return f;
         } else {
             return false;
         }
@@ -172,8 +166,8 @@ var pecker =
         return node === has_focus;
     },
     ':hidden': function (node) /*: HTMLElement + Undef -> Bool */  {
-        return /*: cheat Bool */ (node.tagName) && 
-            getStyleObject(/*: cheat HTMLElement */ node).visibility !== 'visible';
+        return node.tagName && 
+            getStyleObject(node).visibility !== 'visible';
     },
     ':odd': function (node) /*: HTMLElement + Undef -> Bool */  {
         if (node.tagName) {
@@ -196,6 +190,6 @@ var pecker =
         return node.tagName && !node.checked;
     },
     ':visible': function (node) /*: HTMLElement + Undef -> Bool */  {
-        return node.tagName && getStyleObject(/*: cheat HTMLElement */ node).visibility === 'visible';
+        return node.tagName && getStyleObject(node).visibility === 'visible';
     }
 };
