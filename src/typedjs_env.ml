@@ -265,10 +265,15 @@ module Env = struct
       else
         TBot
     | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
-    | TObjStar _ -> 
-        if RTSet.mem RT.Object rt || RTSet.mem RT.Function rt 
-        then typ 
-        else TBot
+    | TObjStar (_, _, _, code) -> 
+        (* If it is labeled as a function and only a function, it is
+        safe to treat it as just the code part.  If it is an object at
+        all, keep the whole obj* type *)
+        begin match (RTSet.mem RT.Object rt, RTSet.mem RT.Function rt) with
+          | (true, _) -> typ
+          | (false, true) -> code
+          | (false, false) -> TBot
+        end
     | TRef t -> TRef t
     | TSource t -> TSource t
     | TSink t -> TSink t
