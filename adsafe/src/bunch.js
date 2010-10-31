@@ -40,7 +40,7 @@ function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
                             node.removeChild(node.firstChild);
                         }
                         node.appendChild(document.createTextNode(
-                            String(value[i])));
+                            string_check(value[i])));
                     }
                 }
             } else if (node.nodeName === '#text') {
