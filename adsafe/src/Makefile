@@ -1,4 +1,4 @@
-TC=../../tcb -disable-unreachable -penv -env adsafe.env
+TC=../../tca -disable-unreachable -penv -env adsafe.env
 
 all: hunterpecker.jsi prelude.jsi query.jsi quest.jsi dom_event.jsi bunch.jsi dom.jsi object.jsi
 

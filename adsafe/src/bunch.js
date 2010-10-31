@@ -15,7 +15,7 @@ function Bunch_getValue() /*: ['Ad] -> 'Ad */ {
             }
         }
     }
-    return a.length === 1 ? a[0] : a; // Need Array<'Ad> <: 'Ad
+    return a.length === 1 ? a[0] : a;
 }
 
 function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {

@@ -105,7 +105,7 @@ function make_root(root, id) /*: HTMLElement + Undef + Null * Str + Null + Undef
 
     // Return an ADsafe dom object.
 
-    dom = dom_outer;
+    dom = /*: cheat 'Ad */ dom_outer;
 
     if (typeof root.addEventListener === 'function') {
         root.addEventListener('focus', dom_event, true);

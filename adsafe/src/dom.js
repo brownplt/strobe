@@ -1,6 +1,6 @@
 var root /*: upcast HTMLElement + Undef */;
 var dom /*: upcast 'Ad */;
-var dom_outer = /*: cheat 'Ad */ {
+var dom_outer = {
     q: function (text) /*: ['Ad] 'Ad -> 'Ad */ {
         star = false;
         var query = parse_query(text, id);
@@ -14,8 +14,8 @@ var dom_outer = /*: cheat 'Ad */ {
             return error('ADsafe: Bad combination.');
         }
         var b = array[0].___nodes___, i = 0;
-        for (i = 0; /*: cheat Bool */ (i < array.length); i += 1) {
-            b = /*: cheat Array<HTMLElement + Undef> */ (b.concat(array[i].___nodes___));
+        for (i = 0; i < array.length; i += 1) {
+            b = /*: cheat Undef + Array<HTMLElement + Undef> */ (b.concat(array[i].___nodes___));
         }
         return /*: obj* 'AdObj */ (new Bunch(b));
     },
