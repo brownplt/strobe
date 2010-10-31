@@ -1,6 +1,6 @@
 function Bunch_getValue() /*: ['Ad] -> 'Ad */ {
     reject_global(this);
-    var a = /*: 'Ad */ [], b = this.___nodes___, 
+    var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, 
     i = 0, 
     node /*: upcast Undef + HTMLElement */;
     for (i = 0; i < b.length; i += 1) {
@@ -15,7 +15,7 @@ function Bunch_getValue() /*: ['Ad] -> 'Ad */ {
             }
         }
     }
-    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a; // Need Array<'Ad> <: 'Ad
+    return a.length === 1 ? a[0] : a; // Need Array<'Ad> <: 'Ad
 }
 
 function Bunch_value(value) /*: ['Ad] 'Ad -> 'Ad */ {
@@ -98,13 +98,13 @@ function Bunch_title(value) /*: ['Ad] 'Ad -> 'Ad */ {
 
 function Bunch_getTitle() /*: ['Ad] -> 'Ad */ {
     reject_global(this);
-    var a = /*: 'Ad */ [], 
+    var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), 
     b = this.___nodes___, 
     i = 0;
     for (i = 0; i < b.length; i += 1) {
         a[i] = b[i].title;
     }
-    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+    return a.length === 1 ? a[0] : a;
 }
 
 function Bunch_each(func) /*: ['Ad] 'Ad -> 'Ad */ {
@@ -260,22 +260,21 @@ function Bunch_ephemeral () /*: ['Ad] -> 'Ad */ {
 }
 
 function Bunch_explode () /*: ['Ad] -> 'Ad */ {
-    var a = /*: 'Ad */ [], b = this.___nodes___, i = 0;
+    var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
     for (i = 0; i < b.length; i += 1) {
         a[i] = /*: obj* 'AdObj */ (new Bunch([b[i]]));
     }
-    return /*: cheat 'Ad */ a;
+    return a;
 }
 
 function Bunch_focus () /*: ['Ad] -> 'Ad */ {
+    reject_global(this);
     var b = this.___nodes___;
-    if (this !== this.window) {
-        if (b.length === 1 && allow_focus) {
-            has_focus = b[0].focus();
-            return this;
-        }
+    if (b.length === 1 && allow_focus) {
+	has_focus = b[0].focus();
+	return this;
     }
-    return error();
+    error();
 }
 
 function Bunch_fragment () /*: ['Ad] -> 'Ad */ {
@@ -283,47 +282,47 @@ function Bunch_fragment () /*: ['Ad] -> 'Ad */ {
 }
 
 function Bunch_getCheck () /*: ['Ad] -> 'Ad */ {
-    var a = /*: 'Ad */ [], b = this.___nodes___, i = 0;
+    var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
     for (i = 0; i < b.length; i += 1) {
         a[i] = b[i].checked;
     }
-    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+    return a.length === 1 ? a[0] : a;
 }
 function Bunch_getClass () /*: ['Ad] -> 'Ad */ {
-    var a = /*: 'Ad */ [], b = this.___nodes___, i = 0;
+    var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
     for (i = 0; i < b.length; i += 1) {
         a[i] = b[i].className;
     }
-    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+    return a.length === 1 ? a[0] : a;
 }
 function Bunch_getMark () /*: ['Ad] -> 'Ad */ {
-    var a = /*: 'Ad */ [], b = this.___nodes___, i = 0;
+    var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
     for (i = 0; i < b.length; i += 1) {
         a[i] = /*: cheat 'Ad */ (b[i]['_adsafe mark_']);
     }
-    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+    return a.length === 1 ? a[0] : a;
 }
 function Bunch_getName () /*: ['Ad] -> 'Ad */ {
-    var a = /*: 'Ad */ [], b = this.___nodes___, i = 0;
+    var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
     for (i = 0; i < b.length; i += 1) {
         a[i] = b[i].name;
     }
-    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+    return a.length === 1 ? a[0] : a;
 }
 
 function Bunch_getOffsetHeight () /*: ['Ad] -> 'Ad */ {
-    var a = /*: 'Ad */ [], b = this.___nodes___, i = 0;
+    var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
     for (i = 0; i < b.length; i += 1) {
         a[i] = b[i].offsetHeight;
     }
-    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+    return a.length === 1 ? a[0] : a;
 }
 function Bunch_getOffsetWidth () /*: ['Ad] -> 'Ad */ {
-    var a = /*: 'Ad */ [], b = this.___nodes___, i = 0;
+    var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
     for (i = 0; i < b.length; i += 1) {
         a[i] = b[i].offsetWidth;
     }
-    return a.length === 1 ? a[0] : /*: cheat 'Ad */ a;
+    return a.length === 1 ? a[0] : a;
 }
 function Bunch_getParent () /*: ['Ad] -> 'Ad */ {
     var a = /*: HTMLElement + Undef */ [], b = this.___nodes___, i = 0, n /*: upcast Undef + HTMLElement */;
