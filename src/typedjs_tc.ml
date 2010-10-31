@@ -328,6 +328,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         | ERec ([fn_name, fn_typ, 
                 EFunc (p, args, fn_typ', fn_body)], 
                 rec_body) -> "Function"
+        | EEmptyArray (p, elt_typ) -> "Array"
         | e -> error p (sprintf "Not an object literal or new for ObjCast: %s" (Typedjs_syntax.string_of_exp e))
       end in
       let s = tc_exp env e in
@@ -351,6 +352,9 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                         let fs' = map_to_list (Env.class_fields env cname) in
                           if List.for_all (ok_field fs) fs' then t else
                             error p "Invalid ObjCast---constructor missing something"
+                    | TConstr ("Array", [tarr]) ->
+                        if Env.subtype env tarr other_typ then t else
+                          error p (sprintf "Invalid ObjCast---%s not a subtype of %s" (string_of_typ other_typ) (string_of_typ tarr))
                     | t ->
                         error p (sprintf "This shouldn't happen, %s wasn't an \
                                 Object type in ObjCast" (string_of_typ t))

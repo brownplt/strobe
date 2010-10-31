@@ -26,7 +26,7 @@ let rec upcast_map e =
           HintExpr (p, adcast, BracketExpr (p, upcast_map o, ConstExpr (p', S.CString s)))
       | ConstExpr (p, _) -> HintExpr (p, adcast, e)
       | ArrayExpr (p, []) ->
-          HintExpr (p, ad, ArrayExpr (p, []))
+          HintExpr (p, objcast, HintExpr (p, ad, ArrayExpr (p, [])))
       | ArrayExpr (p, es) ->
           HintExpr (p, adcast, ArrayExpr (p, map upcast_map es))
       | ObjectExpr (p, flds) ->
