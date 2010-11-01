@@ -22,7 +22,7 @@ let map_to_list m =
 let error p s = raise (Typ_error (p, s))
 
 let class_fields_list env cnames = 
-  List.fold_right (fun cname l -> 
+  List.fold_right (fun cname l ->
                      l@(map_to_list (Env.class_fields env cname)))
     cnames []
 
@@ -43,7 +43,8 @@ let unfold_typ t = match t with
 
 let rec typ_to_list t = match t with
   | TUnion (t1, t2) -> (typ_to_list t1)@(typ_to_list t2)
-  | t -> [unfold_typ t]
+  | TRec _ -> typ_to_list (unfold_typ t)
+  | t -> [t]
 
 let rec list_to_typ env ts = match ts with
   | (t::rest) -> Env.normalize_typ env (TUnion (t, list_to_typ env rest))

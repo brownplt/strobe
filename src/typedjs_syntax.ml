@@ -8,7 +8,7 @@ module RT = struct
     | Str
     | Bool
     | Function
-    | Object
+    | Object of string list (** fields that were falsy *)
     | ConstrObj of string (** [ConstrObj constr_name] *)
     | Undefined
 
@@ -21,7 +21,7 @@ module RT = struct
     | Str -> text "string"
     | Bool -> text "boolean"
     | Function -> text "function"
-    | Object -> text "object"
+    | Object _ -> text "object"
     | ConstrObj constr_name -> text (sprintf "object(%s)" constr_name)
     | Undefined -> text "undefined"
 
@@ -35,11 +35,24 @@ type constr = string
 type typ = 
   | TConstr of constr * typ list
   | TUnion of typ * typ
-  | TArrow of typ * typ list * typ
+  | TArrow of typ * typ list * typ (** this, args, restargs, return *)
   | TObject of (id * typ) list
       (** [TObjStar ([(s,t)], p, star, f)] 
           {s: t, ... #proto: p, *: star, #code: f} *)
   | TObjStar of (id * typ) list * constr list * typ * typ
+
+(** We use TPred for arbitrary predicates. f is a function from (T\S
+-> false) + (S -> true), where S is the subset of values of type T
+that satisfy the predicate.  We "name" this set with the identifier
+that holds the function. This allows for this typing rule:
+
+Gamma[x <- T\S] |- els : T'
+Gamma[x <- S] |- thn : T'
+Gamma |- fun : (S -> true) + (T\S -> false)
+-------------------------------------------
+Gamma |- if fun(x) thn els : T'
+*)
+
   | TRef of typ
   | TSource of typ
   | TSink of typ
@@ -49,6 +62,7 @@ type typ =
   | TRec of id * typ
   | TId of id
   | TField
+
 
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list

@@ -76,7 +76,7 @@ let empty = ASet RTSet.empty
 
 let rtany = 
   (RTSetExt.from_list
-     [ RT.Num; RT.Str; RT.Bool; RT.Function; RT.Object; RT.Undefined ])
+     [ RT.Num; RT.Str; RT.Bool; RT.Function; (RT.Object []); RT.Undefined ])
 
 let any = ASet rtany
 
@@ -169,7 +169,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
   | Typedjs_syntax.TUnion (t1, t2) -> RTSet.union (rt_of_typ t1) (rt_of_typ t2)
   | Typedjs_syntax.TConstr (constr_name, []) -> begin match constr_name with
         "Str" ->  RTSet.singleton RT.Str
-      | "RegExp" -> RTSet.singleton RT.Object
+      | "RegExp" -> RTSet.singleton (RT.Object [])
       | "Num"  -> RTSet.singleton RT.Num
       | "Int" -> RTSet.singleton RT.Num
       | "Bool" -> RTSet.singleton RT.Bool
@@ -180,9 +180,9 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
     RTSet.singleton (RT.ConstrObj "Array")
   | Typedjs_syntax.TConstr _ -> failwith 
       (sprintf "unknown type: %s" (to_string Typedjs_syntax.Pretty.p_typ t))
-  | Typedjs_syntax.TObject _ -> RTSet.singleton RT.Object
+  | Typedjs_syntax.TObject _ -> RTSet.singleton (RT.Object [])
   | Typedjs_syntax.TObjStar _ -> 
-      RTSet.add RT.Object (RTSet.singleton RT.Function)
+      RTSet.add (RT.Object []) (RTSet.singleton RT.Function)
   | Typedjs_syntax.TRef t -> rt_of_typ t
   | Typedjs_syntax.TSource t -> rt_of_typ t
   | Typedjs_syntax.TSink t -> rt_of_typ t

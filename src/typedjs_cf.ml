@@ -29,7 +29,7 @@ let tag_of_string s = match s with
   | "number" -> RT.Num
   | "boolean" -> RT.Bool
   | "function" ->  RT.Function
-  | "object" -> RT.Object
+  | "object" -> RT.Object []
   | "undefined" ->  RT.Undefined
   | _ -> raise (Invalid_argument "tag_of_string")
 
@@ -48,11 +48,11 @@ let mk_type_is_not x s =
 let abs_of_cpsval node env (cpsval : cpsval) = match cpsval with
   | Const c -> begin match c with
       | JavaScript_syntax.CString s -> AStr s
-      | JavaScript_syntax.CRegexp _ -> singleton RT.Object
+      | JavaScript_syntax.CRegexp _ -> singleton (RT.Object [])
       | JavaScript_syntax.CNum _ -> singleton RT.Num
       | JavaScript_syntax.CInt _ -> singleton RT.Num
       | JavaScript_syntax.CBool b -> ABool b
-      | JavaScript_syntax.CNull -> singleton RT.Object
+      | JavaScript_syntax.CNull -> singleton (RT.Object [])
       | JavaScript_syntax.CUndefined -> singleton RT.Undefined
     end
   | Id (p, x) -> 
@@ -111,8 +111,8 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
             calc_op2 node env heap op 
               (abs_of_cpsval node env v1) 
               (abs_of_cpsval node env v2)
-        | Object _ -> singleton RT.Object, heap
-        | Array _ -> singleton RT.Object, heap
+        | Object _ -> singleton (RT.Object []), heap
+        | Array _ -> singleton (RT.Object []), heap
         | UpdateField (obj, _, _) -> (abs_of_cpsval node env obj, heap) in
         flow node (bind x cpsval env) heap cont
   | If (node, v1, true_cont, false_cont) ->
@@ -128,6 +128,9 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         | ADeref (loc, loc_set) when RTSet.mem RT.Undefined loc_set ->
           let true_set = RTSet.remove RT.Undefined loc_set in
           (set_ref loc true_set heap, heap)
+        | AField (loc, field_name) ->
+            let false_set = RTSet.singleton (RT.Object ([field_name])) in
+              (heap, set_ref loc false_set heap)
         | _ ->  (heap, heap) in
         (match absv1 with
              ABool false -> ()

@@ -231,12 +231,16 @@ module Env = struct
         | _ -> normalize_typ env t
     with Not_wf_typ s -> raise (Typ_error (p, s))
 
+  let has_obj rtset = RTSet.exists (fun rt -> match rt with 
+                                   | RT.Object _ -> true
+                                   | _ -> false) rtset
+
   let basic_static env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env typ_num typ
     | RT.Str -> typ_union env typ_str typ
     | RT.Bool -> typ_union env typ_bool typ
     | RT.Function -> typ_union env TField typ
-    | RT.Object -> typ_union env TField typ
+    | RT.Object _ -> typ_union env TField typ
     | RT.ConstrObj _ -> typ_union env TField typ
     | RT.Undefined -> typ_union env typ_undef typ
 
@@ -245,7 +249,7 @@ module Env = struct
     | RT.Str -> typ_union env typ_str typ
     | RT.Bool -> typ_union env typ_bool typ
     | RT.Function -> typ_union env (TObject []) typ
-    | RT.Object -> typ_union env (TObject []) typ
+    | RT.Object _ -> typ_union env (TObject []) typ
     | RT.ConstrObj _ -> typ_union env (TObject []) typ (* parameters unknown *)
     | RT.Undefined -> typ_union env typ_undef typ
 
@@ -253,7 +257,7 @@ module Env = struct
     | TBot -> TBot (* might change if we allow arbitrary casts *)
     | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
     | TConstr ("Str", []) -> if RTSet.mem RT.Str rt then typ else TBot
-    | TConstr ("RegExp", []) -> if RTSet.mem RT.Object rt then typ else TBot
+    | TConstr ("RegExp", []) -> if has_obj rt then typ else TBot
     | TConstr ("Num", []) -> if RTSet.mem RT.Num rt then typ else TBot
     | TConstr ("Int", []) -> if RTSet.mem RT.Num rt then typ else TBot
     | TConstr ("Bool", []) -> if RTSet.mem RT.Bool rt then typ else TBot
@@ -262,16 +266,16 @@ module Env = struct
           (* any other app will be an object from a constructor *)
     | TConstr (constr_name, _) -> 
       (* Two conditions due to ordering in the lattice of abstract values *)
-      if RTSet.mem (RT.ConstrObj constr_name) rt || RTSet.mem RT.Object rt then
+      if RTSet.mem (RT.ConstrObj constr_name) rt || has_obj rt then
         typ
       else
         TBot
-    | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
+    | TObject _ -> if has_obj rt then typ else TBot
     | TObjStar (_, _, _, code) -> 
         (* If it is labeled as a function and only a function, it is
         safe to treat it as just the code part.  If it is an object at
         all, keep the whole obj* type *)
-        begin match (RTSet.mem RT.Object rt, RTSet.mem RT.Function rt) with
+        begin match (has_obj rt, RTSet.mem RT.Function rt) with
           | (true, _) -> typ
           | (false, true) -> code
           | (false, false) -> TBot

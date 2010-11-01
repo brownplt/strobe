@@ -8,7 +8,7 @@ module RT : sig
     | Str
     | Bool
     | Function
-    | Object
+    | Object of string list
     | ConstrObj of string (** [ConstrObj constr_name] *)
     | Undefined
 
