@@ -43,7 +43,7 @@ let unfold_typ t = match t with
 
 let rec typ_to_list t = match t with
   | TUnion (t1, t2) -> (typ_to_list t1)@(typ_to_list t2)
-  | t -> [t]
+  | t -> [unfold_typ t]
 
 let rec list_to_typ env ts = match ts with
   | (t::rest) -> Env.normalize_typ env (TUnion (t, list_to_typ env rest))
@@ -325,9 +325,10 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
             | None -> "Object"
           end
         | EObject _ -> "Object"
-        | ERec ([fn_name, fn_typ, 
-                EFunc (p, args, fn_typ', fn_body)], 
-                rec_body) -> "Function"
+        | ERec ([_, _, 
+                EFunc (_, _, _, _)], 
+                _) 
+        | EFunc (_, _, _, _) -> "Function"
         | EEmptyArray (p, elt_typ) -> "Array"
         | e -> error p (sprintf "Not an object literal or new for ObjCast: %s" (Typedjs_syntax.string_of_exp e))
       end in
@@ -355,6 +356,9 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                     | TConstr ("Array", [tarr]) ->
                         if Env.subtype env tarr other_typ then t else
                           error p (sprintf "Invalid ObjCast---%s not a subtype of %s" (string_of_typ other_typ) (string_of_typ tarr))
+                    | TArrow (ths, args, ret) ->
+                        if Env.subtype env s code then t else 
+                          error p (sprintf "Invalid ObjCast---%s not a subtype of %s" (string_of_typ s) (string_of_typ code))
                     | t ->
                         error p (sprintf "This shouldn't happen, %s wasn't an \
                                 Object type in ObjCast" (string_of_typ t))
