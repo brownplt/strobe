@@ -253,6 +253,15 @@ module Env = struct
     | RT.ConstrObj _ -> typ_union env (TObject []) typ (* parameters unknown *)
     | RT.Undefined -> typ_union env typ_undef typ
 
+  let maybe_falsy typ = match typ with
+    | TConstr ("Bool", [])
+    | TConstr ("Int", [])
+    | TConstr ("Num", [])
+    | TConstr ("Str", [])
+    | TConstr ("Undef", [])
+    | TConstr ("Null", []) -> true
+    | _ -> false
+
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
     | TBot -> TBot (* might change if we allow arbitrary casts *)
     | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
@@ -265,11 +274,26 @@ module Env = struct
         if RTSet.mem RT.Undefined rt then typ else TBot
           (* any other app will be an object from a constructor *)
     | TConstr (constr_name, _) -> 
-      (* Two conditions due to ordering in the lattice of abstract values *)
-      if RTSet.mem (RT.ConstrObj constr_name) rt || has_obj rt then
-        typ
-      else
-        TBot
+        (* If there exists a non-falsy value in the constructor that
+        the flow analysis marked as falsy, then this constructor is
+        not part of the type *)
+        if (RTSet.exists 
+              (fun rt' -> 
+                 match rt' with
+                   | RT.Object ([fld]) -> 
+                       (try let fld = 
+                          IdMap.find fld (class_fields cs constr_name)
+                        in not (maybe_falsy fld)
+                       with Not_found -> false)
+                   | _ -> false) rt) 
+        then
+          TBot 
+        else
+          (* Two conditions due to ordering in the lattice of abstract values *)
+          if RTSet.mem (RT.ConstrObj constr_name) rt || has_obj rt then
+            typ
+          else
+            TBot
     | TObject _ -> if has_obj rt then typ else TBot
     | TObjStar (_, _, _, code) -> 
         (* If it is labeled as a function and only a function, it is

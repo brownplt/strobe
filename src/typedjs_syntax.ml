@@ -21,7 +21,9 @@ module RT = struct
     | Str -> text "string"
     | Bool -> text "boolean"
     | Function -> text "function"
-    | Object _ -> text "object"
+    | Object (flds) -> 
+        horz [text "object";      
+              braces (horz (intersperse (text ",") (map text flds)))]
     | ConstrObj constr_name -> text (sprintf "object(%s)" constr_name)
     | Undefined -> text "undefined"
 
