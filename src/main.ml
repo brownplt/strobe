@@ -132,7 +132,7 @@ let annotate_exp exp =
     let cpstypedjs = get_cps exp in
   let cf_env =
     Lat.bind "%end" (Lat.singleton RT.Function)
-      (Lat.bind "%global" (Lat.singleton RT.Object)
+      (Lat.bind "%global" (Lat.singleton (RT.Object []))
          (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
             (cf_env_of_tc_env (get_env ())))) in
     set_op_env (get_env ());
@@ -159,7 +159,7 @@ let action_df () : unit =
   let cpstypedjs = Typedjs_cps.cps typedjs in
   let env =
     Lat.bind "%end" (Lat.singleton RT.Function)
-      (Lat.bind "%global" (Lat.singleton RT.Object)
+      (Lat.bind "%global" (Lat.singleton (RT.Object []))
          (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
             (cf_env_of_tc_env (get_env ())))) in
     set_op_env (get_env ());
