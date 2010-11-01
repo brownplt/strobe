@@ -64,6 +64,7 @@ let calc_op1 node env heap (op : op1) v = match op, v with
       let loc = Loc node in
         ARef loc, set_ref loc (to_set v) heap
   | Deref, ARef loc -> (ADeref (loc, deref loc heap), heap)
+  | Deref, AField (loc, field_name) -> AField (loc, field_name), heap (** I think this is principled *)
   | Op1Prefix "prefix:typeof", ADeref (loc, _) -> ALocTypeof loc, heap
   | _ -> any, heap
 
@@ -92,9 +93,9 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
         (fn [ v1; v2 ], heap)
     with Not_found ->
       failwith (sprintf "operator %s is unbound in calc_op2" op)
-  end
+    end
   | GetField, ADeref (loc, _), AStr field_name ->
-    (AField (loc, field_name), heap)
+      (AField (loc, field_name), heap)
   | _ -> any, heap
 
 let mk_closure (env : env) (_, f, args, typ, body_exp) =
