@@ -4,6 +4,8 @@ open Typedjs_types
 
 exception Not_wf_typ of string
 
+let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
+
 module Env = struct
 
   module TypPairOrderedType = struct
@@ -111,16 +113,16 @@ module Env = struct
 	| TUnion (s1, s2), t -> st s1 t && st s2 t
 	| s, TUnion (t1, t2) -> st s t1 || st s t2
 	| TRef s', TRef t' -> st s' t' && st t' s'
-        | TArrow (_, args1, r1), TArrow (_, args2, r2) ->
-            if (List.length args2) > (List.length args1) then
-              let args2' = (List.fold_left2 
-                                    (fun l a n -> 
-                                       if n >= List.length args1
-                                       then l else a::l)
-                                    [] args2 (iota (List.length args2))) in
-              r_subtypes rel env args2' args1 && r_subtype rel env r1 r2
-            else
-              r_subtypes rel env args2 args1 && r_subtype rel env r1 r2
+            
+            (** We can fill args2 with undefineds (up to the length of
+            args1), and then check *)
+
+        | TArrow (this_t1, args1, r1), TArrow (this_t2, args2, r2) ->
+            let args2 = 
+              fill (List.length args1 - List.length args2) 
+                typ_undef args2 in
+              r_subtypes rel env args2 args1 && r_subtype rel env r1 r2 && 
+                st this_t1 this_t2 && st this_t2 this_t1
         | TConstr (c_name, []), TObject fs2 ->
             (* Classes can be turned into objects. However, this drops
                all fields in the prototype. *)
@@ -188,7 +190,7 @@ module Env = struct
               let code = normalize_typ env code in
 		TObjStar (fs, cnames, other_typ, code)
       | TConstr ("Array", [t]) -> TConstr ("Array", [normalize_typ env t])
-      | TConstr ("Array", (t:_)) -> 
+      | TConstr ("Array", (t:_)) ->
           raise (Not_wf_typ ("Array only takes one argument"))
       | TConstr (constr, []) ->
           if IdMap.mem constr env.classes then 
