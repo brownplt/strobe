@@ -253,14 +253,19 @@ module Env = struct
     | RT.ConstrObj _ -> typ_union env (TObject []) typ (* parameters unknown *)
     | RT.Undefined -> typ_union env typ_undef typ
 
-  let maybe_falsy typ = match typ with
-    | TConstr ("Bool", [])
-    | TConstr ("Int", [])
-    | TConstr ("Num", [])
-    | TConstr ("Str", [])
-    | TConstr ("Undef", [])
-    | TConstr ("Null", []) -> true
-    | _ -> false
+(* maybe_falsy takes refs (fields) and indicates if they could
+*possibly* be falsy values *)
+  let maybe_falsy env typ = 
+    match typ with
+      | TRef typ ->
+          List.exists (fun t -> subtype env t typ)
+            [TConstr ("Bool", []);
+             TConstr ("Int", []);
+             TConstr ("Num", []);
+             TConstr ("Str", []);
+             TConstr ("Undef", []);
+             TConstr ("Null", [])]
+      | _ -> true
 
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
     | TBot -> TBot (* might change if we allow arbitrary casts *)
@@ -283,7 +288,7 @@ module Env = struct
                    | RT.Object ([fld]) -> 
                        (try let fld = 
                           IdMap.find fld (class_fields cs constr_name)
-                        in not (maybe_falsy fld)
+                        in not (maybe_falsy cs fld)
                        with Not_found -> false)
                    | _ -> false) rt) 
         then

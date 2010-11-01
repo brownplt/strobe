@@ -228,7 +228,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       cps_exp e throw (Jmp l)
   | EThrow (_, e) ->
       cps_exp e throw (Jmp throw)
-  | EThis _ -> ret k (Id (p, "%this"))
+  | EThis p -> ret k (Id (p, "%this"))
   | ENew (_, constr, args) ->
       let k' = mk_name "app-cont"
       and obj = new_name () in

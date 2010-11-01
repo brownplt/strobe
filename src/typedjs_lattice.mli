@@ -23,6 +23,7 @@ type av =
   | ABool of bool
   | AClosure of int * id list * cpsexp
   | AField of Loc.t * string
+  | AThisField of string
 
 type env
 
