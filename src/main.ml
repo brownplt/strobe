@@ -19,6 +19,8 @@ open Typedjs_JSlint
 
 module Lat = Typedjs_lattice
 
+let global_object = ref None
+
 let string_of_cin cin =
   let buf = Buffer.create 5000 in
     Buffer.add_channel buf cin (in_channel_length cin);
@@ -42,7 +44,6 @@ module Input : sig
 end = struct
 
   let env = ref Env.empty_env
-  let global_object = ref None
 
   let c = ref None
   let str = ref None
@@ -74,6 +75,11 @@ end
 
 open Input
 
+let get_global () = match !global_object with
+  | None -> Lat.singleton (RT.ConstrObj ("Global"))
+  | Some c -> Lat.singleton (RT.ConstrObj (c))
+
+      
 let (set_no_cf, get_no_cf) = 
   mk_flag "-noflows" "disable flow analysis (debugging and benchmarking)" false
 
@@ -132,7 +138,7 @@ let annotate_exp exp =
     let cpstypedjs = get_cps exp in
   let cf_env =
     Lat.bind "%end" (Lat.singleton RT.Function)
-      (Lat.bind "%global" (Lat.singleton (RT.Object []))
+      (Lat.bind "%global" (get_global ())
          (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
             (cf_env_of_tc_env (get_env ())))) in
     set_op_env (get_env ());
@@ -159,7 +165,7 @@ let action_df () : unit =
   let cpstypedjs = Typedjs_cps.cps typedjs in
   let env =
     Lat.bind "%end" (Lat.singleton RT.Function)
-      (Lat.bind "%global" (Lat.singleton (RT.Object []))
+      (Lat.bind "%global" (get_global ())
          (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
             (cf_env_of_tc_env (get_env ())))) in
     set_op_env (get_env ());
