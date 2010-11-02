@@ -526,8 +526,8 @@ and bracket p env field t =
         | TField -> TField
         | _ -> error p "expected a TField index"
       end
-    | t, EConst (_, JavaScript_syntax.CString _) ->
-        error p ("expected object, but got " ^ string_of_typ t)
+    | t, EConst (_, JavaScript_syntax.CString s) ->
+        error p ("expected object, but got " ^ string_of_typ t ^ " for lookup of " ^ s)
     | t, f -> 
         error p ("field-lookup requires a string literal, got " ^ 
                    (string_of_typ t) ^ "[" ^ 
