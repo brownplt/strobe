@@ -65,7 +65,6 @@ let calc_op1 node env heap (op : op1) v = match op, v with
         ARef loc, set_ref loc (to_set v) heap
   | Deref, ARef loc -> (ADeref (loc, deref loc heap), heap)
   | Deref, AField (loc, field_name) -> AField (loc, field_name), heap (** I think this is principled *)
-  | Deref, AThisField (field_name) -> AThisField (field_name), heap (** I think this is principled *)
   | Op1Prefix "prefix:typeof", ADeref (loc, _) -> ALocTypeof loc, heap
   | _ -> any, heap
 
@@ -97,8 +96,6 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
     end
   | GetField, ADeref (loc, _), AStr field_name ->
       (AField (loc, field_name), heap)
-  | GetField, ASet set, AStr field_name ->
-      (AThisField (field_name), heap)
   | _ -> any, heap
 
 let mk_closure (env : env) (_, f, args, typ, body_exp) =
@@ -136,17 +133,12 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
             let false_set = RTSet.singleton (RT.Object ([field_name])) in
               (heap, set_ref loc false_set heap)
         | _ ->  (heap, heap) in
-      let (env_true, env_false) = match absv1 with
-        | AThisField (field_name) ->
-            let false_set = ASet (RTSet.singleton (RT.Object ([field_name]))) in
-              (env, bind "%this" false_set env) 
-        | _ -> (env, env) in
         (match absv1 with
              ABool false -> ()
-           | _ -> flow node env_true heap2 true_cont);
+           | _ -> flow node env heap2 true_cont);
         (match absv1 with
            | ABool true -> ()
-           | _ -> flow node env_false heap3 false_cont)
+           | _ -> flow node env heap3 false_cont)
   | Fix (n, binds, cont) ->
       let esc_set = esc_cpsexp cpsexp in
       let is_escaping (boundary, f, _, _, _) = 

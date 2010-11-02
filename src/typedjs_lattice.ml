@@ -34,7 +34,6 @@ type av =
   | ABool of bool
   | AClosure of int * id list * cpsexp
   | AField of Loc.t * string
-  | AThisField of string
 
 module AV = struct
 
@@ -70,10 +69,6 @@ let rec p_av av = match av with
     parens (horz [ text "get-field"; 
                    parens (horz [ text "deref"; Loc.pp loc ]);
                    text field_name ])
-  | AThisField (field_name) ->
-    parens (horz [ text "get-field"; 
-                   text "%this";
-                   text field_name ])
 
 let singleton t = ASet (RTSet.singleton t)
 
@@ -100,7 +95,6 @@ let rec to_set v = match v with
   | ABool _ -> RTSet.singleton RT.Bool
   | ADeref (_, v) -> v
   | AField _ -> rtany
-  | AThisField _ -> rtany
 
 let deref loc heap  =
   try 
