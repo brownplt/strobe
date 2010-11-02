@@ -9,7 +9,7 @@ module Env : sig
 
   val bind_global : typ -> env -> env
 
-  val lookup_global env -> typ
+  val lookup_global : env -> typ
 
   val bind_id : id -> typ -> env -> env
 
