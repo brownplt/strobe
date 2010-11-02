@@ -285,26 +285,25 @@ module Env = struct
         if RTSet.mem RT.Undefined rt then typ else TBot
           (* any other app will be an object from a constructor *)
     | TConstr (constr_name, _) -> 
-        (* If there exists a non-falsy value in the constructor that
-        the flow analysis marked as falsy, then this constructor is
-        not part of the type *)
-        if (RTSet.exists 
-              (fun rt' -> 
-                 match rt' with
-                   | RT.Object ([fld]) -> 
-                       (try let fld = 
-                          IdMap.find fld (class_fields cs constr_name)
-                        in not (maybe_falsy cs fld)
-                       with Not_found -> false)
-                   | _ -> false) rt) 
-        then
-          TBot 
+        (* Two conditions due to ordering in the lattice of abstract values *)
+        if RTSet.mem (RT.ConstrObj constr_name) rt then
+          typ
+        else if has_obj rt then
+          (* If there exists a non-falsy value in the constructor that
+             the flow analysis marked as falsy, then this constructor is
+             not part of the type *)
+          if RTSet.cardinal rt = 1 && match RTSet.choose rt with
+            | RT.Object ([fld]) -> 
+                (try let fld = 
+                   IdMap.find fld (class_fields cs constr_name)
+                 in not (maybe_falsy cs fld)
+                 with Not_found -> false)
+            | _ -> false
+          then
+             TBot
+          else typ
         else
-          (* Two conditions due to ordering in the lattice of abstract values *)
-          if RTSet.mem (RT.ConstrObj constr_name) rt || has_obj rt then
-            typ
-          else
-            TBot
+          TBot
     | TObject _ -> if has_obj rt then typ else TBot
     | TObjStar (_, _, _, code) -> 
         (* If it is labeled as a function and only a function, it is
