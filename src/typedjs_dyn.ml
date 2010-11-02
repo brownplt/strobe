@@ -52,7 +52,7 @@ let instanceof p name =
                          [ VarExpr (p, name) ]))
 
 let rec ctc_of_typ p (typ : typ) = match typ with
-  | TArrow (_, args, result) -> 
+  | TArrow (_, args, _, result) -> 
       CArrow (map (ctc_of_typ p) args, ctc_of_typ p result)
   | TConstr ("Int", []) -> flat p "Int"
   | TConstr ("Str", []) -> flat p "Str"

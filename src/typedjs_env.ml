@@ -123,12 +123,12 @@ module Env = struct
             (** We can fill args2 with undefineds (up to the length of
             args1), and then check *)
 
-        | TArrow (this_t1, args1, r1), TArrow (this_t2, args2, r2) ->
+        | TArrow (this_t1, args1, rest_typ1, r1), TArrow (this_t2, args2, rest_typ2, r2) ->
             let args2 = 
               fill (List.length args1 - List.length args2) 
-                typ_undef args2 in
-              r_subtypes rel env args2 args1 && r_subtype rel env r1 r2 && 
-                st this_t1 this_t2 && st this_t2 this_t1
+                rest_typ1 args2 in
+              r_subtypes rel env args2 args1 && st rest_typ2 rest_typ1 &&
+                r_subtype rel env r1 r2 && st this_t1 this_t2 && st this_t2 this_t1
         | TConstr (c_name, []), TObject fs2 ->
             (* Classes can be turned into objects. However, this drops
                all fields in the prototype. *)
@@ -205,9 +205,9 @@ module Env = struct
             raise (Not_wf_typ (constr ^ " is not a type constructor"))
       | TConstr (constr, _) ->
           raise (Not_wf_typ (constr ^ " does not take arguments"))
-      | TArrow (this, args, result) ->
+      | TArrow (this, args, rest, result) ->
           TArrow (normalize_typ env this, map (normalize_typ env) args,
-                  normalize_typ env result)
+                  normalize_typ env rest, normalize_typ env result)
       | TRef t -> TRef (normalize_typ env t)
       | TSource t -> TSource (normalize_typ env t)
       | TSink t -> TSink (normalize_typ env t)
@@ -484,10 +484,10 @@ let extend_global_env env lst = mk_env' lst (add_classes lst env)
 module L = Typedjs_lattice
 
 let df_func_of_typ (t : typ) : L.av list -> L.av = match t with
-  | TArrow (_, _, r_typ) ->
+  | TArrow (_, _, _, r_typ) ->
       let r_av = L.ASet (L.rt_of_typ r_typ) in
         (fun _ -> r_av)
-  | TForall (x, r_typ, TArrow (_, _, TId y)) when x = y ->
+  | TForall (x, r_typ, TArrow (_, _, _, TId y)) when x = y ->
       let r_av = L.ASet (L.rt_of_typ r_typ) in
         (fun _ -> r_av)
   | _ -> (fun _ -> L.any)
@@ -526,8 +526,10 @@ let rec unify subst s t : typ IdMap.t = match s, t with
 
   | TUnion (s1, s2), TUnion (t1, t2) -> unify (unify subst s1 t1) s2 t2
 
-  | TArrow (s1, s2s, s3), TArrow (t1, t2s, t3) ->
-      List.fold_left2 unify subst (s1 :: s3 :: s2s) (t1 :: t3 :: t2s)
+  | TArrow (s1, s2s, sr, s3), TArrow (t1, t2s, tr, t3) ->
+      List.fold_left2 unify subst 
+        (s1 :: s3 :: sr :: s2s) 
+        (t1 :: t3 :: tr :: t2s)
   | TObject fs1, TObject fs2 ->
       let f subst (x, s) (y, t) = 
         if x = y then unify subst s t

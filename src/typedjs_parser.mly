@@ -11,6 +11,7 @@ open Typedjs_types
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
        CHECKED CHEAT HASHPROTO TREC TYPE EQUALS BOT CODE REF OBJCAST SEMI
+       DOTS
 
 %right UNION
 
@@ -70,8 +71,10 @@ arg_typ
 
 typ 
   : arg_typ { $1 }
-  | args ARROW typ { TArrow (TTop, $1, $3) }
-  | LBRACK typ RBRACK args ARROW typ { TArrow ($2, $4, $6) }
+  | args ARROW typ { TArrow (TTop, $1, TConstr ("Undef", []), $3) }
+  | args COLON typ DOTS ARROW typ { TArrow (TTop, $1, $3, $6) }
+  | LBRACK typ RBRACK args ARROW typ { TArrow ($2, $4, TConstr ("Undef", []), $6) }
+  | LBRACK typ RBRACK args COLON typ DOTS ARROW typ { TArrow ($2, $4, $6, $9) }
   | FORALL ID LTCOLON typ DOT typ { TForall ($2, $4, $6) }
   | FORALL ID DOT typ { TForall ($2, TTop, $4) }
   | TREC ID DOT typ { TRec ($2, $4) }

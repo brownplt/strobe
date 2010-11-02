@@ -56,13 +56,13 @@ let mk_id x = Id (p, x)
    arguments added by the CPS transformation: the continuation and exception
    handler. *)
 let rec ext_typ typ = match typ with
-  | TArrow (this_typ, arg_typs, result_typ) ->
+  | TArrow (this_typ, arg_typs, rest_typ, result_typ) ->
       (* Note that all return types are TBot. (i.e. does not return) *)
-      let cont_typ = TArrow (TTop, [result_typ], TBot)
+      let cont_typ = TArrow (TTop, [result_typ], rest_typ, TBot)
         (* We can throw anything. *)
-      and throw_typ = TArrow (TTop, [TTop], TBot) 
+      and throw_typ = TArrow (TTop, [TTop], TConstr ("Undef", []), TBot) 
       and this_typ = TObject [] in
-      TArrow (this_typ, cont_typ :: throw_typ :: this_typ :: arg_typs, TBot)
+      TArrow (this_typ, cont_typ :: throw_typ :: this_typ :: arg_typs, rest_typ, TBot)
   | TForall (x, x_t, t) -> TForall (x, x_t, ext_typ t)
   | _ -> failwith "ext_typ expected an arrow type"
 
@@ -81,7 +81,7 @@ let bind_cont cont fn = match cont with
       let k' = new_name () in
       let r = new_name () in
         Fix (new_node (), 
-             [false, k', [r], TArrow (TTop, [TTop], TTop), k (mk_id r)],
+             [false, k', [r], TArrow (TTop, [TTop], TConstr ("Undef", []), TTop), k (mk_id r)],
              fn k')      
 
 
@@ -172,7 +172,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
           let k' = new_name () in
           let r = new_name () in
             Fix (new_node (),
-                 [true, k', [r], TArrow (TTop, [t], TTop), k (mk_id r)],
+                 [true, k', [r], TArrow (TTop, [t], TConstr ("Undef", []), TTop), k (mk_id r)],
                  cps_exp e throw (Jmp k'))
     end
   | EApp (_, func, args) -> 
@@ -222,7 +222,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
   | ELabel (_, l, _, e) ->
       let r = new_name () in
         Fix (new_node (),
-             [(false, l, [r], TArrow (TTop, [TTop], TTop), ret k (mk_id r))],
+             [(false, l, [r], TArrow (TTop, [TTop], TConstr ("Undef", []), TTop), ret k (mk_id r))],
              cps_exp e throw (Jmp l))
   | EBreak (_, l, e) -> (* drops its own continuation *)
       cps_exp e throw (Jmp l)
@@ -234,7 +234,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       and obj = new_name () in
         Bind (new_node (), obj, Object [],
               Fix (new_node (),
-                   [(false, k', [new_name ()], TArrow (TTop, [TTop], TTop), 
+                   [(false, k', [new_name ()], TArrow (TTop, [TTop], TConstr ("Undef", []), TTop), 
                      ret k (mk_id obj))],
                    cps_exp_list args throw
                      (fun argvs ->
@@ -253,7 +253,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
         bind_cont k
           (fun cont ->
              Fix (new_node (),
-                  [false, throw', [exn], TArrow (TTop, [TTop], TBot),
+                  [false, throw', [exn], TArrow (TTop, [TTop], TConstr ("Undef", []), TBot),
                    cps_exp catch_body throw (Jmp cont)],
                   cps_exp body throw' (Jmp cont)))
   | ETryFinally (_, e1, e2) -> (*TODO: make this not drop the finally *)

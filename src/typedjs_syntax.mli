@@ -30,7 +30,7 @@ type constr = string
 type typ = 
   | TConstr of constr * typ list
   | TUnion of typ * typ
-  | TArrow of typ * typ list * typ      
+  | TArrow of typ * typ list * typ * typ      
   | TObject of (id * typ) list
   | TObjStar of (id * typ) list * constr list * typ * typ
   | TRef of typ

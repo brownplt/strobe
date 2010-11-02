@@ -37,7 +37,7 @@ type constr = string
 type typ = 
   | TConstr of constr * typ list
   | TUnion of typ * typ
-  | TArrow of typ * typ list * typ (** this, args, restargs, return *)
+  | TArrow of typ * typ list * typ * typ (** this, args, restargs, return *)
   | TObject of (id * typ) list
       (** [TObjStar ([(s,t)], p, star, f)] 
           {s: t, ... #proto: p, *: star, #code: f} *)
@@ -151,7 +151,7 @@ module Typ = struct
   let rec match_func_typ (typ : typ) : (typ list * typ) option = 
     match typ with
     | TForall (_, _, t) -> match_func_typ t
-    | TArrow (_, args, ret) -> Some (args, ret)
+    | TArrow (_, args, rest, ret) -> Some (args, ret)
     | _ -> None
 
 let rec typ_subst' s_env x s typ = 
@@ -160,8 +160,8 @@ let rec typ_subst' s_env x s typ =
       | TId y -> if x = y then s else typ
       | TConstr (c, ts) -> TConstr (c, map (typ_subst x s) ts)
       | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
-      | TArrow (t1, t2s, t3)  ->
-          TArrow (typ_subst x s t1, map (typ_subst x s) t2s, typ_subst x s t3)
+      | TArrow (t1, t2s, tr, t3)  ->
+          TArrow (typ_subst x s t1, map (typ_subst x s) t2s, typ_subst x s tr, typ_subst x s t3)
       | TObject fs -> TObject (map (second2 (typ_subst x s)) fs)
       | TObjStar (fs, cnames, other_typ, code) ->
           TObjStar ((map (second2 (typ_subst x s)) fs), cnames, 
@@ -244,13 +244,14 @@ module Pretty = struct
     | TTop -> text "Any"
     | TBot -> text "Bot"
     | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
-    | TArrow (tt, arg_typs, r_typ) ->
+    | TArrow (tt, arg_typs, rest_typ, r_typ) ->
         horz[ brackets (typ tt);
               horz (intersperse (text "*") 
                       (map (fun at -> begin match at with
                               | TArrow _ -> parens (typ at)
                               | _ -> typ at 
                             end) arg_typs));
+              horz [text ":"; typ rest_typ; text "..."];
               text "->";
               typ r_typ ]
     | TConstr (s, []) -> text s

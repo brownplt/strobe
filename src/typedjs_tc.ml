@@ -205,19 +205,19 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
           tc_exp env (EApp (p, EId (p, "+"), [e1; e2]))
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> begin match applicables env (tc_exp env f) with
-      | TForall (x, _, TArrow (obj_typ, expected_typ, result_typ)) ->
-          let subst = unify_typ (TArrow (obj_typ, expected_typ, result_typ))
-            (TArrow (obj_typ, map (tc_exp env) args, result_typ)) in
+      | TForall (x, _, TArrow (obj_typ, expected_typ, rest_typ, result_typ)) ->
+          let subst = unify_typ (TArrow (obj_typ, expected_typ, rest_typ, result_typ))
+            (TArrow (obj_typ, map (tc_exp env) args, rest_typ, result_typ)) in
             begin try
               let u = IdMap.find x subst in (* TODO: needless recomputation *)
                 tc_exp env (EApp (p, ETypApp (p, f, u), args))
             with Not_found ->
-              let t = TArrow (obj_typ, expected_typ, result_typ) in
+              let t = TArrow (obj_typ, expected_typ, rest_typ, result_typ) in
               error p (sprintf "could not determine \'%s in the function type \
                                 %s" x (string_of_typ t))
             end
-      | TObjStar (_, _, _, TArrow (expected_thist, expected_typs, result_typ))
-      | TArrow (expected_thist, expected_typs, result_typ) ->
+      | TObjStar (_, _, _, TArrow (expected_thist, expected_typs, rest_typ, result_typ))
+      | TArrow (expected_thist, expected_typs, rest_typ, result_typ) ->
           let _ = (
             let this_typ = tc_thist env f in
               if not (Env.subtype env this_typ expected_thist) then
@@ -230,6 +230,9 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
           let arg_typs = 
             fill (List.length expected_typs - List.length args) 
               typ_undef arg_typs' in
+          let expected_typs =
+            fill (List.length args - List.length expected_typs)
+              rest_typ expected_typs in
             if Env.subtypes env arg_typs expected_typs 
             then result_typ 
             else if List.length args = List.length expected_typs (* || 
@@ -282,7 +285,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
   | EFunc (p, args, fn_typ, body) -> 
       let expected_typ = Env.check_typ p env fn_typ in
       begin match Env.bind_typ env expected_typ with
-          (env, TArrow (this_t, arg_typs, result_typ)) ->
+          (env, TArrow (this_t, arg_typs, rest_typ, result_typ)) ->
             if not (List.length arg_typs = List.length args) then
               error p 
                 (sprintf "given %d argument names, but %d argument types"
@@ -357,7 +360,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                     | TConstr ("Array", [tarr]) ->
                         if Env.subtype env tarr other_typ then t else
                           error p (sprintf "Invalid ObjCast---%s not a subtype of %s" (string_of_typ other_typ) (string_of_typ tarr))
-                    | TArrow (ths, args, ret) ->
+                    | TArrow (ths, args, rest, ret) ->
                         if Env.subtype env s code then t else 
                           error p (sprintf "Invalid ObjCast---%s not a subtype of %s" (string_of_typ s) (string_of_typ code))
                     | t ->
@@ -473,17 +476,18 @@ and bracket p env field t =
                       TRef typ_int
                   | EConst (_, JavaScript_syntax.CString "push") ->
                       TRef (TArrow (TConstr ("Array", [tarr]),
-                                    [un_ref tarr], typ_undef))
+                                    [un_ref tarr], typ_undef, typ_undef))
                   | EConst (_, JavaScript_syntax.CString "join") ->
                       (match un_ref tarr with
                          | TConstr ("Str", []) ->
                              TRef (TArrow (TConstr ("Array", [tarr]),
-                                           [typ_str], typ_str))
+                                           [typ_str], typ_undef, typ_str))
                          | _ -> error p ("expected array of strings"))
                   | EConst (_, JavaScript_syntax.CString "slice") ->
                       TRef (TArrow (TConstr ("Array", [tarr]),
                                     [TConstr ("Int", []);
-                                     TUnion (TConstr ("Int", []), TConstr ("Undef", []))], t))
+                                     TUnion (TConstr ("Int", []), TConstr ("Undef", []))], 
+                                    typ_undef, t))
                   | EConst (_, JavaScript_syntax.CString s) ->
                       error p ("unknown array method " ^ s)
                   | _ -> error p ("unknown array method")
@@ -557,7 +561,7 @@ let rec tc_def env def = match def with
         tc_def env d
   | DConstructor (cexp, d) -> let p = cexp.constr_pos in 
       begin match cexp.constr_typ with
-          TArrow (_, arg_typs, result_typ) -> 
+          TArrow (_, arg_typs, rest_typ, result_typ) -> 
             if List.length arg_typs = List.length (cexp.constr_args) then ()
             else raise (
               Typ_error (p,
@@ -571,7 +575,7 @@ let rec tc_def env def = match def with
             in
             let env = Env.clear_labels env in           
               begin match result_typ with
-                  TObject fields -> 
+                  TObject fields ->
                     (* first update the env to have the class
                        available inside the constructor body *)
                     (* create a new class, add fields as initial methods *)
