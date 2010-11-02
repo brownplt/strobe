@@ -83,7 +83,8 @@ function dom_event (e) /*: Event -> Undef */ {
     {
         altKey: /*: upcast 'Ad */ (the_actual_event.altKey),
         ctrlKey: /*: upcast 'Ad */ (the_actual_event.ctrlKey),
-        bubble: /*: cheat 'Ad */ (function () /*: -> Undef */ {
+        // TODO, gave bubble a blank argument
+        bubble: /*: upcast 'Ad */ (/*: obj* 'AdObj */ (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
             
             // Bubble up. Get the parent of that node. It becomes the new that.
             // the getParent throws when bubbling is not possible.
@@ -92,7 +93,7 @@ function dom_event (e) /*: Event -> Undef */ {
                 var parent = that.getParent(),
                 b = parent.___nodes___[0];
                 that = parent;
-                the_event.that = that;
+                // the_event.that = that; // FIXME
 
                 // If that node has an event handler, fire it. Otherwise, bubble up.
 
@@ -105,7 +106,7 @@ function dom_event (e) /*: Event -> Undef */ {
             } catch (e) {
                 return error(/*: cheat Undef */ e);
             }
-        }),
+        })),
         key: /*: upcast 'Ad */ key,
         preventDefault: /*: cheat 'Ad */ (function () /*: -> Undef */ {
             if (the_actual_event.preventDefault) {
