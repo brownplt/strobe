@@ -96,6 +96,7 @@ let rec to_set v = match v with
   | ABool _ -> RTSet.singleton RT.Bool
   | ADeref (_, v) -> v
   | AField _ -> rtany
+  | AThisField _ -> rtany
 
 let deref loc heap  =
   try 

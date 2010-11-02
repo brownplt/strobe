@@ -7,6 +7,10 @@ module Env : sig
 
   val empty_env : env
 
+  val bind_global : typ -> env -> env
+
+  val lookup_global env -> typ
+
   val bind_id : id -> typ -> env -> env
 
   val bind_lbl : id -> typ -> env -> env

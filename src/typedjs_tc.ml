@@ -409,7 +409,7 @@ and tc_thist env e = match e with
   | ETryCatch (_, exp, _, _) -> tc_thist env exp
   | ETryFinally (_, e1, e2) -> tc_thist env e1
   (*what would etypecast, subsumption, typecast do? probably be none....*)
-  | _ -> TObject []
+  | _ -> Env.lookup_global env
 
 (* type-check [e] and ensure that the resulting type is not [TBot]. If 
    [e : TBot], then [e] provably does not return. There are two possibilities:

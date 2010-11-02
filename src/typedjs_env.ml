@@ -21,6 +21,7 @@ module Env = struct
   }
 
   type env = {
+    global : typ;
     id_typs : typ IdMap.t; 
     lbl_typs : typ IdMap.t;
     classes : class_info IdMap.t;
@@ -31,6 +32,7 @@ module Env = struct
 
 
   let empty_env = { 
+    global = TObject [];
     id_typs = IdMap.empty;
     lbl_typs = IdMap.empty;
     classes = IdMap.empty;
@@ -38,6 +40,10 @@ module Env = struct
     typ_ids = IdMap.empty;
     synonyms = IdMap.empty;
   }
+
+  let bind_global t env = { env with global = t }
+
+  let lookup_global env = env.global
 
   let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
 
@@ -348,14 +354,20 @@ module Env = struct
         let ci' = { ci with fields = IdMap.add m_name m_typ ci.fields } in
           { env with classes = IdMap.add c_name ci' env.classes }
 
-  let rec set_global_object env cname =
+  let get_global_object env = env.global
+
+
+  let rec set_global_object' env cname =
     let ci = IdMap.find cname env.classes in
     let fs = IdMapExt.to_list ci.fields in
     let add_field env (x, t) = bind_id x t env in
     let env = List.fold_left add_field env fs in
       match ci.sup with
         | None -> env
-        | Some cname' -> set_global_object env cname'
+        | Some cname' -> set_global_object' env cname'
+
+  let set_global_object env cname =
+    set_global_object' (bind_global (TConstr (cname, [])) env) cname
 
   let rec bind_typ env typ : env * typ = match typ with
     | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) t
@@ -395,6 +407,7 @@ module Env = struct
 
   let rec diff final_env init_env =
     { 
+      global = final_env.global;
       id_typs = IdMapExt.diff final_env.id_typs init_env.id_typs;
       lbl_typs = IdMapExt.diff final_env.lbl_typs init_env.lbl_typs;
       classes = IdMapExt.diff final_env.classes init_env.classes;
