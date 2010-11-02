@@ -250,8 +250,8 @@ module Pretty = struct
                       (map (fun at -> begin match at with
                               | TArrow _ -> parens (typ at)
                               | _ -> typ at 
-                            end) arg_typs));
-              horz [text ":"; typ rest_typ; text "..."];
+                            end) (arg_typs@[rest_typ])));
+              horz [text "..."];
               text "->";
               typ r_typ ]
     | TConstr (s, []) -> text s
