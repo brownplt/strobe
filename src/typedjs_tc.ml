@@ -340,7 +340,9 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       let t = Env.check_typ p env t in
         begin match t with
           | TObjStar (fs, cnames, other_typ, code) -> 
-              if not (List.exists (fun cname -> String.compare cname proto = 0) cnames) then
+              if not (List.exists 
+                        (fun cname -> 
+                                String.compare cname proto = 0) cnames) then
                 error p (sprintf "Mismatched prototypes in ObjCast: \ 
                                  %s" proto)
               else
@@ -359,10 +361,12 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                             error p "Invalid ObjCast---constructor missing something"
                     | TConstr ("Array", [tarr]) ->
                         if Env.subtype env tarr other_typ then t else
-                          error p (sprintf "Invalid ObjCast---%s not a subtype of %s" (string_of_typ other_typ) (string_of_typ tarr))
+                          error p (sprintf "Invalid ObjCast---%s </: %s" 
+                                    (string_of_typ other_typ) (string_of_typ tarr))
                     | TArrow (ths, args, rest, ret) ->
                         if Env.subtype env s code then t else 
-                          error p (sprintf "Invalid ObjCast---%s not a subtype of %s" (string_of_typ s) (string_of_typ code))
+                          error p (sprintf "Invalid ObjCast---%s </: %s" 
+                                    (string_of_typ s) (string_of_typ code))
                     | t ->
                         error p (sprintf "This shouldn't happen, %s wasn't an \
                                 Object type in ObjCast" (string_of_typ t))
