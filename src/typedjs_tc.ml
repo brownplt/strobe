@@ -444,9 +444,9 @@ and bracket p env field t =
 	(try
 	   snd2 (List.find (fun (x', _) -> x = x') fs)
 	 with Not_found ->
-	   (TRef (TUnion (unfold_typ (un_ref other_typ), 
+	   (TUnion (TRef (unfold_typ (un_ref other_typ)), 
                           TUnion(TConstr ("Undef", []),
-                                 bracket p env field proto)))))
+                                 bracket p env field proto))))
     | TObjStar (fs, proto, other_typ, code), e ->
 	let t_field = tc_exp env e in
 	  (match t_field with
