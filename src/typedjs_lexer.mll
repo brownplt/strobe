@@ -34,7 +34,6 @@ rule token = parse
    | "[" { LBRACK }
    | "]" { RBRACK }
    | "," { COMMA }
-   | ";" { SEMI }
    | "Any" { ANY }
    | "Int" { INT }
    | "Num" { NUM }

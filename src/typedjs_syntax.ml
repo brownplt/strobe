@@ -41,20 +41,7 @@ type typ =
   | TObject of (id * typ) list
       (** [TObjStar ([(s,t)], p, star, f)] 
           {s: t, ... #proto: p, *: star, #code: f} *)
-  | TObjStar of (id * typ) list * constr list * typ * typ
-
-(** We use TPred for arbitrary predicates. f is a function from (T\S
--> false) + (S -> true), where S is the subset of values of type T
-that satisfy the predicate.  We "name" this set with the identifier
-that holds the function. This allows for this typing rule:
-
-Gamma[x <- T\S] |- els : T'
-Gamma[x <- S] |- thn : T'
-Gamma |- fun : (S -> true) + (T\S -> false)
--------------------------------------------
-Gamma |- if fun(x) thn els : T'
-*)
-
+  | TObjStar of (id * typ) list * typ * typ * typ
   | TRef of typ
   | TSource of typ
   | TSink of typ
@@ -163,8 +150,8 @@ let rec typ_subst' s_env x s typ =
       | TArrow (t1, t2s, tr, t3)  ->
           TArrow (typ_subst x s t1, map (typ_subst x s) t2s, typ_subst x s tr, typ_subst x s t3)
       | TObject fs -> TObject (map (second2 (typ_subst x s)) fs)
-      | TObjStar (fs, cnames, other_typ, code) ->
-          TObjStar ((map (second2 (typ_subst x s)) fs), cnames, 
+      | TObjStar (fs, proto, other_typ, code) ->
+          TObjStar ((map (second2 (typ_subst x s)) fs), proto, 
                     typ_subst x s other_typ,
                     typ_subst x s code)
       | TRef t -> TRef (typ_subst x s t)
@@ -260,9 +247,8 @@ module Pretty = struct
                angles (horz (intersperse (text ",") (map typ ts))) ]
     | TObject fs ->
       braces (horz (intersperse (text ",") (map field fs)))
-    | TObjStar (fs, cnames, other_typ, code) ->
-	let constr = horz [ text "#proto"; text ":" ;
-                            horz (intersperse (text ";") (map text cnames)) ] in
+    | TObjStar (fs, proto, other_typ, code) ->
+	let constr = horz [ text "#proto"; text ":" ; typ proto ] in
 	let star = horz [ text "*"; text ":"; typ other_typ ] in
         let code = horz [ text "#code"; text":"; typ code ] in
 	let fields = map field fs in

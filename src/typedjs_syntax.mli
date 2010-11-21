@@ -32,7 +32,7 @@ type typ =
   | TUnion of typ * typ
   | TArrow of typ * typ list * typ * typ      
   | TObject of (id * typ) list
-  | TObjStar of (id * typ) list * constr list * typ * typ
+  | TObjStar of (id * typ) list * typ * typ * typ
   | TRef of typ
   | TSource of typ
   | TSink of typ
