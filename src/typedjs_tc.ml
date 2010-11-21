@@ -451,10 +451,10 @@ and bracket p env field t =
 	  (match t_field with
              | TUnion (TConstr ("Str", []), TConstr ("Undef", []))
              | TConstr ("Str", []) -> 
-		   (TRef (TUnion (unfold_typ (un_ref 
-                                              (bracket p env field proto)),
-                                  TUnion (unfold_typ (un_ref other_typ), 
-                                          TConstr ("Undef", [])))))
+                   let field_typ = list_to_typ env (map snd fs) in
+                   (TUnion (Env.check_typ p env field_typ,
+                            TUnion (bracket p env field proto,
+                                    other_typ)))
              | TConstr ("Int", []) ->
                  TRef (TUnion (unfold_typ (un_ref other_typ),
                                TConstr ("Undef", [])))
