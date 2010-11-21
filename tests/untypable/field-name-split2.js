@@ -12,10 +12,10 @@ function bar() /*: -> Undef */ {
 
 }
 
-function foo(o) /*: C2 -> Int */ {
+function foo(o) /*: C2 + C1 -> Int */ {
 
-    if(o.c) {
-
+    if(o.x) {
+        return 4;
     }
 
     return o.d; //can't safely assume this, since o.c can be 0

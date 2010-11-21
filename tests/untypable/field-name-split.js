@@ -1,8 +1,3 @@
-function C1() /*: constructor -> {x: Int} */ {
-    this.x = 5;
-};
-
-
 function C2() /*: constructor -> {c: C1 + Int} */ {
     this.c = new C1();
 };

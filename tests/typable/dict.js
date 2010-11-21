@@ -1,6 +1,6 @@
-function foo(a, str) /*: {#proto: Object, *:Int, #code: Undef} * Str -> Int + (-> Str) + Undef */ {
+function foo(a, str) 
+        /*: {#proto: Object, *:Int, #code: Undef} * Str -> 
+            Int + (Str -> Bool) + (-> Str) + Undef */ {
     return a[str];
 }
 
-foo({a: 5, b: 10},
-    "str");
