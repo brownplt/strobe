@@ -105,7 +105,8 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
 				 (string_of_typ t))) 
     end
-  | ESetRef (p, e1, e2) -> begin match tc_exp env e1, tc_exp env e2 with
+  | ESetRef (p, e1, e2) -> begin match un_null (tc_exp env e1), 
+                                       tc_exp env e2 with
       | TRef s, t
       | TSink s, t ->
           if Env.subtype env t s then 
@@ -338,7 +339,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         | e -> error p (sprintf "Not an object literal or new for ObjCast: %s" (Typedjs_syntax.string_of_exp e))
       end in
       let s = tc_exp env e in
-      let t = Env.check_typ p env t in
+      let t = unfold_typ (Env.check_typ p env t) in
         begin match t with
           | TObjStar (fs, proto', other_typ, code) -> 
               if not (Env.subtype env proto proto') then
