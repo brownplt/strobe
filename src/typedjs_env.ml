@@ -194,8 +194,9 @@ module Env = struct
           let code = normalize_typ env code in
             TObjStar (fs, proto, other_typ, code)
       | TConstr ("Array", [t]) -> TConstr ("Array", [normalize_typ env t])
-      | TConstr ("Array", (t:_)) ->
-          raise (Not_wf_typ ("Array only takes one argument"))
+      | TConstr ("Array", (t1::_)) ->
+          raise (Not_wf_typ (sprintf "Array only takes one argument, %s and more
+          were given" (string_of_typ t1)))
       | TConstr (constr, []) ->
           if IdMap.mem constr env.classes then 
             typ
