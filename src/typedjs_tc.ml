@@ -72,6 +72,7 @@ let rec un_ref t = match t with
   | TSink s -> s
   | TField -> TField
   | TUnion (t1, t2) -> TUnion (un_ref t1, un_ref t2) 
+  | TConstr ("Undef", []) -> t
   | _ -> failwith ("un_ref got " ^ string_of_typ t)
 
 let rec tc_exp_simple (env : Env.env) exp = match exp with
@@ -498,12 +499,12 @@ and bracket p env field t =
           | Some t -> t
           | None -> begin match cname with 
               | "Undef" 
-              | "Null" -> TBot
+              | "Null" -> TConstr ("Undef", [])
               | "Num"
               | "Bool"
               | "Int"
-              | "Str" -> TRef (TConstr ("Undef", []))
-              | _ -> TRef (TConstr ("Undef", []))
+              | "Str" -> TConstr ("Undef", [])
+              | _ -> TConstr ("Undef", [])
             end
         end
     | TConstr (cname, []), e ->
