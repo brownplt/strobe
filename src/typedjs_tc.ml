@@ -503,7 +503,7 @@ and bracket p env field t =
               | "Bool"
               | "Int"
               | "Str" -> TRef (TConstr ("Undef", []))
-              | _ -> TBot 
+              | _ -> TRef (TConstr ("Undef", []))
             end
         end
     | TConstr (cname, []), e ->
@@ -520,8 +520,7 @@ and bracket p env field t =
                   | _ -> error p (sprintf "Can't look up %s[%s]" 
                                     cname (string_of_typ te))
                 end
-            | c -> list_to_typ env (map (fun t -> TRef (t)) 
-                                        (class_types env c))
+            | c -> list_to_typ env (class_types env c)
           end
     | TField, field -> begin match tc_exp env field with
         | TField -> TField
