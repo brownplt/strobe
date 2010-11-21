@@ -186,15 +186,13 @@ module Env = struct
       | TObject fs ->
           let fs = List.fast_sort cmp_props fs in
             TObject (map (second2 (normalize_typ env)) fs)
-      | TObjStar (fs, cnames, other_typ, code) ->
+      | TObjStar (fs, proto, other_typ, code) ->
 	  let fs = List.fast_sort cmp_props fs in
           let fs = map (second2 (normalize_typ env)) fs in
-	    if List.exists (fun cname -> not (IdMap.mem cname env.classes)) cnames then
-		raise (Not_wf_typ ("Non type constructor in objstar"))
-	    else
-	      let other_typ = normalize_typ env other_typ in
-              let code = normalize_typ env code in
-		TObjStar (fs, cnames, other_typ, code)
+          let proto = normalize_typ env proto in
+	  let other_typ = normalize_typ env other_typ in
+          let code = normalize_typ env code in
+            TObjStar (fs, proto, other_typ, code)
       | TConstr ("Array", [t]) -> TConstr ("Array", [normalize_typ env t])
       | TConstr ("Array", (t:_)) ->
           raise (Not_wf_typ ("Array only takes one argument"))

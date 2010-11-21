@@ -168,7 +168,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         (* hack to make arrays not have undefined elements: *)
         Env.check_typ p env (TConstr ("Array", [u]))
   | EIf (p, e1, e2, e3) ->
-      tc_exp env e1;
+      ignore (tc_exp env e1);
       Env.typ_union env (tc_exp env e2) (tc_exp env e3)
   | EObject (p, fields) ->
       Env.check_typ p env 
@@ -325,26 +325,24 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
   | EObjCast (p, t, e) ->
       let proto = begin match e with
         | ENew (p, cid, args) -> begin match Env.class_sup env cid with
-            | Some c -> c
-            | None -> "Object"
+        | Some c -> TConstr (c, [])
+            | None -> TConstr ("Object", [])
           end
-        | EObject _ -> "Object"
+        | EObject _ -> TConstr ("Object", [])
         | ERec ([_, _, 
                 EFunc (_, _, _, _)], 
                 _) 
-        | EFunc (_, _, _, _) -> "Function"
-        | EEmptyArray (p, elt_typ) -> "Array"
+        | EFunc (_, _, _, _) -> TConstr ("Function", [])
+        | EEmptyArray (p, elt_typ) -> TConstr ("Array", [])
         | e -> error p (sprintf "Not an object literal or new for ObjCast: %s" (Typedjs_syntax.string_of_exp e))
       end in
       let s = tc_exp env e in
       let t = Env.check_typ p env t in
         begin match t with
-          | TObjStar (fs, cnames, other_typ, code) -> 
-              if not (List.exists 
-                        (fun cname -> 
-                                String.compare cname proto = 0) cnames) then
+          | TObjStar (fs, proto', other_typ, code) -> 
+              if not (Env.subtype env proto proto') then
                 error p (sprintf "Mismatched prototypes in ObjCast: \ 
-                                 %s" proto)
+                                 %s" (string_of_typ proto))
               else
                 let ok_field fss (k, t) =
                   if List.mem_assoc k fss then
@@ -440,27 +438,23 @@ and bracket p env field t =
            snd2 (List.find (fun (x', _) -> x = x') fs)
          with Not_found ->
            raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
-    | TObjStar (fs, cnames, other_typ, code), 
+    | TObjStar (fs, proto, other_typ, code), 
         EConst (_, JavaScript_syntax.CString x) ->
 	(try
 	   snd2 (List.find (fun (x', _) -> x = x') fs)
 	 with Not_found ->
 	   (TRef (TUnion (unfold_typ (un_ref other_typ), 
                           TUnion(TConstr ("Undef", []),
-                                 list_to_typ env (List.fold_right 
-                                                    (fun cname l ->
-                                                       match Env.field_typ env cname x with
-                                                         | Some t -> (un_ref t)::l
-                                                         | None -> l)
-                                                    cnames []))))))
-    | TObjStar (fs, cnames, other_typ, code), e ->
+                                 bracket p env field proto)))))
+    | TObjStar (fs, proto, other_typ, code), e ->
 	let t_field = tc_exp env e in
 	  (match t_field with
              | TUnion (TConstr ("Str", []), TConstr ("Undef", []))
              | TConstr ("Str", []) -> 
-		 List.fold_right (fun t typ -> TUnion (unfold_typ t, unfold_typ typ))
-		   ((map snd2 fs)@(class_types_list env cnames))
-		   (TRef (TUnion (unfold_typ (un_ref other_typ), TConstr ("Undef", []))))
+		   (TRef (TUnion (unfold_typ (un_ref 
+                                              (bracket p env field proto)),
+                                  TUnion (unfold_typ (un_ref other_typ), 
+                                          TConstr ("Undef", [])))))
              | TConstr ("Int", []) ->
                  TRef (TUnion (unfold_typ (un_ref other_typ),
                                TConstr ("Undef", [])))
@@ -509,8 +503,7 @@ and bracket p env field t =
               | "Bool"
               | "Int"
               | "Str" -> TRef (TConstr ("Undef", []))
-              | _ -> error p 
-                  (sprintf "Constructor %s doesn't have field %s" cname fname)
+              | _ -> TBot 
             end
         end
     | TConstr (cname, []), e ->
@@ -527,8 +520,8 @@ and bracket p env field t =
                   | _ -> error p (sprintf "Can't look up %s[%s]" 
                                     cname (string_of_typ te))
                 end
-            | _ -> error p (sprintf "Can't look up %s[%s]" 
-                                    cname (string_of_typ te))
+            | c -> list_to_typ env (map (fun t -> TRef (t)) 
+                                        (class_types env c))
           end
     | TField, field -> begin match tc_exp env field with
         | TField -> TField
