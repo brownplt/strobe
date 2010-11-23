@@ -56,6 +56,7 @@ rule token = parse
    | "downcast" { DOWNCAST }
    | "operator" { OPERATOR }
    | "ref" { REF }
+   | "const" { CONST }
    | "is" { IS }
    | "obj*" { OBJCAST }
    | "cheat" { CHEAT }

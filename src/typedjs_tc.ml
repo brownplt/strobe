@@ -174,7 +174,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       Env.typ_union env (tc_exp env e2) (tc_exp env e3)
   | EObject (p, fields) ->
       Env.check_typ p env 
-        (TObject (map (second2 (tc_exp env)) fields))
+      (TObject (map (second2 (tc_exp env)) fields))
   | EBracket (p, obj, field) -> let typ = un_null (tc_exp env obj) in
       let t_list = typ_to_list typ in
       let f_list = map (bracket p env field) t_list in

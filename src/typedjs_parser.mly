@@ -11,7 +11,7 @@ open Typedjs_types
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
        CHECKED CHEAT HASHPROTO TREC TYPE EQUALS BOT CODE REF OBJCAST
-       DOTS
+       DOTS CONST
 
 %right UNION
 
@@ -32,6 +32,8 @@ args
 field 
   : ID COLON typ { ($1, TRef $3) }
   | STRING COLON typ { ($1, TRef $3) }
+  | ID COLON CONST typ { ($1, TSource $4) }
+  | STRING COLON CONST typ { ($1, TSource $4) }
 
 fields
   : { [] }

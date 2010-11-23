@@ -52,7 +52,6 @@ type typ =
   | TId of id
   | TField
 
-
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list
   | EnvBind of id * typ
