@@ -1,4 +1,5 @@
 #!/bin/bash
 
 P=`dirname $0`
-$P/run -env $P/adsafe/src/adsafe-javascript.env -env $P/data/browser.env -env $P/adsafe/src/adsafe.env -global HTMLWindow $@
+$P/run -env $P/adsafe/src/adsafe-javascript.env -env \
+$P/adsafe/src/adsafe-browser.env -env $P/adsafe/src/adsafe.env -global HTMLWindow $@
