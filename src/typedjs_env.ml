@@ -205,8 +205,12 @@ module Env = struct
       | TConstr (constr, _) ->
           raise (Not_wf_typ (constr ^ " does not take arguments"))
       | TArrow (this, args, rest, result) ->
-          TArrow (normalize_typ env this, map (normalize_typ env) args,
-                  normalize_typ env rest, normalize_typ env result)
+          let rest = normalize_typ env rest in
+            if not (subtype env (TConstr ("Undef", [])) rest) then
+              raise (Not_wf_typ ("Restargs must be a supertype of Undef"))
+            else
+              TArrow (normalize_typ env this, map (normalize_typ env) args,
+                      normalize_typ env rest, normalize_typ env result)
       | TRef t -> TRef (normalize_typ env t)
       | TSource t -> TSource (normalize_typ env t)
       | TSink t -> TSink (normalize_typ env t)
