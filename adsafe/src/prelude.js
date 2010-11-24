@@ -245,7 +245,7 @@ function later (func, timeout)
 }
 
 function reject_global(that) 
-/*: 'Ad -> Undef */
+/*: HTMLWindow + 'Ad -> Undef */
 {
     if (that.window) {
 	error();
