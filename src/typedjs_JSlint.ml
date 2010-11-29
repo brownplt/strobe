@@ -14,7 +14,7 @@ let rec upcast_map e =
   let adcast = "upcast 'Ad" in
   let ad = "'Ad" in
   let objcast = "obj* 'AdObj" in
-  let adtoad = "'Ad -> 'Ad" in
+  let adtoad = "['Ad + HTMLWindow] 'Ad ... -> 'Ad" in
     match e with
       | FuncExpr (p, xs, e') ->
           HintExpr (p, objcast, HintExpr (p, adtoad, FuncExpr (p, xs, upcast_map e')))
