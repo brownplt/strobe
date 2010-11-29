@@ -110,8 +110,8 @@ let rec exp (env : env) expr = match expr with
   | InfixExpr (a, op, e1, e2) -> EInfixOp (a, op, exp env e1, exp env e2)
   | IfExpr (a, e1, e2, e3) -> EIf (a, exp env e1, exp env e2, exp env e3)
   | AssignExpr (a, VarLValue (p', x), e) -> ESetRef (a, EId (p', x), exp env e)
-  | AssignExpr (p, PropLValue (_, e1, e2), e3) ->
-      ESetRef (p, EBracket (p, exp env e1, exp env e2), exp env e3)
+  | AssignExpr (p, PropLValue (_, e1, e2), e3) -> 
+      EUpdate (p, exp env e1, exp env e2, exp env e3)
   | AppExpr (a, f, args) -> EApp (a, exp env f, map (exp env) args)
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdMap.add x true env) e2)
