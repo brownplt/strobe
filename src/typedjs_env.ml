@@ -155,16 +155,13 @@ module Env = struct
      fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
   and r_subtype_fields rel env fs1 fs2 = match fs1, fs2 with
     | [], [] -> true
-    | [], _ -> false (* fs1 is missing some things fs2 has *)
-    | _, [] -> true (* can have many extra fields, doesn't matter *)
+    | [], _
+    | _, [] -> false
     | (x, s) :: fs1', (y, t) :: fs2' ->
         let cmp = String.compare x y in
           if cmp = 0 then r_subtype rel env s t && r_subtype_fields rel env fs1' fs2'
             (* if cmp < 0, x is an extra field, so just move on *)
-          else (if cmp < 0 then 
-                  r_subtype_fields rel env fs1' fs2
-                    (* otherwise, y is a field that x does not have *)
-                else false)
+          else false
             
   and r_subtypes rel env (ss : typ list) (ts : typ list) : bool = 
     try List.for_all2 (r_subtype rel env) ss ts
@@ -206,9 +203,11 @@ module Env = struct
           raise (Not_wf_typ (constr ^ " does not take arguments"))
       | TArrow (this, args, rest, result) ->
           let rest = normalize_typ env rest in
-            if not (subtype env (TConstr ("Undef", [])) rest) then
-              raise (Not_wf_typ ("Restargs must be a supertype of Undef"))
-            else
+            (*if not ((subtype env (TConstr ("Undef", [])) rest) ||
+                    rest = TBot) then
+              raise (Not_wf_typ (sprintf "Restargs must include Undef, \
+              got %s" (string_of_typ rest)))
+            else*)
               TArrow (normalize_typ env this, map (normalize_typ env) args,
                       normalize_typ env rest, normalize_typ env result)
       | TRef t -> TRef (normalize_typ env t)
