@@ -45,6 +45,9 @@ let rec seq expr = match expr with
   | SeqExpr (a1, HintExpr (a3, txt, FuncStmtExpr (a2, f, args, e1)), e2) ->
       let (decls, body) = seq e2 in
         ((a2, f, HintExpr (a3, txt, FuncExpr (a2, args, e1))) :: decls, body)
+  | SeqExpr (a1, HintExpr (a4, txt2, HintExpr (a3, txt, FuncStmtExpr (a2, f, args, e1))), e2) ->
+      let (decls, body) = seq e2 in
+        ((a2, f, HintExpr (a4, txt2, HintExpr (a3, txt, FuncExpr (a2, args, e1)))) :: decls, body)
   | _ -> ([], expr)
 
 let rec is_value e = match e with
@@ -236,10 +239,10 @@ and match_func env expr = match expr with
           ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) in
         begin match Typ.match_func_typ typ with
             Some (arg_typs, r) ->
-              if List.length args != List.length arg_typs then
+(*              if List.length args != List.length arg_typs then
                 raise (Not_well_formed (
                          a, sprintf "given %d args but %d arg types"
-                           (List.length args) (List.length arg_typs)));
+                           (List.length args) (List.length arg_typs)));*)
               Some (typ, EFunc (a, args, typ, 
                                 fold_left mutable_arg
                                   (ELabel (a', "%return", r, exp env' body))
