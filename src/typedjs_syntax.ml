@@ -86,6 +86,7 @@ type exp
   | EThis of pos
   | EId of pos * id
   | EBracket of pos * exp * exp
+  | EUpdate of pos * exp * exp * exp
   | ENew of pos * id * exp list
   | EPrefixOp of pos * id * exp
   | EInfixOp of pos * id * exp * exp
@@ -193,6 +194,7 @@ module Exp = struct
     | EThis p -> p
     | EId (p, _) -> p
     | EBracket (p, _, _) -> p
+    | EUpdate (p, _, _, _) -> p
     | ENew (p, _, _) -> p
     | EPrefixOp (p, _, _) -> p
     | EInfixOp (p, _, _, _) -> p
@@ -280,7 +282,9 @@ module Pretty = struct
     | EThis _ -> text "this"
     | EId (_, x) -> text x
     | EBracket (_, e1, e2) ->
-      parens (horz [ text "bracket"; exp e1; exp e2 ])
+        parens (horz [ text "bracket"; exp e1; exp e2 ])
+    | EUpdate (_, e1, e2, e3) ->
+        parens (horz [ text "update"; exp e1; exp e2; exp e3 ])
     | ENew (_, c_id, args) ->
         parens (horz (text "new" :: text c_id :: map exp args))
     | EIf (_, e1, e2, e3) ->

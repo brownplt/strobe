@@ -78,6 +78,7 @@ type exp =
   | EThis of pos
   | EId of pos * id
   | EBracket of pos * exp * exp
+  | EUpdate of pos * exp * exp * exp
   | ENew of pos * id * exp list
   | EPrefixOp of pos * id * exp
   | EInfixOp of pos * id * exp * exp

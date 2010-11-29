@@ -179,8 +179,10 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       let t_list = typ_to_list typ in
       let f_list = map (bracket p env field) t_list in
         list_to_typ env f_list
+  | EUpdate (p, obj, field, newval) -> 
+      raise (Typ_error (p, "Can't type field update yet"))
   | EThis p -> begin
-      try 
+      try
         Env.lookup_id "this" env
       with Not_found -> raise (Typ_error (p, "'this' used in non-func"))
     end
