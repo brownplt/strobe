@@ -162,14 +162,15 @@ module Env = struct
 	| _ -> s = t
 
   (* assumes fs1 and fs2 are ordered 
-     fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
+     fs1 <: fs2 if fs1 has everything fs2 does, and nothing more *)
   and r_subtype_fields rel env fs1 fs2 = match fs1, fs2 with
     | [], [] -> true
     | [], _
     | _, [] -> false
     | (x, s) :: fs1', (y, t) :: fs2' ->
         let cmp = String.compare x y in
-          if cmp = 0 then r_subtype rel env s t && r_subtype_fields rel env fs1' fs2'
+          if cmp = 0 then r_subtype rel env s t && 
+            r_subtype_fields rel env fs1' fs2'
             (* if cmp < 0, x is an extra field, so just move on *)
           else false
             
