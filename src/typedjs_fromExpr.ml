@@ -201,7 +201,46 @@ let rec exp (env : env) expr = match expr with
           raise (Not_well_formed (p, "for-in loops require a named object"))
     end
 
-
+and av expr = match expr with
+    (** Assignments and declarations indicate assignable *)
+  | AssignExpr (_, lv, e) -> (match lv with
+                                | VarLValue (_, x) -> [x]
+                                | _ -> [])
+  | VarDeclExpr (_, x, expr) -> x::(av expr)
+    (** Bindings hide the assignable vars *)
+  | FuncExpr (_, ids, e)
+  | FuncStmtExpr (_, _, ids, e) ->
+      List.filter (fun id -> not (List.mem id ids)) (av e)
+  | LetExpr (_, id, e1, e2) ->
+      List.append (av e1) (List.filter (fun id' -> id != id') (av e2))
+  | TryCatchExpr (_, e1, id, e2) -> 
+      List.append (av e1) (List.filter (fun id' -> id != id') (av e2))
+    (** The rest is straightforward recursion on exprs *)
+  | ArrayExpr (_, es) -> List.concat (map av es)
+  | ObjectExpr (_, fs) -> List.concat (map av (map third fs))
+  | BracketExpr (_, e1, e2) -> List.append (av e1) (av e2)
+  | NewExpr (_, e1, es) -> 
+      List.append (av e1) (List.concat (map av es))
+  | AppExpr (_, e1, es) -> 
+      List.append (av e1) (List.concat (map av es))
+  | PrefixExpr (_, _, e) -> av e
+  | InfixExpr (_, _, e1, e2) -> List.append (av e1) (av e2)
+  | IfExpr (_, e1, e2, e3) -> 
+      List.concat [av e1; av e2; av e3]
+  | SeqExpr (_, e1, e2) -> List.append (av e1) (av e2)
+  | WhileExpr (_, e1, e2) -> List.append (av e1) (av e2)
+  | DoWhileExpr (_, e1, e2) -> List.append (av e1) (av e2)
+  | LabelledExpr (_, id, e) -> av e
+  | BreakExpr (_, id, e) -> av e
+  | ForInExpr (_, id, e1, e2) -> List.append (av e1) (av e2)
+  | TryFinallyExpr (_, e1, e2) -> List.append (av e1) (av e2)
+  | ThrowExpr (_, e) -> av e
+  | HintExpr (_, _, e) -> av e
+  | ConstExpr _ -> []
+  | ThisExpr _ -> []
+  | VarExpr _ -> []
+  | IdExpr _ -> []
+and third e = match e with (_, _, v) -> v
 
 and match_func env expr = match expr with
   | HintExpr (p, txt, FuncExpr (a, args, LabelledExpr (a', "%return", body))) ->
@@ -216,6 +255,7 @@ and match_func env expr = match expr with
         IdSet.diff (IdSetExt.from_list (IdMapExt.keys env))
           locally_defined_vars in
       let lambda_bound_vars = IdSetExt.from_list args in
+      let assignable_vars = IdSetExt.from_list (av body) in
       let locally_shadowed_args = 
         IdSet.inter lambda_bound_vars locally_defined_vars in
         if not (IdSet.is_empty locally_shadowed_args) then
@@ -234,9 +274,11 @@ and match_func env expr = match expr with
                           acc)
             env IdMap.empty in
         let env' = 
-          fold_left (fun acc x -> IdMap.add x true acc) env' args in
+          fold_left (fun acc x -> IdMap.add x (IdSet.mem x assignable_vars) acc) env' args in
         let mutable_arg exp id =
-          ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) in
+          if IdSet.mem id assignable_vars then
+            ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) 
+          else exp in
         begin match Typ.match_func_typ typ with
             Some (arg_typs, r) ->
 (*              if List.length args != List.length arg_typs then
