@@ -179,8 +179,11 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       let t_list = typ_to_list typ in
       let f_list = map (bracket p env field) t_list in
         list_to_typ env f_list
-  | EUpdate (p, obj, field, newval) -> 
-      raise (Typ_error (p, "Can't type field update yet"))
+  | EUpdate (p, obj, field, newval) ->
+      let typ = un_null (tc_exp env obj) in
+      let t_list = typ_to_list typ in
+      let f_list = map (update p env field newval) t_list in
+        list_to_typ env f_list
   | EThis p -> begin
       try
         Env.lookup_id "this" env
@@ -434,6 +437,37 @@ and tc_exp_ret env e =
       error (Exp.pos e) "unreachable code"
     else 
       t
+
+and update p env field newval t =
+  match t, field with
+    | TObject fs, EConst (_, JavaScript_syntax.CString x) ->
+        (try
+           let ft = un_ref (snd2 (List.find (fun (x', _) -> x = x') fs)) in
+           let vt = tc_exp env newval in
+             if Env.subtype env vt ft && Env.subtype env ft vt then t
+             else raise (Typ_error (p, (sprintf "%s is not a subtype of %s in \
+                                        %s[%s = %s]" (string_of_typ vt)
+                                          (string_of_typ ft) (string_of_typ t)
+                                          x (string_of_typ ft))))
+         with Not_found ->
+           raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
+    | TObjStar (fs, proto, other_typ, code),
+        EConst (_, JavaScript_syntax.CString x) ->
+        let vt = tc_exp env newval in
+          (try
+             let ft = un_ref (snd2 (List.find (fun (x', _) -> x = x') fs)) in
+               if Env.subtype env vt ft && Env.subtype env ft vt then vt
+               else raise (Typ_error (p, (sprintf "%s is not a subtype of %s in \
+                                        %s[%s = %s]" (string_of_typ vt)
+                                            (string_of_typ ft) (string_of_typ t)
+                                        x (string_of_typ ft))))
+           with Not_found -> 
+             if Env.subtype env vt other_typ && Env.subtype env other_typ vt then vt
+             else raise (Typ_error (p, (sprintf "%s is not a subtype of %s in \
+                                        %s[%s = %s]" (string_of_typ vt)
+                                            (string_of_typ other_typ) (string_of_typ t)
+                                        x (string_of_typ other_typ)))))
+    | _ -> raise (Typ_error (p, "No object update on non-objects yet"))
 
 and bracket p env field t = 
   match t, field with
