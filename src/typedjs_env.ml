@@ -96,6 +96,11 @@ module Env = struct
     let st = r_subtype rel env in
       if (TypPairSet.mem (s,t) rel) then true
       else match s, t with
+        | TStrSet s, TConstr ("Str", []) -> true
+        | TStrMinus s, TConstr ("Str", []) -> true
+        | TUnion (TStrSet s1, TStrSet s2), TStrSet s3 -> 
+            List.for_all (fun s -> List.mem s s3) s1 && 
+              List.for_all (fun s -> List.mem s s3) s2
 	| TId x, TId y -> x = y
 	| TId x, t -> begin try
 	    let s = IdMap.find x env.typ_ids in
@@ -227,6 +232,8 @@ module Env = struct
       | TRec (x, t) -> 
 	  let t' = normalize_typ (bind_typ_id x typ env) t in
 	    TRec (x, t')
+      | TStrSet strs -> TStrSet strs
+      | TStrMinus strs -> TStrMinus strs
 
   let check_typ p env t = 
     try
