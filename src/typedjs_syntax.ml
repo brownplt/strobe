@@ -36,6 +36,8 @@ type constr = string
 
 type typ = 
   | TConstr of constr * typ list
+  | TStrSet of id list (* Just these strings *)
+  | TStrMinus of id list (* All strings minus some *)
   | TUnion of typ * typ
   | TArrow of typ * typ list * typ * typ (** this, args, restargs, return *)
   | TObject of (id * typ) list
@@ -146,6 +148,8 @@ let rec typ_subst' s_env x s typ =
     match typ with
       | TId y -> if x = y then s else typ
       | TConstr (c, ts) -> TConstr (c, map (typ_subst x s) ts)
+      | TStrSet strs -> TStrSet strs
+      | TStrMinus strs -> TStrMinus strs
       | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
       | TArrow (t1, t2s, tr, t3)  ->
           TArrow (typ_subst x s t1, map (typ_subst x s) t2s, typ_subst x s tr, typ_subst x s t3)
@@ -246,6 +250,11 @@ module Pretty = struct
     | TConstr (s, ts) ->
         horz [ text s; 
                angles (horz (intersperse (text ",") (map typ ts))) ]
+    | TStrSet strs -> braces (horz (intersperse (text ",") 
+                                         (map text strs)))
+    | TStrMinus strs -> braces (horz [(text "S-"); 
+                                      (horz (intersperse (text ",") 
+                                               (map text strs)))])
     | TObject fs ->
       braces (horz (intersperse (text ",") (map field fs)))
     | TObjStar (fs, proto, other_typ, code) ->

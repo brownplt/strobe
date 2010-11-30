@@ -29,6 +29,8 @@ type constr = string
 
 type typ = 
   | TConstr of constr * typ list
+  | TStrSet of id list (* Just these strings *)
+  | TStrMinus of id list (* All strings minus some *)
   | TUnion of typ * typ
   | TArrow of typ * typ list * typ * typ      
   | TObject of (id * typ) list
