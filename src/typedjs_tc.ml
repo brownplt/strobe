@@ -454,6 +454,7 @@ and update p env field newval t =
     | TObjStar (fs, proto, other_typ, code),
         EConst (_, JavaScript_syntax.CString x) ->
         let vt = tc_exp env newval in
+        let other_typ = un_ref other_typ in
           (try
              let ft = un_ref (snd2 (List.find (fun (x', _) -> x = x') fs)) in
                if Env.subtype env vt ft && Env.subtype env ft vt then vt
@@ -467,6 +468,60 @@ and update p env field newval t =
                                         %s[%s = %s]" (string_of_typ vt)
                                             (string_of_typ other_typ) (string_of_typ t)
                                         x (string_of_typ other_typ)))))
+    | TObjStar (fs, proto, other_typ, code), e ->
+	let t_field = tc_exp env e in
+        let vt = tc_exp env newval in
+        let other_typ = un_ref other_typ in
+	  (match t_field with
+             | TUnion (TConstr ("Str", []), TConstr ("Undef", []))
+             | TConstr ("Str", []) -> 
+                 let fts = map un_ref (map snd fs) in
+                   if List.for_all (fun t -> Env.subtype env vt t 
+                                      && Env.subtype env t vt) fts then
+                     vt
+                   else
+                     raise (Typ_error (p, (sprintf "Dictionary assignment error: %s"
+                                             (string_of_typ vt))))
+             | TConstr ("Int", []) ->
+                 if Env.subtype env vt other_typ && Env.subtype env other_typ vt
+                 then vt else 
+                   raise (Typ_error (p, (sprintf "Dictionary assignment error: %s"
+                                           (string_of_typ vt))))
+	     | t -> raise (Typ_error (p, (sprintf "Index was type %s in  \
+                                       dictionary assignment\n" (string_of_typ t)))))
+    | TConstr ("Array", [tarr]), eidx ->
+        let tidx = tc_exp env eidx in
+        let vt = tc_exp env newval in
+        let tarr = un_ref tarr in
+          (match tidx with
+             | TConstr ("Int", []) -> 
+                 if Env.subtype env vt tarr && Env.subtype env tarr vt then
+                   vt
+                 else
+                  raise (Typ_error (p, "Bad array type"))
+             | _ -> raise (Typ_error (p, "Array index must be int")))
+    | TConstr (cname, _), EConst (_, JavaScript_syntax.CString x) ->
+        let vt = tc_exp env newval in
+          begin match Env.field_typ env cname x with
+            | Some t -> 
+                let ft = un_ref t in
+                  if Env.subtype env vt ft then
+                    vt
+                  else
+                    raise (Typ_error (p, (sprintf "Bad assignment to \
+                                      %s[%s:%s = %s]" cname x 
+                                         (string_of_typ ft)
+                                         (string_of_typ vt))))
+            | None -> begin match cname with 
+                | "Undef" 
+                | "Null" -> TBot (* Actually errors *)
+                | "Num"
+                | "Bool"
+                | "Int"
+                | "Str" -> vt
+                | _ -> TConstr ("Undef", [])
+              end
+          end
     | _ -> raise (Typ_error (p, "No object update on non-objects yet"))
 
 and bracket p env field t = 
