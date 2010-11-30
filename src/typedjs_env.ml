@@ -105,12 +105,15 @@ module Env = struct
 	| TId x, t -> begin try
 	    let s = IdMap.find x env.typ_ids in
 	      r_subtype rel env s t
-          with Not_found -> failwith ("Unbound id (in subtype, shouldn't happen): " ^ x)
+          with Not_found -> 
+            failwith ("Unbound id (in subtype, shouldn't happen): " ^ x)
           end
 	| s, TRec (x, t') -> 
-	    r_subtype (TypPairSet.add (s,t) rel) env s (Typedjs_syntax.Typ.typ_subst x t t')
+	    r_subtype (TypPairSet.add (s,t) rel) 
+              env s (Typedjs_syntax.Typ.typ_subst x t t')
 	| TRec (x, s'), t ->
-	    r_subtype (TypPairSet.add (s,t) rel) env (Typedjs_syntax.Typ.typ_subst x s s') t
+	    r_subtype (TypPairSet.add (s,t) rel) 
+              env (Typedjs_syntax.Typ.typ_subst x s s') t
 	| TConstr (c1, []), TConstr (c2, []) ->
 	    let rec is_subclass sub sup =
               if sub = sup then
@@ -128,12 +131,14 @@ module Env = struct
             (** We can fill args2 with undefineds (up to the length of
             args1), and then check *)
 
-        | TArrow (this_t1, args1, rest_typ1, r1), TArrow (this_t2, args2, rest_typ2, r2) ->
+        | TArrow (this_t1, args1, rest_typ1, r1), 
+            TArrow (this_t2, args2, rest_typ2, r2) ->
             let args2 = 
               fill (List.length args1 - List.length args2) 
                 rest_typ1 args2 in
               r_subtypes rel env args2 args1 && st rest_typ2 rest_typ1 &&
-                r_subtype rel env r1 r2 && st this_t1 this_t2 && st this_t2 this_t1
+                r_subtype rel env r1 r2 && 
+                st this_t1 this_t2 && st this_t2 this_t1
         | TConstr (c_name, []), TObject fs2 ->
             (* Classes can be turned into objects. However, this drops
                all fields in the prototype. *)
