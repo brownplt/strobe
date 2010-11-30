@@ -29,6 +29,11 @@ let typ_of_value (exp : exp) : typ =
     | _ -> raise (Not_value (FormatExt.to_string Pretty.p_exp e)) in
     f exp
 
+let typ_of_value_init (exp : exp) : typ =
+  match exp with 
+    | EConst (_, JavaScript_syntax.CString s) -> TConstr ("Str", [])
+    | _ -> typ_of_value exp
+
 let cmp_props (k1, _) (k2, _) = match String.compare k1 k2 with
   | 0 -> raise (Not_wf_typ ("the field " ^ k1 ^ " is repeated"))
   | n -> n
