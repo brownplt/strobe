@@ -78,7 +78,7 @@ let rec exp (env : env) expr = match expr with
   | ObjectExpr (a, ps) -> 
       if List.length ps != List.length (nub (map (fun (_, p, _) -> p) ps)) then
         raise (Not_well_formed (a, "repeated field names"));
-      EObject (a, map (fun (_, x, e) ->  x, ERef (a, RefCell, exp env e)) ps)
+      EObject (a, map (fun (_, x, e) -> x, ERef (a, RefCell, exp env e)) ps)
   | ThisExpr a -> EThis a
   | VarExpr (a, x) -> begin try
       if IdMap.find x env then
