@@ -68,6 +68,8 @@ rule token = parse
    | "type" { TYPE }
    | "=" { EQUALS }
    | "<:" { LTCOLON }
+   | "$" { CASH }
+   | "^" { CARET }
    | eof { EOF }
    | ident as x { ID x }
    | '"' (double_quoted_string_char* as x) '"' { STRING x }

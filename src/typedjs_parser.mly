@@ -11,7 +11,7 @@ open Typedjs_types
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
        CHECKED CHEAT HASHPROTO TREC TYPE EQUALS BOT CODE REF OBJCAST
-       DOTS CONST
+       DOTS CONST CASH CARET
 
 %right UNION
 
@@ -50,6 +50,11 @@ star
 code
   : CODE COLON typ { $3 }
 
+strs
+  : { [] }
+  | STRING { [$1] }
+  | STRING COMMA strs { $1::$3 }
+
 arg_typ
   : ANY { TTop }
   | BOT { TBot }
@@ -61,6 +66,8 @@ arg_typ
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | LBRACE fields RBRACE { TObject $2 }
   | LBRACE fields proto COMMA star COMMA code RBRACE { TObjStar ($2, $3, $5, $7) }
+  | CASH LBRACE strs RBRACE { TStrSet $3 }
+  | CASH CARET LBRACE strs RBRACE { TStrMinus $4 }
   | LPAREN typ RPAREN { $2 }
   | ID { TConstr ( $1, [] ) }
   | ID LANGLE typs RANGLE { TConstr ($1, map (fun t -> TRef t) $3) }
