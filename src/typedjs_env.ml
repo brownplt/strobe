@@ -98,9 +98,9 @@ module Env = struct
       else match s, t with
         | TStrSet s, TConstr ("Str", []) -> true
         | TStrMinus s, TConstr ("Str", []) -> true
-(*        | TUnion (TStrSet s1, TStrSet s2), TStrSet s3 -> 
+        | TUnion (TStrSet s1, TStrSet s2), TStrSet s3 -> 
             List.for_all (fun s -> List.mem s s3) s1 && 
-              List.for_all (fun s -> List.mem s s3) s2 *)
+              List.for_all (fun s -> List.mem s s3) s2
 	| TId x, TId y -> x = y
 	| TId x, t -> begin try
 	    let s = IdMap.find x env.typ_ids in
