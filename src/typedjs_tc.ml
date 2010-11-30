@@ -527,6 +527,8 @@ and update p env field newval t =
 
 and bracket p env ft ot =
   match ot, ft with
+    | TStrSet strs, _
+    | TStrMinus strs, _ -> bracket p env ft (TConstr ("Str", []))
     | TObject fs, TStrSet [x] ->
         (try
            snd2 (List.find (fun (x', _) -> x = x') fs)
