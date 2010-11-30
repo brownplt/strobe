@@ -250,11 +250,12 @@ module Pretty = struct
     | TConstr (s, ts) ->
         horz [ text s; 
                angles (horz (intersperse (text ",") (map typ ts))) ]
-    | TStrSet strs -> braces (horz (intersperse (text ",") 
-                                         (map text strs)))
-    | TStrMinus strs -> braces (horz [(text "S-"); 
-                                      (horz (intersperse (text ",") 
-                                               (map text strs)))])
+    | TStrSet strs -> horz [(text "$"); 
+                            braces (horz (intersperse (text ",")
+                                            (map text strs)))]
+    | TStrMinus strs -> horz [(text "$^"); 
+                              braces (horz (intersperse (text ",")
+                                              (map text strs)))]
     | TObject fs ->
       braces (horz (intersperse (text ",") (map field fs)))
     | TObjStar (fs, proto, other_typ, code) ->
