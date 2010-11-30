@@ -172,6 +172,8 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
       | "RegExp" -> RTSet.singleton (RT.Object [])
       | "Num"  -> RTSet.singleton RT.Num
       | "Int" -> RTSet.singleton RT.Num
+      | "True"
+      | "False"
       | "Bool" -> RTSet.singleton RT.Bool
       | "Undef" -> RTSet.singleton RT.Undefined
       |  _ -> RTSet.singleton (RT.ConstrObj constr_name)
