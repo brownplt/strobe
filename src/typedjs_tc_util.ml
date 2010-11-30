@@ -4,7 +4,7 @@ open Typedjs_types
 open Typedjs_env
 
 let tc_const (const : JavaScript_syntax.const) = match const with
-    JavaScript_syntax.CString _ -> typ_str
+    JavaScript_syntax.CString s -> TStrSet [s]
   | JavaScript_syntax.CRegexp _ -> typ_regexp
   | JavaScript_syntax.CNum _ -> typ_num
   | JavaScript_syntax.CInt _ -> typ_int
