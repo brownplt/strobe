@@ -176,6 +176,8 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
       | "Undef" -> RTSet.singleton RT.Undefined
       |  _ -> RTSet.singleton (RT.ConstrObj constr_name)
     end
+  | Typedjs_syntax.TStrSet _ 
+  | Typedjs_syntax.TStrMinus _ -> RTSet.singleton RT.Str
   | Typedjs_syntax.TConstr ("Array", [arrayt]) ->
     RTSet.singleton (RT.ConstrObj "Array")
   | Typedjs_syntax.TConstr _ -> failwith 
