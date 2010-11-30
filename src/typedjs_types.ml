@@ -14,6 +14,9 @@ let typ_int = TConstr ("Int", [])
 
 let typ_bool = TConstr ("Bool", [])
 
+let typ_true = TConstr ("True", [])
+let typ_false = TConstr ("False", [])
+
 let typ_null = TConstr ("Null", [])
 
 let typ_undef = TConstr ("Undef", [])
