@@ -259,7 +259,7 @@ and exp_seq env e = match e with
 
 and func_exp env (_, x, expr) = 
   let e = exp env expr in
-    (x, typ_of_value e, e)
+    (x, typ_of_value_init e, e)
 
 and bind_func_ref (x, t, e) rest_exp = 
   let p = Exp.pos e in
