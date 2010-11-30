@@ -98,9 +98,9 @@ module Env = struct
       else match s, t with
         | TStrSet s, TConstr ("Str", []) -> true
         | TStrMinus s, TConstr ("Str", []) -> true
-        | TUnion (TStrSet s1, TStrSet s2), TStrSet s3 -> 
+(*        | TUnion (TStrSet s1, TStrSet s2), TStrSet s3 -> 
             List.for_all (fun s -> List.mem s s3) s1 && 
-              List.for_all (fun s -> List.mem s s3) s2
+              List.for_all (fun s -> List.mem s s3) s2 *)
 	| TId x, TId y -> x = y
 	| TId x, t -> begin try
 	    let s = IdMap.find x env.typ_ids in
@@ -285,6 +285,8 @@ module Env = struct
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
     | TBot -> TBot (* might change if we allow arbitrary casts *)
     | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
+    | TStrSet _
+    | TStrMinus _
     | TConstr ("Str", []) -> if RTSet.mem RT.Str rt then typ else TBot
     | TConstr ("RegExp", []) -> if has_obj rt then typ else TBot
     | TConstr ("Num", []) -> if RTSet.mem RT.Num rt then typ else TBot
@@ -555,3 +557,4 @@ let rec unify subst s t : typ IdMap.t = match s, t with
 
 let unify_typ (s : typ) (t : typ) : typ IdMap.t = 
   unify IdMap.empty s t
+
