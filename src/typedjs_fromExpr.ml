@@ -153,6 +153,12 @@ let rec exp (env : env) expr = match expr with
   | BreakExpr (a, x, e) -> EBreak (a, x, exp env e)
   | SeqExpr 
       (p,
+       IfExpr (a, cond, (SeqExpr (_, BreakExpr (_, "%return", e),
+                                  ConstExpr (_, S.CUndefined)) as thn),
+               ConstExpr (_, S.CUndefined)),
+       next_expr) -> EIf (a, exp env cond, exp env thn, exp env next_expr)
+  | SeqExpr 
+      (p,
        IfExpr (_, IdExpr _, ConstExpr (_, S.CUndefined), 
                ConstExpr (_, S.CUndefined)),
        next_expr) -> exp env next_expr
@@ -189,6 +195,7 @@ let rec exp (env : env) expr = match expr with
   | FuncStmtExpr (p, _, _, _) ->
       raise (Not_well_formed (p, "function is missing a type annotation"))
   | ForInExpr (p, x, objExpr, body) -> begin match exp env objExpr with
+      | EId (_, obj)
       | EDeref (_, EId (_, obj)) ->
           let loop_typ = TArrow (TTop, [TField; TField], TBot, typ_undef) in
             ERec ([("%loop", loop_typ,
