@@ -17,7 +17,7 @@ function dom_event (e) /*: Event -> Undef */ {
     that /*: upcast 'Ad */,
     the_event /*: upcast 'Ad */,
     the_target /*: upcast HTMLElement + Undef */,
-    the_actual_event = e || event,
+    the_actual_event = /*: upcast Event + Undef */ (e || event),
     type = the_actual_event.type;
 
     // Get the target node and wrap it in a bunch.
@@ -83,7 +83,6 @@ function dom_event (e) /*: Event -> Undef */ {
     {
         altKey: /*: upcast 'Ad */ (the_actual_event.altKey),
         ctrlKey: /*: upcast 'Ad */ (the_actual_event.ctrlKey),
-        // TODO, gave bubble a blank argument
         bubble: /*: upcast 'Ad */ (/*: obj* 'AdObj */ (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
             
             // Bubble up. Get the parent of that node. It becomes the new that.
@@ -93,27 +92,27 @@ function dom_event (e) /*: Event -> Undef */ {
                 var parent = that.getParent(),
                 b = parent.___nodes___[0];
                 that = parent;
-                // the_event.that = that; // FIXME
+                the_event.that = that;
 
                 // If that node has an event handler, fire it. Otherwise, bubble up.
 
-                if (/*: cheat Bool */ (b['___ on ___'] &&
-                                       b['___ on ___'][type])) {
+                if (b['___ on ___'] &&
+                    b['___ on ___'][type]) {
                     that.fire(the_event);
                 } else {
                     the_event.bubble();
                 }
             } catch (e) {
-                return error(/*: cheat Undef */ e);
+                return error(String(e));
             }
         })),
         key: /*: upcast 'Ad */ key,
-        preventDefault: /*: cheat 'Ad */ (function () /*: -> Undef */ {
+        preventDefault: /*: upcast 'Ad */ (/*: obj* 'AdObj */ (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
             if (the_actual_event.preventDefault) {
                 the_actual_event.preventDefault();
             }
             the_actual_event.returnValue = false;
-        }),
+        })),
         shiftKey: /*: upcast 'Ad */ (the_actual_event.shiftKey),
         target: /*: upcast 'Ad */ target,
         that: /*: upcast 'Ad */ that,
@@ -124,8 +123,8 @@ function dom_event (e) /*: Event -> Undef */ {
     that.fire(the_event);
     // If the target has event handlers, then fire them. Otherwise, bubble up.
 
-    if (/*: cheat Bool */ (the_target['___ on ___'] &&
-                           the_target['___ on ___'][the_event.type])) {
+    if (the_target['___ on ___'] &&
+        the_target['___ on ___'][string_check(the_event.type)]) {
         target.fire(the_event);
     } else {
         for (;;) {
@@ -133,14 +132,14 @@ function dom_event (e) /*: Event -> Undef */ {
             if (!the_target) {
                 break;
             }
-            if (/*: cheat Bool */ (the_target['___ on ___'] &&
-                                   the_target['___ on ___'][the_event.type])) {
+            if (the_target['___ on ___'] &&
+                the_target['___ on ___'][string_check(the_event.type)]) {
                 that = /*: obj* 'AdObj */ (new Bunch([the_target]));
-                /*: cheat 'Ad */ (the_event.that = that);
+                the_event.that = that;
                 that.fire(the_event);
                 break;
             }
-            if (/*: cheat Bool */ (the_target['___adsafe root___'])) {
+            if (the_target['___adsafe root___']) {
                 break;
             }
         }
@@ -152,6 +151,7 @@ function dom_event (e) /*: Event -> Undef */ {
         ephemeral = null;
     }
     // This line is annoying --- why add Null to all these types?
-    /*: cheat Undef */ (that = the_target = the_event = the_actual_event = null);
+    // Change to undefined
+    that = the_target = the_event = the_actual_event = undefined;
     return;
 }
