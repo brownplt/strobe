@@ -540,7 +540,7 @@ and update p env field newval t =
                      Env.subtype env vt other_typ then
                        vt
                    else
-                     raise (Typ_error (p, (sprintf "Dictionary assignment error: %s, %s"
+                     raise (Typ_error (p, (sprintf "Dictionary assignment error (str-): %s, %s"
                                              (string_of_typ vt)
                                              (string_of_typ_list fts))))
 	     | t -> raise (Typ_error (p, (sprintf "Index was type %s in  \

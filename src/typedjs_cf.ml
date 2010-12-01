@@ -143,10 +143,10 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
   | If (node, v1, true_cont, false_cont) ->
       let absv1 = abs_of_cpsval node env v1 in
       let env2, env3 = match absv1 with
-           | AVarTypeIs (x, true_set) ->
-               let false_set = ASet (RTSet.diff (to_set (lookup x env)) true_set) in
-                 (bind x (ASet true_set) env, bind x false_set env)
-           | _ -> (env, env) in
+        | AVarTypeIs (x, true_set) ->
+            let false_set = RTSet.diff (to_set (lookup x env)) true_set in
+              (bind x (ASet true_set) env, bind x (ASet false_set) env)
+        | _ -> (env, env) in
       let heap2, heap3 = match absv1 with
         | AInstanceof (loc, constr_name) ->
           let true_set = RTSet.singleton (RT.ConstrObj constr_name) in
