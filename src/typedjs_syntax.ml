@@ -252,10 +252,14 @@ module Pretty = struct
                angles (horz (intersperse (text ",") (map typ ts))) ]
     | TStrSet strs -> horz [(text "$"); 
                             braces (horz (intersperse (text ",")
-                                            (map text strs)))]
+                                            (map 
+                                               (fun s -> text ("\"" ^ s ^ "\"")) 
+                                               strs)))]
     | TStrMinus strs -> horz [(text "$^"); 
                               braces (horz (intersperse (text ",")
-                                              (map text strs)))]
+                                              (map 
+                                                 (fun s -> text ("\"" ^ s ^ "\"")) 
+                                                 strs)))]
     | TObject fs ->
       braces (horz (intersperse (text ",") (map field fs)))
     | TObjStar (fs, proto, other_typ, code) ->
