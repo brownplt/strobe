@@ -35,6 +35,7 @@ type av =
   | AStr of string
   | ABool of bool
   | AClosure of int * id list * cpsexp
+  | AVarField of id * string
   | AField of Loc.t * string
 
 module AV = struct
@@ -70,6 +71,8 @@ let rec p_av av = match av with
   | AClosure _ -> text "#closure"
   | AStr s -> text ("\"" ^ s ^ "\"")
   | ABool b -> text (string_of_bool b)
+  | AVarField (x, field_name) ->
+    parens (horz [ text "get-field"; text x; text field_name ])
   | AField (loc, field_name) ->
     parens (horz [ text "get-field"; 
                    parens (horz [ text "deref"; Loc.pp loc ]);
@@ -101,6 +104,7 @@ let rec to_set v = match v with
   | ARef _ -> rtany
   | ABool _ -> RTSet.singleton RT.Bool
   | ADeref (_, v) -> v
+  | AVarField _ -> rtany
   | AField _ -> rtany
 
 let deref loc heap  =

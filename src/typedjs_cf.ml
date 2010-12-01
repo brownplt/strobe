@@ -77,13 +77,14 @@ let calc_op1 node env heap (op : op1) v vy = match op, v with
         ARef loc, set_ref loc (to_set v) heap
   | Deref, ARef loc -> (ADeref (loc, deref loc heap), heap)
   | Deref, AField (loc, field_name) -> AField (loc, field_name), heap (** I think this is principled *)
+  | Deref, AVarField (x, field_name) -> AVarField (x, field_name), heap (** I think this is principled *)
   | Op1Prefix "prefix:typeof", ADeref (loc, _) -> ALocTypeof loc, heap
   | Op1Prefix "prefix:typeof", _ ->
       (match vy with | Id (_,x) -> AVarTypeof x, heap | _ -> any, heap)
   | _ -> any, heap
 
 
-let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
+let calc_op2 node env heap op v1 v2 e1 = match op, v1, v2 with
   | Op2Infix "==", ALocTypeof loc, AStr str
   | Op2Infix "===", ALocTypeof loc, AStr str
   | Op2Infix "==", AStr str, ALocTypeof loc
@@ -120,6 +121,8 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
     end
   | GetField, ADeref (loc, _), AStr field_name ->
       (AField (loc, field_name), heap)
+  | GetField, v, AStr s ->
+      (match e1 with | Id (_, x) -> AVarField (x, s), heap | _ -> any, heap)
   | _ -> any, heap
 
 let mk_closure (env : env) (_, f, args, typ, body_exp) =
@@ -136,6 +139,7 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
             calc_op2 node env heap op 
               (abs_of_cpsval node env v1) 
               (abs_of_cpsval node env v2)
+              v1
         | Object _ -> singleton (RT.Object []), heap
         | Array _ -> singleton (RT.Object []), heap
         | UpdateField (obj, _, _) -> (abs_of_cpsval node env obj, heap) in
@@ -146,6 +150,9 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         | AVarTypeIs (x, true_set) ->
             let false_set = RTSet.diff (to_set (lookup x env)) true_set in
               (bind x (ASet true_set) env, bind x (ASet false_set) env)
+        | AVarField (x, field_name) ->
+            let false_set = RTSet.singleton (RT.Object ([field_name])) in
+              (env, bind x (ASet false_set) env)
         | _ -> (env, env) in
       let heap2, heap3 = match absv1 with
         | AInstanceof (loc, constr_name) ->

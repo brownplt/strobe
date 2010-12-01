@@ -24,6 +24,7 @@ type av =
   | AStr of string
   | ABool of bool
   | AClosure of int * id list * cpsexp
+  | AVarField of id * string
   | AField of Loc.t * string
 
 type env
