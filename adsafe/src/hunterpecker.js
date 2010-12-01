@@ -105,38 +105,38 @@ var pecker =
         return node.type === name;
     },
     '[': function (node) /*: HTMLElement + Undef -> Bool */  {
-        return typeof /*: cheat Str */ (node[name]) === 'string';
+        return typeof node[name] === 'string';
     },
     '[=': function (node) /*: HTMLElement + Undef -> Bool */  {
-        var member = /*: cheat Any */ (node[name]);
+        var member = node[name];
         return typeof member === 'string' && member === value;
     },
     '[!=': function (node) /*: HTMLElement + Undef -> Bool */  {
-        var member = /*: cheat Any */ (node[name]);
+        var member = node[name];
         return typeof member === 'string' && member !== value;
     },
     '[^=': function (node) /*: HTMLElement + Undef -> Bool */  {
-        var member = /*: cheat Any */ (node[name]);
+        var member = node[name];
         return typeof member === 'string' &&
             member.slice(0, member.length) === value;
     },
     '[$=': function (node) /*: HTMLElement + Undef -> Bool */  {
-        var member = /*: cheat Any */ (node[name]);
+        var member = node[name];
         return typeof member === 'string' &&
             member.slice(-member.length) === value;
     },
     '[*=': function (node) /*: HTMLElement + Undef -> Bool */  {
-        var member = /*: cheat Any */ (node[name]);
+        var member = node[name];
         return typeof member === 'string' &&
             /*: cheat Bool */ (member.slice.indexOf(value) >= 0);
     },
     '[~=': function (node) /*: HTMLElement + Undef -> Bool */  {
-        var member = /*: cheat Any */ (node[name]);
+        var member = node[name];
         return typeof member === 'string' &&
             /*: cheat Bool */ ((' ' + member + ' ').slice.indexOf(' ' + value + ' ') >= 0);
     },
     '[|=': function (node) /*: HTMLElement + Undef -> Bool */  {
-        var member = /*: cheat Any */ (node[name]);
+        var member = node[name];
         return typeof member === 'string' &&
             /*: cheat Bool */ (('-' + member + '-').slice.indexOf('-' + value + '-') >= 0);
     },
