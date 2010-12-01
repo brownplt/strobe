@@ -212,7 +212,8 @@ and av expr = match expr with
     (** Assignments and declarations indicate assignable *)
   | AssignExpr (_, lv, e) -> (match lv with
                                 | VarLValue (_, x) -> [x]
-                                | _ -> [])
+                                | PropLValue (_, e1, e2) -> 
+                                    List.append (av e1) (av e2))
   | VarDeclExpr (_, x, expr) -> x::(av expr)
     (** Bindings hide the assignable vars *)
   | FuncExpr (_, ids, e)
