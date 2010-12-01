@@ -1,4 +1,4 @@
-function Bunch_getValue() /*: ['Ad] -> 'Ad */ {
+function Bunch_getValue() /*: ['Ad + HTMLWindow] -> 'Ad */ {
     reject_global(this);
     var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, 
     i = 0, 
@@ -328,9 +328,9 @@ function Bunch_getParent () /*: ['Ad] -> 'Ad */ {
     var a = /*: HTMLElement + Undef */ [], b = this.___nodes___, i = 0, n /*: upcast Undef + HTMLElement */;
     for (i = 0; i < b.length; i += 1) {
         n = b[i].parentNode;
-        if (/*: cheat Str */ (n['___adsafe root___'])) {
-            return error('ADsafe parent violation.');
-        }
+        //if (n['___adsafe root___']) {
+        //    return error('ADsafe parent violation.');
+        //}
         a[i] = n;
     }
     return /*: obj* 'AdObj */ (new Bunch(a));
@@ -396,10 +396,10 @@ function Bunch_selection (string_in) /*: ['Ad] 'Ad -> 'Ad */ {
 function Bunch_style (name, value) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
     reject_global(this);
     if (reject_name(name)) {
-	error("ADsafe style violation.");
+	return error("ADsafe style violation.");
     }
     if (value === undefined || /url/i.test(string_check(value))) {
-        error();
+        return error();
     }
     var b = this.___nodes___,
     i = 0,
@@ -415,8 +415,7 @@ function Bunch_style (name, value) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
 	    v = string_check(value[i]);
             if (node.tagName) {
                 if (name !== 'float') {
-                    // node.style[name] = v;
-                    /*: cheat Str */(reject_mutate(node.style, name, v)); // FIXME
+                    node.style[name] = v;
                 } else {
                     node.style.cssFloat = node.style.styleFloat = v;
                 }
@@ -428,7 +427,7 @@ function Bunch_style (name, value) /*: ['Ad] 'Ad * 'Ad -> 'Ad */ {
             node = b[i];
             if (node.tagName) {
                 if (name !== 'float') {
-                    /*: cheat Str */ (node.style[name] = v);
+                    node.style[name] = v;
                 } else {
                     node.style.cssFloat = node.style.styleFloat = v;
                 }
@@ -523,13 +522,13 @@ function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
 function Bunch_getStyle (name) /*: ['Ad] 'Ad -> 'Ad */ {
     reject_global(this);
     if (reject_name(name)) {
-	error("ADsafe style violation.");
+	return error("ADsafe style violation.");
     }
     var a = /*: Str */ [], b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */, s /*: upcast Any */;
     for (i = 0; i < b.length; i += 1) {
         node = b[i];
         if (node.tagName) {
-            s = name !== 'float' ? /*: cheat Any */ (getStyleObject(node)[name]) :
+            s = name !== 'float' ? getStyleObject(node)[name] :
 		getStyleObject(node).cssFloat ||
                 getStyleObject(node).styleFloat;
 	    if (typeof s === 'string') {
