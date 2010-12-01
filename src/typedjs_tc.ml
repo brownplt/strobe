@@ -169,7 +169,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       let u = fold_left f (tc_exp env e) (map (tc_exp env) es) in
         (* hack to make arrays not have undefined elements: *)
         Env.check_typ p env (TConstr ("Array", [u]))
-  | EIf (p, (EApp (p2, ef, [(ETypecast (p5, typ, EDeref (p4, EId (p3, x)))) 
+  | EIf (p, (EApp (p2, ef, [(ETypecast (p5, typ, EId (p3, x)))
                               as arg]) 
                as app), 
          e2, e3) ->
@@ -178,16 +178,13 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         (match f_typ with
            | TUnion (TArrow (this1, [arg1], rest1, TConstr ("True", [])), 
                      TArrow (this2, [arg2], rest2, TConstr ("False", []))) ->
-               printf "a_typ is %s\n" (string_of_typ a_typ);
-               printf "arg1 is %s, arg2 is %s\n" (string_of_typ arg1) (string_of_typ arg2);
                if Env.subtype env a_typ (TUnion (arg1, arg2)) &&
                  Env.subtype env (TUnion (arg1, arg2)) a_typ then
-                   let env_true = Env.bind_id x (TRef arg1) env in
-                   let env_false = Env.bind_id x (TRef arg2) env in
+                   let env_true = Env.bind_id x arg1 env in
+                   let env_false = Env.bind_id x arg2 env in
                      Env.typ_union env (tc_exp env_true e2) (tc_exp env_false e3)
                else 
-                 (printf "Not a subtype\n";
-                  ignore (tc_exp env app);
+                 (ignore (tc_exp env app);
                   Env.typ_union env (tc_exp env e2) (tc_exp env e3))
            | _ ->
                ignore (tc_exp env app);

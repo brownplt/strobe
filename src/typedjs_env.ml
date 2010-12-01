@@ -99,10 +99,8 @@ module Env = struct
         | TStrSet s, TConstr ("Str", []) -> true
         | TStrMinus s, TConstr ("Str", []) -> true
         | TConstr ("Str", []), TUnion (TStrSet s1, TStrMinus s2) 
-        | TConstr ("Str", []), TUnion (TStrSet s2, TStrMinus s1) -> 
-            let res = List.for_all2 (=) s1 s2 in
-              printf "Result: %s" (string_of_bool res);
-              res
+        | TConstr ("Str", []), TUnion (TStrMinus s2, TStrSet s1) -> 
+            List.for_all2 (=) s1 s2
         | TUnion (TStrSet s1, TStrSet s2), TStrSet s3 -> 
             List.for_all (fun s -> List.mem s s3) s1 && 
               List.for_all (fun s -> List.mem s s3) s2
