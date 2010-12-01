@@ -497,16 +497,16 @@ and update p env field newval t =
              | TUnion (TConstr ("Str", []), TConstr ("Undef", []))
              | TConstr ("Str", []) -> 
                  let fts = map un_ref (map snd fs) in
-                   if List.for_all (fun t -> Env.subtype env vt t 
-                                      && Env.subtype env t vt) fts then
+                   if List.for_all (fun t -> Env.subtype env vt t) fts then
                      vt
                    else
-                     raise (Typ_error (p, (sprintf "Dictionary assignment error: %s"
-                                             (string_of_typ vt))))
+                     raise (Typ_error (p, (sprintf "Dictionary assignment error: %s, %s"
+                                             (string_of_typ vt)
+                                             (string_of_typ_list fts))))
              | TConstr ("Int", []) ->
-                 if Env.subtype env vt other_typ && Env.subtype env other_typ vt
+                 if Env.subtype env vt other_typ
                  then vt else 
-                   raise (Typ_error (p, (sprintf "Dictionary assignment error: %s"
+                   raise (Typ_error (p, (sprintf "Dictionary assignment error (int): %s"
                                            (string_of_typ vt))))
 	     | t -> raise (Typ_error (p, (sprintf "Index was type %s in  \
                                        dictionary assignment\n" (string_of_typ t)))))
@@ -516,7 +516,7 @@ and update p env field newval t =
         let tarr = un_ref tarr in
           (match tidx with
              | TConstr ("Int", []) -> 
-                 if Env.subtype env vt tarr && Env.subtype env tarr vt then
+                 if Env.subtype env vt tarr then
                    vt
                  else
                   raise (Typ_error (p, "Bad array type"))
