@@ -196,7 +196,7 @@ function purge_event_handlers(node)
     walkTheDOM(node, 
                function (node) /*: HTMLElement + Undef -> Undef */ {
                    if (node.tagName) {
-                       /*: cheat Null */ (node['___ on ___'] = node.change = null);
+                       node['___ on ___'] = node.change = undefined;
                    }
                }
               );
