@@ -33,12 +33,9 @@ let rec a_exp (exp : exp) : exp = match exp with
     with Not_found -> exp 
     end
   | EThis p -> begin try 
-      let node = H.find bound_id_map (p,"%_this") in
-        let env = H.find envs node in
-        let heap = H.find heaps node in
-          match lookup "%_this" env with
-            | ARef loc -> ETypecast (p, deref loc heap, EThis p)
-            | _ -> EThis p
+      let node = H.find bound_id_map (p,"%this") in
+      let env = H.find envs node in
+        ETypecast (p, to_set (lookup "%this" env), exp)
     with Not_found -> exp 
     end
   | EId (p, x) -> begin try 
