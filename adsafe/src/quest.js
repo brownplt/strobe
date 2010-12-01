@@ -10,7 +10,7 @@ function quest(query, nodes)
 
     // Step through each selector.
 
-    for (i = 0; i < query.length; /*: cheat Int */ (i += 1)) {
+    for (i = 0; i < query.length; i += 1) {
         selector = query[i];
         name = selector.name;
         func = hunter[safe_name(selector.op)];
