@@ -37,6 +37,9 @@ let class_types_list env cnames =
 let string_of_typ_list ts = 
   fold_left (^) "" (intersperse "," (map string_of_typ ts))
 
+let string_of_str_list ts = 
+  fold_left (^) "" (intersperse "," ts)
+
 let unfold_typ t = match t with
   | TRec (x, t') -> Typedjs_syntax.Typ.typ_subst x t t'
   | _ -> t
@@ -179,9 +182,30 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
            | TUnion (TArrow (this1, [arg1], rest1, TConstr ("True", [])), 
                      TArrow (this2, [arg2], rest2, TConstr ("False", []))) ->
                if Env.subtype env arg1 a_typ && Env.subtype env arg2 a_typ then
-                   let env_true = Env.bind_id x arg1 env in
-                   let env_false = Env.bind_id x arg2 env in
-                     Env.typ_union env (tc_exp env_true e2) (tc_exp env_false e3)
+                 let env_true = Env.bind_id x arg1 env in
+                 let env_false = Env.bind_id x arg2 env in
+                   Env.typ_union env (tc_exp env_true e2) (tc_exp env_false e3)
+               else 
+                 (printf "Warning, in else case of if-split rule";
+                  ignore (tc_exp env app);
+                  Env.typ_union env (tc_exp env e2) (tc_exp env e3))
+           | _ ->
+               ignore (tc_exp env app);
+               Env.typ_union env (tc_exp env e2) (tc_exp env e3))
+  | EIf (p, (EPrefixOp (p6, "prefix:!",
+                        (EApp (p2, ef, [(ETypecast (p5, typ, EId (p3, x)))
+                                          as arg]) 
+                           as app))), 
+         e2, e3) ->
+      let f_typ = tc_exp env ef in
+      let a_typ = tc_exp env arg in
+        (match f_typ with
+           | TUnion (TArrow (this1, [arg1], rest1, TConstr ("True", [])), 
+                     TArrow (this2, [arg2], rest2, TConstr ("False", []))) ->
+               if Env.subtype env arg1 a_typ && Env.subtype env arg2 a_typ then
+                 let env_true = Env.bind_id x arg2 env in
+                 let env_false = Env.bind_id x arg1 env in
+                   Env.typ_union env (tc_exp env_true e2) (tc_exp env_false e3)
                else 
                  (printf "Warning, in else case of if-split rule";
                   ignore (tc_exp env app);
@@ -593,7 +617,7 @@ and bracket p env ft ot =
                                           not (List.mem (fst fld) strs))
                              fs) in
                let field_typ = list_to_typ env (map snd flds) in
-               let rem_ft = TStrMinus (strs@(map fst flds)) in
+               let rem_ft = TStrMinus (strs@(map fst fs)) in
                  (TUnion (Env.check_typ p env field_typ,
                           TUnion (bracket p env rem_ft proto,
                                   other)))
@@ -666,7 +690,13 @@ and bracket p env ft ot =
                   | _ -> error p (sprintf "Can't look up %s[%s]" 
                                     cname (string_of_typ te))
                 end
-            | c -> list_to_typ env (class_types env c)
+            | c -> match te with
+                | TStrMinus strs -> 
+                    let flds = Env.class_fields env cname in
+                      IdMap.fold (fun k t1 t2 -> 
+                                    if (List.mem k strs) then t2 else 
+                                      TUnion (t1, t2)) flds TBot
+                | _ -> list_to_typ env (class_types env c)
           end
     | TField, tf -> begin match tf with
         | TField -> TField
