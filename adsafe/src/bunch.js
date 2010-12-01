@@ -298,7 +298,7 @@ function Bunch_getClass () /*: ['Ad] -> 'Ad */ {
 function Bunch_getMark () /*: ['Ad] -> 'Ad */ {
     var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
     for (i = 0; i < b.length; i += 1) {
-        a[i] = /*: cheat 'Ad */ (b[i]['_adsafe mark_']);
+        a[i] = b[i]['_adsafe mark_'];
     }
     return a.length === 1 ? a[0] : a;
 }
@@ -501,13 +501,13 @@ function Bunch_fire (event) /*: ['Ad] 'Ad -> 'Ad */ {
     n = b.length;
     for (i = 0; i < n; i += 1) {
         node = b[i];
-        on = /*: cheat {#proto: Object, *: Array<'Ad>, #code: Bot} */ (node['___ on ___']);
+        on = node['___ on ___'];
 
         // If an array of handlers exist for this event, then
         // loop through it and execute the handlers in order.
 
         if (owns(on, type)) {
-            array = /*: cheat Array<'Ad> */ (on[type]);
+            array = on[safe_name(type)];
             for (j = 0; j < array.length; j += 1) {
 
                 // Invoke a handler. Pass the event object.
