@@ -178,13 +178,13 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         (match f_typ with
            | TUnion (TArrow (this1, [arg1], rest1, TConstr ("True", [])), 
                      TArrow (this2, [arg2], rest2, TConstr ("False", []))) ->
-               if Env.subtype env a_typ (TUnion (arg1, arg2)) &&
-                 Env.subtype env (TUnion (arg1, arg2)) a_typ then
+               if Env.subtype env arg1 a_typ && Env.subtype env arg2 a_typ then
                    let env_true = Env.bind_id x arg1 env in
                    let env_false = Env.bind_id x arg2 env in
                      Env.typ_union env (tc_exp env_true e2) (tc_exp env_false e3)
                else 
-                 (ignore (tc_exp env app);
+                 (printf "Warning, in else case of if-split rule";
+                  ignore (tc_exp env app);
                   Env.typ_union env (tc_exp env e2) (tc_exp env e3))
            | _ ->
                ignore (tc_exp env app);
@@ -465,7 +465,7 @@ and update p env field newval t =
         (try
            let ft = un_ref (snd2 (List.find (fun (x', _) -> x = x') fs)) in
            let vt = tc_exp env newval in
-             if Env.subtype env vt ft && Env.subtype env ft vt then t
+             if Env.subtype env vt ft then vt
              else raise (Typ_error (p, (sprintf "%s is not a subtype of %s in \
                                         %s[%s = %s]" (string_of_typ vt)
                                           (string_of_typ ft) (string_of_typ t)
@@ -478,13 +478,13 @@ and update p env field newval t =
         let other_typ = un_ref other_typ in
           (try
              let ft = un_ref (snd2 (List.find (fun (x', _) -> x = x') fs)) in
-               if Env.subtype env vt ft && Env.subtype env ft vt then vt
+               if Env.subtype env vt ft then vt
                else raise (Typ_error (p, (sprintf "%s is not a subtype of %s in \
                                         %s[%s = %s]" (string_of_typ vt)
                                             (string_of_typ ft) (string_of_typ t)
                                         x (string_of_typ ft))))
            with Not_found -> 
-             if Env.subtype env vt other_typ && Env.subtype env other_typ vt then vt
+             if Env.subtype env vt other_typ then vt
              else raise (Typ_error (p, (sprintf "%s is not a subtype of %s in \
                                         %s[%s = %s]" (string_of_typ vt)
                                             (string_of_typ other_typ) (string_of_typ t)
@@ -497,7 +497,8 @@ and update p env field newval t =
              | TUnion (TConstr ("Str", []), TConstr ("Undef", []))
              | TConstr ("Str", []) -> 
                  let fts = map un_ref (map snd fs) in
-                   if List.for_all (fun t -> Env.subtype env vt t) fts then
+                   if List.for_all (fun t -> Env.subtype env vt t) fts &&
+                      Env.subtype env vt other_typ then
                      vt
                    else
                      raise (Typ_error (p, (sprintf "Dictionary assignment error: %s, %s"
@@ -508,6 +509,16 @@ and update p env field newval t =
                  then vt else 
                    raise (Typ_error (p, (sprintf "Dictionary assignment error (int): %s"
                                            (string_of_typ vt))))
+             | TStrMinus strs ->
+                 let flds = List.filter (fun fld -> not (List.mem (fst fld) strs)) fs in
+                 let fts = map un_ref (map snd flds) in
+                   if List.for_all (fun t -> Env.subtype env vt t) fts &&
+                     Env.subtype env vt other_typ then
+                       vt
+                   else
+                     raise (Typ_error (p, (sprintf "Dictionary assignment error: %s, %s"
+                                             (string_of_typ vt)
+                                             (string_of_typ_list fts))))
 	     | t -> raise (Typ_error (p, (sprintf "Index was type %s in  \
                                        dictionary assignment\n" (string_of_typ t)))))
     | TConstr ("Array", [tarr]), eidx ->
@@ -540,10 +551,24 @@ and update p env field newval t =
                 | "Bool"
                 | "Int"
                 | "Str" -> vt
-                | _ -> TConstr ("Undef", [])
+                | _ -> raise (Typ_error (p, (sprintf "Updating non-present \
+                                             field %s of %s" x cname)))
               end
           end
-    | _ -> raise (Typ_error (p, "No object update on non-objects yet"))
+    | TConstr (cname, _), e ->
+        let t_field = tc_exp env e in
+          (match cname with
+             | "Undef" 
+             | "Null" -> TBot (* Actually errors *)
+             | "Num"
+             | "Bool"
+             | "Int"
+             | "Str" -> tc_exp env newval
+             | _ -> raise (Typ_error (p, (sprintf "Updating non-present \
+                                             field %s of %s" (string_of_typ t_field) 
+                                            cname))))
+    | t, e -> raise (Typ_error (p, (sprintf "No object update on non-objects \
+                                 yet, got %s" (string_of_typ t))))
 
 and bracket p env ft ot =
   match ot, ft with
