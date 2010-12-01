@@ -4,6 +4,6 @@ var f = function(x) /*: Array<Str> -> Str */ {
    return x[0];
 };
 
-f(["1", "2", "3"]);
+f([/*: upcast Str */ "1", /*: upcast Str */ "2", /*: upcast Str */ "3"]);
 
 
