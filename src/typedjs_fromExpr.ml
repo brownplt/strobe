@@ -306,7 +306,13 @@ and match_func env expr = match expr with
   | _ -> None
 
 and exp_seq env e = match e with
-    SeqExpr (a, e1, e2) -> ESeq (a, exp env e1, exp env e2)
+  | SeqExpr 
+      (p,
+       IfExpr (a, cond, (SeqExpr (_, BreakExpr (_, "%return", e),
+                                  ConstExpr (_, S.CUndefined)) as thn),
+               ConstExpr (_, S.CUndefined)),
+       next_expr) -> EIf (a, exp env cond, exp env thn, exp env next_expr)
+  | SeqExpr (a, e1, e2) -> ESeq (a, exp env e1, exp env e2)
   | _ -> exp env e
 
 and func_exp env (_, x, expr) = 
