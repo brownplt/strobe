@@ -1,7 +1,7 @@
 
 var defaultView = document.defaultView,
 cache_style_node /*: upcast Undef + HTMLElement */,
-cache_style_object /*: upcast Undef + Style */,
+cache_style_object /*: upcast Undef + 'Style */,
 has_focus /*: upcast Undef + Null + HTMLElement */,
 value /*: upcast Undef + Str */,
 adsafe_lib /*: upcast Undef + 'Ad */,
@@ -143,17 +143,13 @@ function make_safe_tag(tag) /*: Str -> HTMLElement + Undef */ {
 
 
 
-function reject_name(name) /*: Any -> Any */ {
-    return /*: cheat Any */ (banned[name]) ||
-        /*: cheat Bool */(        ((typeof name !== 'number' || name < 0) &&
-         (typeof name !== 'string'  || name.charAt(0) === '_' ||
-          name.slice(-1) === '_'     || name.charAt(0) === '-')));
+function reject__name(name) /*: 'Ad -> Any */ {
+    return 
+    ((typeof name !== 'number' || name < 0) &&
+     (typeof name !== 'string' || (/*:cheat Str */name).charAt(0) === '_' ||
+      /*:cheat Str*/name.slice(-1) === '_' || /*: cheat Str*/name.charAt(0) === '-'))
+        || /*: cheat 'Ad */ (banned[name]);
 }
-
-
-
-
-
 
 function log(s) /*: Str -> Undef */ {
     return /*: cheat Undef*/undefined;
@@ -165,10 +161,10 @@ function log(s) /*: Str -> Undef */ {
 }
 
 function error(message) /*: Str + Undef -> Undef */ {
-    log("ADsafe error: " + /*: cheat Str */(message || "ADsafe violation."));
+    log("ADsafe error: " + (message || "ADsafe violation."));
     throw {
         name: "ADsafe",
-        message: /*: cheat Str */(message || "ADsafe violation.")
+        message: (message || "ADsafe violation.")
     };
 }
 
@@ -206,7 +202,7 @@ function purge_event_handlers(node)
               );
 }
 
-function getStyleObject(node) /*: HTMLElement + Undef -> Style + Undef */
+function getStyleObject(node) /*: HTMLElement + Undef -> 'Style + Undef */
 {
     
     // The getStyleObject function returns the computed style object for a node.
@@ -224,11 +220,10 @@ function getStyleObject(node) /*: HTMLElement + Undef -> Style + Undef */
 function lib (name, f) 
 /*: 'Ad * 'Ad -> 'Ad */
 {
-    if (!adsafe_id || reject_name(name)) {
-	error("ADsafe lib violation.");
+    if (reject_name(name)) {
+	return error("ADsafe lib violation.");
     }
-    //adsafe_lib[name] = f(adsafe_lib);
-    reject_mutate(adsafe_lib, name, f(adsafe_lib));
+    adsafe_lib[name] = f(adsafe_lib);
 }
 
 

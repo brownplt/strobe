@@ -15,7 +15,7 @@ function reject(object, name)
 function ADSAFE_get(object, name) 
 /*: 'Ad * 'Ad -> 'Ad */ 
 {
-    if (/* arguments.length  === 2  && */!reject(object, name)) {
+    if (!reject(object, name)) {
         return /*: cheat 'Ad */ (object[/*: cheat Str */name]);
     }
     return error();
@@ -26,7 +26,7 @@ function ADSAFE_get(object, name)
 function ADSAFE_remove (object, name) 
 /*: 'Ad * 'Ad -> 'Ad */
 {
-    if (/* arguments.length === 2  && */ !reject(object, name)) {
+    if (!reject(object, name)) {
         /*: cheat Bool */ (delete object[/*: cheat Str + Int */ name]);
         return;
     }
