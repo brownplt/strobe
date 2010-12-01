@@ -83,36 +83,40 @@ function dom_event (e) /*: Event -> Undef */ {
     {
         altKey: /*: upcast 'Ad */ (the_actual_event.altKey),
         ctrlKey: /*: upcast 'Ad */ (the_actual_event.ctrlKey),
-        bubble: /*: upcast 'Ad */ (/*: obj* 'AdObj */ (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
-            
-            // Bubble up. Get the parent of that node. It becomes the new that.
-            // the getParent throws when bubbling is not possible.
-            
-            try {
-                var parent = that.getParent(),
-                b = parent.___nodes___[0];
-                that = parent;
-                the_event.that = that;
-
-                // If that node has an event handler, fire it. Otherwise, bubble up.
-
-                if (b['___ on ___'] &&
-                    b['___ on ___'][type]) {
-                    that.fire(the_event);
-                } else {
-                    the_event.bubble();
+        bubble: /*: upcast 'Ad */ 
+        (/*: obj* 'AdObj */ 
+            (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
+                
+                // Bubble up. Get the parent of that node. It becomes the new that.
+                // the getParent throws when bubbling is not possible.
+                
+                try {
+                    var parent = that.getParent(),
+                    b = parent.___nodes___[0];
+                    that = parent;
+                    the_event.that = that;
+                    
+                    // If that node has an event handler, fire it. Otherwise, bubble up.
+                    
+                    if (b['___ on ___'] &&
+                        b['___ on ___'][type]) {
+                        that.fire(the_event);
+                    } else {
+                        the_event.bubble();
+                    }
+                } catch (e) {
+                    return error(String(e));
                 }
-            } catch (e) {
-                return error(String(e));
-            }
-        })),
+            })),
         key: /*: upcast 'Ad */ key,
-        preventDefault: /*: upcast 'Ad */ (/*: obj* 'AdObj */ (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
-            if (the_actual_event.preventDefault) {
-                the_actual_event.preventDefault();
-            }
-            the_actual_event.returnValue = false;
-        })),
+        preventDefault: /*: upcast 'Ad */ 
+        (/*: obj* 'AdObj */ 
+            (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
+                if (the_actual_event.preventDefault) {
+                    the_actual_event.preventDefault();
+                }
+                the_actual_event.returnValue = false;
+            })),
         shiftKey: /*: upcast 'Ad */ (the_actual_event.shiftKey),
         target: /*: upcast 'Ad */ target,
         that: /*: upcast 'Ad */ that,
