@@ -201,9 +201,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       and throw' = new_name () in
         Fix (new_node (),
              [(true, f, k' :: throw' :: "%this" :: args, ext_typ typ, 
-               Bind (new_node (),
-                     "%_this", Op1 (Ref, Id (p, "%this")),
-                     cps_exp body throw' (Jmp k')))],
+               cps_exp body throw' (Jmp k'))],
              ret k (mk_id f))
   | ELet (_, x, e1, e2) ->
       cps' e1 throw
@@ -240,10 +238,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       cps_exp e throw (Jmp l)
   | EThrow (_, e) ->
       cps_exp e throw (Jmp throw)
-  | EThis p -> 
-      let name = new_name () in
-        Bind (new_node (), name, (Op1 (Deref, (Id (p, "%_this")))),
-              ret k (Id (p, name)))
+  | EThis p -> ret k (Id (p, "%this"))
   | ENew (_, constr, args) ->
       let k' = mk_name "app-cont"
       and obj = new_name () in
@@ -283,8 +278,7 @@ and cps_bind ((name, typ, e) : id * typ * exp) = match e with
          name,
          k :: throw :: "%this" :: args,
          ext_typ typ,
-         Bind (new_node (), "%_this", Op1 (Ref, (Id (p, "%this"))),
-               cps_exp body throw (Jmp k)))
+         cps_exp body throw (Jmp k))
   | _ -> failwith "cps_bind : expected a function"
 
 and cps_exp_list exps throw (k : cpsval list -> cpsexp) = match exps with
