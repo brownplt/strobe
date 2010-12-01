@@ -27,6 +27,8 @@ type av =
   | ASet of RTSet.t
   | ADeref of Loc.t * RTSet.t
   | ARef of Loc.t
+  | AVarTypeof of id
+  | AVarTypeIs of id * RTSet.t
   | ALocTypeof of Loc.t
   | ALocTypeIs of Loc.t * RTSet.t
   | AInstanceof of Loc.t * string
@@ -57,9 +59,12 @@ let rec p_av av = match av with
   | ASet s -> RTSetExt.p_set RT.pp s
   | ADeref (l, v) -> horz [ text "deref"; Loc.pp l; RTSetExt.p_set RT.pp v ]
   | ARef l -> horz [ text "ref"; Loc.pp l ]
+  | AVarTypeof x -> horz [ text "VarTypeof"; text x ]
   | ALocTypeof x -> horz [ text "LocTypeof"; Loc.pp x ]
   | ALocTypeIs (x, t) -> 
       horz [ text "LocType"; Loc.pp x; RTSetExt.p_set RT.pp t ]
+  | AVarTypeIs (x, t) -> 
+      horz [ text "VarType"; text x; RTSetExt.p_set RT.pp t ]
   | AInstanceof (loc, constr_name) ->
     horz [ text "Instanceof"; Loc.pp loc; text constr_name ]
   | AClosure _ -> text "#closure"
@@ -86,7 +91,9 @@ let p_heap h =
 
 let rec to_set v = match v with
   | ASet set -> set
+  | AVarTypeof _
   | ALocTypeof _ -> RTSet.singleton RT.Str
+  | AVarTypeIs _
   | ALocTypeIs _ -> RTSet.singleton RT.Bool
   | AInstanceof _ -> RTSet.singleton RT.Bool
   | AStr _ -> RTSet.singleton RT.Str

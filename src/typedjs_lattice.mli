@@ -16,6 +16,8 @@ type av =
   | ASet of RTSet.t
   | ADeref of Loc.t * RTSet.t
   | ARef of Loc.t
+  | AVarTypeof of id
+  | AVarTypeIs of id * RTSet.t
   | ALocTypeof of Loc.t
   | ALocTypeIs of Loc.t * RTSet.t
   | AInstanceof of Loc.t * string

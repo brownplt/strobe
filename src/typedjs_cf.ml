@@ -39,11 +39,23 @@ let mk_type_is x s =
   with Invalid_argument "tag_of_string" ->
     singleton RT.Bool
 
+let mk_var_type_is x s = 
+  try 
+    AVarTypeIs (x, RTSet.singleton (tag_of_string s))
+  with Invalid_argument "tag_of_string" ->
+    singleton RT.Bool
+
 let mk_type_is_not x s =
   try 
     ALocTypeIs (x, RTSet.remove (tag_of_string s) rtany)
   with Invalid_argument "tag_of_string" ->
     singleton RT.Bool  
+
+let mk_var_type_is_not x s = 
+  try 
+    AVarTypeIs (x, RTSet.remove (tag_of_string s) rtany)
+  with Invalid_argument "tag_of_string" ->
+    singleton RT.Bool
 
 let abs_of_cpsval node env (cpsval : cpsval) = match cpsval with
   | Const c -> begin match c with
@@ -59,13 +71,15 @@ let abs_of_cpsval node env (cpsval : cpsval) = match cpsval with
       H.replace bound_id_map (p, x) node;
       lookup x env
 
-let calc_op1 node env heap (op : op1) v = match op, v with
+let calc_op1 node env heap (op : op1) v vy = match op, v with
   | Ref, v -> 
       let loc = Loc node in
         ARef loc, set_ref loc (to_set v) heap
   | Deref, ARef loc -> (ADeref (loc, deref loc heap), heap)
   | Deref, AField (loc, field_name) -> AField (loc, field_name), heap (** I think this is principled *)
   | Op1Prefix "prefix:typeof", ADeref (loc, _) -> ALocTypeof loc, heap
+  | Op1Prefix "prefix:typeof", _ ->
+      (match vy with | Id (_,x) -> AVarTypeof x, heap | _ -> any, heap)
   | _ -> any, heap
 
 
@@ -82,6 +96,16 @@ let calc_op2 node env heap op v1 v2 = match op, v1, v2 with
       mk_type_is_not loc str, heap
 (*  | Op2Infix "instanceof", ADeref (loc, _), AStr constr_name ->
     (AInstanceof (loc, constr_name), heap) *)
+  | Op2Infix "===", AVarTypeof x, AStr str 
+  | Op2Infix "==", AVarTypeof x, AStr str 
+  | Op2Infix "===", AStr str, AVarTypeof x
+  | Op2Infix "==", AStr str, AVarTypeof x ->
+      (mk_var_type_is x str, heap)
+  | Op2Infix "!==", AVarTypeof x, AStr str 
+  | Op2Infix "!=", AVarTypeof x, AStr str 
+  | Op2Infix "!==", AStr str, AVarTypeof x
+  | Op2Infix "!=", AStr str, AVarTypeof x ->
+      (mk_var_type_is_not x str, heap)
   | Op2Infix "instanceof", _, _ ->
       (singleton RT.Bool, heap)
   | SetRef, ARef l, v ->
@@ -107,7 +131,7 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
   | Bind (node, x, bindexp, cont) ->
       let cpsval, heap = match bindexp with
         | Let v -> abs_of_cpsval node env v, heap
-        | Op1 (op, v) -> calc_op1 node env heap op (abs_of_cpsval node env v)
+        | Op1 (op, v) -> calc_op1 node env heap op (abs_of_cpsval node env v) v
         | Op2 (op, v1, v2) ->
             calc_op2 node env heap op 
               (abs_of_cpsval node env v1) 
@@ -118,6 +142,11 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         flow node (bind x cpsval env) heap cont
   | If (node, v1, true_cont, false_cont) ->
       let absv1 = abs_of_cpsval node env v1 in
+      let env2, env3 = match absv1 with
+           | AVarTypeIs (x, true_set) ->
+               let false_set = ASet (RTSet.diff (to_set (lookup x env)) true_set) in
+                 (bind x (ASet true_set) env, bind x false_set env)
+           | _ -> (env, env) in
       let heap2, heap3 = match absv1 with
         | AInstanceof (loc, constr_name) ->
           let true_set = RTSet.singleton (RT.ConstrObj constr_name) in
@@ -135,10 +164,10 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         | _ ->  (heap, heap) in
         (match absv1 with
              ABool false -> ()
-           | _ -> flow node env heap2 true_cont);
+           | _ -> flow node env2 heap2 true_cont);
         (match absv1 with
            | ABool true -> ()
-           | _ -> flow node env heap3 false_cont)
+           | _ -> flow node env3 heap3 false_cont)
   | Fix (n, binds, cont) ->
       let esc_set = esc_cpsexp cpsexp in
       let is_escaping (boundary, f, _, _, _) = 
