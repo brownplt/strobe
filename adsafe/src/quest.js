@@ -5,15 +5,15 @@ function quest(query, nodes)
 {
     var selector /*: upcast Undef + 'Selector */,
     func /*: upcast Undef + (HTMLElement + Undef -> Any) */, 
-    i /*: upcast Undef + Int */, 
-    j /*: upcast Undef + Int */;
+    i = 0,
+    j = 0;
 
     // Step through each selector.
 
     for (i = 0; i < query.length; /*: cheat Int */ (i += 1)) {
         selector = query[i];
         name = selector.name;
-        func = /*: cheat Any -> Undef */ (hunter[selector.op]);
+        func = hunter[safe_name(selector.op)];
 
         // There are two kinds of selectors: hunters and peckers. If this is a hunter,
         // loop through the the nodes, passing each node to the hunter function.
@@ -25,7 +25,7 @@ function quest(query, nodes)
                              selector.op + (selector.name || ''));
             }
             result = /*: HTMLElement + Undef */ [];
-            for (j = 0; j < nodes.length; /*: cheat Undef */ (j += 1)) {
+            for (j = 0; j < nodes.length; j += 1) {
                 func(nodes[j]);
             }
         } else {
@@ -35,7 +35,7 @@ function quest(query, nodes)
 
             value = selector.value;
             flipflop = false;
-            func = /*: cheat Any -> Undef */ (pecker[selector.op]);
+            func = pecker[safe_name(selector.op)];
             if (typeof func !== 'function') {
                 switch (selector.op) {
                 case ':first':
@@ -53,9 +53,9 @@ function quest(query, nodes)
                 // the pecker function.
 
                 result = /*: HTMLElement + Undef */ [];
-                for (j = 0; j < nodes.length; /*:cheat Int */ (j += 1)) {
+                for (j = 0; j < nodes.length; j += 1) {
                     if (func(nodes[j])) {
-                        result.push(nodes[/*: cheat Int */ j]);
+                        result.push(nodes[j]);
                     }
                 }
             }
