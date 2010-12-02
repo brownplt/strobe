@@ -404,7 +404,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                   begin match s with 
                     | TObject (fs') -> 
                         if List.for_all (ok_field fs) fs' then t else
-                          error p "Invalid ObjCast---bad named fields"
+                          error p (sprintf "Invalid ObjCast---bad named fields: %s %s" (string_of_typ t) (string_of_typ_list (map snd fs')))
                     | TConstr (cname, []) ->
                         let fs' = map_to_list (Env.class_fields env cname) in
                           if List.for_all (ok_field fs) fs' then t else
@@ -540,9 +540,12 @@ and update p env field newval t =
                      Env.subtype env vt other_typ then
                        vt
                    else
-                     raise (Typ_error (p, (sprintf "Dictionary assignment error (str-): %s, %s"
+                     raise (Typ_error (p, (sprintf "Dictionary assignment error (str-): %s = %s, %s: %s\n"
+                                             (string_of_typ t)
                                              (string_of_typ vt)
-                                             (string_of_typ_list fts))))
+                                             (string_of_typ_list fts)
+                                             (string_of_typ other_typ)
+                                             )))
 	     | t -> raise (Typ_error (p, (sprintf "Index was type %s in  \
                                        dictionary assignment\n" (string_of_typ t)))))
     | TConstr ("Array", [tarr]), eidx ->
@@ -618,9 +621,8 @@ and bracket p env ft ot =
                              fs) in
                let field_typ = list_to_typ env (map snd flds) in
                let rem_ft = TStrMinus (strs@(map fst fs)) in
-                 (TUnion (Env.check_typ p env field_typ,
-                          TUnion (bracket p env rem_ft proto,
-                                  other)))
+                 (Env.typ_union env (Env.check_typ p env field_typ)
+                    (Env.typ_union env (bracket p env rem_ft proto) other))
            | TStrSet [x] ->
 	       (try
 	          snd2 (List.find (fun (x', _) -> x = x') fs)
