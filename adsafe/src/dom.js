@@ -1,6 +1,6 @@
 var root /*: upcast HTMLElement + Undef */;
 var dom /*: upcast 'Ad */;
-var dom_outer = {
+var dom_outer = /*: obj* 'AdObj */ {
     q: /*:upcast 'Ad */ (/*: obj* 'AdObj */ (function (text) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
         star = false;
         var query = parse_query(text, id);
@@ -49,7 +49,7 @@ var dom_outer = {
              if (makeableTagName[tag] !== true) {
                  return error('ADsafe: Bad tag: ' + tag);
              }
-             node = document.createElement(/*: cheat $^{"script"} */ tag);
+             node = document.createElement(makeableTagName[safe_name(tag)]);
              if (name) {
                  node.autocomplete = 'off';
                  node.name = string_check(name);

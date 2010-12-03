@@ -18,7 +18,7 @@ function ADSAFE_get(object, name)
 //        return;
 //    }
 //    return error();
-}
+//}
 
 //  ADSAFE.set stores a value in an object.
 
@@ -93,7 +93,7 @@ function make_root(root, id) /*: HTMLElement + Undef + Null * Str + Null + Undef
 
     // Return an ADsafe dom object.
 
-    dom = /*: cheat 'Ad */ dom_outer;
+    dom = dom_outer;
 
     if (typeof root.addEventListener === 'function') {
         root.addEventListener('focus', dom_event, true);

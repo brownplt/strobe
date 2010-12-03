@@ -495,7 +495,7 @@ function Bunch_tag (tag, type, name) /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad-> 'A
     if (makeableTagName[tag] !== true) {
         return error('ADsafe: Bad tag: ' + tag);
     }
-    node = document.createElement(/*: cheat $^{"script"} */ tag);
+    node = document.createElement(makeableTagName[safe_name(tag)]);
     if (name) {
         node.autocomplete = 'off';
         node.name = string_check(name);
