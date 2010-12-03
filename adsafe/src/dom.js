@@ -35,7 +35,7 @@ var dom_outer = {
     remove: /*: upcast 'Ad */ (/*: obj* 'AdObj */ (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
         purge_event_handlers(root);
         root.parent.removeElement(root);
-        /*: cheat Undef */ (root = null); // TODO fix this
+        root = undefined;
     })),
     tag: /*: upcast 'Ad */ 
     (/*: obj* 'AdObj */ 
@@ -49,7 +49,7 @@ var dom_outer = {
              if (makeableTagName[tag] !== true) {
                  return error('ADsafe: Bad tag: ' + tag);
              }
-             node = document.createElement(tag);
+             node = document.createElement(/*: cheat $^{"script"} */ tag);
              if (name) {
                  node.autocomplete = 'off';
                  node.name = string_check(name);
