@@ -34,133 +34,185 @@ var banned =
 
 
 
-var makeableTagName = /*: obj* {#proto: Object, *: Bool, #code: Bot} */
+var makeableTagName =
+/*: obj* {
+    a         : ${"a"},
+    abbr      : ${"abbr"},
+    acronym   : ${"acronym"},
+    address   : ${"address"},
+    area      : ${"area"},
+    b         : ${"b"},
+    bdo       : ${"bdo"},
+    big       : ${"big"},
+    blockquote: ${"blockquote"},
+    br        : ${"br"},
+    button    : ${"button"},
+    canvas    : ${"canvas"},
+    caption   : ${"caption"},
+    center    : ${"center"},
+    cite      : ${"cite"},
+    code      : ${"code"},
+    col       : ${"col"},
+    colgroup  : ${"colgroup"},
+    dd        : ${"dd"},
+    del       : ${"del"},
+    dfn       : ${"dfn"},
+    dir       : ${"dir"},
+    div       : ${"div"},
+    dl        : ${"dl"},
+    dt        : ${"dt"},
+    em        : ${"em"},
+    fieldset  : ${"fieldset"},
+    font      : ${"font"},
+    form      : ${"form"},
+    h1        : ${"h1"},
+    h2        : ${"h2"},
+    h3        : ${"h3"},
+    h4        : ${"h4"},
+    h5        : ${"h5"},
+    h6        : ${"h6"},
+    hr        : ${"hr"},
+    i         : ${"i"},
+    img       : ${"img"},
+    input     : ${"input"},
+    ins       : ${"ins"},
+    kbd       : ${"kbd"},
+    label     : ${"label"},
+    legend    : ${"legend"},
+    li        : ${"li"},
+    map       : ${"map"},
+    menu      : ${"menu"},
+    object    : ${"object"},
+    ol        : ${"ol"},
+    optgroup  : ${"optgroup"},
+    option    : ${"option"},
+    p         : ${"p"},
+    pre       : ${"pre"},
+    q         : ${"q"},
+    samp      : ${"samp"},
+    select    : ${"select"},
+    small     : ${"small"},
+    span      : ${"span"},
+    strong    : ${"strong"},
+    sub       : ${"sub"},
+    sup       : ${"sup"},
+    table     : ${"table"},
+    tbody     : ${"tbody"},
+    td        : ${"td"},
+    textarea  : ${"textarea"},
+    tfoot     : ${"tfoot"},
+    th        : ${"th"},
+    thead     : ${"thead"},
+    tr        : ${"tr"},
+    tt        : ${"tt"},
+    u         : ${"u"},
+    ul        : ${"ul"},
+    "var"     : ${"var"},
+    #proto    : Object,
+    *         : Bot,
+    #code     : Bot
+} */
 {
-
-// This is the whitelist of elements that may be created with the .tag(tagName)
-// method.
-
-    a         : true,
-    abbr      : true,
-    acronym   : true,
-    address   : true,
-    area      : true,
-    b         : true,
-    bdo       : true,
-    big       : true,
-    blockquote: true,
-    br        : true,
-    button    : true,
-    canvas    : true,
-    caption   : true,
-    center    : true,
-    cite      : true,
-    code      : true,
-    col       : true,
-    colgroup  : true,
-    dd        : true,
-    del       : true,
-    dfn       : true,
-    dir       : true,
-    div       : true,
-    dl        : true,
-    dt        : true,
-    em        : true,
-    fieldset  : true,
-    font      : true,
-    form      : true,
-    h1        : true,
-    h2        : true,
-    h3        : true,
-    h4        : true,
-    h5        : true,
-    h6        : true,
-    hr        : true,
-    i         : true,
-    img       : true,
-    input     : true,
-    ins       : true,
-    kbd       : true,
-    label     : true,
-    legend    : true,
-    li        : true,
-    map       : true,
-    menu      : true,
-    object    : true,
-    ol        : true,
-    optgroup  : true,
-    option    : true,
-    p         : true,
-    pre       : true,
-    q         : true,
-    samp      : true,
-    select    : true,
-    small     : true,
-    span      : true,
-    strong    : true,
-    sub       : true,
-    sup       : true,
-    table     : true,
-    tbody     : true,
-    td        : true,
-    textarea  : true,
-    tfoot     : true,
-    th        : true,
-    thead     : true,
-    tr        : true,
-    tt        : true,
-    u         : true,
-    ul        : true,
-    'var'     : true
+    a         : "a",
+    abbr      : "abbr",
+    acronym   : "acronym",
+    address   : "address",
+    area      : "area",
+    b         : "b",
+    bdo       : "bdo",
+    big       : "big",
+    blockquote: "blockquote",
+    br        : "br",
+    button    : "button",
+    canvas    : "canvas",
+    caption   : "caption",
+    center    : "center",
+    cite      : "cite",
+    code      : "code",
+    col       : "col",
+    colgroup  : "colgroup",
+    dd        : "dd",
+    del       : "del",
+    dfn       : "dfn",
+    dir       : "dir",
+    div       : "div",
+    dl        : "dl",
+    dt        : "dt",
+    em        : "em",
+    fieldset  : "fieldset",
+    font      : "font",
+    form      : "form",
+    h1        : "h1",
+    h2        : "h2",
+    h3        : "h3",
+    h4        : "h4",
+    h5        : "h5",
+    h6        : "h6",
+    hr        : "hr",
+    i         : "i",
+    img       : "img",
+    input     : "input",
+    ins       : "ins",
+    kbd       : "kbd",
+    label     : "label",
+    legend    : "legend",
+    li        : "li",
+    map       : "map",
+    menu      : "menu",
+    object    : "object",
+    ol        : "ol",
+    optgroup  : "optgroup",
+    option    : "option",
+    p         : "p",
+    pre       : "pre",
+    q         : "q",
+    samp      : "samp",
+    select    : "select",
+    small     : "small",
+    span      : "span",
+    strong    : "strong",
+    sub       : "sub",
+    sup       : "sup",
+    table     : "table",
+    tbody     : "tbody",
+    td        : "td",
+    textarea  : "textarea",
+    tfoot     : "tfoot",
+    th        : "th",
+    thead     : "thead",
+    tr        : "tr",
+    tt        : "tt",
+    u         : "u",
+    ul        : "ul",
+    'var'     : "var"
 };
 
-function reject_lookup(obj, name) /*: 'Ad * 'Ad -> 'Ad */ {
-    return /*: cheat 'Ad */ (banned[name] || 
-                             ((typeof name !== 'number' || name < 0) &&
-                              (typeof name !== 'string' || name.charAt(0) === '_' ||
-                               name.slice(-1) === '_'   || name.charAt(0) === '-')) ?
-                             error() :
-                             obj[name]);
-}
+//function reject__name(name) /*: (('banned -> True) + ('not_banned -> False)) */ {
+//    return 
+//    ((typeof name !== 'number' || name < 0) &&
+//     (typeof name !== 'string' || name.charAt(0) === '_' ||
+//      name.slice(-1) === '_' || name.charAt(0) === '-'))
+//        || /*: cheat 'Ad */ (banned[name]);
+//}
 
-function reject_mutate(obj, name, value) /*: 'Ad * 'Ad * 'Ad -> 'Ad */ {
-    return /*: cheat 'Ad */ (banned[name] || 
-                             ((typeof name !== 'number' || name < 0) &&
-                              (typeof name !== 'string' || name.charAt(0) === '_' ||
-                               name.slice(-1) === '_'   || name.charAt(0) === '-')) ?
-                             error() :
-                             obj[name] = value);
-}
-
-function make_safe_tag(tag) /*: Str -> HTMLElement + Undef */ {
-    if(makeableTagName[tag] === true) {
-        return document.createElement(tag);
+function safe_name(name) /*: 'Ad -> 'not_banned */ {
+    if(reject_name(name)) {
+        return error("ADsafe string violation");
     }
     else {
-        return error();
+        return name;
     }
-}
-
-
-
-function reject__name(name) /*: 'Ad -> Any */ {
-    return 
-    ((typeof name !== 'number' || name < 0) &&
-     (typeof name !== 'string' || (/*:cheat Str */name).charAt(0) === '_' ||
-      /*:cheat Str*/name.slice(-1) === '_' || /*: cheat Str*/name.charAt(0) === '-'))
-        || /*: cheat 'Ad */ (banned[name]);
 }
 
 function log(s) /*: Str -> Undef */ {
-    return /*: cheat Undef*/undefined;
-    // if (window.console) {
-    //     console.log(s);        /* Firebug */
-    // } else if (typeof Debug === 'object') {
-    //     Debug.writeln(s);      /* IE */
-    // }
+    if (window.console) {
+        console.log(s);        /* Firebug */
+    } else if (typeof Debug === 'object') {
+        Debug.writeln(s);      /* IE */
+    }
 }
 
-function error(message) /*: Str + Undef -> Undef */ {
+function error(message) /*: Str + Undef -> Bot */ {
     log("ADsafe error: " + (message || "ADsafe violation."));
     throw {
         name: "ADsafe",
@@ -254,16 +306,16 @@ function reject_global(that)
 function string_check(string) 
 /*: Any -> Str */
 {
-    if (typeof string === 'string') {
-	error("ADsafe string violation.");
+    if (typeof string !== 'string') {
+        return error("ADsafe string violation.");
     }
-    return /*: cheat Str */ string;
+    return string;
 }
 
 
 function owns(object, string) /*: Any * Any -> Bool */ {
     return object && typeof object === 'object' &&
-	/*:cheat Bool */ (Object.prototype.hasOwnProperty.call(object, string_check(string)));
+	/*: cheat Bool */ (Object.prototype.hasOwnProperty.call(object, string_check(string)));
 }
 
 
