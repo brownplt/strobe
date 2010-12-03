@@ -540,7 +540,11 @@ and update p env field newval t =
                      Env.subtype env vt other_typ then
                        vt
                    else
-                     raise (Typ_error (p, (sprintf "Dictionary assignment error (str-): %s = %s, %s: %s\n"
+                     raise (Typ_error (p, (sprintf "Dictionary assignment error (str-): \n \
+                                           Object: %s \n \
+                                           Value: %s, \n \
+                                           Fields: %s: \n \
+                                           Other: %s\n"
                                              (string_of_typ t)
                                              (string_of_typ vt)
                                              (string_of_typ_list fts)
@@ -562,8 +566,8 @@ and update p env field newval t =
     | TConstr (cname, _), EConst (_, JavaScript_syntax.CString x) ->
         let vt = tc_exp env newval in
           begin match Env.field_typ env cname x with
-            | Some t -> 
-                let ft = un_ref t in
+            | Some tf -> 
+                let ft = un_ref tf in
                   if Env.subtype env vt ft then
                     vt
                   else
