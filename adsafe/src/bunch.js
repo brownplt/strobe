@@ -495,7 +495,7 @@ function Bunch_tag (tag, type, name) /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad-> 'A
     if (makeableTagName[tag] !== true) {
         return error('ADsafe: Bad tag: ' + tag);
     }
-    node = document.createElement(tag);
+    node = document.createElement(/*: cheat $^{"script"} */ tag);
     if (name) {
         node.autocomplete = 'off';
         node.name = string_check(name);
@@ -526,13 +526,13 @@ function Bunch_fire (event) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
     // name of the event. Handlers registered by the 'on'
     // method that match the event name will be invoked.
 
-    var array /*: upcast Undef + Array<'Ad> */,
+    var array /*: upcast Undef + Array<['Ad + HTMLWindow] 'Ad ... -> 'Ad> */,
     b /*: upcast Undef + Array<HTMLElement + Undef> */,
     i = 0,
     j = 0,
     n = 0,
     node /*: upcast  HTMLElement + Undef */,
-    on /*: upcast Undef + {#proto: Object, *: Array<'Ad>, #code: Bot} */,
+    on /*: upcast Undef + 'Handler */,
     type /*: upcast 'Ad */,
     check_typ /*: upcast Any */;
 
@@ -690,7 +690,7 @@ function Bunch_on (type, func) /*: ['Ad + HTMLWindow] 'Ad * 'Ad -> 'Ad */ {
     var b = this.___nodes___, 
         i = 0, 
         node /*: upcast Undef + HTMLElement */, 
-        on /*: upcast Undef + {#proto: Object, *: Array<'Ad>, #code: Bot} */, 
+        on /*: upcast Undef + 'Handler */, 
         ontype /*: upcast Undef + Str */;
 
     for (i = 0; i < b.length; i += 1) {
@@ -710,7 +710,7 @@ function Bunch_on (type, func) /*: ['Ad + HTMLWindow] 'Ad * 'Ad -> 'Ad */ {
 
         on = node['___ on ___'];
         if (!on) {
-            on = /* obj* {#proto: Object, *: Array<'Ad>, #code: Bot} */ {};
+            on = (/*: obj* 'Handler */ {});
             node['___ on ___'] = on;
         }
         if (owns(on, type)) {
@@ -819,7 +819,7 @@ function Bunch_replace (replacement) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
     return this;
 }
 function Bunch_select () /*: ['Ad + HTMLWindow] -> 'Ad */ {
-    if (this === this.window) {
+    if (this.window) {
         return error();
     }
     var b = this.___nodes___;
