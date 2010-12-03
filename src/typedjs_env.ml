@@ -104,12 +104,26 @@ module Env = struct
         | TUnion (TStrSet s1, TStrSet s2), TStrSet s3 -> 
             List.for_all (fun s -> List.mem s s3) s1 && 
               List.for_all (fun s -> List.mem s s3) s2
-	| TId x, TId y -> x = y
-	| TId x, t -> begin try
+        | TStrSet s1, TStrMinus s2 ->
+            List.for_all (fun s -> not (List.mem s s2)) s1
+	| TId x, TId y -> (String.compare x y) = 0
+        | TId x, t -> begin try
 	    let s = IdMap.find x env.typ_ids in
 	      r_subtype rel env s t
-          with Not_found -> 
-            failwith ("Unbound id (in subtype, shouldn't happen): " ^ x)
+          with Not_found -> begin try
+            let s = IdMap.find x env.synonyms in
+              r_subtype rel env s t
+          with Not_found -> failwith ("Unbound id (in subtype, shouldn't happen): " ^ x)
+          end
+          end
+        | s, TId x -> begin try
+	    let t = IdMap.find x env.typ_ids in
+	      r_subtype rel env s t
+          with Not_found -> begin try
+            let t = IdMap.find x env.synonyms in
+              r_subtype rel env s t
+          with Not_found -> failwith ("Unbound id (in subtype, shouldn't happen): " ^ x)
+          end
           end
 	| s, TRec (x, t') -> 
 	    r_subtype (TypPairSet.add (s,t) rel) 
@@ -148,6 +162,8 @@ module Env = struct
             let fs1 = IdMapExt.to_list (IdMap.find c_name env.classes).fields in
             let fs1 = List.rev fs1 in
               r_subtype_fields rel env fs1 fs2
+        | TConstr ("Array", [tarr1]), TConstr ("Array", [tarr2]) ->
+            st tarr1 tarr2
 	| TObjStar (fs1, cnames1, other_typ1, code1), 
 	    TObjStar (fs2, cnames2, other_typ2, code2) ->
 	    r_subtype_fields rel env fs1 fs2 &&
