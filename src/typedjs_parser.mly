@@ -11,7 +11,7 @@ open Typedjs_types
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
        CHECKED CHEAT HASHPROTO TREC TYPE EQUALS BOT CODE REF OBJCAST
-       DOTS CONST CASH CARET
+       DOTS CONST CASH CARET SEMI
 
 %right UNION
 
@@ -66,6 +66,7 @@ arg_typ
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | LBRACE fields RBRACE { TObject $2 }
   | LBRACE fields proto COMMA star COMMA code RBRACE { TObjStar ($2, $3, $5, $7) }
+  | LBRACE star COMMA proto COMMA code SEMI fields RBRACE { TObjStar ($8, $4, $2, $6) }
   | CASH LBRACE strs RBRACE { TStrSet $3 }
   | CASH CARET LBRACE strs RBRACE { TStrMinus $4 }
   | LPAREN typ RPAREN { $2 }

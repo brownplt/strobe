@@ -46,6 +46,7 @@ rule token = parse
    | "+" { UNION }
    | "." { DOT }
    | "..." { DOTS }
+   | ";" { SEMI }
    | "constructor" { CONSTRUCTOR }
    | "prototype" { PROTOTYPE }
    | "#proto" { HASHPROTO }
