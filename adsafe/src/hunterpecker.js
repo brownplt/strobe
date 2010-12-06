@@ -1,6 +1,6 @@
 // Why are these globals? Just to make our lives harder?
 var name /*: upcast Str + Undef */; 
-var value = /*: upcast Any*/undefined;
+var value = /*: upcast Str + Undef */undefined;
 var result /*: upcast Undef + Array<HTMLElement + Undef> */;
 var star /*: upcast Undef + Bool */;
 var flipflop = true;
@@ -128,17 +128,17 @@ var pecker =
     '[*=': function (node) /*: HTMLElement + Undef -> Bool */  {
         var member = node[name];
         return typeof member === 'string' &&
-            /*: cheat Bool */ (member.slice.indexOf(value) >= 0);
+            member.indexOf(String(value)) >= 0;
     },
     '[~=': function (node) /*: HTMLElement + Undef -> Bool */  {
         var member = node[name];
         return typeof member === 'string' &&
-            /*: cheat Bool */ ((' ' + member + ' ').slice.indexOf(' ' + value + ' ') >= 0);
+            (' ' + member + ' ').indexOf(' ' + value + ' ') >= 0;
     },
     '[|=': function (node) /*: HTMLElement + Undef -> Bool */  {
         var member = node[name];
         return typeof member === 'string' &&
-            /*: cheat Bool */ (('-' + member + '-').slice.indexOf('-' + value + '-') >= 0);
+            ('-' + member + '-').indexOf('-' + value + '-') >= 0;
     },
     ':blur': function (node) /*: HTMLElement + Undef -> Bool */  {
         return node !== has_focus;
