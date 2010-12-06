@@ -200,11 +200,15 @@ module Env = struct
   let rec subtype env s t = r_subtype TypPairSet.empty env s t
   let rec subtypes env ss ts = r_subtypes TypPairSet.empty env ss ts
 
-  let typ_union cs s t = match subtype cs s t, subtype cs t s with
-      true, true -> s (* t = s *)
-    | true, false -> t (* s <: t *)
-    | false, true -> s (* t <: s *)
-    | false, false -> TUnion (s, t)
+  let typ_union cs s t = 
+    match subtype cs s t, subtype cs t s with
+        true, true -> s (* t = s *)
+      | true, false -> t (* s <: t *)
+      | false, true -> s (* t <: s *)
+      | false, false -> 
+          (match s, t with
+             | TStrSet s1, TStrSet s2 -> TStrSet (s1@s2)
+             | _ -> TUnion (s, t))
 
   let rec normalize_typ env typ = 
     match typ with 

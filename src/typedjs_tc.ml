@@ -50,7 +50,7 @@ let rec typ_to_list t = match t with
   | t -> [t]
 
 let rec list_to_typ env ts = match ts with
-  | (t::rest) -> Env.normalize_typ env (TUnion (t, list_to_typ env rest))
+  | (t::rest) -> Env.typ_union env t (list_to_typ env rest)
   | [] -> TBot
 
 (* Things that lead to errors when applied *)
@@ -104,7 +104,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       | TSource t -> t
       | TField -> TField
       | TUnion (t1, t2) -> 
-          TUnion (unfold_typ (un_ref t1), unfold_typ (un_ref t2))
+          Env.typ_union env (unfold_typ (un_ref t1)) (unfold_typ (un_ref t2))
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
 				 (string_of_typ t))) 
     end
@@ -616,9 +616,10 @@ and bracket p env ft ot =
            | TUnion (TConstr ("Str", []), TConstr ("Undef", [])) ->
                let rem_names = TStrMinus (map fst fs) in
                let field_typ = list_to_typ env (map snd fs) in
-                 (TUnion (Env.check_typ p env field_typ,
-                          TUnion (bracket p env rem_names proto,
-                                  other)))
+                 (Env.typ_union env
+                    (Env.check_typ p env field_typ)
+                    (Env.typ_union env (bracket p env rem_names proto)
+                       other))
            | TStrMinus strs -> 
                let flds = (List.filter (fun fld ->
                                           not (List.mem (fst fld) strs))
@@ -631,12 +632,12 @@ and bracket p env ft ot =
 	       (try
 	          snd2 (List.find (fun (x', _) -> x = x') fs)
 	        with Not_found ->
-	          (TUnion (TRef (unfold_typ (un_ref other)), 
-                           TUnion(TConstr ("Undef", []),
-                                  bracket p env ft proto))))
+	          (Env.typ_union env 
+                     (TRef (unfold_typ (un_ref other)))
+                     (bracket p env ft proto)))
            | TConstr ("Int", []) ->
-               TRef (TUnion (unfold_typ (un_ref other),
-                             TConstr ("Undef", [])))
+               TRef (Env.typ_union env (unfold_typ (un_ref other))
+                       (TConstr ("Undef", [])))
            | t -> error p (sprintf "Index was type %s in \
                                     dictionary lookup" (string_of_typ t)))
     | TConstr ("Array", [tarr]), tidx ->
@@ -662,7 +663,8 @@ and bracket p env ft ot =
                 | "slice" ->
                     TRef (TArrow (TConstr ("Array", [tarr]),
                                   [TConstr ("Int", []);
-                                   TUnion (TConstr ("Int", []), TConstr ("Undef", []))], 
+                                   Env.typ_union env (TConstr ("Int", []))
+                                     (TConstr ("Undef", []))],
                                   typ_undef, TConstr ("Array", [tarr])))
                 | "concat" ->
                     TRef (TArrow (TConstr ("Array", [tarr]),
@@ -706,7 +708,7 @@ and bracket p env ft ot =
                     let flds = Env.class_fields env cname in
                       IdMap.fold (fun k t1 t2 -> 
                                     if (List.mem k strs) then t2 else 
-                                      TUnion (t1, t2)) flds TBot
+                                      Env.typ_union env t1 t2) flds TBot
                 | _ -> list_to_typ env (class_types env c)
           end
     | TField, tf -> begin match tf with
