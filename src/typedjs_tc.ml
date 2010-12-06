@@ -664,6 +664,11 @@ and bracket p env ft ot =
                                   [TConstr ("Int", []);
                                    TUnion (TConstr ("Int", []), TConstr ("Undef", []))], 
                                   typ_undef, TConstr ("Array", [tarr])))
+                | "concat" ->
+                    TRef (TArrow (TConstr ("Array", [tarr]),
+                                  [Env.typ_union env (TConstr ("Undef", []))
+                                     (TConstr ("Array", [tarr]))],
+                                  typ_undef, TConstr ("Array", [tarr])))
                 | s ->
                     error p ("unknown array method " ^ s)
               end
