@@ -489,13 +489,10 @@ function Bunch_tag (tag, type, name) /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad-> 'A
         return error();
     }
     var node /*: upcast HTMLElement + Undef */ ;
-    if (typeof tag !== 'string') {
-        return error();
+    if (reject_name(tag)) {
+        return error("ADsafe tag violation");
     }
-    if (makeableTagName[tag] !== true) {
-        return error('ADsafe: Bad tag: ' + tag);
-    }
-    node = document.createElement(makeableTagName[safe_name(tag)]);
+    node = document.createElement(makeableTagName[tag]);
     if (name) {
         node.autocomplete = 'off';
         node.name = string_check(name);
@@ -728,7 +725,7 @@ function Bunch_protect () /*: ['Ad + HTMLWindow] -> 'Ad */ {
     }
     var b = this.___nodes___, i = 0;
     for (i = 0; i < b.length; i += 1) {
-        /*: cheat Str */ (b[i]['___adsafe root___'] = '___adsafe root___');
+        b[i]['___adsafe root___'] = '___adsafe root___';
     }
     return this;
 }

@@ -268,7 +268,6 @@ function getStyleObject(node) /*: HTMLElement + Undef -> 'Style + Undef */
     return cache_style_object;
 }
 
-// JSlint ensures that calls to lib have a string here
 function lib (name, f) 
 /*: 'Ad * 'Ad -> 'Ad */
 {
