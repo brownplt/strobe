@@ -212,7 +212,7 @@ and av expr = match expr with
     (** Assignments and declarations indicate assignable *)
   | AssignExpr (_, lv, e) -> List.append 
       (match lv with
-         | VarLValue (_, x) -> [x]
+         | VarLValue (_, x) -> x::(av e)
          | PropLValue (_, e1, e2) -> 
              List.append (av e1) (av e2))
         (av e)
