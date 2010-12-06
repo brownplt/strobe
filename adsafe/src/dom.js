@@ -15,7 +15,7 @@ var dom_outer = /*: obj* 'AdObj */ {
         }
         var b = array[0].___nodes___, i = 0;
         for (i = 0; i < array.length; i += 1) {
-            b = /*: cheat Undef + Array<HTMLElement + Undef> */ (b.concat(array[i].___nodes___));
+            b = b.concat(array[i].___nodes___);
         }
         return /*: obj* 'AdObj */ (new Bunch(b));
     })),
