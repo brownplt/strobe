@@ -113,7 +113,7 @@ module Env = struct
           with Not_found -> begin try
             let s = IdMap.find x env.synonyms in
               r_subtype rel env s t
-          with Not_found -> failwith ("Unbound id (in subtype, shouldn't happen): " ^ x)
+          with Not_found -> failwith ("Unbound id: " ^ x)
           end
           end
         | s, TId x -> begin try
@@ -122,7 +122,7 @@ module Env = struct
           with Not_found -> begin try
             let t = IdMap.find x env.synonyms in
               r_subtype rel env s t
-          with Not_found -> failwith ("Unbound id (in subtype, shouldn't happen): " ^ x)
+          with Not_found -> failwith ("Unbound id: " ^ x)
           end
           end
 	| s, TRec (x, t') -> 
@@ -248,9 +248,9 @@ module Env = struct
       | TField -> TField
       | TId x ->
           if IdMap.mem x env.typ_ids then typ
-          else if IdMap.mem x env.synonyms then
-            normalize_typ env (IdMap.find x env.synonyms)
-          else raise (Not_wf_typ ("the type variable " ^ x ^ " is unbound"))
+          else if IdMap.mem x env.synonyms then 
+            IdMap.find x env.synonyms
+          else typ (* raise (Not_wf_typ ("the type variable " ^ x ^ " is unbound")) *)
       | TForall (x, s, t) -> 
           let s = normalize_typ env s in
             TForall (x, s, normalize_typ (bind_typ_id x s env) t)
@@ -560,7 +560,6 @@ let rec unify subst s t : typ IdMap.t = match s, t with
         List.fold_left2 unify subst ss ts
       else 
         failwith ("cannot unify constructors " ^ c1 ^ " and " ^ c2)
-
 
   | TUnion (s1, s2), TUnion (t1, t2) -> unify (unify subst s1 t1) s2 t2
 
