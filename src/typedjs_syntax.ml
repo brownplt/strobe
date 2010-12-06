@@ -8,6 +8,7 @@ module RT = struct
     | Str
     | Bool
     | Function
+    | Null
     | Object of string list (** fields that were falsy *)
     | ConstrObj of string (** [ConstrObj constr_name] *)
     | Undefined
@@ -21,6 +22,7 @@ module RT = struct
     | Str -> text "string"
     | Bool -> text "boolean"
     | Function -> text "function"
+    | Null -> text "null"
     | Object (flds) -> 
         horz [text "object";      
               braces (horz (intersperse (text ",") (map text flds)))]

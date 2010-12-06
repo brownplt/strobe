@@ -25,35 +25,35 @@ let set_op_env env =
   op_env := Typedjs_env.operator_env_of_tc_env env
 
 let tag_of_string s = match s with
-  | "string" -> RT.Str
-  | "number" -> RT.Num
-  | "boolean" -> RT.Bool
-  | "function" ->  RT.Function
-  | "object" -> RT.Object []
-  | "undefined" ->  RT.Undefined
+  | "string" -> RTSet.singleton RT.Str
+  | "number" -> RTSet.singleton RT.Num
+  | "boolean" -> RTSet.singleton RT.Bool
+  | "function" ->  RTSet.singleton RT.Function
+  | "object" -> RTSet.add (RT.Object []) (RTSet.singleton RT.Null)
+  | "undefined" ->  RTSet.singleton RT.Undefined
   | _ -> raise (Invalid_argument "tag_of_string")
 
 let mk_type_is x s = 
   try 
-    ALocTypeIs (x, RTSet.singleton (tag_of_string s))
+    ALocTypeIs (x, tag_of_string s)
   with Invalid_argument "tag_of_string" ->
     singleton RT.Bool
 
 let mk_var_type_is x s = 
   try 
-    AVarTypeIs (x, RTSet.singleton (tag_of_string s))
+    AVarTypeIs (x, tag_of_string s)
   with Invalid_argument "tag_of_string" ->
     singleton RT.Bool
 
 let mk_type_is_not x s =
   try 
-    ALocTypeIs (x, RTSet.remove (tag_of_string s) rtany)
+    ALocTypeIs (x, RTSet.diff rtany (tag_of_string s))
   with Invalid_argument "tag_of_string" ->
     singleton RT.Bool  
 
 let mk_var_type_is_not x s = 
   try 
-    AVarTypeIs (x, RTSet.remove (tag_of_string s) rtany)
+    AVarTypeIs (x, RTSet.diff rtany (tag_of_string s))
   with Invalid_argument "tag_of_string" ->
     singleton RT.Bool
 
@@ -64,7 +64,7 @@ let abs_of_cpsval node env (cpsval : cpsval) = match cpsval with
       | JavaScript_syntax.CNum _ -> singleton RT.Num
       | JavaScript_syntax.CInt _ -> singleton RT.Num
       | JavaScript_syntax.CBool b -> ABool b
-      | JavaScript_syntax.CNull -> singleton (RT.Object [])
+      | JavaScript_syntax.CNull -> ASet (RTSet.add RT.Null (RTSet.singleton (RT.Object [])))
       | JavaScript_syntax.CUndefined -> singleton RT.Undefined
     end
   | Id (p, x) -> 
@@ -153,6 +153,13 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         | AVarField (x, field_name) ->
             let false_set = RTSet.singleton (RT.Object ([field_name])) in
               (env, bind x (ASet false_set) env)
+        | ASet s ->
+            (match v1 with 
+               | Id (_, x) ->
+                   let true_set = RTSet.remove RT.Undefined
+                     (RTSet.remove RT.Null s) in
+                     (bind x (ASet true_set) env, env)
+               | _ -> (env, env))
         | _ -> (env, env) in
       let heap2, heap3 = match absv1 with
         | AInstanceof (loc, constr_name) ->
@@ -162,12 +169,18 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         | ALocTypeIs (loc, true_set) ->
           let false_set = RTSet.diff (deref loc heap) true_set in
           (set_ref loc true_set heap, set_ref loc false_set heap)
-        | ADeref (loc, loc_set) when RTSet.mem RT.Undefined loc_set ->
-          let true_set = RTSet.remove RT.Undefined loc_set in
+        | ADeref (loc, loc_set) 
+            when (RTSet.mem RT.Undefined loc_set ||
+                  RTSet.mem RT.Null loc_set) ->
+          let true_set = RTSet.remove RT.Undefined 
+            (RTSet.remove RT.Null loc_set) in
           (set_ref loc true_set heap, heap)
         | AField (loc, field_name) ->
             let false_set = RTSet.singleton (RT.Object ([field_name])) in
-              (heap, set_ref loc false_set heap)
+              (* Looked up a field on it, so it can't be null or undef *)
+            let true_set = RTSet.remove RT.Null
+              (RTSet.remove RT.Undefined rtany) in
+              (set_ref loc true_set heap, set_ref loc false_set heap)
         | _ ->  (heap, heap) in
         (match absv1 with
              ABool false -> ()

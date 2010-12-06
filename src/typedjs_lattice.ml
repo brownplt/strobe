@@ -84,7 +84,7 @@ let empty = ASet RTSet.empty
 
 let rtany = 
   (RTSetExt.from_list
-     [ RT.Num; RT.Str; RT.Bool; RT.Function; (RT.Object []); RT.Undefined ])
+     [ RT.Num; RT.Str; RT.Bool; RT.Function; RT.Null; (RT.Object []); RT.Undefined ])
 
 let any = ASet rtany
 
@@ -187,6 +187,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
       | "False"
       | "Bool" -> RTSet.singleton RT.Bool
       | "Undef" -> RTSet.singleton RT.Undefined
+      | "Null" -> RTSet.singleton RT.Null
       |  _ -> RTSet.singleton (RT.ConstrObj constr_name)
     end
   | Typedjs_syntax.TStrSet _ 
