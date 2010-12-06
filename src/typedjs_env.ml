@@ -284,6 +284,7 @@ module Env = struct
     | RT.Str -> typ_union env typ_str typ
     | RT.Bool -> typ_union env typ_bool typ
     | RT.Function -> typ_union env TField typ
+    | RT.Null -> typ_union env typ_null typ
     | RT.Object _ -> typ_union env TField typ
     | RT.ConstrObj _ -> typ_union env TField typ
     | RT.Undefined -> typ_union env typ_undef typ
@@ -292,6 +293,7 @@ module Env = struct
     | RT.Num -> typ_union env typ_num typ
     | RT.Str -> typ_union env typ_str typ
     | RT.Bool -> typ_union env typ_bool typ
+    | RT.Null -> typ_union env typ_null typ
     | RT.Function -> typ_union env (TObject []) typ
     | RT.Object _ -> typ_union env (TObject []) typ
     | RT.ConstrObj _ -> typ_union env (TObject []) typ (* parameters unknown *)
@@ -323,6 +325,7 @@ module Env = struct
     | TConstr ("True", [])
     | TConstr ("False", [])
     | TConstr ("Bool", []) -> if RTSet.mem RT.Bool rt then typ else TBot
+    | TConstr ("Null", []) -> if RTSet.mem RT.Null rt then typ else TBot
     | TConstr ("Undef", []) -> 
         if RTSet.mem RT.Undefined rt then typ else TBot
           (* any other app will be an object from a constructor *)
