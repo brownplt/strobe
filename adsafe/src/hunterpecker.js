@@ -49,7 +49,7 @@ var hunter =
     '#': function (node) /*: HTMLElement + Undef -> Undef */ {
         var n = document.getElementById(name);
         if (n.tagName) {
-            result.push(/*: cheat HTMLElement */ n); // problem with returning Null
+            result.push(n); // problem with returning Null
         }
     },
     '/': function (node) /*: HTMLElement + Undef -> Undef */{
