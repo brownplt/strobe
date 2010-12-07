@@ -17,3 +17,5 @@ val typ_bool : typ
 val typ_null : typ
 
 val typ_undef : typ
+
+val typ_array : typ -> typ

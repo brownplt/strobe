@@ -636,8 +636,7 @@ and bracket p env ft ot =
                      (TRef (unfold_typ (un_ref other)))
                      (bracket p env ft proto)))
            | TConstr ("Int", []) ->
-               TRef (Env.typ_union env (unfold_typ (un_ref other))
-                       (TConstr ("Undef", [])))
+               TRef (Env.typ_union env (unfold_typ (un_ref other)) typ_undef)
            | t -> error p (sprintf "Index was type %s in \
                                     dictionary lookup" (string_of_typ t)))
     | TConstr ("Array", [tarr]), tidx ->
@@ -652,25 +651,23 @@ and bracket p env ft ot =
                 | "length" -> 
                     TRef typ_int
                 | "push" ->
-                    TRef (TArrow (TConstr ("Array", [tarr]),
-                                  [un_ref tarr], typ_undef, typ_undef))
+                    TRef (TArrow (typ_array tarr, [un_ref tarr], 
+                                  typ_undef, typ_undef))
                 | "join" ->
                     (match un_ref tarr with
                        | TConstr ("Str", []) ->
-                           TRef (TArrow (TConstr ("Array", [tarr]),
+                           TRef (TArrow (typ_array tarr,
                                          [typ_str], typ_undef, typ_str))
                        | _ -> error p ("expected array of strings"))
                 | "slice" ->
-                    TRef (TArrow (TConstr ("Array", [tarr]),
-                                  [TConstr ("Int", []);
-                                   Env.typ_union env (TConstr ("Int", []))
-                                     (TConstr ("Undef", []))],
-                                  typ_undef, TConstr ("Array", [tarr])))
+                    TRef (TArrow (typ_array tarr,
+                                  [typ_int; 
+                                   Env.typ_union env typ_int typ_undef],
+                                  typ_undef, typ_array tarr))
                 | "concat" ->
-                    TRef (TArrow (TConstr ("Array", [tarr]),
-                                  [Env.typ_union env (TConstr ("Undef", []))
-                                     (TConstr ("Array", [tarr]))],
-                                  typ_undef, TConstr ("Array", [tarr])))
+                    TRef (TArrow (typ_array tarr,
+                                  [Env.typ_union env typ_undef (typ_array tarr)],
+                                  typ_undef, typ_array tarr))
                 | s ->
                     error p ("unknown array method " ^ s)
               end
@@ -686,8 +683,8 @@ and bracket p env ft ot =
               | "Num"
               | "Bool"
               | "Int"
-              | "Str" -> TConstr ("Undef", [])
-              | _ -> TConstr ("Undef", [])
+              | "Str" -> typ_undef
+              | _ -> typ_undef
             end
         end
     | TConstr (cname, []), te ->
@@ -699,7 +696,7 @@ and bracket p env ft ot =
             | "Int"
             | "Str" -> 
                 begin match te with 
-                  | TConstr ("Int", []) -> TRef (TConstr ("Undef", []))
+                  | TConstr ("Int", []) -> TRef (typ_undef)
                   | _ -> error p (sprintf "Can't look up %s[%s]" 
                                     cname (string_of_typ te))
                 end

@@ -20,3 +20,5 @@ let typ_false = TConstr ("False", [])
 let typ_null = TConstr ("Null", [])
 
 let typ_undef = TConstr ("Undef", [])
+
+let typ_array tarr = TConstr ("Array", [tarr])
