@@ -175,7 +175,7 @@ module Env = struct
         | TRef s, TSource t -> st s t
         | TRef s, TSink t -> st t s
         | TConstr (constr, []), TField ->
-            List.mem constr [ "Num"; "Int"; "Str"; "Undef"; "Bool" ]
+            List.mem constr [ "Num"; "Int"; "Str"; "Undef"; "Bool"; "Null" ]
 	| _, TTop -> true
 	| TBot, _ -> true
 	| _ -> s = t
