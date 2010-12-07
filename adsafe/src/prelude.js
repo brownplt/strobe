@@ -18,7 +18,7 @@ var banned =
               unwatch       : Bool,
               valueOf       : Bool,
               watch         : Bool,
-              #proto: Object, *:Bool, #code: Bot} */
+              #proto: Object, *:Bot, #code: Bot} */
 {
     'arguments'     : true,
     callee          : true,
@@ -187,13 +187,15 @@ var makeableTagName =
     'var'     : "var"
 };
 
-//function reject__name(name) /*: (('banned -> True) + ('not_banned -> False)) */ {
-//    return 
-//    ((typeof name !== 'number' || name < 0) &&
-//     (typeof name !== 'string' || name.charAt(0) === '_' ||
-//      name.slice(-1) === '_' || name.charAt(0) === '-'))
-//        || /*: cheat 'Ad */ (banned[name]);
-//}
+var reject_name = 
+    /*: cheat (('banned -> True) + ('not_banned -> False)) */
+    (function (name) /*: 'Ad -> Bool */ {
+        return 
+        ((typeof name !== 'number' || name < 0) &&
+         (typeof name !== 'string' || name.charAt(0) === '_' ||
+          name.slice(-1) === '_' || name.charAt(0) === '-'))
+            || banned[name];
+    });
 
 function safe_name(name) /*: 'Ad -> 'not_banned */ {
     if(reject_name(name)) {
