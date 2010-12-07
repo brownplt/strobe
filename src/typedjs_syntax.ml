@@ -55,6 +55,7 @@ type typ =
   | TRec of id * typ
   | TId of id
   | TField
+  | TBad (* ☠ *)
 
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list
@@ -166,6 +167,7 @@ let rec typ_subst' s_env x s typ =
       | TTop -> TTop
       | TBot -> TBot
       | TField -> TField
+      | TBad -> TBad
       | TForall (y, t1, t2) -> 
           begin match x = y, IdMap.mem x s_env with
             | true, false -> 
@@ -278,8 +280,9 @@ module Pretty = struct
     | TRec (x, t) -> parens (horz [ text "trec"; (horz [text x; text "."; typ t ] ) ])
     | TId x -> text ("'" ^ x)
     | TField -> text "field"
+    | TBad -> text "BAD"
 
-  and field (x, t) =  
+  and field (x, t) =
     horz 
       [ text ("\"" ^ x ^ "\""); text ":"; 
         match t with

@@ -263,6 +263,7 @@ module Env = struct
 	    TRec (x, t')
       | TStrSet strs -> TStrSet strs
       | TStrMinus strs -> TStrMinus strs
+      | TBad -> TBad
 
   let check_typ p env t = 
     try
@@ -366,6 +367,7 @@ module Env = struct
     | TForall _ -> typ
     | TRec (x, t) -> static cs rt (Typedjs_syntax.Typ.typ_subst x typ t)
     | TField -> List.fold_left (basic_static cs) TBot (RTSetExt.to_list rt)
+    | TBad -> TBad
     | TTop -> 
         if RTSet.equal rt Typedjs_lattice.rtany then
           TTop

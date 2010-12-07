@@ -45,6 +45,7 @@ type typ =
   | TRec of id * typ
   | TId of id
   | TField
+  | TBad (* ☠ *)
 
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list

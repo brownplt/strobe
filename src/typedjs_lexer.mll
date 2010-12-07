@@ -71,6 +71,7 @@ rule token = parse
    | "<:" { LTCOLON }
    | "$" { CASH }
    | "^" { CARET }
+   | "BAD" { BAD }
    | eof { EOF }
    | ident as x { ID x }
    | '"' (double_quoted_string_char* as x) '"' { STRING x }
