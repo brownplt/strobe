@@ -1,4 +1,4 @@
-var ADSAFE = (function () {
+var ADSAFE = (function () /*:  -> Any */ {
 
     var adsafe_lib /*: upcast Undef + 'Ad */,
         adsafe_id /*: upcast Undef + Str + Null */,
@@ -39,7 +39,7 @@ var ADSAFE = (function () {
         // Set of hunter patterns (a dictionary)
         hunter /*: upcast Undef + 
                    {#proto: Object, *: HTMLElement + Undef -> Undef, #code: Undef} */ ,
-        interceptors = [],
+//        interceptors = [],
 
         makeableTagName =
         /*: obj* {a         : ${"a"},
@@ -206,7 +206,7 @@ var ADSAFE = (function () {
     // type T with a call to error() is equivalent to T.
 
     function error(message) /*: Str + Undef -> Bot */ {
-        log("ADsafe error: " + (message || "ADsafe violation."));
+        //log("ADsafe error: " + (message || "ADsafe violation."));
         throw {
             name: "ADsafe",
             message: (message || "ADsafe violation.")
@@ -238,13 +238,13 @@ var ADSAFE = (function () {
 //  called as a function it returns the global object. ADsafe cannot tolerate
 //  that, so we wrap the methods to make them safer and slower.
 
-    (function mozilla(name) /*: trec f . Str -> 'f */ {
+    var mozilla = (/*: cheat trec f . Any -> 'f */ (function(name) /*: Any -> Any */ {
         var method = Array.prototype[name];
-        Array.prototype[name] = function () {
-            return this.window ? error() : /*: cheat Undef */ (method.apply(this, arguments));
+        Array.prototype[name] = function () /*: -> Any */ {
+            return this.window ? error() : method.apply(this, /* arguments */);
         };
-        return mozilla;
-    })
+//        return mozilla;
+    }))
     ('concat')
     ('every')
     ('filter')
@@ -268,7 +268,10 @@ var ADSAFE = (function () {
     });
 
     function reject_property(object, name) /*: 'Ad * 'Ad -> Bool */ {
-        return typeof object !== 'object' || reject_name(name);
+        if(reject_name(name)) {
+            return true;
+        }
+        return typeof object !== 'object';
     }
 
     // The getStyleObject function returns the computed style object for a node.
@@ -318,70 +321,81 @@ var ADSAFE = (function () {
                   );
     }
 
-    function F() {}
+//    function F() {}
 
 //  Return the ADSAFE object.
 
-    return {
+    return /*: obj* 'AdObj */ {
 
-        create: typeof Object.create === 'function' ? Object.create : function (o) {
-            F.prototype = typeof o === 'object' && o ? o : Object.prototype;
-            return new F();
-        },
+//        create: typeof Object.create === 'function' ? Object.create : function (o) {
+//            F.prototype = typeof o === 'object' && o ? o : Object.prototype;
+//            return new F();
+//        },
 
 //  ADSAFE.get retrieves a value from an object.
 
-        get: ADSAFE_get,
+        get: 
+        /*: upcast 'Ad */
+        (/*: obj* 'AdObj */ (function(object, name) 
+            /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad ... -> 'Ad */ 
+            {
+                if (typeof object !== "object") { return error(); }
+                if (!reject_name(name)) {
+                    return object[name];
+                }
+                return error();
+            })),
+
 
 //  ADSAFE.go allows a guest widget to get access to a wrapped dom node and
 //  approved ADsafe libraries. It is passed an id and a function. The function
 //  will be passed the wrapped dom node and an object containing the libraries.
 
-        go: ADSAFE_go,
+//        go: ADSAFE_go,
 
 //  ADSAFE.id allows a guest widget to indicate that it wants to load
 //  ADsafe approved libraries.
 
-        id: function (id) {
+//        id: function (id) {
 
 //  Calls to ADSAFE.id must be balanced with calls to ADSAFE.go.
 //  Only one id can be active at a time.
 
-            if (adsafe_id) {
-                return error();
-            }
-            adsafe_id = id;
-            adsafe_lib = {};
-        },
+//            if (adsafe_id) {
+//                return error();
+//            }
+//            adsafe_id = id;
+//            adsafe_lib = {};
+//        },
 
 //  ADSAFE.isArray returns true if the operand is an array.
 
-        isArray: Array.isArray || function (value) {
-            return Object.prototype.toString.apply(value) === '[object Array]';
-        },
+//        isArray: Array.isArray || function (value) {
+//            return Object.prototype.toString.apply(value) === '[object Array]';
+//        },
 
-        later: later,
+//        later: later,
 
 //  ADSAFE.lib allows an approved ADsafe library to make itself available
 //  to a widget. The library provides a name and a function. The result of
 //  calling that function will be made available to the widget via the name.
 
-        lib: lib,
+//        lib: lib,
 
 //  ADSAFE.log is a debugging aid that spams text to the browser's log.
 
-        log: log,
+//        log: log,
 
-        remove: ADSAFE_remove,
+//        remove: ADSAFE_remove,
 
-        set: ADSAFE_set,
+//        set: ADSAFE_set,
 
 //  ADSAFE._intercept allows the page to register a function that will
 //  see the widget's capabilities.
 
-        _intercept: function (f) {
-            interceptors.push(f);
-        }
+//        _intercept: function (f) {
+//            interceptors.push(f);
+//        }
 
     };
 }());
