@@ -1,3 +1,12 @@
+function Bunch(nodes) 
+/*: constructor (Undef + Array<HTMLElement + Undef> -> {___nodes___: Array<HTMLElement + Undef> + Undef, ___star___: Bool + Undef}) */ 
+{
+    this.___nodes___ = nodes;
+    this.___star___ = true;//star && nodes.length > 1;
+    //            star = false;
+}
+
+
 var ADSAFE = (function () /*:  -> Any */ {
 
     var adsafe_lib /*: upcast Undef + 'Ad */,
@@ -197,7 +206,7 @@ var ADSAFE = (function () /*:  -> Any */ {
     pecker /*: upcast Undef + 'Pecker */, 
     result /*: upcast Undef + Array<HTMLElement + Undef> */,
     star = false, // Init so the type checker knows it's a bool
-    the_range,
+    the_range /*: upcast Undef + Range */ ,
     value /*: upcast Undef + Str */;
 
     // The error function is called if there is a violation or confusion
@@ -670,6 +679,192 @@ var ADSAFE = (function () /*:  -> Any */ {
         return result;
     }
 
+    function make_root(root, id) 
+    /*:   HTMLElement + Undef + Null 
+        * Str + Null + Undef 
+       -> 'Ad */ 
+    {
+
+        if (id) {
+            if (root.tagName !== 'DIV') {
+                return error('ADsafe: Bad node.');
+            }
+        } else {
+            if (root.tagName !== 'BODY') {
+                return error('ADsafe: Bad node.');
+            }
+        }
+
+        var allow_focus = true,
+        dom,
+        dom_event = function (e) /*: Event -> Undef */ {
+            var key /*: upcast Undef + Str */,
+
+            // The ad can see target, that, and the_event, so we need
+            // to annotate and treat them as such.
+
+            target /*: upcast 'Ad */,
+            that /*: upcast 'Ad */,
+            the_event /*: upcast 'Ad */,
+            the_target /*: upcast HTMLElement + Undef */,
+            the_actual_event = /*: upcast Event + Undef */ (e || event),
+            type = the_actual_event.type;
+            
+            // Get the target node and wrap it in a bunch.
+            
+            the_target = the_actual_event.target ||
+                the_actual_event.srcElement;
+
+            // The obj* cast tells the type checker that this new object
+            // should be treated like the dictionary type 'AdObj.
+            // The type checker ensures that the Bunch type doesn't clash
+            // with the fields of the 'AdObj type so this cast is valid.
+            target = /*: obj* 'AdObj */ (new Bunch([the_target]));
+            that = target;
+            
+            // Use the PPK hack to make focus bubbly on IE.
+            // When a widget has focus, it can use the focus method.
+            
+            switch (type) {
+            case 'mousedown':
+                allow_focus = true;
+                if (document.selection) {
+                    the_range = document.selection.createRange();
+                }
+                break;
+            case 'focus':
+            case 'focusin':
+                allow_focus = true;
+                has_focus = the_target;
+                the_actual_event.cancelBubble = false;
+                type = 'focus';
+                break;
+            case 'blur':
+            case 'focusout':
+                allow_focus = false;
+                has_focus = null;
+                type = 'blur';
+                break;
+            case 'keypress':
+                allow_focus = true;
+                has_focus = the_target;
+                key = String.fromCharCode(the_actual_event.charCode ||
+                                          the_actual_event.keyCode);
+                switch (key) {
+                case '\u000d':
+                case '\u000a':
+                    type = 'enterkey';
+                    break;
+                case '\u001b':
+                    type = 'escapekey';
+                    break;
+                }
+                break;
+
+                // This is a workaround for Safari.
+
+            case 'click':
+                allow_focus = true;
+            }
+            if (the_actual_event.cancelBubble &&
+                the_actual_event.stopPropagation) {
+                the_actual_event.stopPropagation();
+            }
+
+            // Make the event object.
+
+            // the_event is ad-visible, so we cast it to an ad-type.  Note 
+            // that it has non-banned fields, so all of these have to be
+            // cast up to the ad type as well, to satisfy the type checker
+            the_event = 
+                /*: obj* 'AdObj */
+            {
+                altKey: /*: upcast 'Ad */ (the_actual_event.altKey),
+                ctrlKey: /*: upcast 'Ad */ (the_actual_event.ctrlKey),
+                bubble: /*: upcast 'Ad */ 
+                (/*: obj* 'AdObj */ 
+                    (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
+                        
+                        // Bubble up. Get the parent of that node. It becomes the new that.
+                        // the getParent throws when bubbling is not possible.
+                        
+                        try {
+                            var parent = that.getParent(),
+                            b = parent.___nodes___[0];
+                            that = parent;
+                            the_event.that = that;
+                            
+                            // If that node has an event handler, fire it. Otherwise, bubble up.
+                            
+                            if (b['___ on ___'] &&
+                                b['___ on ___'][type]) {
+                                that.fire(the_event);
+                            } else {
+                                the_event.bubble();
+                            }
+                        } catch (e) {
+                            return error(String(e));
+                        }
+                    })),
+                key: /*: upcast 'Ad */ key,
+                preventDefault: /*: upcast 'Ad */ 
+                (/*: obj* 'AdObj */ 
+                    (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
+                        if (the_actual_event.preventDefault) {
+                            the_actual_event.preventDefault();
+                        }
+                        the_actual_event.returnValue = false;
+                    })),
+                shiftKey: /*: upcast 'Ad */ (the_actual_event.shiftKey),
+                target: /*: upcast 'Ad */ target,
+                that: /*: upcast 'Ad */ that,
+                type: /*: upcast 'Ad */ type,
+                x: /*: upcast 'Ad */ (the_actual_event.clientX),
+                y: /*: upcast 'Ad */ (the_actual_event.clientY)
+            };
+            that.fire(the_event);
+            // If the target has event handlers, then fire them. Otherwise, bubble up.
+
+            if (the_target['___ on ___'] &&
+                the_target['___ on ___'][string_check(the_event.type)]) {
+                target.fire(the_event);
+            } else {
+                for (;;) {
+                    the_target = the_target.parentNode;
+                    if (!the_target) {
+                        break;
+                    }
+                    if (the_target['___ on ___'] &&
+                        the_target['___ on ___'][string_check(the_event.type)]) {
+                        that = /*: obj* 'AdObj */ (new Bunch([the_target]));
+                        the_event.that = that;
+                        that.fire(the_event);
+                        break;
+                    }
+                    if (the_target['___adsafe root___']) {
+                        break;
+                    }
+                }
+            }
+            if (the_event.type === 'escapekey') {
+                if (ephemeral) {
+                    ephemeral.remove();
+                }
+                ephemeral = null;
+            }
+            // This line is annoying --- why add Null to all these types?
+            // Change to undefined
+            that = the_target = the_event = the_actual_event = undefined;
+            return;
+        };
+
+        // Mark the node as a root. This prevents event bubbling from propogating
+        // past it.
+
+        root['___adsafe root___'] = '___adsafe root___';
+
+        return dom;
+    }
 
     //    function F() {}
 
