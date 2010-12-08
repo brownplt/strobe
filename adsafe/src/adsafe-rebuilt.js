@@ -193,10 +193,10 @@ var ADSAFE = (function () /*:  -> Any */ {
         'var'     : "var"
     },
     
-    name,
-    pecker,
+    name /*: upcast Undef + Str */,
+    pecker /*: upcast Undef + 'Pecker */, 
     result /*: upcast Undef + Array<HTMLElement + Undef> */,
-    star,          
+    star = false, // Init so the type checker knows it's a bool
     the_range,
     value /*: upcast Undef + Str */;
 
@@ -266,6 +266,17 @@ var ADSAFE = (function () /*:  -> Any */ {
           name.slice(-1) === '_' || name.charAt(0) === '-'))
             || banned[name];
     });
+
+    // Joe added this for convenience in some places, to ensure that
+    // things are not on the prototype.  Used in quest, for instance
+    function safe_name(name) /*: 'Ad -> 'not_banned */ {
+        if(reject_name(name)) {
+            return error("ADsafe string violation");
+        }
+        else {
+            return name;
+        }
+    }
 
     function reject_property(object, name) /*: 'Ad * 'Ad -> Bool */ {
         if(reject_name(name)) {
@@ -429,6 +440,235 @@ var ADSAFE = (function () /*:  -> Any */ {
         return query;
     }
 
+    hunter = 
+        /*: obj* {#proto: Object, *: HTMLElement + Undef -> Undef, #code: Undef} */ 
+    {
+        
+        // These functions implement the hunter behaviors.
+        
+        '': function (node) /*: HTMLElement + Undef -> Undef */ {
+            var e = node.getElementsByTagName(name);
+            for (var i = 0; i < 1000; i += 1) {
+                // Why bound at 1000?
+                if (e[i]) {
+                    result.push(e[i]);
+                } else {
+                    break;
+                }
+            }
+        },
+        
+        '+': function (node) /*: HTMLElement + Undef -> Undef */ {
+            node = node.nextSibling;
+            name = name.toUpperCase();
+            while (node && !node.tagName) {
+                node = node.nextSibling;
+            }
+            if (node && node.tagName === name) {
+                result.push(node);
+            }
+        },
+
+        '>': function (node) /*: HTMLElement + Undef -> Undef */ {
+            node = node.firstChild;
+            name = name.toUpperCase();
+            while (node) {
+                if (node.tagName === name) {
+                    result.push(node);
+                }
+                node = node.nextSibling;
+            }
+        },
+
+        '#': function (node) /*: HTMLElement + Undef -> Undef */ {
+            var n = document.getElementById(name);
+            if (n.tagName) {
+                result.push(n); // problem with returning Null
+            }
+        },
+        '/': function (node) /*: HTMLElement + Undef -> Undef */{
+            var e = node.childNodes;
+            for (var i = 0; i < e.length; i += 1) {
+                result.push(e[i]);
+            }
+        },
+
+        '*': function (node) /*: HTMLElement + Undef -> Undef */{
+            star = true;
+            walkTheDOM(node, function (node) /*: HTMLElement + Undef -> Undef */ {
+                result.push(node);
+            }, true);
+        }
+    };
+
+    // The Pecker type is in adsafe.env
+    pecker = /*: obj* 'Pecker */
+    {
+        '.': function (node) /*: HTMLElement + Undef -> Bool */ {
+            return (' ' + node.className + ' ').indexOf(' ' + name + ' ') >= 0;
+        },
+        '&': function (node) /*: HTMLElement + Undef -> Bool */ {
+            return node.name === name;
+        },
+        '_': function (node) /*: HTMLElement + Undef -> Bool */ {
+            return node.type === name;
+        },
+        '[': function (node) /*: HTMLElement + Undef -> Bool */  {
+            return typeof node[name] === 'string';
+        },
+        '[=': function (node) /*: HTMLElement + Undef -> Bool */  {
+            var member = node[name];
+            return typeof member === 'string' && member === value;
+        },
+        '[!=': function (node) /*: HTMLElement + Undef -> Bool */  {
+            var member = node[name];
+            return typeof member === 'string' && member !== value;
+        },
+        '[^=': function (node) /*: HTMLElement + Undef -> Bool */  {
+            var member = node[name];
+            return typeof member === 'string' &&
+                member.slice(0, member.length) === value;
+        },
+        '[$=': function (node) /*: HTMLElement + Undef -> Bool */  {
+            var member = node[name];
+            return typeof member === 'string' &&
+                member.slice(-member.length) === value;
+        },
+        '[*=': function (node) /*: HTMLElement + Undef -> Bool */  {
+            var member = node[name];
+            return typeof member === 'string' &&
+                member.indexOf(String(value)) >= 0;
+        },
+        '[~=': function (node) /*: HTMLElement + Undef -> Bool */  {
+            var member = node[name];
+            return typeof member === 'string' &&
+                (' ' + member + ' ').indexOf(' ' + value + ' ') >= 0;
+        },
+        '[|=': function (node) /*: HTMLElement + Undef -> Bool */  {
+            var member = node[name];
+            return typeof member === 'string' &&
+                ('-' + member + '-').indexOf('-' + value + '-') >= 0;
+        },
+        ':blur': function (node) /*: HTMLElement + Undef -> Bool */  {
+            return node !== has_focus;
+        },
+        ':checked': function (node) /*: HTMLElement + Undef -> Bool */  {
+            return node.checked;
+        },
+        ':disabled': function (node) /*: HTMLElement + Undef -> Bool */  {
+            return node.tagName && node.disabled;
+        },
+        ':enabled': function (node) /*: HTMLElement + Undef -> Bool */  {
+            return node.tagName && !node.disabled;
+        },
+        ':even': function (node) /*: HTMLElement + Undef -> Bool */  {
+            var f = false; // added initialization
+            if (node.tagName) {
+                f = flipflop;
+                flipflop = !flipflop;
+                return f;
+            } else {
+                return false;
+            }
+        },
+        ':focus': function (node) /*: HTMLElement + Undef -> Bool */  {
+            return node === has_focus;
+        },
+        ':hidden': function (node) /*: HTMLElement + Undef -> Bool */  {
+            return node.tagName && 
+                getStyleObject(node).visibility !== 'visible';
+        },
+        ':odd': function (node) /*: HTMLElement + Undef -> Bool */  {
+            if (node.tagName) {
+                flipflop = !flipflop;
+                return flipflop;
+            } else {
+                return false;
+            }
+        },
+        ':tag': function (node) /*: HTMLElement + Undef -> Str */  {
+            return node.tagName;
+        },
+        ':text': function (node) /*: HTMLElement + Undef -> Bool */  {
+            return node.nodeName === '#text';
+        },
+        ':trim': function (node) /*: HTMLElement + Undef -> Bool */  {
+            return node.nodeName !== '#text' || /\W/.test(node.nodeValue);
+        },
+        ':unchecked': function (node) /*: HTMLElement + Undef -> Bool */  {
+            return node.tagName && !node.checked;
+        },
+        ':visible': function (node) /*: HTMLElement + Undef -> Bool */  {
+            return node.tagName && getStyleObject(node).visibility === 'visible';
+        }
+    };
+
+    function quest(query, nodes)
+    /*:  Array<'Selector> + Undef
+       * Undef + Array<HTMLElement + Undef>
+      -> Undef + Array<HTMLElement + Undef> */
+    {
+        var selector /*: upcast Undef + 'Selector */,
+        func /*: upcast Undef + (HTMLElement + Undef -> Any) */, 
+        i = 0,
+        j = 0;
+
+        // Step through each selector.
+
+        for (i = 0; i < query.length; i += 1) {
+            selector = query[i];
+            name = selector.name;
+            func = hunter[safe_name(selector.op)];
+
+            // There are two kinds of selectors: hunters and peckers. If this is a hunter,
+            // loop through the the nodes, passing each node to the hunter function.
+            // Accumulate all the nodes it finds.
+
+            if (typeof func === 'function') {
+                if (star) {
+                    return error("ADsafe: Query violation: *" +
+                                 selector.op + (selector.name || ''));
+                }
+                result = /*: HTMLElement + Undef */ [];
+                for (j = 0; j < nodes.length; j += 1) {
+                    func(nodes[j]);
+                }
+            } else {
+
+                // If this is a pecker, get its function. There is a special case for
+                // the :first and :rest selectors because they are so simple.
+
+                value = selector.value;
+                flipflop = false;
+                func = pecker[safe_name(selector.op)];
+                if (typeof func !== 'function') {
+                    switch (selector.op) {
+                    case ':first':
+                        result = nodes.slice(0, 1);
+                        break;
+                    case ':rest':
+                        result = nodes.slice(1);
+                        break;
+                    default:
+                        return error('ADsafe: Query violation: :' + selector.op);
+                    }
+                } else {
+
+                    // For the other selectors, make an array of nodes that are filtered by
+                    // the pecker function.
+
+                    result = /*: HTMLElement + Undef */ [];
+                    for (j = 0; j < nodes.length; j += 1) {
+                        if (func(nodes[j])) {
+                            result.push(nodes[j]);
+                        }
+                    }
+                }
+            }
+            nodes = result;
+        }
+        return result;
+    }
 
 
     //    function F() {}
