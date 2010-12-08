@@ -72,6 +72,7 @@ rule token = parse
    | "$" { CASH }
    | "^" { CARET }
    | "BAD" { BAD }
+   | "_" { UNDER }
    | eof { EOF }
    | ident as x { ID x }
    | '"' (double_quoted_string_char* as x) '"' { STRING x }

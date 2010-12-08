@@ -601,6 +601,7 @@ and update p env field newval t =
     | t, e -> raise (Typ_error (p, (sprintf "No object update on non-objects \
                                  yet, got %s" (string_of_typ t))))
 
+
 and bracket p env ft ot =
   match ot, ft with
     | TStrSet strs, _
@@ -611,34 +612,33 @@ and bracket p env ft ot =
          with Not_found ->
            raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
     | TObjStar (fs, proto, other, code), _ ->
-        (match ft with
-           | TConstr ("Str", []) 
-           | TUnion (TConstr ("Str", []), TConstr ("Undef", [])) ->
-               let rem_names = TStrMinus (map fst fs) in
-               let field_typ = list_to_typ env (map snd fs) in
-                 (Env.typ_union env
-                    (Env.check_typ p env field_typ)
-                    (Env.typ_union env (bracket p env rem_names proto)
-                       other))
-           | TStrMinus strs -> 
-               let flds = (List.filter (fun fld ->
-                                          not (List.mem (fst fld) strs))
-                             fs) in
-               let field_typ = list_to_typ env (map snd flds) in
-               let rem_ft = TStrMinus (strs@(map fst fs)) in
-                 (Env.typ_union env (Env.check_typ p env field_typ)
-                    (Env.typ_union env (bracket p env rem_ft proto) other))
-           | TStrSet [x] ->
-	       (try
-	          snd2 (List.find (fun (x', _) -> x = x') fs)
-	        with Not_found ->
-	          (Env.typ_union env 
-                     (TRef (unfold_typ (un_ref other)))
-                     (bracket p env ft proto)))
-           | TConstr ("Int", []) ->
-               TRef (Env.typ_union env (unfold_typ (un_ref other)) typ_undef)
-           | t -> error p (sprintf "Index was type %s in \
-                                    dictionary lookup" (string_of_typ t)))
+        if not (Env.subtype env ft (Env.typ_union env typ_str
+                                      (Env.typ_union env typ_int typ_undef))) 
+        then
+          error p (sprintf "Index was type %s in \
+                                    dictionary lookup" (string_of_typ ft))
+        else
+          let flds = List.filter (fun fld -> 
+                                    Env.string_in_typ ft (fst fld)) fs in
+          let fld_typs = list_to_typ env (map Env.typ_or_abs (map snd flds)) in
+          let fld_typs = Env.check_typ p env fld_typs in
+            (** Don't use the star type if it is absent, or if every field
+                is accounted for by the original list *)
+          let no_other = (other = T_) or 
+            ((Env.subtract_strings ft (map fst fs)) = TStrSet []) in
+          let proto_names = Env.subtract_strings ft (map fst flds) in
+            (match proto_names, no_other with
+               (** All fields were covered by ft *)
+               | TStrSet ([]), _ -> fld_typs
+               (** All non-absent fields were covered by ft *)
+               | _, true -> 
+                   (Env.typ_union env fld_typs
+                      (bracket p env proto_names proto))
+               (** There is some non-absent field that wasn't in ft *)
+               | _, false -> 
+                   (Env.typ_union env fld_typs
+                      (Env.typ_union env (bracket p env proto_names proto)
+                         other)))
     | TConstr ("Array", [tarr]), tidx ->
         let (p1, p2) = p in
           contracts := IntMap.add p1.Lexing.pos_cnum 
@@ -679,12 +679,12 @@ and bracket p env ft ot =
           | Some t -> t
           | None -> begin match cname with 
               | "Undef" 
-              | "Null" -> TConstr ("Undef", [])
+              | "Null" -> TRef typ_undef
               | "Num"
               | "Bool"
               | "Int"
-              | "Str" -> typ_undef
-              | _ -> typ_undef
+              | "Str" -> TRef typ_undef
+              | _ -> TRef typ_undef
             end
         end
     | TConstr (cname, []), te ->

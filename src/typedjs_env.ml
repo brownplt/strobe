@@ -264,6 +264,7 @@ module Env = struct
       | TStrSet strs -> TStrSet strs
       | TStrMinus strs -> TStrMinus strs
       | TBad -> TBad
+      | T_ -> T_
 
   let check_typ p env t = 
     try
@@ -374,6 +375,7 @@ module Env = struct
         else (* TODO: no arrow type that is the supertype of all arrows *)
           List.fold_left (basic_static2 cs) TBot (RTSetExt.to_list rt)
     | TId _ -> typ
+    | T_ -> TBot
 
 
   let new_root_class env class_name = 
@@ -461,6 +463,24 @@ module Env = struct
       typ_ids = IdMapExt.diff final_env.typ_ids init_env.typ_ids;
       synonyms = IdMapExt.diff final_env.synonyms init_env.synonyms; 
     }
+
+  let typ_or_abs typ = match typ with T_ -> TBot | _ -> typ
+    
+  let rec string_in_typ stype s =
+    match stype with
+      | TConstr ("Str", []) -> true
+      | TStrSet strs -> List.mem s strs
+      | TStrMinus strs -> not (List.mem s strs)
+      | TUnion (s1, s2) -> (string_in_typ s1 s) || (string_in_typ s2 s)
+      | _ -> false
+
+  let subtract_strings stype ss =
+    match stype with
+      | TConstr ("Str", []) -> TStrMinus ss
+      | TStrMinus strs -> TStrMinus (ss@strs)
+      | TStrSet strs -> 
+          TStrSet (List.filter (fun s -> not (List.mem s ss)) strs)
+      | _ -> stype
 
 end
 
@@ -592,3 +612,4 @@ let rec unify subst s t : typ IdMap.t = match s, t with
 
 let unify_typ (s : typ) (t : typ) : typ IdMap.t = 
   unify IdMap.empty s t
+

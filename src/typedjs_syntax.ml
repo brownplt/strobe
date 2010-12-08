@@ -51,6 +51,7 @@ type typ =
   | TSink of typ
   | TTop
   | TBot
+  | T_
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TRec of id * typ
   | TId of id
@@ -166,6 +167,7 @@ let rec typ_subst' s_env x s typ =
       | TSink t -> TSink (typ_subst x s t)
       | TTop -> TTop
       | TBot -> TBot
+      | T_ -> T_
       | TField -> TField
       | TBad -> TBad
       | TForall (y, t1, t2) -> 
@@ -273,13 +275,14 @@ module Pretty = struct
 	let fields = map field fs in
 	  braces (horz (intersperse (text ",") (fields@[constr;star;code])))
     | TRef s -> horz [ text "ref"; parens (typ s) ]
-    | TSource s -> horz [ text "source"; parens (typ s) ]
+    | TSource s -> horz [ text "const"; parens (typ s) ]
     | TSink s -> horz [ text "sink"; parens (typ s) ]
     | TForall (x, s, t) -> 
         horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
     | TRec (x, t) -> parens (horz [ text "trec"; (horz [text x; text "."; typ t ] ) ])
     | TId x -> text ("'" ^ x)
     | TField -> text "field"
+    | T_ -> text "_"
     | TBad -> text "BAD"
 
   and field (x, t) =

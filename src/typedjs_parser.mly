@@ -11,7 +11,7 @@ open Typedjs_types
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
        CHECKED CHEAT HASHPROTO TREC TYPE EQUALS BOT CODE REF OBJCAST
-       DOTS CONST CASH CARET SEMI BAD
+       DOTS CONST CASH CARET SEMI BAD UNDER
 
 %right UNION
 
@@ -34,6 +34,7 @@ field
   | STRING COLON typ { ($1, TRef $3) }
   | ID COLON CONST typ { ($1, TSource $4) }
   | STRING COLON CONST typ { ($1, TSource $4) }
+  | ID COLON UNDER { ($1, T_) }
 
 fields
   : { [] }
@@ -43,12 +44,15 @@ fields
 
 proto
   : HASHPROTO COLON typ { $3 }
+  | HASHPROTO COLON UNDER { T_ }
 
 star
   : STAR COLON typ { TRef $3 }
+  | STAR COLON UNDER { T_ }
 
 code
-  : CODE COLON typ { $3 }
+  : CODE COLON UNDER { T_ }
+  | CODE COLON typ { $3 }
 
 strs
   : { [] }
@@ -67,6 +71,7 @@ arg_typ
   | LBRACE fields RBRACE { TObject $2 }
   | LBRACE fields proto COMMA star COMMA code RBRACE { TObjStar ($2, $3, $5, $7) }
   | LBRACE star COMMA proto COMMA code SEMI fields RBRACE { TObjStar ($8, $4, $2, $6) }
+  | LBRACE star COMMA proto SEMI fields RBRACE { TObjStar ($6, $4, $2, T_) }
   | CASH LBRACE strs RBRACE { TStrSet $3 }
   | CASH CARET LBRACE strs RBRACE { TStrMinus $4 }
   | LPAREN typ RPAREN { $2 }

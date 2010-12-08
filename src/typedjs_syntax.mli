@@ -41,6 +41,7 @@ type typ =
   | TSink of typ
   | TTop
   | TBot
+  | T_
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TRec of id * typ
   | TId of id

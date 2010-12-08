@@ -64,6 +64,12 @@ module Env : sig
 
   val diff : env -> env -> env
 
+  val typ_or_abs : typ -> typ
+
+  val string_in_typ : typ -> string -> bool
+
+  val subtract_strings : typ -> string list -> typ
+
   val normalize_typ : env -> typ -> typ
 
   module Pretty : sig
