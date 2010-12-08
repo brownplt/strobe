@@ -167,7 +167,7 @@ var ADSAFE = (function () /*:  -> Any */ {
 
     function owns(object, string) /*: Any * Any -> Bool */ {
         return object && typeof object === 'object' &&
-	    /*: cheat Bool */ (Object.prototype.hasOwnProperty.call(object, string_check(string)));
+            Object.prototype.hasOwnProperty.call(object, string_check(string));
     }
 
     //  Firefox implemented some of its array methods carelessly. If a method is
@@ -1828,7 +1828,7 @@ var ADSAFE = (function () /*:  -> Any */ {
         //  ADSAFE.isArray returns true if the operand is an array.
 
         isArray: Array.isArray || function (value) /*: 'Ad -> Bool */{
-            return /*: cheat Bool */ (Object.prototype.toString.apply(value) === '[object Array]');
+            return Object.prototype.toString.apply(value) === '[object Array]';
         },
 
         //  ADSAFE.later calls a function at a later time.
