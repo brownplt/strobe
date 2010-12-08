@@ -378,7 +378,14 @@ var ADSAFE = (function () /*:  -> Any */ {
 //  to a widget. The library provides a name and a function. The result of
 //  calling that function will be made available to the widget via the name.
 
-//        lib: lib,
+        lib: function (name, f) 
+        /*: 'Ad * 'Ad -> 'Ad */
+        {
+            if (reject_name(name)) {
+	        return error("ADsafe lib violation.");
+            }
+            adsafe_lib[name] = f(adsafe_lib);
+        },
 
 //  ADSAFE.log is a debugging aid that spams text to the browser's log.
 
