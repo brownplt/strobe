@@ -205,7 +205,7 @@ var ADSAFE = (function () /*:  -> Any */ {
     name /*: upcast Undef + Str */,
     pecker /*: upcast Undef + 'Pecker */, 
     result /*: upcast Undef + Array<HTMLElement + Undef> */,
-    star = false, // Init so the type checker knows it's a bool
+    star /*: upcast Undef + Bool */,
     the_range /*: upcast Undef + Range */ ,
     value /*: upcast Undef + Str */;
 
@@ -342,7 +342,7 @@ var ADSAFE = (function () /*:  -> Any */ {
     }
 
     function parse_query(text_in, id) 
-    /*: 'Ad * Str + Undef -> Array<'Selector> + Undef */
+    /*: 'Ad * Str + Null + Undef -> Array<'Selector> + Undef */
     {
 
         // Convert a query string into an array of op/name/value selectors.
@@ -680,7 +680,7 @@ var ADSAFE = (function () /*:  -> Any */ {
     }
 
     function make_root(root, id) 
-    /*:   HTMLElement + Undef + Null 
+    /*:   HTMLElement + Undef 
         * Str + Null + Undef 
        -> 'Ad */ 
     {
@@ -696,7 +696,7 @@ var ADSAFE = (function () /*:  -> Any */ {
         }
 
         var allow_focus = true,
-        dom,
+        dom /*: upcast 'Ad */,
         dom_event = function (e) /*: Event -> Undef */ {
             var key /*: upcast Undef + Str */,
 
@@ -955,13 +955,834 @@ var ADSAFE = (function () /*:  -> Any */ {
                 }
                 return error();
             },
+            empty: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
+                if (value instanceof Array) {
+                    if (value.length !== b.length) {
+                        return error('ADsafe: Array length: ' +
+                                     b.length + '-' + value.length);
+                    }
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        while (node.firstChild) {
+                            purge_event_handlers(node);
+                            node.removeChild(node.firstChild);
+                        }
+                    }
+                } else {
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        while (node.firstChild) {
+                            purge_event_handlers(node);
+                            node.removeChild(node.firstChild);
+                        }
+                    }
+                }
+                return this;
+            },
+            enable: function (enable) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
+                if (enable instanceof Array) {
+                    if (enable.length !== b.length) {
+                        return error('ADsafe: Array length: ' +
+                                     b.length + '-' + enable.length);
+                    }
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            node.disabled = !enable[i];
+                        }
+                    }
+                } else {
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            node.disabled = !enable;
+                        }
+                    }
+                }
+                return this;
+            },
+            ephemeral: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                if (ephemeral) {
+                    ephemeral.remove();
+                }
+                ephemeral = this;
+                return this;
+            },
+            explode: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
+                for (i = 0; i < b.length; i += 1) {
+                    a[i] = /*: obj* 'AdObj */ (new Bunch([b[i]]));
+                }
+                return a;
+            },
+            fire: function (event) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
 
+                // Fire an event on an object. The event can be either
+                // a string containing the name of the event, or an
+                // object containing a type property containing the
+                // name of the event. Handlers registered by the 'on'
+                // method that match the event name will be invoked.
 
+                var array /*: upcast Undef + Array<['Ad + HTMLWindow] 'Ad ... -> 'Ad> */,
+                b /*: upcast Undef + Array<HTMLElement + Undef> */,
+                i = 0,
+                j = 0,
+                n = 0,
+                node /*: upcast  HTMLElement + Undef */,
+                on /*: upcast 'Handler + Undef */,
+                type /*: upcast 'Ad */,
+                check_typ /*: upcast Any */;
 
+                if (this.window) {
+                    return error();
+                }
+                if (typeof event === 'string') {
+                    type = event;
+                    event = /*: obj* 'AdObj */ {type: /*: upcast 'Ad */ type};
+                } else if (typeof event === 'object') {
+                    type = event.type;
+                } else {
+                    return error();
+                }
+                b = this.___nodes___;
+                n = b.length;
+                for (i = 0; i < n; i += 1) {
+                    node = b[i];
+                    on = node['___ on ___'];
 
-            
+                    // If an array of handlers exist for this event, then
+                    // loop through it and execute the handlers in order.
 
+                    if (owns(on, type)) {
+                        array = on[safe_name(type)];
+                        for (j = 0; j < array.length; j += 1) {
+
+                            // Invoke a handler. Pass the event object.
+
+                            /*: cheat 'Ad */ (array[j].call(this, event));
+                        }
+                    }
+                }
+                return this;
+            },
+            focus: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var b = this.___nodes___;
+                if (b.length === 1 && allow_focus) {
+	            has_focus = b[0].focus();
+	            return this;
+                }
+                error();
+            },
+            // Probably the worst case of annotation
+            fragment: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ 
+                    (document.createDocumentFragment())]));
+            },
+            getCheck: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
+                for (i = 0; i < b.length; i += 1) {
+                    a[i] = b[i].checked;
+                }
+                return a.length === 1 ? a[0] : a;
+            },
+            getClass: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
+                for (i = 0; i < b.length; i += 1) {
+                    a[i] = b[i].className;
+                }
+                return a.length === 1 ? a[0] : a;
+            },
+            getMark: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
+                for (i = 0; i < b.length; i += 1) {
+                    a[i] = b[i]['_adsafe mark_'];
+                }
+                return a.length === 1 ? a[0] : a;
+            },
+            getName: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
+                for (i = 0; i < b.length; i += 1) {
+                    a[i] = b[i].name;
+                }
+                return a.length === 1 ? a[0] : a;
+            },
+
+            getOffsetHeight: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
+                for (i = 0; i < b.length; i += 1) {
+                    a[i] = b[i].offsetHeight;
+                }
+                return a.length === 1 ? a[0] : a;
+            },
+            getOffsetWidth: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
+                for (i = 0; i < b.length; i += 1) {
+                    a[i] = b[i].offsetWidth;
+                }
+                return a.length === 1 ? a[0] : a;
+            },
+            getParent: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var a = /*: HTMLElement + Undef */ [], b = this.___nodes___, i = 0, n /*: upcast Undef + HTMLElement */;
+                for (i = 0; i < b.length; i += 1) {
+                    n = b[i].parentNode;
+                    if (n['___adsafe root___']) {
+                        return error('ADsafe parent violation.');
+                    }
+                    a[i] = n;
+                }
+                return /*: obj* 'AdObj */ (new Bunch(a));
+            },
+            getSelection: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var b = this.___nodes___, 
+                    end = 0, 
+                    node /*: upcast Undef + HTMLElement */, 
+                    start = 0, 
+                    range /*: upcast Undef + Range */;
+                if (b.length === 1 && allow_focus) {
+                    node = b[0];
+                    if (typeof node.selectionStart === 'number') {
+                        start = node.selectionStart;
+                        end = node.selectionEnd;
+                        return node.value.slice(start, end);
+                    } else {
+                        range = node.createTextRange();
+                        range.expand('textedit');
+                        if (range.inRange(the_range)) {
+                            return the_range.text;
+                        }
+                    }
+                }
+                return null;
+            },
+            getStyle: function(name) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (reject_name(name)) {
+	            return error("ADsafe style violation.");
+                }
+                var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), 
+                    b = this.___nodes___, 
+                    i = 0, 
+                    node /*: upcast Undef + HTMLElement */, 
+                    s /*: upcast Any */;
+                for (i = 0; i < b.length; i += 1) {
+                    node = b[i];
+                    if (node.tagName) {
+                        s = name !== 'float' ? getStyleObject(node)[name] :
+		            getStyleObject(node).cssFloat ||
+                            getStyleObject(node).styleFloat;
+	                if (typeof s === 'string') {
+		            a[i] = s;
+	                }
+                    }
+                }
+                return a.length === 1 ? a[0] : a;
+            },
+            getTagName: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                var a = /*: obj* 'AdObj*/ (/*: 'Ad */ []), b = this.___nodes___, i = 0, name /*: upcast Undef + Str */;
+                for (i = 0; i < b.length; i += 1) {
+                    name = b[i].tagName;
+                    a[i] = typeof name === 'string' ? name.toLowerCase() : name;
+                }
+                return a.length === 1 ? a[0] : a;
+            },
+            getTitle: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), 
+                b = this.___nodes___, 
+                i = 0;
+                for (i = 0; i < b.length; i += 1) {
+                    a[i] = b[i].title;
+                }
+                return a.length === 1 ? a[0] : a;
+            },
+            getValue: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, 
+                i = 0, 
+                node /*: upcast Undef + HTMLElement */;
+                for (i = 0; i < b.length; i += 1) {
+                    node = b[i];
+                    if (node.nodeName === '#text') {
+                        a[i] = node.nodeValue;
+                    } else if (node.tagName && node.type !== 'password') {
+                        a[i] = node.value;
+                        if (a[i] === undefined && node.firstChild &&
+                            node.firstChild.nodeName === '#text') {
+                            a[i] = node.firstChild.nodeValue;
+                        }
+                    }
+                }
+                return a.length === 1 ? a[0] : a;
+            },
+            klass: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error('ADsafe error.');
+                }
+                if (/url/i.test(string_check(value))) {
+                    return error('Adsafe string violation');
+                }
+                var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
+                if (value instanceof Array) {
+                    if (value.length !== b.length) {
+                        return error('ADsafe: Array length: ' +
+                                     b.length + '-' + value.length);
+                    }
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            node.className = String(value[i]);
+                        }
+                    }
+                } else {
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            node.className = String(value);
+                        }
+                    }
+                }
+                return this;
+            },
+            mark: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error('ADsafe error.');
+                }
+                if (/url/i.test(string_check(value))) {
+                    return error('ADsafe error.');
+                }
+                var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
+                if (value instanceof Array) {
+                    if (value.length !== b.length) {
+                        return error('ADsafe: Array length: ' +
+                                     b.length + '-' + value.length);
+                    }
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            node['_adsafe mark_'] = String(value[i]);
+                        }
+                    }
+                } else {
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            node['_adsafe mark_'] = String(value);
+                        }
+                    }
+                }
+                return this;
+            },
+            off: function(type) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error('ADsafe error');
+                }
+                var b = this.___nodes___, i=0, node/*: upcast Undef + HTMLElement */;
+                for (i = 0; i < b.length; i += 1) {
+                    node = b[i];
+                    if (typeof type === 'string') {
+                        if (node['___ on ___']) { // BUG: typeof always returns something
+                            node['___ on ___'][safe_name(type)] = undefined;
+                        }
+                    } else {
+                        node['___ on ___'] = undefined;
+                    }
+                }
+                return this;
+            },
+            on: function(type, func) /*: ['Ad + HTMLWindow] 'Ad * 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error('ADsafe error');
+                }
+                if (reject_name(type)) {
+                    return error("ADsafe event type violation");
+                }
+                if (typeof func !== 'function') {
+                    return error();
+                }
+                var b = this.___nodes___, 
+                i = 0, 
+                node /*: upcast Undef + HTMLElement */, 
+                on /*: upcast Undef + 'Handler */, 
+                ontype /*: upcast Undef + Str */;
+
+                for (i = 0; i < b.length; i += 1) {
+                    node = b[i];
+
+                    // The change event does not propogate, so we must put the handler on the
+                    // instance.
+
+                    if (type === 'change') {
+                        if (node.onchange !== dom_event) {
+                            node.onchange = dom_event;
+                        }
+                    }
+
+                    // Register an event. Put the function in a handler array, making one if it
+                    // doesn't yet exist for this type on this node.
+
+                    on = node['___ on ___'];
+                    if (!on) {
+                        on = (/*: obj* 'Handler */ {});
+                        node['___ on ___'] = on;
+                    }
+                    if (owns(on, type)) {
+                        on[type].push(func);
+                    } else {
+                        on[type] = [func];
+                    }
+                }
+                return this;
+            },
+            protect: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error('ADsafe error.');
+                }
+                var b = this.___nodes___, i = 0;
+                for (i = 0; i < b.length; i += 1) {
+                    b[i]['___adsafe root___'] = '___adsafe root___';
+                }
+                return this;
+            },
+            q: function(text) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                star = this.___star___;
+                return /*: obj* 'AdObj */ (new Bunch(
+                    quest(parse_query(text, id), 
+                          this.___nodes___)));
+            },
+            remove: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error('ADsafe error.');
+                }
+                this.replace();
+            },
+
+            replace: function(replacement) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var b = this.___nodes___,
+                flag = false,
+                i = 0,
+                j = 0,
+                newnode /*: upcast HTMLElement + Undef */,
+                node /*: upcast HTMLElement + Undef */,
+                parent /*: upcast HTMLElement + Undef */,
+                rep /*: upcast Undef + Array<HTMLElement + Undef> */;
+                if (b.length === 0) {
+                    return;
+                }
+                for (i = 0; i < b.length; i += 1) {
+                    purge_event_handlers(b[i]);
+                }
+                if (!replacement ||
+                    replacement.length === 0 ||
+                    (replacement.___nodes___ &&
+	             replacement.___nodes___.length === 0)) {
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        purge_event_handlers(node);
+                        if (node.parentNode) {
+                            node.parentNode.removeChild(node);
+                        }
+                    }
+                } else if (replacement instanceof Array) {
+                    if (replacement.length !== b.length) {
+                        return error('ADsafe: Array length: ' +
+                                     b.length + '-' + value.length);
+                    }
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        parent = node.parentNode;
+                        purge_event_handlers(node);
+                        if (parent) {
+                            rep = replacement[i].___nodes___;
+                            if (rep.length > 0) {
+                                newnode = rep[0];
+                                parent.replaceNode(newnode);
+                                for (j = 1; j < rep.length; j += 1) {
+                                    node = newnode;
+                                    newnode = rep[j];
+                                    parent.insertBefore(newnode, node.nextSibling);
+                                }
+                            } else {
+                                parent.removeChild(node);
+                            }
+                        }
+                    }
+                } else {
+                    rep = replacement.___nodes___;
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        purge_event_handlers(node);
+                        if (node.parentNode) {
+                            newnode = flag ? rep[0].cloneNode(true) : rep[0];
+                            parent.replaceNode(newnode);
+                            for (j = 1; j < rep.length; j += 1) {
+                                node = newnode;
+                                newnode = flag ? rep[j].clone(true) : rep[j];
+                                parent.insertBefore(newnode, node.nextSibling);
+                            }
+                            flag = true;
+                        }
+                    }
+                }
+                return this;
+            },
+            select: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var b = this.___nodes___;
+                if (b.length !== 1 || !allow_focus) {
+                    return error();
+                }
+                b[0].focus();
+                b[0].select();
+                return this;
+            },
+            selection: function(string_in) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var b = this.___nodes___, 
+                end = 0, 
+                node /*: upcast Undef + HTMLElement */, 
+                old /*: upcast Undef + Str */, 
+                start = 0, 
+                range /*: upcast Undef + Range */,
+                string = string_check(string_in); // satisfying the type checker
+                if (b.length === 1 && allow_focus) {
+                    node = b[0];
+                    if (typeof node.selectionStart === 'number') {
+                        start = node.selectionStart;
+                        end = node.selectionEnd;
+                        old = node.value;
+                        node.value = old.slice(0, start) + string + old.slice(end);
+                        node.selectionStart = node.selectionEnd = start +
+                            string.length;
+                        node.focus();
+                    } else {
+                        range = node.createTextRange();
+                        range.expand('textedit');
+                        if (range.inRange(the_range)) {
+                            the_range.select();
+                            the_range.text = string;
+                            the_range.select();
+                        }
+                    }
+                }
+                return this;
+            },
+            style: function(name, value) /*: ['Ad + HTMLWindow] 'Ad * 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                if (reject_name(name)) {
+	            return error("ADsafe style violation.");
+                }
+                if (value === undefined || /url/i.test(string_check(value))) {
+                    return error();
+                }
+                var b = this.___nodes___,
+                i = 0,
+                node /*: upcast Undef + HTMLElement */,
+                v = "";
+                if (value instanceof Array) {
+                    if (value.length !== b.length) {
+                        return error('ADsafe: Array length: ' +
+                                     b.length + '-' + value.length);
+                    }
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+	                v = string_check(value[i]);
+                        if (node.tagName) {
+                            if (name !== 'float') {
+                                node.style[name] = v;
+                            } else {
+                                node.style.cssFloat = node.style.styleFloat = v;
+                            }
+                        }
+                    }
+                } else {
+	            v = String(value);
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            if (name !== 'float') {
+                                node.style[name] = v;
+                            } else {
+                                node.style.cssFloat = node.style.styleFloat = v;
+                            }
+                        }
+                    }
+                }
+                return this;
+            },
+            tag: function(tag, type, name) /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad-> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var node /*: upcast HTMLElement + Undef */ ;
+                if (reject_name(tag)) {
+                    return error("ADsafe tag violation");
+                }
+                node = document.createElement(makeableTagName[tag]);
+                if (name) {
+                    node.autocomplete = 'off';
+                    node.name = string_check(name);
+                }
+                if (type) {
+                    node.type = string_check(type);
+                }
+                return /*: obj* 'AdObj */ (new Bunch([node]));
+            },
+            text: function(text) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                var a /*: upcast Undef + Array<HTMLElement + Undef> */, i = 0;
+                if (text instanceof Array) {
+                    a = /*: HTMLElement + Undef*/ [];
+                    for (i = 0; i < Number(text.length); i += 1) {
+                        a[i] = document.createTextNode(String(text[i]));
+                    }
+                    return /*: obj* 'AdObj */ (new Bunch(a));
+                }
+                return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ 
+                    (document.createTextNode(String(text)))]));
+            },
+            title: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var b = this.___nodes___, 
+                i = 0,
+                node /*: upcast Undef + HTMLElement */;
+                if (value instanceof Array) {
+                    if (value.length !== b.length) {
+                        return error('ADsafe: Array length: ' + b.length +
+                                     '-' + value.length);
+                    }
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            node.title = string_check(value[i]);
+                        }
+                    }
+                } else {
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            node.title = string_check(value);
+                        }
+                    }
+                }
+                return this;
+            },
+            value: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                if (value === undefined) {
+                    return error();
+                }
+                var b = this.___nodes___, 
+                i = 0,
+                node /*: upcast Undef + HTMLElement */;
+
+                if (value instanceof Array && b.length === value.length) {
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            if (node.type !== 'password') {
+                                if (typeof node.value === 'string') {
+                                    node.value = string_check(value[i]);
+                                } else {
+                                    while (node.firstChild) {
+                                        purge_event_handlers(node); 
+                                        node.removeChild(node.firstChild);
+                                    }
+                                    node.appendChild(document.createTextNode(
+                                        string_check(value[i])));
+                                }
+                            }
+                        } else if (node.nodeName === '#text') {
+                            node.nodeValue = String(value[i]);
+                        }
+                    }
+                } else {
+                    value = String(value);
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            if (typeof node.value === 'string') {
+                                node.value = string_check(value); // modified from adsafe
+                            } else {
+                                while (node.firstChild) {
+                                    purge_event_handlers(node);
+                                    node.removeChild(node.firstChild);
+                                }
+                                node.appendChild(document.createTextNode(string_check(value))); // modified from adsafe
+                            }
+                        } else if (node.nodeName === '#text') {
+                            node.nodeValue = String(value);
+                        }
+                    }
+                }
+                return this;
+            }
         };
+
+        dom = /*: obj* 'AdObj */ {
+            q: /*:upcast 'Ad */ (/*: obj* 'AdObj */ (function (text) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+                star = false;
+                var query = parse_query(text, id);
+                if (typeof hunter[query[0].op] !== 'function') {
+                    return error('ADsafe: Bad query: ' + query[0]);
+                }
+                return /*: obj* 'AdObj */ (new Bunch(quest(query, [root])));
+            })),
+            combine: /*:upcast 'Ad */ (/*: obj* 'AdObj */ (function (array) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+                if (!array || !array.length) {
+                    return error('ADsafe: Bad combination.');
+                }
+                var b = array[0].___nodes___, i = 0;
+                for (i = 0; i < array.length; i += 1) {
+                    b = b.concat(array[i].___nodes___);
+                }
+                return /*: obj* 'AdObj */ (new Bunch(b));
+            })),
+            count: /*: upcast 'Ad */ (/*: obj* 'AdObj */ (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
+                return 1;
+            })),
+            ephemeral: /*: upcast 'Ad */ (/*: obj* 'AdObj */ (function (bunch) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+                if (ephemeral) {
+                    ephemeral.remove();
+                }
+                ephemeral = bunch;
+                return dom;
+            })),
+            fragment: /*:upcast 'Ad */ (/*: obj* 'AdObj */ (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
+                return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ (document.createDocumentFragment())]));
+            })),
+            remove: /*: upcast 'Ad */ (/*: obj* 'AdObj */ (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
+                purge_event_handlers(root);
+                root.parent.removeElement(root);
+                root = undefined;
+            })),
+            tag: /*: upcast 'Ad */ 
+            (/*: obj* 'AdObj */ 
+                (function (tag, type, name) 
+                 /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad * 'Ad ... -> 'Ad */ 
+                 {
+                     var node /*: upcast Undef + HTMLElement */;
+                     if (typeof tag !== 'string') {
+                         return error();
+                     }
+                     if (makeableTagName[tag] !== true) {
+                         return error('ADsafe: Bad tag: ' + tag);
+                     }
+                     node = document.createElement(makeableTagName[safe_name(tag)]);
+                     if (name) {
+                         node.autocomplete = 'off';
+                         node.name = string_check(name);
+                     }
+                     if (type) {
+                         node.type = string_check(type);
+                     }
+                     return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ node]));
+                 })),
+            text: /*: upcast 'Ad */ 
+            (/*: obj* 'AdObj */ 
+                (function (text) 
+                 /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+                     var a /*: upcast Undef + Array<HTMLElement + Undef> */, i = 0;
+                     if (text instanceof Array) {
+                         a = /*: HTMLElement + Undef */ [];
+                         for (i = 0; i < text.length; i += 1) {
+                             a[i] = document.createTextNode(String(text[i]));
+                         }
+                         return /*: obj* 'AdObj */ (new Bunch(a));
+                     }
+                     return /*: obj* 'AdObj */ (new Bunch(
+                         [/*: upcast HTMLElement + Undef */ 
+                             (document.createTextNode(String(text)))]));
+                 })),
+            append: /*: upcast 'Ad */ 
+            (/*: obj* 'AdObj */ 
+                (function (bunch) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+                    var b = bunch.___nodes___, i = 0, n /*: upcast Undef + HTMLElement */;
+                    for (i = 0; i < b.length; i += 1) {
+                        n = b[i];
+                        // This is not possible.  n is a node or undefined.
+//                        if (typeof n === 'string' || typeof n === 'number') {
+//                            n = document.createTextNode(String(n));
+//                        }
+                        root.appendChild(n);
+                    }
+                    return dom;
+                })),
+            prepend: /*: upcast 'Ad */ 
+            (/*: obj* 'AdObj */ 
+                (function (bunch) 
+                 /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+                     var b = bunch.___nodes___, i = 0;
+                     for (i = 0; i < b.length; i += 1) {
+                         root.insertBefore(b[i], root.firstChild);
+                     }
+                     return dom;
+                 })),
+            row: /*: upcast 'Ad */ 
+            (/*: obj* 'AdObj */ 
+                (function (values) 
+                 /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+                     var tr = document.createElement('tr'),
+                     td /*: upcast Undef + HTMLElement */,
+                     i = 0;
+                     for (i = 0; i < values.length; i += 1) {
+                         td = document.createElement('td');
+                         td.appendChild(document.createTextNode(String(values[i])));
+                         tr.appendChild(td);
+                     }
+                     return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ tr]));
+                 }))
+        };
+
         // Mark the node as a root. This prevents event bubbling from propogating
         // past it.
 
