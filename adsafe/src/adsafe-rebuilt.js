@@ -858,6 +858,110 @@ var ADSAFE = (function () /*:  -> Any */ {
             return;
         };
 
+        var Bunch_prototype = {
+            append : function(appendage) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var b = this.___nodes___,
+                flag = false,
+                i = 0,
+                j = 0,
+                node /*: upcast Undef + HTMLElement */,
+                rep /*: upcast Undef + Array<HTMLElement + Undef> */;
+                if (b.length === 0 || !appendage) {
+                    return this;
+                }
+                if (appendage instanceof Array) {
+                    if (appendage.length !== b.length) {
+                        return error('ADsafe: Array length: ' +
+                                     b.length + '-' + value.length);
+                    }
+                    for (i = 0; i < b.length; i += 1) {
+                        rep = appendage[i].___nodes___;
+                        for (j = 0; j < rep.length; j += 1) {
+                            b[i].appendChild(rep[j]);
+                        }
+                    }
+                } else {
+                    rep = appendage.___nodes___;
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        for (j = 0; j < rep.length; j += 1) {
+                            node.appendChild(flag ?
+                                             rep[j].cloneNode(true) : rep[j]);
+                        }
+                        flag = true;
+                    }
+                }
+                return this;
+            },   
+            blur : function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
+                has_focus = null;
+                for (i = 0; i < b.length; i += 1) {
+                    node = b[i];
+                    if (node.blur) {
+                        node.blur();
+                    }
+                }
+                return this;
+            },
+            check : function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
+                if (value instanceof Array) {
+                    if (value.length !== b.length) {
+                        return error('ADsafe: Array length: ' +
+                                     b.length + '-' + value.length);
+                    }
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            node.checked = !!value[i];
+                        }
+                    }
+                } else {
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            node.checked = !!value;
+                        }
+                    }
+                }
+                return this;
+            },
+            count : function () /*: ['Ad + HTMLWindow] -> Int */ {
+                if (this.window) {
+                    return error();
+                }
+                return this.___nodes___.length;
+            },
+            each : function(func) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) {
+                    return error();
+                }
+                var b = this.___nodes___, i = 0;
+                if (typeof func === 'function') {
+                    for (i = 0; i < b.length; i += 1) {
+                        func(/*: obj* 'AdObj */ (new Bunch([b[i]])));
+                    }
+                    return this;
+                }
+                return error();
+            },
+
+
+
+
+            
+
+        };
         // Mark the node as a root. This prevents event bubbling from propogating
         // past it.
 
