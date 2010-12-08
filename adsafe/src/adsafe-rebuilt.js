@@ -325,7 +325,7 @@ var ADSAFE = (function () /*:  -> Any */ {
 
 //  Return the ADSAFE object.
 
-    return /*: obj* 'AdObj */ {
+    return {
 
 //        create: typeof Object.create === 'function' ? Object.create : function (o) {
 //            F.prototype = typeof o === 'object' && o ? o : Object.prototype;
@@ -334,17 +334,15 @@ var ADSAFE = (function () /*:  -> Any */ {
 
 //  ADSAFE.get retrieves a value from an object.
 
-        get: 
-        /*: upcast 'Ad */
-        (/*: obj* 'AdObj */ (function(object, name) 
-            /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad ... -> 'Ad */ 
-            {
-                if (typeof object !== "object") { return error(); }
-                if (!reject_name(name)) {
-                    return object[name];
-                }
-                return error();
-            })),
+        get: function(object, name) 
+        /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad ... -> 'Ad */ 
+        {
+            if (typeof object !== "object") { return error(); }
+            if (!reject_name(name)) {
+                return object[name];
+            }
+            return error();
+        },
 
 
 //  ADSAFE.go allows a guest widget to get access to a wrapped dom node and
@@ -384,22 +382,28 @@ var ADSAFE = (function () /*:  -> Any */ {
 
 //  ADSAFE.log is a debugging aid that spams text to the browser's log.
 
-//        log: log,
-
+        log: function(s) 
+        /*: Str -> Undef */ 
+        {
+            if (window.console) {
+                console.log(s);        /* Firebug */
+            } else if (typeof Debug === 'object') {
+                Debug.writeln(s);      /* IE */
+            }
+        },
+        
 //        remove: ADSAFE_remove,
 
-        set: /*: upcast 'Ad */
-        (/*: obj* 'AdObj */
-            (function(object, name, value) 
-             /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad * 'Ad ... -> 'Ad */
-             {
-                 if (typeof object !== "object") { return error(); }
-                 if (!reject_name(name)) {
-                     object[name] = value;
-                     return;
-                 }
-                 return error();
-             })),
+        set: function(object, name, value) 
+        /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad * 'Ad ... -> 'Ad */
+        {
+            if (typeof object !== "object") { return error(); }
+            if (!reject_name(name)) {
+                object[name] = value;
+                return;
+            }
+            return error();
+        },
 
 //  ADSAFE._intercept allows the page to register a function that will
 //  see the widget's capabilities.
