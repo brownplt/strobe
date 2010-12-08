@@ -1791,16 +1791,19 @@ var ADSAFE = (function () /*:  -> Any */ {
         return dom;
     }
 
-    //    function F() {}
+    function F() /*: -> Undef */ {}
 
     //  Return the ADSAFE object.
 
     return {
 
-        //        create: typeof Object.create === 'function' ? Object.create : function (o) {
-        //            F.prototype = typeof o === 'object' && o ? o : Object.prototype;
-        //            return new F();
-        //        },
+        // This function is... difficult to type
+        create: 
+        /*: cheat 'Ad */ (typeof Object.create === 'function' ? Object.create : 
+                          function (o) /*: 'Ad -> 'Ad */ {
+                              F.prototype = typeof o === 'object' && o ? o : Object.prototype;
+                              return new F();
+                          }),
 
         //  ADSAFE.get retrieves a value from an object.
 
@@ -1897,9 +1900,9 @@ var ADSAFE = (function () /*:  -> Any */ {
 
         //  ADSAFE.isArray returns true if the operand is an array.
 
-        //        isArray: Array.isArray || function (value) {
-        //            return Object.prototype.toString.apply(value) === '[object Array]';
-        //        },
+        isArray: Array.isArray || function (value) /*: 'Ad -> Bool */{
+            return /*: cheat Bool */ (Object.prototype.toString.apply(value) === '[object Array]');
+        },
 
         //  ADSAFE.later calls a function at a later time.
 
@@ -1938,6 +1941,9 @@ var ADSAFE = (function () /*:  -> Any */ {
             }
         },
         
+        //  Field deletion breaks the soundness of our type system, so we
+        //  don't allow it.  Anecdotal evidence suggests that deletion is
+        //  not commonly used in JS.
         //        remove: ADSAFE_remove,
 
         set: function(object, name, value) 
