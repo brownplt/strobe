@@ -1,11 +1,11 @@
 var ADSAFE = (function () /*:  -> Any */ {
 
     var adsafe_lib /*: upcast Undef + 'Ad */,
-        adsafe_id /*: upcast Undef + Str + Null */,
+    adsafe_id /*: upcast Undef + Str + Null */,
 
-// These member names are banned from guest scripts. The ADSAFE.get and
-// ADSAFE.put methods will not allow access to these properties.
-        banned = 
+    // These member names are banned from guest scripts. The ADSAFE.get and
+    // ADSAFE.put methods will not allow access to these properties.
+    banned = 
         /*: obj* {arguments     : Bool,
                   callee        : Bool,
                   caller        : Bool,
@@ -17,31 +17,31 @@ var ADSAFE = (function () /*:  -> Any */ {
                   valueOf       : Bool,
                   watch         : Bool,
                   #proto: Object, *:Bot, #code: Bot} */
-        {
-            'arguments'     : true,
-            callee          : true,
-            caller          : true,
-            constructor     : true,
-            'eval'          : true,
-            prototype       : true,
-            stack	    : true,
-            unwatch         : true,
-            valueOf         : true,
-            watch           : true
-        },
+    {
+        'arguments'     : true,
+        callee          : true,
+        caller          : true,
+        constructor     : true,
+        'eval'          : true,
+        prototype       : true,
+        stack	    : true,
+        unwatch         : true,
+        valueOf         : true,
+        watch           : true
+    },
 
-        cache_style_node /*: upcast Undef + HTMLElement */,
-        cache_style_object /*: upcast Undef + 'Style */,
-        defaultView = document.defaultView,
-        ephemeral /*: upcast 'Ad */,
-        flipflop = false,       // Used in :even/:odd processing
-        has_focus /*: upcast Undef + Null + HTMLElement */,
-        // Set of hunter patterns (a dictionary)
-        hunter /*: upcast Undef + 
+    cache_style_node /*: upcast Undef + HTMLElement */,
+    cache_style_object /*: upcast Undef + 'Style */,
+    defaultView = document.defaultView,
+    ephemeral /*: upcast 'Ad */,
+    flipflop = false,       // Used in :even/:odd processing
+    has_focus /*: upcast Undef + Null + HTMLElement */,
+    // Set of hunter patterns (a dictionary)
+    hunter /*: upcast Undef + 
                    {#proto: Object, *: HTMLElement + Undef -> Undef, #code: Undef} */ ,
-//        interceptors = [],
+    //        interceptors = [],
 
-        makeableTagName =
+    makeableTagName =
         /*: obj* {a         : ${"a"},
                   abbr      : ${"abbr"},
                   acronym   : ${"acronym"},
@@ -118,87 +118,87 @@ var ADSAFE = (function () /*:  -> Any */ {
                   *         : Bot,
                   #code     : Bot
               } */
-              {
-                  a         : "a",
-                  abbr      : "abbr",
-                  acronym   : "acronym",
-                  address   : "address",
-                  area      : "area",
-                  b         : "b",
-                  bdo       : "bdo",
-                  big       : "big",
-                  blockquote: "blockquote",
-                  br        : "br",
-                  button    : "button",
-                  canvas    : "canvas",
-                  caption   : "caption",
-                  center    : "center",
-                  cite      : "cite",
-                  code      : "code",
-                  col       : "col",
-                  colgroup  : "colgroup",
-                  dd        : "dd",
-                  del       : "del",
-                  dfn       : "dfn",
-                  dir       : "dir",
-                  div       : "div",
-                  dl        : "dl",
-                  dt        : "dt",
-                  em        : "em",
-                  fieldset  : "fieldset",
-                  font      : "font",
-                  form      : "form",
-                  h1        : "h1",
-                  h2        : "h2",
-                  h3        : "h3",
-                  h4        : "h4",
-                  h5        : "h5",
-                  h6        : "h6",
-                  hr        : "hr",
-                  i         : "i",
-                  img       : "img",
-                  input     : "input",
-                  ins       : "ins",
-                  kbd       : "kbd",
-                  label     : "label",
-                  legend    : "legend",
-                  li        : "li",
-                  map       : "map",
-                  menu      : "menu",
-                  object    : "object",
-                  ol        : "ol",
-                  optgroup  : "optgroup",
-                  option    : "option",
-                  p         : "p",
-                  pre       : "pre",
-                  q         : "q",
-                  samp      : "samp",
-                  select    : "select",
-                  small     : "small",
-                  span      : "span",
-                  strong    : "strong",
-                  sub       : "sub",
-                  sup       : "sup",
-                  table     : "table",
-                  tbody     : "tbody",
-                  td        : "td",
-                  textarea  : "textarea",
-                  tfoot     : "tfoot",
-                  th        : "th",
-                  thead     : "thead",
-                  tr        : "tr",
-                  tt        : "tt",
-                  u         : "u",
-                  ul        : "ul",
-                  'var'     : "var"
-              },
-              
-        name,
-        pecker,
-        result /*: upcast Undef + Array<HTMLElement + Undef> */,
-        star,          
-        the_range,
-        value /*: upcast Undef + Str */;
+    {
+        a         : "a",
+        abbr      : "abbr",
+        acronym   : "acronym",
+        address   : "address",
+        area      : "area",
+        b         : "b",
+        bdo       : "bdo",
+        big       : "big",
+        blockquote: "blockquote",
+        br        : "br",
+        button    : "button",
+        canvas    : "canvas",
+        caption   : "caption",
+        center    : "center",
+        cite      : "cite",
+        code      : "code",
+        col       : "col",
+        colgroup  : "colgroup",
+        dd        : "dd",
+        del       : "del",
+        dfn       : "dfn",
+        dir       : "dir",
+        div       : "div",
+        dl        : "dl",
+        dt        : "dt",
+        em        : "em",
+        fieldset  : "fieldset",
+        font      : "font",
+        form      : "form",
+        h1        : "h1",
+        h2        : "h2",
+        h3        : "h3",
+        h4        : "h4",
+        h5        : "h5",
+        h6        : "h6",
+        hr        : "hr",
+        i         : "i",
+        img       : "img",
+        input     : "input",
+        ins       : "ins",
+        kbd       : "kbd",
+        label     : "label",
+        legend    : "legend",
+        li        : "li",
+        map       : "map",
+        menu      : "menu",
+        object    : "object",
+        ol        : "ol",
+        optgroup  : "optgroup",
+        option    : "option",
+        p         : "p",
+        pre       : "pre",
+        q         : "q",
+        samp      : "samp",
+        select    : "select",
+        small     : "small",
+        span      : "span",
+        strong    : "strong",
+        sub       : "sub",
+        sup       : "sup",
+        table     : "table",
+        tbody     : "tbody",
+        td        : "td",
+        textarea  : "textarea",
+        tfoot     : "tfoot",
+        th        : "th",
+        thead     : "thead",
+        tr        : "tr",
+        tt        : "tt",
+        u         : "u",
+        ul        : "ul",
+        'var'     : "var"
+    },
+    
+    name,
+    pecker,
+    result /*: upcast Undef + Array<HTMLElement + Undef> */,
+    star,          
+    the_range,
+    value /*: upcast Undef + Str */;
 
     // The error function is called if there is a violation or confusion
     // Its return type is Bot because it *always* throws an exception.
@@ -206,7 +206,7 @@ var ADSAFE = (function () /*:  -> Any */ {
     // type T with a call to error() is equivalent to T.
 
     function error(message) /*: Str + Undef -> Bot */ {
-//        ADSAFE.log("ADsafe error: " + (message || "ADsafe violation."));
+        //        ADSAFE.log("ADsafe error: " + (message || "ADsafe violation."));
         throw {
             name: "ADsafe",
             message: (message || "ADsafe violation.")
@@ -234,16 +234,16 @@ var ADSAFE = (function () /*:  -> Any */ {
 	    /*: cheat Bool */ (Object.prototype.hasOwnProperty.call(object, string_check(string)));
     }
 
-//  Firefox implemented some of its array methods carelessly. If a method is
-//  called as a function it returns the global object. ADsafe cannot tolerate
-//  that, so we wrap the methods to make them safer and slower.
+    //  Firefox implemented some of its array methods carelessly. If a method is
+    //  called as a function it returns the global object. ADsafe cannot tolerate
+    //  that, so we wrap the methods to make them safer and slower.
 
     var mozilla = (/*: cheat trec f . Any -> 'f */ (function(name) /*: Any -> Any */ {
         var method = Array.prototype[name];
         Array.prototype[name] = function () /*: -> Any */ {
             return this.window ? error() : method.apply(this, /* arguments */);
         };
-//        return mozilla;
+        //        return mozilla;
     }))
     ('concat')
     ('every')
@@ -321,18 +321,128 @@ var ADSAFE = (function () /*:  -> Any */ {
                   );
     }
 
-//    function F() {}
+    function parse_query(text_in, id) 
+    /*: 'Ad * Str + Undef -> Array<'Selector> + Undef */
+    {
 
-//  Return the ADSAFE object.
+        // Convert a query string into an array of op/name/value selectors.
+        // A query string is a sequence of triples wrapped in brackets; or names,
+        // possibly prefixed by # . & > _, or :option, or * or /. A triple is a name,
+        // and operator (one of [=, [!=, [*=, [~=, [|=, [$=, or [^=) and a value.
+
+        // If the id parameter is supplied, then the name following # must have the
+        // id as a prefix and must match the ADsafe rule for id: being all uppercase
+        // letters and digits with one underbar.
+
+        // A name must be all lower case and may contain digits, -, or _.
+
+        var match /*: upcast Undef + Array<Str + Undef> */,          // A match array
+        query = /*: 'Selector */ [], // The resulting query array
+        selector /*: upcast Undef + 'Selector */,
+        qx = id ?
+            /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([A-Z]+_[A-Z0-9]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/ :
+            /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([\-A-Za-z0-9_]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/,
+        // Added by Joe.  Adding a new variable helps satisfy the type checker,
+        // which has trouble keeping track of just doing string_check(text).
+        text = string_check(text_in); 
+
+        // Loop over all of the selectors in the text.
+
+        do {
+
+            // The qx teases the components of one selector out of the text, ignoring
+            // whitespace.
+
+            //          match[0]  the whole selector
+            //          match[1]  * /
+            //          match[2]  attribute name
+            //          match[3]  = != *= ~= |= $= ^=
+            //          match[4]  attribute value
+            //          match[5]  # id
+            //          match[6]  : option
+            //          match[7]  . & _ > +
+            //          match[8]      name
+
+            match = qx.exec(text);
+            if (!match) {
+                return error("ADsafe: Bad query:" + text);
+            }
+
+            // Make a selector object and stuff it in the query.
+
+            if (match[1]) {
+
+                // The selector is * or /
+
+                selector = /*: obj* 'Selector */ {
+                    op: match[1]
+                };
+            } else if (match[2]) {
+
+                // The selector is in brackets.
+
+                selector = match[3] ? /*: obj* 'Selector */ {
+                    op: /*: upcast Str + Undef */ ('[' + match[3]),
+                    name: match[2],
+                    value: match[4]
+                } : /*: obj* 'Selector */ {
+                    op: /*: upcast Str + Undef */ '[',
+                    name: match[2]
+                };
+            } else if (match[5]) {
+
+                // The selector is an id.
+
+                if (query.length > 0 || match[5].length <= id.length ||
+                    match[5].slice(0, id.length) !== id) {
+                    return error("ADsafe: Bad query: " + text);
+                }
+                selector = /*: obj* 'Selector */ {
+                    op: /*: upcast Str + Undef */ '#',
+                    name: match[5]
+                };
+
+                // The selector is a colon.
+
+            } else if (match[6]) {
+                selector = /*: obj* 'Selector */ {
+                    op: /*: upcast Str + Undef */ (':' + match[6])
+                };
+
+                // The selector is one of > + . & _ or a naked tag name
+
+            } else {
+                selector = /*: obj* 'Selector */ {
+                    op: match[7],
+                    name: match[8]
+                };
+            }
+
+            // Add the selector to the query.
+
+            query.push(selector);
+
+            // Remove the selector from the text. If there is more text, have another go.
+
+            text = text.slice(match[0].length);
+        } while (text);
+        return query;
+    }
+
+
+
+    //    function F() {}
+
+    //  Return the ADSAFE object.
 
     return {
 
-//        create: typeof Object.create === 'function' ? Object.create : function (o) {
-//            F.prototype = typeof o === 'object' && o ? o : Object.prototype;
-//            return new F();
-//        },
+        //        create: typeof Object.create === 'function' ? Object.create : function (o) {
+        //            F.prototype = typeof o === 'object' && o ? o : Object.prototype;
+        //            return new F();
+        //        },
 
-//  ADSAFE.get retrieves a value from an object.
+        //  ADSAFE.get retrieves a value from an object.
 
         get: function(object, name) 
         /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad ... -> 'Ad */ 
@@ -345,38 +455,38 @@ var ADSAFE = (function () /*:  -> Any */ {
         },
 
 
-//  ADSAFE.go allows a guest widget to get access to a wrapped dom node and
-//  approved ADsafe libraries. It is passed an id and a function. The function
-//  will be passed the wrapped dom node and an object containing the libraries.
+        //  ADSAFE.go allows a guest widget to get access to a wrapped dom node and
+        //  approved ADsafe libraries. It is passed an id and a function. The function
+        //  will be passed the wrapped dom node and an object containing the libraries.
 
-//        go: ADSAFE_go,
+        //        go: ADSAFE_go,
 
-//  ADSAFE.id allows a guest widget to indicate that it wants to load
-//  ADsafe approved libraries.
+        //  ADSAFE.id allows a guest widget to indicate that it wants to load
+        //  ADsafe approved libraries.
 
-//        id: function (id) {
+        //        id: function (id) {
 
-//  Calls to ADSAFE.id must be balanced with calls to ADSAFE.go.
-//  Only one id can be active at a time.
+        //  Calls to ADSAFE.id must be balanced with calls to ADSAFE.go.
+        //  Only one id can be active at a time.
 
-//            if (adsafe_id) {
-//                return error();
-//            }
-//            adsafe_id = id;
-//            adsafe_lib = {};
-//        },
+        //            if (adsafe_id) {
+        //                return error();
+        //            }
+        //            adsafe_id = id;
+        //            adsafe_lib = {};
+        //        },
 
-//  ADSAFE.isArray returns true if the operand is an array.
+        //  ADSAFE.isArray returns true if the operand is an array.
 
-//        isArray: Array.isArray || function (value) {
-//            return Object.prototype.toString.apply(value) === '[object Array]';
-//        },
+        //        isArray: Array.isArray || function (value) {
+        //            return Object.prototype.toString.apply(value) === '[object Array]';
+        //        },
 
-//        later: later,
+        //        later: later,
 
-//  ADSAFE.lib allows an approved ADsafe library to make itself available
-//  to a widget. The library provides a name and a function. The result of
-//  calling that function will be made available to the widget via the name.
+        //  ADSAFE.lib allows an approved ADsafe library to make itself available
+        //  to a widget. The library provides a name and a function. The result of
+        //  calling that function will be made available to the widget via the name.
 
         lib: function (name, f) 
         /*: 'Ad * 'Ad -> 'Ad */
@@ -387,7 +497,7 @@ var ADSAFE = (function () /*:  -> Any */ {
             adsafe_lib[name] = f(adsafe_lib);
         },
 
-//  ADSAFE.log is a debugging aid that spams text to the browser's log.
+        //  ADSAFE.log is a debugging aid that spams text to the browser's log.
 
         log: function(s) 
         /*: Str -> Undef */ 
@@ -399,7 +509,7 @@ var ADSAFE = (function () /*:  -> Any */ {
             }
         },
         
-//        remove: ADSAFE_remove,
+        //        remove: ADSAFE_remove,
 
         set: function(object, name, value) 
         /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad * 'Ad ... -> 'Ad */
@@ -412,12 +522,12 @@ var ADSAFE = (function () /*:  -> Any */ {
             return error();
         },
 
-//  ADSAFE._intercept allows the page to register a function that will
-//  see the widget's capabilities.
+        //  ADSAFE._intercept allows the page to register a function that will
+        //  see the widget's capabilities.
 
-//        _intercept: function (f) {
-//            interceptors.push(f);
-//        }
+        //        _intercept: function (f) {
+        //            interceptors.push(f);
+        //        }
 
     };
 }());
