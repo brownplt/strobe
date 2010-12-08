@@ -206,7 +206,7 @@ var ADSAFE = (function () /*:  -> Any */ {
     // type T with a call to error() is equivalent to T.
 
     function error(message) /*: Str + Undef -> Bot */ {
-        //log("ADsafe error: " + (message || "ADsafe violation."));
+//        ADSAFE.log("ADsafe error: " + (message || "ADsafe violation."));
         throw {
             name: "ADsafe",
             message: (message || "ADsafe violation.")
@@ -388,7 +388,18 @@ var ADSAFE = (function () /*:  -> Any */ {
 
 //        remove: ADSAFE_remove,
 
-//        set: ADSAFE_set,
+        set: /*: upcast 'Ad */
+        (/*: obj* 'AdObj */
+            (function(object, name, value) 
+             /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad * 'Ad ... -> 'Ad */
+             {
+                 if (typeof object !== "object") { return error(); }
+                 if (!reject_name(name)) {
+                     object[name] = value;
+                     return;
+                 }
+                 return error();
+             })),
 
 //  ADSAFE._intercept allows the page to register a function that will
 //  see the widget's capabilities.
