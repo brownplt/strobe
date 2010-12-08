@@ -1819,22 +1819,81 @@ var ADSAFE = (function () /*:  -> Any */ {
         //  approved ADsafe libraries. It is passed an id and a function. The function
         //  will be passed the wrapped dom node and an object containing the libraries.
 
-        //        go: ADSAFE_go,
+        go: function (id, f) /*: Str * ('Ad * 'Ad -> 'Ad) -> Undef */ {
+            var dom /*: upcast 'Ad */, fun, root /*: upcast HTMLElement + Undef + Null */, i = 0, scripts /*: upcast Undef + Array<HTMLElement>*/;
+            
+            //  If ADSAFE.id was called, the id better match.
+            
+            if (adsafe_id && adsafe_id !== id) {
+                return error();
+            }
+            
+            //  Get the dom node for the widget's div container.
+            
+            root = document.getElementById(id);
+            if (root.tagName !== 'DIV') {
+                return error();
+            }
+            adsafe_id = null;
+            
+            //  Delete the scripts held in the div. They have all run, so we don't need
+            //  them any more. If the div had no scripts, then something is wrong.
+            //  This provides some protection against mishaps due to weakness in the
+            //  document.getElementById function.
+            
+            scripts = root.getElementsByTagName('script');
+            i = scripts.length - 1;
+            if (i < 0) {
+                return error();
+            }
+            do {
+                root.removeChild(scripts[i]);
+                i -= 1;
+            } while (i >= 0);
+            //    root = make_root(root, id);   // Change this to just return dom (ignoring interceptors)
+            if(root) { // need to satisfy type checker...this one's annoying
+                dom = make_root(root, id);
+            }
+            
+            
+            // If the page has registered interceptors, call them.
+            
+            //    for (i = 0; i < interceptors.length; i += 1) {
+            //        fun = interceptors[i];
+            //        if (typeof fun === 'function') {
+            //            try {
+            //                fun(id, dom, adsafe_lib, root[1]);
+            //            } catch (e1) {
+            //                ADSAFE.log(e1);
+            //            }
+            //        }
+            //    }
+            
+            //  Call the supplied function.
+            
+            try {
+                f(dom, adsafe_lib);
+            } catch (e) {
+                // throw e;  FIXME: getting an error "e is not defined"
+            }
+            root = null;
+            adsafe_lib = null;
+        },
 
         //  ADSAFE.id allows a guest widget to indicate that it wants to load
         //  ADsafe approved libraries.
 
-        //        id: function (id) {
+        id: function (id) /*: Str -> Undef */ {
 
         //  Calls to ADSAFE.id must be balanced with calls to ADSAFE.go.
         //  Only one id can be active at a time.
 
-        //            if (adsafe_id) {
-        //                return error();
-        //            }
-        //            adsafe_id = id;
-        //            adsafe_lib = {};
-        //        },
+            if (adsafe_id) {
+                return error();
+            }
+            adsafe_id = id;
+            adsafe_lib = /*: obj* 'AdObj */ {};
+        },
 
         //  ADSAFE.isArray returns true if the operand is an array.
 
@@ -1842,7 +1901,17 @@ var ADSAFE = (function () /*:  -> Any */ {
         //            return Object.prototype.toString.apply(value) === '[object Array]';
         //        },
 
-        //        later: later,
+        //  ADSAFE.later calls a function at a later time.
+
+        later: function (func, timeout) 
+        /*: 'Ad * 'Ad -> 'Ad */
+        {
+            if (typeof func === 'function') {
+                setTimeout(func, timeout || 0);
+            } else {
+                return error();
+            }
+        },
 
         //  ADSAFE.lib allows an approved ADsafe library to make itself available
         //  to a widget. The library provides a name and a function. The result of
