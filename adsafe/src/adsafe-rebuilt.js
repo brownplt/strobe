@@ -142,7 +142,7 @@ var ADSAFE = (function () /*:  -> Any */ {
     // type T with a call to error() is equivalent to T.
 
     function error(message) /*: Str + Undef -> Bot */ {
-        //        ADSAFE.log("ADsafe error: " + (message || "ADsafe violation."));
+        //ADSAFE.log("ADsafe error: " + (message || "ADsafe violation."));
         throw {
             name: "ADsafe",
             message: (message || "ADsafe violation.")
