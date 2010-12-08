@@ -76,6 +76,9 @@ module Env : sig
 
     val p_env : env -> FormatExt.printer
 
+    val p_typ' : env -> typ -> FormatExt.printer
+
+    val string_of_typ' : env -> typ -> string
   end
 
 end

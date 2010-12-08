@@ -162,6 +162,8 @@ module Pretty : sig
   open Format
   open FormatExt
 
+  val mk_p_typ : (typ -> typ) -> typ -> printer
+
   val p_typ : typ -> printer
   val p_exp : exp -> printer
   val p_def : def -> printer

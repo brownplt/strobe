@@ -238,60 +238,65 @@ module Pretty = struct
   open Format
   open FormatExt
 
-  let rec typ t  = match t with
-    | TTop -> text "Any"
-    | TBot -> text "Bot"
-    | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
-    | TArrow (tt, arg_typs, rest_typ, r_typ) ->
-        horz[ brackets (typ tt);
-              horz (intersperse (text "*") 
-                      (map (fun at -> begin match at with
-                              | TArrow _ -> parens (typ at)
-                              | _ -> typ at 
-                            end) (arg_typs@[rest_typ])));
-              horz [text "..."];
-              text "->";
-              typ r_typ ]
-    | TConstr (s, []) -> text s
-    | TConstr (s, ts) ->
-        horz [ text s; 
-               angles (horz (intersperse (text ",") (map typ ts))) ]
-    | TStrSet strs -> horz [(text "$"); 
-                            braces (horz (intersperse (text ",")
-                                            (map 
-                                               (fun s -> text ("\"" ^ s ^ "\"")) 
-                                               strs)))]
-    | TStrMinus strs -> horz [(text "$^"); 
+  let rec typ' f t  = 
+  let t = f t in
+  let typ = typ' f in
+    match t with
+      | TTop -> text "Any"
+      | TBot -> text "Bot"
+      | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
+      | TArrow (tt, arg_typs, rest_typ, r_typ) ->
+          horz[ brackets (typ tt);
+                horz (intersperse (text "*") 
+                        (map (fun at -> begin match at with
+                                | TArrow _ -> parens (typ at)
+                                | _ -> typ at 
+                              end) (arg_typs@[rest_typ])));
+                horz [text "..."];
+                text "->";
+                typ r_typ ]
+      | TConstr (s, []) -> text s
+      | TConstr (s, ts) ->
+          horz [ text s; 
+                 angles (horz (intersperse (text ",") (map typ ts))) ]
+      | TStrSet strs -> horz [(text "$"); 
                               braces (horz (intersperse (text ",")
                                               (map 
                                                  (fun s -> text ("\"" ^ s ^ "\"")) 
                                                  strs)))]
-    | TObject fs ->
-      braces (horz (intersperse (text ",") (map field fs)))
-    | TObjStar (fs, proto, other_typ, code) ->
-	let constr = horz [ text "#proto"; text ":" ; typ proto ] in
-	let star = horz [ text "*"; text ":"; typ other_typ ] in
-        let code = horz [ text "#code"; text":"; typ code ] in
-	let fields = map field fs in
-	  braces (horz (intersperse (text ",") (fields@[constr;star;code])))
-    | TRef s -> horz [ text "ref"; parens (typ s) ]
-    | TSource s -> horz [ text "const"; parens (typ s) ]
-    | TSink s -> horz [ text "sink"; parens (typ s) ]
-    | TForall (x, s, t) -> 
-        horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
-    | TRec (x, t) -> parens (horz [ text "trec"; (horz [text x; text "."; typ t ] ) ])
-    | TId x -> text ("'" ^ x)
-    | TField -> text "field"
-    | T_ -> text "_"
-    | TBad -> text "BAD"
-
-  and field (x, t) =
+      | TStrMinus strs -> horz [(text "$^"); 
+                                braces (horz (intersperse (text ",")
+                                                (map 
+                                                   (fun s -> text ("\"" ^ s ^ "\"")) 
+                                                   strs)))]
+      | TObject fs ->
+          braces (horz (intersperse (text ",") (map (field f) fs)))
+      | TObjStar (fs, proto, other_typ, code) ->
+	  let constr = horz [ text "#proto"; text ":" ; typ proto ] in
+	  let star = horz [ text "*"; text ":"; typ other_typ ] in
+          let code = horz [ text "#code"; text":"; typ code ] in
+	  let fields = map (field f) fs in
+	    braces (horz (intersperse (text ",") (fields@[constr;star;code])))
+      | TRef s -> horz [ text "ref"; parens (typ s) ]
+      | TSource s -> horz [ text "const"; parens (typ s) ]
+      | TSink s -> horz [ text "sink"; parens (typ s) ]
+      | TForall (x, s, t) -> 
+          horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
+      | TRec (x, t) -> parens (horz [ text "trec"; (horz [text x; text "."; typ t ] ) ])
+      | TId x -> text ("'" ^ x)
+      | TField -> text "field"
+      | T_ -> text "_"
+      | TBad -> text "BAD"
+          
+  and field f (x, t) =
     horz 
       [ text ("\"" ^ x ^ "\""); text ":"; 
         match t with
-          | TRef t' -> typ t'
-          | _ -> typ t (* strange case! *) ]
+          | TRef t' -> typ' f t'
+          | _ -> typ' f t (* strange case! *) ]
   
+  let typ = typ' (fun x -> x)
+
 
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
@@ -386,6 +391,8 @@ module Pretty = struct
                    p_def d' ]
 
   let p_typ = typ
+
+  let mk_p_typ f = typ' f
 
   let p_exp = exp
 

@@ -3,6 +3,7 @@ open Typedjs_syntax
 open Typedjs_types
 
 exception Not_wf_typ of string
+exception Unbound of id
 
 let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 
@@ -113,7 +114,9 @@ module Env = struct
           with Not_found -> begin try
             let s = IdMap.find x env.synonyms in
               r_subtype rel env s t
-          with Not_found -> failwith ("Unbound id: " ^ x)
+          with Not_found -> 
+            raise (Unbound (sprintf "Unbound id: %s, trying to subtype %s %s" x
+                               (string_of_typ s) x))
           end
           end
         | s, TId x -> begin try
@@ -122,7 +125,9 @@ module Env = struct
           with Not_found -> begin try
             let t = IdMap.find x env.synonyms in
               r_subtype rel env s t
-          with Not_found -> failwith ("Unbound id: " ^ x)
+          with Not_found -> 
+            raise (Unbound (sprintf "Unbound id: %s, trying to subtype %s %s" x
+                               (string_of_typ s) x))
           end
           end
 	| s, TRec (x, t') -> 
@@ -430,38 +435,56 @@ module Env = struct
       
     let empty : printer = fun _ -> ()
       
-    let p_id_bind x t fmt = match t with
-      | TRef s -> vert [ horz [ text x; text ":"; p_typ s ]; fmt ]
-      | _ -> vert [ horz [ text "val"; text x; text ":"; p_typ t ]; fmt ]
+(** Try and find the synonym in the environment that this came from *)
+(** This is dubiously useful *)
+    let find_synonym env typ =
+      let typ_found = IdMap.fold (fun x typ_id typ_found -> 
+                                    begin try
+                                      if subtype env typ typ_id &&
+                                        subtype env typ_id typ
+                                      then Some x else None
+                                    with Unbound _ -> None end) 
+        env.synonyms None in
+        match typ_found with
+          | Some x -> TId x
+          | None -> typ
 
-    let p_field x t fmt =
-      vert [ horz [ text x; text ":"; p_typ t; text "," ]; fmt ]
+    let p_typ' env = mk_p_typ (find_synonym env)
+
+    let string_of_typ' env = FormatExt.to_string (p_typ' env)
+
+    let p_id_bind env x t fmt = match t with
+      | TRef s -> vert [ horz [ text x; text ":"; p_typ' env s ]; fmt ]
+      | _ -> vert [ horz [ text "val"; text x; text ":"; p_typ' env t ]; fmt ]
+
+    let p_field env x t fmt =
+      vert [ horz [ text x; text ":"; p_typ' env t; text "," ]; fmt ]
 
     (* TODO: Does not print "checked". *)
-    let p_class_def c_name c_info fmt =
+    let p_class_def env c_name c_info fmt =
       let class_line = match c_info.sup with
         | None -> horz [ text "class"; text c_name ]
         | Some sup ->
           horz [ text "class"; text c_name; text "prototype"; text sup ] in
-      vert [ class_line; braces (IdMap.fold p_field c_info.fields empty); fmt ]
+        vert [ class_line; 
+               braces (IdMap.fold (p_field env) c_info.fields empty); fmt ]
 
     (* TODO: warn if lbl_typs or typ_ids are non-empty *)
     let p_env (env : env) = 
-      let ids = IdMap.fold p_id_bind env.id_typs empty in
-      let classes =  IdMap.fold p_class_def env.classes empty in
+      let ids = IdMap.fold (p_id_bind env) env.id_typs empty in
+      let classes =  IdMap.fold (p_class_def env) env.classes empty in
       vert [ ids; classes ]
-
   end
 
   let rec diff final_env init_env =
     { 
       global = final_env.global;
       id_typs = IdMapExt.diff final_env.id_typs init_env.id_typs;
-      lbl_typs = IdMapExt.diff final_env.lbl_typs init_env.lbl_typs;
+      lbl_typs = final_env.lbl_typs;
       classes = IdMapExt.diff final_env.classes init_env.classes;
-      subclasses = IdMapExt.diff final_env.subclasses init_env.subclasses;
-      typ_ids = IdMapExt.diff final_env.typ_ids init_env.typ_ids;
-      synonyms = IdMapExt.diff final_env.synonyms init_env.synonyms; 
+      subclasses = final_env.subclasses;
+      typ_ids = init_env.typ_ids;
+      synonyms = init_env.synonyms;
     }
 
   let typ_or_abs typ = match typ with T_ -> TBot | _ -> typ
