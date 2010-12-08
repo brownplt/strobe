@@ -6,6 +6,8 @@ open Format
 open Typedjs_dyn
 open Typedjs_tc_util
 
+let string_of_typ' = Env.Pretty.string_of_typ'
+
 let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
 
 let error_on_unreachable = ref true
@@ -526,13 +528,13 @@ and update p env field newval t =
                      vt
                    else
                      raise (Typ_error (p, (sprintf "Dictionary assignment error: %s, %s"
-                                             (string_of_typ vt)
+                                             (string_of_typ' env vt)
                                              (string_of_typ_list fts))))
              | TConstr ("Int", []) ->
                  if Env.subtype env vt other_typ
                  then vt else 
                    raise (Typ_error (p, (sprintf "Dictionary assignment error (int): %s"
-                                           (string_of_typ vt))))
+                                           (string_of_typ' env vt))))
              | TStrMinus strs ->
                  let flds = List.filter (fun fld -> not (List.mem (fst fld) strs)) fs in
                  let fts = map un_ref (map snd flds) in
@@ -619,7 +621,8 @@ and bracket p env ft ot =
                                     dictionary lookup" (string_of_typ ft))
         else
           let flds = List.filter (fun fld -> 
-                                    Env.string_in_typ ft (fst fld)) fs in
+                                    (Env.string_in_typ ft (fst fld)) && 
+                                      (not ((snd fld) = T_))) fs in
           let fld_typs = list_to_typ env (map Env.typ_or_abs (map snd flds)) in
           let fld_typs = Env.check_typ p env fld_typs in
             (** Don't use the star type if it is absent, or if every field
@@ -631,11 +634,11 @@ and bracket p env ft ot =
                (** All fields were covered by ft *)
                | TStrSet ([]), _ -> fld_typs
                (** All non-absent fields were covered by ft *)
-               | _, true -> 
+               | _, true ->
                    (Env.typ_union env fld_typs
                       (bracket p env proto_names proto))
                (** There is some non-absent field that wasn't in ft *)
-               | _, false -> 
+               | _, false ->
                    (Env.typ_union env fld_typs
                       (Env.typ_union env (bracket p env proto_names proto)
                          other)))
@@ -706,6 +709,7 @@ and bracket p env ft ot =
                       IdMap.fold (fun k t1 t2 -> 
                                     if (List.mem k strs) then t2 else 
                                       Env.typ_union env t1 t2) flds TBot
+                | TConstr ("Int", []) -> TRef (typ_undef)
                 | _ -> list_to_typ env (class_types env c)
           end
     | TField, tf -> begin match tf with
