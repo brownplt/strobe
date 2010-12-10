@@ -136,14 +136,14 @@ let annotate_exp exp =
     exp
   else 
     let cpstypedjs = get_cps exp in
-  let cf_env =
-    Lat.bind "%end" (Lat.singleton RT.Function)
-      (Lat.bind "%global" (get_global ())
-         (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
-            (cf_env_of_tc_env (get_env ())))) in
-    set_op_env (get_env ());
-    typed_cfa cf_env cpstypedjs;
-    insert_typecasts exp
+    let cf_env =
+      Lat.bind "%end" (Lat.singleton RT.Function)
+        (Lat.bind "%global" (get_global ())
+           (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
+              (cf_env_of_tc_env (get_env ())))) in
+      set_op_env (get_env ());
+      typed_cfa cf_env cpstypedjs;
+      insert_typecasts exp
 
 let action_tc () : unit = 
   let env = Typedjs_tc.typecheck (get_env ()) (annotate_exp (get_typedjs ())) in
@@ -159,6 +159,10 @@ let action_cps () : unit =
   let typedjs = get_typedjs () in
   let cps = get_cps typedjs in
     Typedjs_cps.p_cpsexp cps std_formatter
+
+let action_print () : unit =
+  let typedjs = get_typedjs () in
+    ignore (Typedjs_syntax.Pretty.p_def typedjs std_formatter); ()
 
 let action_df () : unit =
   let typedjs = get_typedjs () in
@@ -196,6 +200,8 @@ let main () : unit =
        "<class> use <class> as the global object");
       ("-pretty", Arg.Unit (set_action action_pretty),
        "pretty-print JavaScript");
+      ("-print", Arg.Unit (set_action action_print),
+       "pretty-print lambdajs_t");
       ("-expr", Arg.Unit (set_action action_expr),
        "simplify JavaScript to exprjs");
       ("-pretc", Arg.Unit (set_action action_pretypecheck),
