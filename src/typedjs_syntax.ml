@@ -329,7 +329,7 @@ module Pretty = struct
         parens (vert [ horz [ text "rec"; parens (vert (map rec_bind binds)) ];
                        exp body ])
     | ESeq (_, e1, e2) -> parens (vert [ sep [ text "seq"; exp e1 ]; exp e2 ])
-    | ELabel (_, x, t, e) -> parens (vert [ text "label"; text x; exp e ])
+    | ELabel (_, x, t, e) -> parens (vert [ horz [text "label"; text x; text ":"; typ t;]; exp e ])
     | EBreak (_, x, e) -> parens (vert [ text "break"; text x; exp e ])
     | ETryCatch (_, body, x, catch) ->
         parens (vert [ text "try"; exp body; 
