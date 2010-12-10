@@ -121,16 +121,16 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                (p, sprintf "left-hand side has type %s, but the \
                   right-hand side has type %s"
                   (string_of_typ s) (string_of_typ t)))
-      | s, _ -> 
+      | s, t -> 
           raise (Typ_error 
-                   (p, sprintf "cannot write to LHS (type %s)" 
-                      (string_of_typ s)))
+                   (p, sprintf "cannot write to LHS (%s \n := \n %s)" 
+                      (string_of_typ s) (string_of_typ t)))
     end
   | ELabel (p, l, t, e) -> 
       let t = Env.check_typ p env t in
       let s = tc_exp (Env.bind_lbl l (Env.check_typ p env t) env) e in
         if Env.subtype env s t then t
-        else raise (Typ_error (p, sprintf "label type mismatch, expected %s, got %s" (string_of_typ t) (string_of_typ s)))
+        else raise (Typ_error (p, sprintf "label type mismatch, expected %s, got %s at %s" (string_of_typ t) (string_of_typ s) l))
   | EBreak (p, l, e) ->
       let s = 
         try Env.lookup_lbl l env
@@ -188,8 +188,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                  let env_false = Env.bind_id x arg2 env in
                    Env.typ_union env (tc_exp env_true e2) (tc_exp env_false e3)
                else 
-                 (printf "Warning, in else case of if-split rule";
-                  ignore (tc_exp env app);
+                 (ignore (tc_exp env app);
                   Env.typ_union env (tc_exp env e2) (tc_exp env e3))
            | _ ->
                ignore (tc_exp env app);
@@ -723,7 +722,8 @@ and bracket p env ft ot =
                    (string_of_typ t) ^ "[" ^ 
                    (string_of_typ f) ^ "]")
 
-and tc_exp (env : Env.env) exp = Env.normalize_typ env (unfold_typ (tc_exp_simple env exp))
+and tc_exp (env : Env.env) exp = 
+  Env.normalize_typ env (unfold_typ (tc_exp_simple env exp))
 
 let rec tc_def env def = match def with
     DEnd -> env
