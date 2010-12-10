@@ -48,6 +48,15 @@ let rec seq expr = match expr with
   | SeqExpr (a1, HintExpr (a4, txt2, HintExpr (a3, txt, FuncStmtExpr (a2, f, args, e1))), e2) ->
       let (decls, body) = seq e2 in
         ((a2, f, HintExpr (a4, txt2, HintExpr (a3, txt, FuncExpr (a2, args, e1)))) :: decls, body)
+  | SeqExpr (a1, HintExpr (a5, txt3,
+                           HintExpr (a4, txt2, 
+                                     HintExpr (a3, txt, 
+                                               FuncStmtExpr (a2, f, args, e1)))), e2) ->
+      let (decls, body) = seq e2 in
+        ((a2, f, HintExpr (a5, txt3,
+                           HintExpr (a4, txt2, 
+                                     HintExpr (a3, txt, 
+                                               FuncExpr (a2, args, e1))))) :: decls, body)
   | _ -> ([], expr)
 
 let rec is_value e = match e with
@@ -122,22 +131,26 @@ let rec exp (env : env) expr = match expr with
   | ThrowExpr (a, e) -> EThrow (a, exp env e)
   | WhileExpr (a, e1, e2) ->
       let loop_typ = TArrow (TTop, [], TBot, typ_undef) in
-        ERec ([("%loop", loop_typ,
-                EFunc (a, [], loop_typ,
-                       EIf (a, exp env e1, 
-                            ESeq (a, exp env e2, 
-                                  EApp (a, EId (a, "%loop"), [])),
-                            EConst (a, S.CUndefined))))],
-              EApp (a, EId (a, "%loop"), []))
+        ESeq (a, 
+              ERec ([("%loop", loop_typ,
+                      EFunc (a, [], loop_typ,
+                             EIf (a, exp env e1, 
+                                  ESeq (a, exp env e2, 
+                                        EApp (a, EId (a, "%loop"), [])),
+                                  EConst (a, S.CUndefined))))],
+                    EApp (a, EId (a, "%loop"), [])), 
+                    EConst (a, S.CUndefined))
   | DoWhileExpr (a, body_e, test_e) ->
       let loop_typ = TArrow (TTop, [], TBot, typ_undef) in
-        ERec ([("%loop", loop_typ,
-                EFunc (a, [], loop_typ,
-                       ESeq (a, exp env body_e, 
-                             EIf (a, exp env test_e, 
-                                  EApp (a, EId (a, "%loop"), []),
-                                    EConst (a, S.CUndefined)))))],
-              EApp (a, EId (a, "%loop"), []))
+        ESeq (a, 
+              ERec ([("%loop", loop_typ,
+                      EFunc (a, [], loop_typ,
+                             ESeq (a, exp env body_e, 
+                                   EIf (a, exp env test_e, 
+                                        EApp (a, EId (a, "%loop"), []),
+                                        EConst (a, S.CUndefined)))))],
+                    EApp (a, EId (a, "%loop"), [])), 
+              EConst (a, S.CUndefined))
 
   | HintExpr (a, txt, LabelledExpr (a', x, e)) ->
       let t = parse_annotation a txt in
@@ -258,6 +271,7 @@ and match_func env expr = match expr with
         raise (Not_well_formed (a, "each argument must have a distinct name"));
       let typ = match parse_annotation p txt with
         | ATyp t -> t
+        | AConstructor t -> t
         | _ -> raise
             (Not_well_formed (p, "expected type on function, got " ^ txt)) in
       let locally_defined_vars = locals body in
@@ -426,7 +440,7 @@ let match_constr_body env expr = match expr with
 
 (** [match_func_decl expr] matches function statements and variables bound to
     function expressions. *)
-let match_func_decl expr = match expr with
+let rec match_func_decl expr = match expr with
   | VarDeclExpr (p, x, e) ->
       if is_value e then Some (p, x, e) else None
   | HintExpr (p', txt, FuncStmtExpr (p, f, args, e)) ->
@@ -434,6 +448,11 @@ let match_func_decl expr = match expr with
         None
       else
         Some (p, f, HintExpr (p', txt, FuncExpr (p, args, e)))
+  | HintExpr (p, txt, e) -> (match match_func_decl e with
+      | None -> None
+      | Some (p', f, e) -> 
+          printf "Using this case\n";
+          Some (p', f, HintExpr (p, txt, e)))
   | _ -> None
 
 let match_decl expr = match expr with
