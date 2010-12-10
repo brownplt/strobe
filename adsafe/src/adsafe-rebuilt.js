@@ -7,7 +7,7 @@ function Bunch(nodes)
 }
 
 
-var ADSAFE = (function () /*:  -> Any */ {
+var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 
     var adsafe_lib /*: upcast Undef + 'Ad */,
     adsafe_id /*: upcast Undef + Str + Null */,
@@ -1735,7 +1735,7 @@ var ADSAFE = (function () /*:  -> Any */ {
         //  ADSAFE.get retrieves a value from an object.
 
         get: function(object, name) 
-        /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad ... -> 'Ad */ 
+        /*: 'Ad * 'Ad -> 'Ad */ 
         {
             if (typeof object !== "object") { return error(); }
             if (!reject_name(name)) {
@@ -1749,7 +1749,7 @@ var ADSAFE = (function () /*:  -> Any */ {
         //  approved ADsafe libraries. It is passed an id and a function. The function
         //  will be passed the wrapped dom node and an object containing the libraries.
 
-        go: function (id, f) /*: Str * ('Ad * 'Ad -> 'Ad) -> Undef */ {
+        go: function (id, f) /*: Str * 'Ad -> Undef */ {
             var dom /*: upcast 'Ad */, fun, root /*: upcast HTMLElement + Undef + Null */, i = 0, scripts /*: upcast Undef + Array<HTMLElement>*/;
             
             //  If ADSAFE.id was called, the id better match.
@@ -1827,7 +1827,7 @@ var ADSAFE = (function () /*:  -> Any */ {
 
         //  ADSAFE.isArray returns true if the operand is an array.
 
-        isArray: Array.isArray || function (value) /*: 'Ad -> Bool */{
+        isArray: Array.isArray || function (value) /*: Any -> Bool */{
             return Object.prototype.toString.apply(value) === '[object Array]';
         },
 
@@ -1859,12 +1859,12 @@ var ADSAFE = (function () /*:  -> Any */ {
         //  ADSAFE.log is a debugging aid that spams text to the browser's log.
 
         log: function(s) 
-        /*: Str -> Undef */ 
+        /*: 'Ad -> Undef */ 
         {
             if (window.console) {
-                console.log(s);        /* Firebug */
+                console.log(String(s));        /* Firebug */
             } else if (typeof Debug === 'object') {
-                Debug.writeln(s);      /* IE */
+                Debug.writeln(String(s));      /* IE */
             }
         },
         
@@ -1874,7 +1874,7 @@ var ADSAFE = (function () /*:  -> Any */ {
         //        remove: ADSAFE_remove,
 
         set: function(object, name, value) 
-        /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad * 'Ad ... -> 'Ad */
+        /*: 'Ad * 'Ad * 'Ad -> 'Ad */
         {
             if (typeof object !== "object") { return error(); }
             if (!reject_name(name)) {
