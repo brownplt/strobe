@@ -10,18 +10,29 @@ open Exprjs_syntax
 module H = Hashtbl
 module S = JavaScript_syntax
 
+let mk_fun_annot n =
+  let ads = List.fold_right (fun _ s -> "'Ad *" ^ s) (iota n) "'Ad ..." in
+    "['Ad + HTMLWindow] " ^ ads ^ " -> 'Ad"
+
 let rec upcast_map e = 
   let adcast = "upcast 'Ad" in
   let ad = "'Ad" in
   let objcast = "obj* 'AdObj" in
-  let adtoad = "['Ad + HTMLWindow] 'Ad ... -> 'Ad" in
     match e with
+(** Leave expressions with ADSAFE alone --- we know its type *)
+      | VarExpr (p, "ADSAFE") -> e
+      | BracketExpr (p, VarExpr (p2, "ADSAFE"), 
+                     ConstExpr (p', S.CString s)) -> e
       | FuncExpr (p, xs, e') ->
-          HintExpr (p, objcast, HintExpr (p, adtoad, FuncExpr (p, xs, upcast_map e')))
+          HintExpr (p, adcast,
+                    HintExpr (p, objcast, 
+                              HintExpr (p, mk_fun_annot (List.length xs), 
+                                        FuncExpr (p, xs, upcast_map e'))))
       | FuncStmtExpr (p, x, xs, e') ->
-          HintExpr (p, objcast,
-                    HintExpr (p, adtoad, 
-                              FuncStmtExpr (p, x, xs, upcast_map e')))
+          HintExpr (p, adcast,
+                    HintExpr (p, objcast,
+                              HintExpr (p, mk_fun_annot (List.length xs),
+                                        FuncStmtExpr (p, x, xs, upcast_map e'))))
       | BracketExpr (p, o, ConstExpr (p', S.CString s)) -> 
           HintExpr (p, adcast, BracketExpr (p, upcast_map o, ConstExpr (p', S.CString s)))
       | ConstExpr (p, _) -> HintExpr (p, adcast, e)
@@ -39,6 +50,7 @@ let rec upcast_map e =
           HintExpr (p, adcast, BracketExpr (p, upcast_map o, upcast_map f))
       | NewExpr (p, e', es) ->
           HintExpr (p, objcast, NewExpr (p, upcast_map e', map upcast_map es))
+      | PrefixExpr (p, "prefix:+", _) -> e
       | PrefixExpr (p, op, e') ->
           HintExpr (p, adcast, PrefixExpr (p, op, upcast_map e'))
       | InfixExpr (p, op, e1, e2) ->
@@ -53,16 +65,19 @@ let rec upcast_map e =
           HintExpr (p, adcast, AppExpr (p, upcast_map f, map upcast_map es))
       | LetExpr (p, x, e1, e2) ->
           HintExpr (p, adcast, LetExpr (p, x, upcast_map e1, upcast_map e2))
+      | SeqExpr (p, e1, (ConstExpr (_, S.CUndefined) as undef)) -> 
+          SeqExpr (p, upcast_map e1, undef)
       | SeqExpr (p, e1, e2) ->
-          HintExpr (p, adcast, SeqExpr (p, upcast_map e1, upcast_map e2))
+          SeqExpr (p, upcast_map e1, upcast_map e2)
       | WhileExpr (p, e1, e2) ->
-          HintExpr (p, adcast, WhileExpr (p, upcast_map e1, upcast_map e2))
+          WhileExpr (p, upcast_map e1, upcast_map e2)
       | DoWhileExpr (p, e1, e2) ->
-          HintExpr (p, adcast, DoWhileExpr (p, upcast_map e1, upcast_map e2))
+          DoWhileExpr (p, upcast_map e1, upcast_map e2)
       | LabelledExpr (p, x, e') ->
           LabelledExpr (p, x, upcast_map e')
+      | BreakExpr (p, x, ConstExpr (_, S.CUndefined)) -> e
       | BreakExpr (p, x, e') ->
-          HintExpr (p, adcast, BreakExpr (p, x, upcast_map e'))
+          BreakExpr (p, x, upcast_map e')
       | ForInExpr (p, x, e1, e2) ->
           HintExpr (p, adcast, ForInExpr (p, x, upcast_map e1, upcast_map e2))
       | VarDeclExpr (p, x, e') ->
