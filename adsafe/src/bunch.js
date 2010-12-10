@@ -1,5 +1,4 @@
 function Bunch_getValue() /*: ['Ad + HTMLWindow] -> 'Ad */ {
-    reject_global(this);
     var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, 
     i = 0, 
     node /*: upcast Undef + HTMLElement */;
@@ -373,9 +372,9 @@ function Bunch_getParent () /*: ['Ad + HTMLWindow] -> 'Ad */ {
     var a = /*: HTMLElement + Undef */ [], b = this.___nodes___, i = 0, n /*: upcast Undef + HTMLElement */;
     for (i = 0; i < b.length; i += 1) {
         n = b[i].parentNode;
-        //if (n['___adsafe root___']) {
-        //    return error('ADsafe parent violation.');
-        //}
+        if (n['___adsafe root___']) {
+            return error('ADsafe parent violation.');
+        }
         a[i] = n;
     }
     return /*: obj* 'AdObj */ (new Bunch(a));
@@ -529,7 +528,7 @@ function Bunch_fire (event) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
     j = 0,
     n = 0,
     node /*: upcast  HTMLElement + Undef */,
-    on /*: upcast Undef + 'Handler */,
+    on /*: upcast 'Handler + Undef */,
     type /*: upcast 'Ad */,
     check_typ /*: upcast Any */;
 
