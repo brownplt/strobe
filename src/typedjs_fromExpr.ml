@@ -103,11 +103,12 @@ let rec exp (env : env) expr = match expr with
       raise (Not_well_formed (p, "new expressions much name the constructor"))
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
   | InfixExpr (p, "instanceof", e1, e2) -> begin match e2 with
+      | IdExpr (p2, constr_name)
       | VarExpr (p2, constr_name) ->
         EInfixOp (p, "instanceof", exp env e1, 
                   EConst (p2, S.CString constr_name))
-      | _ ->
-        raise (Not_well_formed (p, "expected a constructor name on RHS"))
+      | _ -> EInfixOp (p, "instancof", exp env e1, exp env e2)
+(*        raise (Not_well_formed (p, "expected a constructor name on RHS")) *)
   end
   | InfixExpr (p, "&&", e1, e2) -> 
       EIf (p, exp env e1, exp env e2, EConst (p, S.CBool false))
@@ -190,7 +191,7 @@ let rec exp (env : env) expr = match expr with
       (match match_func env expr with
            Some (_, e) -> e
          | None -> failwith ("match_func returned None on a FuncExpr (1) at " ^
-                            (string_of_position p)))
+                               (string_of_position p)))
   | HintExpr (p, text, e) ->
       let e' = exp env e in
         begin match parse_annotation p text with
@@ -201,7 +202,7 @@ let rec exp (env : env) expr = match expr with
           | ATypApp t -> ETypApp (p, e', t)
           | AObjCast t -> EObjCast (p, t, e')
           | AAssertTyp t -> EAssertTyp (p, t, e')
-          | _ -> error p "unexpected hint"
+          | _ -> error p (sprintf "unexpected hint %s" text)
         end
   | FuncExpr (p, _, _) -> 
       raise (Not_well_formed (p, "function is missing a type annotation"))
