@@ -23,6 +23,7 @@ let rec upcast_map e =
       | VarExpr (p, "ADSAFE") -> e
       | BracketExpr (p, VarExpr (p2, "ADSAFE"), 
                      ConstExpr (p', S.CString s)) -> e
+      | VarExpr (p, "Math") -> e
       | FuncExpr (p, xs, e') ->
           HintExpr (p, adcast,
                     HintExpr (p, objcast, 
