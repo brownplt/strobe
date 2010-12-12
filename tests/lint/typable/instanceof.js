@@ -1,5 +1,6 @@
-function foo(o) /*: {} -> Undef */ {
-    if(o instanceof Num) {
+function foo(o) {
+    function foo() {}
+    if(o instanceof foo) {
 
     }
 }
