@@ -387,6 +387,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                 _) 
         | EFunc (_, _, _, _) -> TConstr ("Function", [])
         | EEmptyArray (p, elt_typ) -> TConstr ("Array", [])
+        | EArray (p, elts) -> TConstr ("Array", [])
         | e -> error p (sprintf "Not an object literal or new for ObjCast: %s" (Typedjs_syntax.string_of_exp e))
       end in
       let s = tc_exp env e in
