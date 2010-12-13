@@ -29,9 +29,11 @@ let typ_of_value (exp : exp) : typ =
     | _ -> raise (Not_value (FormatExt.to_string Pretty.p_exp e)) in
     f exp
 
-let typ_of_value_init (exp : exp) : typ =
+let rec typ_of_value_init (exp : exp) : typ =
   match exp with 
     | EConst (_, JavaScript_syntax.CString s) -> TConstr ("Str", [])
+    | ESubsumption (_, t, e) -> ignore (typ_of_value_init e); t
+    | EObjCast (_, t, e) -> ignore (typ_of_value_init e); t
     | _ -> typ_of_value exp
 
 let cmp_props (k1, _) (k2, _) = match String.compare k1 k2 with
