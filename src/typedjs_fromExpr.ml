@@ -107,7 +107,7 @@ let rec exp (env : env) expr = match expr with
       | VarExpr (p2, constr_name) ->
         EInfixOp (p, "instanceof", exp env e1, 
                   EConst (p2, S.CString constr_name))
-      | _ -> EInfixOp (p, "instancof", exp env e1, exp env e2)
+      | _ -> EInfixOp (p, "instanceof", exp env e1, exp env e2)
 (*        raise (Not_well_formed (p, "expected a constructor name on RHS")) *)
   end
   | InfixExpr (p, "&&", e1, e2) -> 
