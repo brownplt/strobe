@@ -452,7 +452,6 @@ let rec match_func_decl expr = match expr with
   | HintExpr (p, txt, e) -> (match match_func_decl e with
       | None -> None
       | Some (p', f, e) -> 
-          printf "Using this case\n";
           Some (p', f, HintExpr (p, txt, e)))
   | _ -> None
 
