@@ -10,6 +10,8 @@ open Exprjs_syntax
 module H = Hashtbl
 module S = JavaScript_syntax
 
+let globals = ["ADSAFE"; "Math"]
+
 let mk_fun_annot n =
   let ads = List.fold_right (fun _ s -> "'Ad *" ^ s) (iota n) "'Ad ..." in
     "['Ad + HTMLWindow] " ^ ads ^ " -> 'Ad"
@@ -19,11 +21,9 @@ let rec upcast_map e =
   let ad = "'Ad" in
   let objcast = "obj* 'AdObj" in
     match e with
-(** Leave expressions with ADSAFE alone --- we know its type *)
-      | VarExpr (p, "ADSAFE") -> e
+      | VarExpr (p, id) when List.mem id globals -> e
       | BracketExpr (p, VarExpr (p2, "ADSAFE"), 
                      ConstExpr (p', S.CString s)) -> e
-      | VarExpr (p, "Math") -> e
       | FuncExpr (p, xs, e') ->
           HintExpr (p, adcast,
                     HintExpr (p, objcast, 
@@ -40,7 +40,7 @@ let rec upcast_map e =
       | ArrayExpr (p, []) ->
           HintExpr (p, objcast, HintExpr (p, ad, ArrayExpr (p, [])))
       | ArrayExpr (p, es) ->
-          HintExpr (p, adcast, ArrayExpr (p, map upcast_map es))
+          HintExpr (p, adcast, HintExpr (p, objcast, ArrayExpr (p, map upcast_map es)))
       | ObjectExpr (p, flds) ->
           let new_flds = map (fun (p, s, e') -> (p, s, (upcast_map e'))) flds in
             HintExpr (p, objcast, ObjectExpr (p, new_flds))
