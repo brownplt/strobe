@@ -24,6 +24,12 @@ let rec upcast_map e =
       | VarExpr (p, id) when List.mem id globals -> e
       | BracketExpr (p, VarExpr (p2, "ADSAFE"), 
                      ConstExpr (p', S.CString s)) -> e
+(** Special case for ADSAFE.go *)
+      | AppExpr (p, BracketExpr (p'', VarExpr (p', "ADSAFE"), 
+                                 ConstExpr (p''', S.CString "go")), e::es) -> 
+          AppExpr (p, BracketExpr (p'', VarExpr (p', "ADSAFE"), 
+                                   ConstExpr (p''', S.CString "go")), 
+                   e::(map upcast_map es)) 
       | FuncExpr (p, xs, e') ->
           HintExpr (p, adcast,
                     HintExpr (p, objcast, 
