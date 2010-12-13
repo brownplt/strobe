@@ -364,7 +364,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       if Env.subtype env s t then
         t
       else 
-        error p (sprintf "%s is not a subtype of %s" 
+        error p (sprintf "%s \n\nis not a subtype of \n\n%s" 
                    (string_of_typ s) (string_of_typ t))
   | EAssertTyp (p, raw_t, e) ->
       let s = tc_exp env e in
