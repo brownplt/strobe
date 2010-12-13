@@ -118,8 +118,8 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
             t
           else raise
             (Typ_error 
-               (p, sprintf "left-hand side has type %s, but the \
-                  right-hand side has type %s"
+               (p, sprintf "left-hand side has type \n\n %s, \n\n but the \
+                  right-hand side has type \n\n %s"
                   (string_of_typ s) (string_of_typ t)))
       | s, t -> 
           raise (Typ_error 
