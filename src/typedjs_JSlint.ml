@@ -36,6 +36,8 @@ let rec upcast_map e =
                                         FuncStmtExpr (p, x, xs, upcast_map e'))))
       | BracketExpr (p, o, ConstExpr (p', S.CString s)) -> 
           HintExpr (p, adcast, BracketExpr (p, upcast_map o, ConstExpr (p', S.CString s)))
+      | BracketExpr (p, o, ConstExpr (p', S.CInt n)) -> 
+          HintExpr (p, adcast, BracketExpr (p, upcast_map o, ConstExpr (p', S.CInt n)))
       | ConstExpr (p, _) -> HintExpr (p, adcast, e)
       | ArrayExpr (p, []) ->
           HintExpr (p, objcast, HintExpr (p, ad, ArrayExpr (p, [])))
