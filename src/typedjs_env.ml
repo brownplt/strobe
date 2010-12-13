@@ -172,7 +172,7 @@ module Env = struct
 	| TObjStar (fs1, cnames1, other_typ1, code1), 
 	    TObjStar (fs2, cnames2, other_typ2, code2) ->
 	    r_subtype_fields rel env fs1 fs2 &&
-	      cnames1 = cnames2 &&
+	      st cnames1 cnames2 &&
 	      st other_typ1 other_typ2 &&
               st code1 code2
         | TSource s, TSource t -> st s t
