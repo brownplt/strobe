@@ -272,7 +272,6 @@ and match_func env expr = match expr with
         raise (Not_well_formed (a, "each argument must have a distinct name"));
       let typ = match parse_annotation p txt with
         | ATyp t -> t
-        | AConstructor t -> t
         | _ -> raise
             (Not_well_formed (p, "expected type on function, got " ^ txt)) in
       let locally_defined_vars = locals body in
