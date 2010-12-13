@@ -31,7 +31,6 @@ type av =
   | AVarTypeIs of id * RTSet.t
   | ALocTypeof of Loc.t
   | ALocTypeIs of Loc.t * RTSet.t
-  | AInstanceof of Loc.t * string
   | AStr of string
   | ABool of bool
   | AClosure of int * id list * cpsexp
@@ -66,8 +65,6 @@ let rec p_av av = match av with
       horz [ text "LocType"; Loc.pp x; RTSetExt.p_set RT.pp t ]
   | AVarTypeIs (x, t) -> 
       horz [ text "VarType"; text x; RTSetExt.p_set RT.pp t ]
-  | AInstanceof (loc, constr_name) ->
-    horz [ text "Instanceof"; Loc.pp loc; text constr_name ]
   | AClosure _ -> text "#closure"
   | AStr s -> text ("\"" ^ s ^ "\"")
   | ABool b -> text (string_of_bool b)
@@ -98,7 +95,6 @@ let rec to_set v = match v with
   | ALocTypeof _ -> RTSet.singleton RT.Str
   | AVarTypeIs _
   | ALocTypeIs _ -> RTSet.singleton RT.Bool
-  | AInstanceof _ -> RTSet.singleton RT.Bool
   | AStr _ -> RTSet.singleton RT.Str
   | AClosure _ -> RTSet.singleton RT.Function
   | ARef _ -> rtany
@@ -125,9 +121,6 @@ let rec av_union av1 av2 = match av1, av2 with
   | ALocTypeof x, ALocTypeof y when x = y -> ALocTypeof x
   | ALocTypeIs (x, s), ALocTypeIs (y, t) when x = y -> 
       ALocTypeIs (x, RTSet.union s t)
-  | AInstanceof (loc1, constr_name1), AInstanceof (loc2, constr_name2) 
-    when loc1 = loc2 && constr_name1 = constr_name2 ->
-    AInstanceof (loc1, constr_name1)
   | AStr str1, AStr str2 when str1 = str2 -> AStr str1
   | AClosure (m, _, _), AClosure (n, _, _) -> 
       if m = n then av1
@@ -162,7 +155,6 @@ let escape_env (heap : heap) (env : env) : env =
 (*    | AClosure _ -> ASet (RTSet.singleton RT.Function) *)
     | ALocTypeIs _ -> ASet (RTSet.singleton RT.Bool)
     | ALocTypeof _ -> ASet (RTSet.singleton RT.Str)
-    | AInstanceof _ -> ASet (RTSet.singleton RT.Bool)
     | AField _ -> ASet rtany
     | _ -> v in
     IdMap.map f env
