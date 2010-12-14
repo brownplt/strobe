@@ -16,7 +16,9 @@
 
 ADSAFE.lib("solver", function () {
 
-    return function sudokusolver(game, update, finish) {
+    // TypedJS doesn't support named function expressions, so this small change
+    // is made for now.
+    return function /*sudokusolver*/(game, update, finish) {
 
 //  sudokusolver begins the process of solving a puzzle. It takes three
 //  parameters:
