@@ -36,8 +36,8 @@ let parse_annotation (pos, end_p) str =
 
     We also transform [FuncStmtExpr]s into [VarDeclExprs]. In
     JavaScript, function statements are lifted to the top of the
-    function, but Typed JavaScript's scope rules prevent them from being
-    used before they are defined in the program text. *)
+    function, but Typed JavaScript's scope rules prevent them from
+    being used before they are defined in the program text. *)
 let rec seq expr = match expr with
     SeqExpr (a1, VarDeclExpr (a2, x, e1), e2) ->
       let (decls, body) = seq e2 in
@@ -61,6 +61,8 @@ let rec seq expr = match expr with
 
 let rec is_value e = match e with
   | HintExpr (_, _, FuncExpr _) -> true
+  | HintExpr (_, _, HintExpr (_, _, FuncExpr _)) -> true
+  | HintExpr (_, _, HintExpr (_, _, HintExpr (_, _, FuncExpr _))) -> true
   | ConstExpr _ -> true
   | ObjectExpr (_, flds) -> List.for_all (fun (_, _, e') -> is_value e') flds
   | _ -> false
@@ -188,10 +190,10 @@ let rec exp (env : env) expr = match expr with
           | None -> failwith "match_func returned None on a FuncExpr (2)"
       end
   | HintExpr (p, txt, FuncExpr _) -> 
-      (match match_func env expr with
-           Some (_, e) -> e
-         | None -> failwith ("match_func returned None on a FuncExpr (1) at " ^
-                               (string_of_position p)))
+        (match match_func env expr with
+             Some (_, e) -> e
+           | None -> failwith ("match_func returned None on a FuncExpr (1) at " ^
+                                 (string_of_position p)))
   | HintExpr (p, text, e) ->
       let e' = exp env e in
         begin match parse_annotation p text with
