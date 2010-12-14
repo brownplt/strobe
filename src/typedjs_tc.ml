@@ -18,8 +18,7 @@ let disable_unreachable_check () =
 let rec skip n l = if n == 0 then l else (skip (n-1) (List.tl l))
 let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 
-let map_to_list m = 
-  IdMap.fold (fun k v l -> (k,v)::l) m []
+let map_to_list m = IdMap.fold (fun k v l -> (k,v)::l) m []
 
 let error p s = raise (Typ_error (p, s))
 
@@ -28,14 +27,12 @@ let class_fields_list env cnames =
                      l@(map_to_list (Env.class_fields env cname)))
     cnames []
 
-let class_types (env : Env.env) constr = IdMapExt.values (Env.class_fields env constr)
+let class_types (env : Env.env) constr = 
+  IdMapExt.values (Env.class_fields env constr)
 
 let class_types_list env cnames = 
-  List.fold_right (fun cname l -> 
-                     l@(class_types env cname))
-    cnames []
+  List.fold_right (fun cname l -> l@(class_types env cname)) cnames []
   
-
 let string_of_typ_list ts = 
   fold_left (^) "" (intersperse "," (map string_of_typ ts))
 
@@ -130,7 +127,8 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       let t = Env.check_typ p env t in
       let s = tc_exp (Env.bind_lbl l (Env.check_typ p env t) env) e in
         if Env.subtype env s t then t
-        else raise (Typ_error (p, sprintf "label type mismatch, expected %s, got %s at %s" (string_of_typ t) (string_of_typ s) l))
+        else raise (Typ_error (p, sprintf "label type mismatch, expected %s, \
+                         got %s at %s" (string_of_typ t) (string_of_typ s) l))
   | EBreak (p, l, e) ->
       let s = 
         try Env.lookup_lbl l env
@@ -259,7 +257,8 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> begin match applicables env (tc_exp env f) with
       | TForall (x, _, TArrow (obj_typ, expected_typ, rest_typ, result_typ)) ->
-          let subst = unify_typ (TArrow (obj_typ, expected_typ, rest_typ, result_typ))
+          let subst = unify_typ
+            (TArrow (obj_typ, expected_typ, rest_typ, result_typ))
             (TArrow (obj_typ, map (tc_exp env) args, rest_typ, result_typ)) in
             begin try
               let u = IdMap.find x subst in (* TODO: needless recomputation *)
@@ -269,7 +268,8 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
               error p (sprintf "could not determine \'%s in the function type \
                                 %s" x (string_of_typ t))
             end
-      | TObjStar (_, _, _, TArrow (expected_thist, expected_typs, rest_typ, result_typ))
+      | TObjStar (_, _, _, 
+                  TArrow (expected_thist, expected_typs, rest_typ, result_typ))
       | TArrow (expected_thist, expected_typs, rest_typ, result_typ) ->
           let _ = (
             let this_typ = tc_thist env f in
@@ -388,7 +388,8 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         | EFunc (_, _, _, _) -> TConstr ("Function", [])
         | EEmptyArray (p, elt_typ) -> TConstr ("Array", [])
         | EArray (p, elts) -> TConstr ("Array", [])
-        | e -> error p (sprintf "Not an object literal or new for ObjCast: %s" (Typedjs_syntax.string_of_exp e))
+        | e -> error p (sprintf "Not an object literal or new for ObjCast: %s" 
+                          (Typedjs_syntax.string_of_exp e))
       end in
       let s = tc_exp env e in
       let t = unfold_typ (Env.check_typ p env t) in
@@ -406,15 +407,18 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                   begin match s with 
                     | TObject (fs') -> 
                         if List.for_all (ok_field fs) fs' then t else
-                          error p (sprintf "Invalid ObjCast---bad named fields: %s %s" (string_of_typ t) (string_of_typ_list (map snd fs')))
+                          error p (sprintf "Invalid ObjCast---bad named \
+                                     fields: %s %s" (string_of_typ t) 
+                                     (string_of_typ_list (map snd fs')))
                     | TConstr (cname, []) ->
                         let fs' = map_to_list (Env.class_fields env cname) in
                           if List.for_all (ok_field fs) fs' then t else
-                            error p "Invalid ObjCast---constructor missing something"
+                            error p "Invalid ObjCast, constr missing something"
                     | TConstr ("Array", [tarr]) ->
                         if Env.subtype env tarr other_typ then t else
                           error p (sprintf "Invalid ObjCast---%s </: %s" 
-                                    (string_of_typ other_typ) (string_of_typ tarr))
+                                    (string_of_typ other_typ) 
+                                    (string_of_typ tarr))
                     | TArrow (ths, args, rest, ret) ->
                         if Env.subtype env s code then t else 
                           error p (sprintf "Invalid ObjCast---%s </: %s" 
@@ -515,7 +519,8 @@ and update p env field newval t =
              if Env.subtype env vt other_typ then vt
              else raise (Typ_error (p, (sprintf "%s is not a subtype of %s in \
                                         %s[%s = %s]" (string_of_typ vt)
-                                            (string_of_typ other_typ) (string_of_typ t)
+                                          (string_of_typ other_typ) 
+                                        (string_of_typ t)
                                         x (string_of_typ other_typ)))))
     | TObjStar (fs, proto, other_typ, code), e ->
 	let t_field = tc_exp env e in
@@ -529,13 +534,15 @@ and update p env field newval t =
                       Env.subtype env vt other_typ then
                      vt
                    else
-                     raise (Typ_error (p, (sprintf "Dictionary assignment error: %s, %s"
+                     raise (Typ_error (p, (sprintf "Dictionary assignment \
+                                                    error: %s, %s"
                                              (string_of_typ' env vt)
-                                             (string_of_typ_list fts))))
+                                                    (string_of_typ_list fts))))
              | TConstr ("Int", []) ->
                  if Env.subtype env vt other_typ
                  then vt else 
-                   raise (Typ_error (p, (sprintf "Dictionary assignment error (int): %s"
+                   raise (Typ_error (p, (sprintf "Dictionary assignment \
+                                                  error (int): %s"
                                            (string_of_typ' env vt))))
              | TStrMinus strs ->
                  let flds = List.filter (fun fld -> not (List.mem (fst fld) strs)) fs in
@@ -544,7 +551,8 @@ and update p env field newval t =
                      Env.subtype env vt other_typ then
                        vt
                    else
-                     raise (Typ_error (p, (sprintf "Dictionary assignment error (str-): \n \
+                     raise (Typ_error (p, (sprintf "Dictionary assignment \
+                                           error (str-): \n \
                                            Object: %s \n \
                                            Value: %s, \n \
                                            Fields: %s: \n \
@@ -555,7 +563,8 @@ and update p env field newval t =
                                              (string_of_typ other_typ)
                                              )))
 	     | t -> raise (Typ_error (p, (sprintf "Index was type %s in  \
-                                       dictionary assignment\n" (string_of_typ t)))))
+                                            dictionary assignment" 
+                                            (string_of_typ t)))))
     | TConstr ("Array", [tarr]), eidx ->
         let tidx = tc_exp env eidx in
         let vt = tc_exp env newval in
@@ -600,7 +609,8 @@ and update p env field newval t =
              | "Int"
              | "Str" -> tc_exp env newval
              | _ -> raise (Typ_error (p, (sprintf "Updating non-present \
-                                             field %s of %s" (string_of_typ t_field) 
+                                             field %s of %s" 
+                                            (string_of_typ t_field) 
                                             cname))))
     | t, e -> raise (Typ_error (p, (sprintf "No object update on non-objects \
                                  yet, got %s" (string_of_typ t))))
@@ -671,7 +681,8 @@ and bracket p env ft ot =
                                   typ_undef, typ_array tarr))
                 | "concat" ->
                     TRef (TArrow (typ_array tarr,
-                                  [Env.typ_union env typ_undef (typ_array tarr)],
+                                  [Env.typ_union env typ_undef 
+                                     (typ_array tarr)],
                                   typ_undef, typ_array tarr))
                 | s ->
                     error p ("unknown array method " ^ s)
@@ -719,7 +730,8 @@ and bracket p env ft ot =
         | _ -> error p "expected a TField index"
       end
     | t, TStrSet [s] ->
-        error p ("expected object, but got " ^ string_of_typ t ^ " for lookup of " ^ s)
+        error p ("expected object, but got " ^ string_of_typ t ^ 
+                   " for lookup of " ^ s)
     | t, f ->
         error p ("field-lookup requires a string literal, got " ^ 
                    (string_of_typ t) ^ "[" ^ 
