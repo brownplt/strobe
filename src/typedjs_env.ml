@@ -150,12 +150,17 @@ module Env = struct
 
         | TArrow (this_t1, args1, rest_typ1, r1), 
             TArrow (this_t2, args2, rest_typ2, r2) ->
+            let get_this t = (match t with
+                                | ThisIs t -> t
+                                | NoThis -> TTop) in
+            let this_t1' = get_this this_t1 in
+            let this_t2' = get_this this_t2 in
             let args2 = 
               fill (List.length args1 - List.length args2) 
                 rest_typ1 args2 in
               r_subtypes rel env args2 args1 && st rest_typ2 rest_typ1 &&
                 r_subtype rel env r1 r2 && 
-                st this_t1 this_t2 && st this_t2 this_t1
+                st this_t1' this_t2'
         | TConstr (c_name, []), TObject fs2 ->
             (* Classes can be turned into objects. However, this drops
                all fields in the prototype. *)
@@ -237,12 +242,15 @@ module Env = struct
           raise (Not_wf_typ (constr ^ " does not take arguments"))
       | TArrow (this, args, rest, result) ->
           let rest = normalize_typ env rest in
+          let this = (match this with
+                        | ThisIs t -> ThisIs (normalize_typ env t)
+                        | NoThis -> NoThis) in
             (*if not ((subtype env (TConstr ("Undef", [])) rest) ||
                     rest = TBot) then
               raise (Not_wf_typ (sprintf "Restargs must include Undef, \
               got %s" (string_of_typ rest)))
             else*)
-              TArrow (normalize_typ env this, map (normalize_typ env) args,
+              TArrow (this, map (normalize_typ env) args,
                       normalize_typ env rest, normalize_typ env result)
       | TRef t -> TRef (normalize_typ env t)
       | TSource t -> TSource (normalize_typ env t)
@@ -611,9 +619,17 @@ let rec unify subst s t : typ IdMap.t = match s, t with
   | TUnion (s1, s2), TUnion (t1, t2) -> unify (unify subst s1 t1) s2 t2
 
   | TArrow (s1, s2s, sr, s3), TArrow (t1, t2s, tr, t3) ->
-      List.fold_left2 unify subst 
-        (s1 :: s3 :: sr :: s2s) 
-        (t1 :: t3 :: tr :: t2s)
+      let thislist t = (match t with
+                          | NoThis -> []
+                          | ThisIs t -> [t]) in
+      if t1 = NoThis or s1 = NoThis then
+        List.fold_left2 unify subst 
+          (s3 :: sr :: s2s) 
+          (t3 :: tr :: t2s)
+      else
+        List.fold_left2 unify subst 
+          (s3 :: sr :: s2s@(thislist s1)) 
+          (t3 :: tr :: t2s@(thislist t1))
   | TObject fs1, TObject fs2 ->
       let f subst (x, s) (y, t) = 
         if x = y then unify subst s t

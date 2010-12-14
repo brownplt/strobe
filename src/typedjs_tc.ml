@@ -273,12 +273,15 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       | TArrow (expected_thist, expected_typs, rest_typ, result_typ) ->
           let _ = (
             let this_typ = tc_thist env f in
-              if not (Env.subtype env this_typ expected_thist) then
-                raise (Typ_error 
-                         (p, sprintf "expected this type %s, got %s"
-                            (string_of_typ expected_thist)
-                            (string_of_typ this_typ)))
-              else this_typ) in
+              match expected_thist with
+                | NoThis -> this_typ
+                | ThisIs t -> 
+                    if not (Env.subtype env this_typ t) then
+                      raise (Typ_error 
+                               (p, sprintf "expected this type %s, \n\n got %s"
+                                  (string_of_typ t)
+                                  (string_of_typ this_typ)))
+                    else this_typ) in
           let arg_typs' = map (tc_exp_ret env) args in
           let arg_typs = 
             fill (List.length expected_typs - List.length args) 
@@ -307,9 +310,11 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
               let arg_typ, expected_typ = List.find find_typ_err typ_pairs in
                 raise (Typ_error 
                          (p, sprintf "argument %d has type %s, but the \
-                               function expects an argument of type %s" 
+                               function expects an argument of type %s,
+                               \n\n %s" 
                             !arg_ix (string_of_typ arg_typ)
-                               (string_of_typ expected_typ)))
+                               (string_of_typ expected_typ)
+                               (string_of_typ (tc_exp env (EThis p)))))
             else raise (Typ_error 
                           (p, sprintf "arity-mismatch: the function expects %d \
                                 arguments, but %d arguments given."
@@ -346,7 +351,9 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
             let bind_arg env x t = Env.bind_id x t env in
             let env = List.fold_left2 bind_arg env args arg_typs in
             let env = Env.clear_labels env in
-            let env = Env.bind_id "this" this_t env in
+            let env = match this_t with
+              | NoThis -> env
+              | ThisIs t -> Env.bind_id "this" t env in
             let body_typ = tc_exp env body in
               if Env.subtype env body_typ result_typ then 
                 expected_typ
@@ -618,6 +625,11 @@ and update p env field newval t =
 
 and bracket p env ft ot =
   match ot, ft with
+    | TArrow (this_t, args_t, rest_t, return_t),
+      TStrSet (["call"]) -> 
+        (match this_t with
+           | ThisIs tt -> TRef (TArrow (ThisIs ot, tt::args_t, rest_t, return_t))
+           | NoThis -> failwith "Fatal, looking up call on NoThis")
     | TUnion (t1, t2), _ ->
         Env.typ_union env (bracket p env ft t1) (bracket p env ft t2)
     | TStrSet strs, _
@@ -668,21 +680,21 @@ and bracket p env ft ot =
                 | "length" -> 
                     TRef typ_int
                 | "push" ->
-                    TRef (TArrow (typ_array tarr, [un_ref tarr], 
+                    TRef (TArrow (ThisIs (typ_array tarr), [un_ref tarr], 
                                   typ_undef, typ_undef))
                 | "join" ->
                     (match un_ref tarr with
                        | TConstr ("Str", []) ->
-                           TRef (TArrow (typ_array tarr,
+                           TRef (TArrow (ThisIs (typ_array tarr),
                                          [typ_str], typ_undef, typ_str))
                        | _ -> error p ("expected array of strings"))
                 | "slice" ->
-                    TRef (TArrow (typ_array tarr,
+                    TRef (TArrow (ThisIs (typ_array tarr),
                                   [typ_int; 
                                    Env.typ_union env typ_int typ_undef],
                                   typ_undef, typ_array tarr))
                 | "concat" ->
-                    TRef (TArrow (typ_array tarr,
+                    TRef (TArrow (ThisIs (typ_array tarr),
                                   [Env.typ_union env typ_undef 
                                      (typ_array tarr)],
                                   typ_undef, typ_array tarr))

@@ -133,7 +133,7 @@ let rec exp (env : env) expr = match expr with
       ETryFinally (a, exp env body, exp env finally)
   | ThrowExpr (a, e) -> EThrow (a, exp env e)
   | WhileExpr (a, e1, e2) ->
-      let loop_typ = TArrow (TTop, [], TBot, typ_undef) in
+      let loop_typ = TArrow (NoThis, [], TBot, typ_undef) in
         ESeq (a, 
               ERec ([("%loop", loop_typ,
                       EFunc (a, [], loop_typ,
@@ -144,7 +144,7 @@ let rec exp (env : env) expr = match expr with
                     EApp (a, EId (a, "%loop"), [])), 
                     EConst (a, S.CUndefined))
   | DoWhileExpr (a, body_e, test_e) ->
-      let loop_typ = TArrow (TTop, [], TBot, typ_undef) in
+      let loop_typ = TArrow (NoThis, [], TBot, typ_undef) in
         ESeq (a, 
               ERec ([("%loop", loop_typ,
                       EFunc (a, [], loop_typ,
@@ -213,7 +213,7 @@ let rec exp (env : env) expr = match expr with
   | ForInExpr (p, x, objExpr, body) -> begin match exp env objExpr with
       | EId (_, obj)
       | EDeref (_, EId (_, obj)) ->
-          let loop_typ = TArrow (TTop, [TField; TField], TBot, typ_undef) in
+          let loop_typ = TArrow (NoThis, [TField; TField], TBot, typ_undef) in
             ERec ([("%loop", loop_typ,
                     EFunc (p, [obj; x], loop_typ,
                            ESeq (p, exp env body, 
