@@ -78,7 +78,6 @@ let rec un_ref t = match t with
   | TField -> TField
   | TUnion (t1, t2) -> TUnion (un_ref t1, un_ref t2) 
   | TConstr ("Undef", []) -> t
-  | T_ -> failwith ("Tried to look up or assign an absent field")
   | _ -> failwith ("un_ref got " ^ string_of_typ t)
 
 let rec tc_exp_simple (env : Env.env) exp = match exp with
@@ -504,7 +503,9 @@ and update p env field newval t =
         let vt = tc_exp env newval in
         let other_typ = un_ref other_typ in
           (try
-             let ft = un_ref (snd2 (List.find (fun (x', _) -> x = x') fs)) in
+             let ft = snd2 (List.find (fun (x', _) -> x = x') fs) in
+               if ft = T_ then raise (Typ_error (p, "Can't assign to _"));
+             let ft = un_ref ft in
                if Env.subtype env vt ft then vt
                else raise (Typ_error (p, (sprintf "%s is not a subtype of %s in \
                                         %s[%s = %s]" (string_of_typ vt)
