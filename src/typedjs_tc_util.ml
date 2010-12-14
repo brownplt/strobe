@@ -34,6 +34,7 @@ let rec typ_of_value_init (exp : exp) : typ =
     | EConst (_, JavaScript_syntax.CString s) -> TConstr ("Str", [])
     | ESubsumption (_, t, e) -> ignore (typ_of_value_init e); t
     | EObjCast (_, t, e) -> ignore (typ_of_value_init e); t
+    | ECheat (_, t, e) -> ignore (typ_of_value_init e); t
     | _ -> typ_of_value exp
 
 let cmp_props (k1, _) (k2, _) = match String.compare k1 k2 with
