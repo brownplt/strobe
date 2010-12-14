@@ -50,7 +50,7 @@ let rec upcast_map e =
       | ArrayExpr (p, es) ->
           HintExpr (p, adcast, HintExpr (p, objcast, ArrayExpr (p, map upcast_map es)))
       | ObjectExpr (p, flds) ->
-          let new_flds = map (fun (p, s, e') -> (p, s, (upcast_map e'))) flds in
+          let new_flds = map (fun (p, s, e') -> (p, s, (HintExpr (p, adcast, (upcast_map e'))))) flds in
             HintExpr (p, objcast, ObjectExpr (p, new_flds))
       | ThisExpr (p) -> HintExpr (p, adcast, e)
       | VarExpr (p, _) -> HintExpr (p, adcast, e)
