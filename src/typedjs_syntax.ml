@@ -41,7 +41,7 @@ type typ =
   | TStrSet of id list (* Just these strings *)
   | TStrMinus of id list (* All strings minus some *)
   | TUnion of typ * typ
-  | TArrow of typ * typ list * typ * typ (** this, args, restargs, return *)
+  | TArrow of this * typ list * typ * typ (** this, args, restargs, return *)
   | TObject of (id * typ) list
       (** [TObjStar ([(s,t)], p, star, f)] 
           {s: t, ... #proto: p, *: star, #code: f} *)
@@ -57,6 +57,10 @@ type typ =
   | TId of id
   | TField
   | TBad (* ☠ *)
+and this =
+  | ThisIs of typ
+  | NoThis
+
 
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list
@@ -156,7 +160,10 @@ let rec typ_subst' s_env x s typ =
       | TStrMinus strs -> TStrMinus strs
       | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
       | TArrow (t1, t2s, tr, t3)  ->
-          TArrow (typ_subst x s t1, map (typ_subst x s) t2s, typ_subst x s tr, typ_subst x s t3)
+          let this_subst t = (match t with
+                                | NoThis -> NoThis
+                                | ThisIs t -> ThisIs (typ_subst x s t)) in
+          TArrow (this_subst t1, map (typ_subst x s) t2s, typ_subst x s tr, typ_subst x s t3)
       | TObject fs -> TObject (map (second2 (typ_subst x s)) fs)
       | TObjStar (fs, proto, other_typ, code) ->
           TObjStar ((map (second2 (typ_subst x s)) fs), proto, 
@@ -246,7 +253,7 @@ module Pretty = struct
       | TBot -> text "Bot"
       | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
       | TArrow (tt, arg_typs, rest_typ, r_typ) ->
-          horz[ brackets (typ tt);
+          horz[ this f tt;
                 horz (intersperse (text "*") 
                         (map (fun at -> begin match at with
                                 | TArrow _ -> parens (typ at)
@@ -288,6 +295,11 @@ module Pretty = struct
       | T_ -> text "_"
       | TBad -> text "BAD"
           
+  and this f t =
+    match t with
+      | NoThis -> text "[]"
+      | ThisIs t -> brackets (typ' f t)
+
   and field f (x, t) =
     horz 
       [ text ("\"" ^ x ^ "\""); text ":"; 

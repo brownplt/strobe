@@ -33,7 +33,7 @@ type typ =
   | TStrSet of id list (* Just these strings *)
   | TStrMinus of id list (* All strings minus some *)
   | TUnion of typ * typ
-  | TArrow of typ * typ list * typ * typ      
+  | TArrow of this * typ list * typ * typ      
   | TObject of (id * typ) list
   | TObjStar of (id * typ) list * typ * typ * typ
   | TRef of typ
@@ -47,6 +47,9 @@ type typ =
   | TId of id
   | TField
   | TBad (* ☠ *)
+and this =
+  | ThisIs of typ
+  | NoThis
 
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list
