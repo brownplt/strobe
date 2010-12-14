@@ -137,14 +137,7 @@ module Env = struct
 	    r_subtype (TypPairSet.add (s,t) rel) 
               env (Typedjs_syntax.Typ.typ_subst x s s') t
 	| TConstr (c1, []), TConstr (c2, []) ->
-	    let rec is_subclass sub sup =
-              if sub = sup then
-		true
-              else if not (IdMap.mem sub env.subclasses) then
-		false (* sub is a root class *)
-              else 
-		is_subclass (IdMap.find sub env.subclasses) sup in
-              is_subclass c1 c2
+            c1 = c2
 	| TObject fs1, TObject fs2 -> r_subtype_fields rel env fs1 fs2
 	| TUnion (s1, s2), t -> st s1 t && st s2 t
 	| s, TUnion (t1, t2) -> st s t1 || st s t2
@@ -259,7 +252,7 @@ module Env = struct
           if IdMap.mem x env.typ_ids then typ
           else if IdMap.mem x env.synonyms then 
             IdMap.find x env.synonyms
-          else typ (* raise (Not_wf_typ ("the type variable " ^ x ^ " is unbound")) *)
+          else raise (Not_wf_typ ("the type variable " ^ x ^ " is unbound"))
       | TForall (x, s, t) -> 
           let s = normalize_typ env s in
             TForall (x, s, normalize_typ (bind_typ_id x s env) t)
