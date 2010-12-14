@@ -35,6 +35,7 @@ field
   | ID COLON CONST typ { ($1, TSource $4) }
   | STRING COLON CONST typ { ($1, TSource $4) }
   | ID COLON UNDER { ($1, T_) }
+  | STRING COLON UNDER { ($1, T_) }
 
 fields
   : { [] }
