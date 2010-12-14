@@ -78,6 +78,7 @@ let rec un_ref t = match t with
   | TField -> TField
   | TUnion (t1, t2) -> TUnion (un_ref t1, un_ref t2) 
   | TConstr ("Undef", []) -> t
+  | T_ -> failwith ("Tried to look up or assign an absent field")
   | _ -> failwith ("un_ref got " ^ string_of_typ t)
 
 let rec tc_exp_simple (env : Env.env) exp = match exp with
