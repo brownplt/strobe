@@ -999,11 +999,11 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                         for (j = 0; j < array.length; j += 1) {
 
                             // Invoke a handler. Pass the event object.
-
-                            /*: cheat 'Ad */ (array[j].call(this, event));
+                            array[j].call(this, event);
                         }
                     }
                 }
+
                 return this;
             },
             focus: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
