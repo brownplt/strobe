@@ -49,7 +49,7 @@ ADSAFE.lib("sudoku", function () {
                 if (n !== i) {
                     b = true;
                     for (m = 0; m < a.length; m += 1) {
-                        if (a[+m] === n) {
+                        if (ADSAFE.get(a, +m) === n) {
                             b = false;
                             break;
                         }
@@ -60,7 +60,7 @@ ADSAFE.lib("sudoku", function () {
                 }
             }
         }
-        neighbors[+i] = a;
+        ADSAFE.set(neighbors, +i, a);
     }
 
 // Return an object containing six methods:
@@ -71,15 +71,15 @@ ADSAFE.lib("sudoku", function () {
 // Check that the piece is legal. It does not determine if it is right.
 
         check: function (place) {
-            var piece = board[+place],
-                neighbor = neighbors[+place],
-                n = neighbor.length,
-                i;
+            var piece = ADSAFE.get(board, +place),
+            neighbor = ADSAFE.get(neighbors, +place),
+            n = neighbor.length,
+            i;
             if (!piece) {
                 return false;
             }
             for (i = 0; i < n; i += 1) {
-                if (board[+neighbor[+i]] === piece) {
+                if (ADSAFE.get(board, +(ADSAFE.get(neighbor, +i))) === piece) {
                     return false;
                 }
             }
@@ -89,13 +89,13 @@ ADSAFE.lib("sudoku", function () {
 // Get the piece.
 
         get: function (place) {
-            return board[+place];
+            return ADSAFE.get(board, +place);
         },
 
 // Get the piece from the problem.
 
         getProtect: function (place) {
-            return protect[+place];
+            return ADSAFE.get(protect, +place);
         },
 
 // Go into play mode. In play mode, the problem cannot be changed.
@@ -109,11 +109,11 @@ ADSAFE.lib("sudoku", function () {
 
         set: function (place, piece) {
             if (mode === 'setup' ||
-                    (mode === 'play' && protect[+place] !== 'setup')) {
-                board[+place] = piece;
-                protect[+place] = piece && mode;
-            } else if (!protect[+place]) {
-                board[+place] = piece;
+                (mode === 'play' && ADSAFE.get(protect, +place) !== 'setup')) {
+                ADSAFE.set(board, +place, piece);
+                ADSAFE.set(protect, +place, piece && mode);
+            } else if (!(ADSAFE.get(protect, +place))) {
+                ADSAFE.set(board, +place, piece);
             }
         },
 
