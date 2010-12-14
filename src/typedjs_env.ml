@@ -137,7 +137,9 @@ module Env = struct
 	    r_subtype (TypPairSet.add (s,t) rel) 
               env (Typedjs_syntax.Typ.typ_subst x s s') t
 	| TConstr (c1, []), TConstr (c2, []) ->
-            c1 = c2
+            (match c1, c2 with
+               | "Int", "Num" -> true
+               | _, _ -> c1 = c2)
 	| TObject fs1, TObject fs2 -> r_subtype_fields rel env fs1 fs2
 	| TUnion (s1, s2), t -> st s1 t && st s2 t
 	| s, TUnion (t1, t2) -> st s t1 || st s t2
