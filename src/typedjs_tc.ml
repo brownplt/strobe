@@ -618,6 +618,8 @@ and update p env field newval t =
 
 and bracket p env ft ot =
   match ot, ft with
+    | TUnion (t1, t2), _ ->
+        Env.typ_union env (bracket p env ft t1) (bracket p env ft t2)
     | TStrSet strs, _
     | TStrMinus strs, _ -> bracket p env ft (TConstr ("Str", []))
     | TObject fs, TStrSet [x] ->
@@ -627,7 +629,7 @@ and bracket p env ft ot =
            raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
     | TObjStar (fs, proto, other, code), _ ->
         if not (Env.subtype env ft (Env.typ_union env typ_str
-                                      (Env.typ_union env typ_int typ_undef))) 
+                                      (Env.typ_union env typ_int typ_undef)))
         then
           error p (sprintf "Index was type %s in \
                                     dictionary lookup" (string_of_typ ft))
@@ -643,7 +645,7 @@ and bracket p env ft ot =
             ((Env.subtract_strings ft (map fst fs)) = TStrSet []) in
           let proto_names = Env.subtract_strings ft (map fst flds) in
             (match proto_names, no_other with
-               (** All fields were covered by ft *)
+                 (** All fields were covered by ft *)
                | TStrSet ([]), _ -> fld_typs
                (** All non-absent fields were covered by ft *)
                | _, true ->
