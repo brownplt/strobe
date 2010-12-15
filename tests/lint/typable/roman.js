@@ -12,7 +12,7 @@ function foo(dom, lib) {
 
             n = +n;
             for (i = 0; i < table.length; i += 1) {
-                result = table[+i][+(n % 10)] + result;
+                result = ADSAFE.get(ADSAFE.get(table, +i), +(n % 10)) + result;
                 n = Math.floor(n / 10);
             }
             for (i = 0; i < n; i += 1) {

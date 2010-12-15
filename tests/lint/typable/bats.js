@@ -49,8 +49,8 @@ ADSAFE.lib("bats", function () {
         seed ^= seed << 1;
         seed ^= seed >> 3;
         seed ^= seed << 10;
-        return seed;
 //        return (seed + 2147483648) / 4294967296;
+        return seed;
     }
 
 
@@ -156,21 +156,21 @@ ADSAFE.lib("bats", function () {
                 horizontal = ADSAFE.get(hor, direction);
                 vertical = ADSAFE.get(ver, direction);
                 if (typeof horizontal === 'number') {
-                    board[+you_row][+you_column] = '   ';
+                    ADSAFE.set(ADSAFE.get(board, +you_row), +you_column, '   ');
                     you_row += vertical;
                     you_column += horizontal;
-                    if (board[+you_row][+you_column] === '   ') {
-                        board[+you_row][+you_column] = 'YOU';
+                    if (ADSAFE.get(ADSAFE.get(board, +you_row), +you_column) === '   ') {
+                        ADSAFE.set(ADSAFE.get(board, +you_row), +you_column, 'YOU');
                     } else {
-                        board[+you_row][+you_column] = 'DIE';
+                        ADSAFE.set(ADSAFE.get(board, +you_row), +you_column, 'DIE');
                         now_playing = 'DIE';
                     }
                 } else if (direction === 'jump') {
-                    board[+you_row][+you_column] = '   ';
+                    ADSAFE.set(ADSAFE.get(board, +you_row), +you_column, '   ');
                     a = place('YOU', 1);
                     you_row = a[0].row;
                     you_column = a[0].column;
-                    board[+you_row][+you_column] = 'YOU';
+                    ADSAFE.set(ADSAFE.get(board, +you_row), +you_column, 'YOU');
                 }
             }
             return [now_playing, display()];
@@ -186,10 +186,10 @@ ADSAFE.lib("bats", function () {
                 abs_row, abs_column, delta_row, delta_column;
             if (now_playing === true) {
                 for (i = 0; i < n; i += 1) {
-                    a = bats[+i];
+                    a = ADSAFE.get(bats, +i);
                     row = a.row;
                     column = a.column;
-                    board[+row][+column] = '   ';
+                    ADSAFE.set(ADSAFE.get(board, +row), +column, '   ');
                     delta_row = you_row - row;
                     if (delta_row < 0) {
                         inc_row = -1;
@@ -217,19 +217,19 @@ ADSAFE.lib("bats", function () {
                             row += inc_row;
                         }
                     }
-                    piece = board[+row][+column];
+                    piece = ADSAFE.get(ADSAFE.get(board, +row), +column);;
                     if (piece === 'YOU') {
-                        board[+you_row][+you_column] = 'DIE';
+                        ADSAFE.set(ADSAFE.get(board, +you_row), +you_column, 'DIE');
                         now_playing = 'DIE';
                         return [now_playing, display()];
                     } else if (piece === '   ') {
-                        board[+row][+column] = '^@^';
+                        ADSAFE.set(ADSAFE.get(board, +row), +column, '^@^');
                         b.push({row: row, column: column});
                     }
                 }
                 bats = b;
                 if (bats.length === 0) {
-                    board[+you_row][+you_column] = 'WIN';
+                    ADSAFE.set(ADSAFE.get(board, +you_row), +you_column, 'WIN');
                     now_playing = 'WIN';
                 }
             }

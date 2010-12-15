@@ -1017,7 +1017,6 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 }
                 error();
             },
-            // Probably the worst case of annotation
             fragment: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ 
                     (document.createDocumentFragment())]));
@@ -1062,7 +1061,6 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 }
                 return a.length === 1 ? a[0] : a;
             },
-
             getOffsetHeight: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 if (this.window) {
                     return error();
@@ -1320,7 +1318,6 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 }
                 this.replace();
             },
-
             replace: function(replacement) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
                 if (this.window) {
                     return error();
