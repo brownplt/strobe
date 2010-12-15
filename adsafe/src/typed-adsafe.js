@@ -15,16 +15,16 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
     // These member names are banned from guest scripts. The ADSAFE.get and
     // ADSAFE.put methods will not allow access to these properties.
     banned = 
-        /*: obj* {arguments     : Bool,
-                  callee        : Bool,
-                  caller        : Bool,
-                  "constructor" : Bool,
-                  "eval"        : Bool,
-                  "prototype"   : Bool,
-                  stack         : Bool,
-                  unwatch       : Bool,
-                  valueOf       : Bool,
-                  watch         : Bool,
+        /*: obj* {arguments     : True,
+                  callee        : True,
+                  caller        : True,
+                  "constructor" : True,
+                  "eval"        : True,
+                  "prototype"   : True,
+                  stack         : True,
+                  unwatch       : True,
+                  valueOf       : True,
+                  watch         : True,
                   #proto: Object, *:Bot, #code: Bot} */
     {
         'arguments'     : true,
@@ -43,7 +43,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
     cache_style_object /*: upcast Undef + 'Style */,
     defaultView = document.defaultView,
     ephemeral /*: upcast 'Ad */,
-    flipflop = false,       // Used in :even/:odd processing
+    flipflop = /*: upcast Bool */ false,       // Used in :even/:odd processing
     has_focus /*: upcast Undef + Null + HTMLElement */,
     // Set of hunter patterns (a dictionary)
     hunter /*: upcast Undef + 
@@ -499,7 +499,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             return node.tagName && !node.disabled;
         },
         ':even': function (node) /*: HTMLElement + Undef -> Bool */  {
-            var f = false; // added initialization
+            var f = /*: upcast Bool */ false; // Added init
             if (node.tagName) {
                 f = flipflop;
                 flipflop = !flipflop;
@@ -623,7 +623,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             }
         }
 
-        var allow_focus = true,
+        var allow_focus = /*: upcast Bool */ true,
         dom /*: upcast 'Ad */,
         dom_event = function (e) /*: Event -> Undef */ {
             var key /*: upcast Undef + Str */,
@@ -792,7 +792,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     return error();
                 }
                 var b = this.___nodes___,
-                flag = false,
+                flag = /*: upcast Bool */ false,
                 i = 0,
                 j = 0,
                 node /*: upcast Undef + HTMLElement */,
@@ -1324,7 +1324,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     return error();
                 }
                 var b = this.___nodes___,
-                flag = false,
+                flag = /*: upcast Bool */ false,
                 i = 0,
                 j = 0,
                 newnode /*: upcast HTMLElement + Undef */,
@@ -1571,7 +1571,6 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                         }
                     }
                 } else {
-                    value = String(value);
                     for (i = 0; i < b.length; i += 1) {
                         node = b[i];
                         if (node.tagName) {
@@ -1585,7 +1584,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                                 node.appendChild(document.createTextNode(string_check(value))); // modified from adsafe
                             }
                         } else if (node.nodeName === '#text') {
-                            node.nodeValue = String(value);
+                            node.nodeValue = string_check(value);
                         }
                     }
                 }
