@@ -497,16 +497,26 @@ and tc_exp_ret env e =
       t
 
 and update p env field newval t =
+  let safe_unref t = match t with
+    | TSource _ -> 
+        raise (Typ_error (p, (sprintf "Can't assign to const field")))
+    | T_ -> 
+        raise (Typ_error (p, (sprintf "Can't assign to absent field")))
+    | TRef t -> t
+    | t -> 
+        raise (Typ_error (p, (sprintf "Expected a ref type for update, \ 
+                                         got %s" (string_of_typ t)))) 
+  in
   match t, field with
     | TObject fs, EConst (_, JavaScript_syntax.CString x) ->
         (try
-           let ft = un_ref (snd2 (List.find (fun (x', _) -> x = x') fs)) in
+           let ft = safe_unref (snd2 (List.find (fun (x', _) -> x = x') fs)) in
            let vt = tc_exp env newval in
              if Env.subtype env vt ft then vt
              else raise (Typ_error (p, (sprintf "%s is not a subtype of %s in \
                                         %s[%s = %s]" (string_of_typ vt)
                                           (string_of_typ ft) (string_of_typ t)
-                                          x (string_of_typ ft))))
+                                        x (string_of_typ ft))))
          with Not_found ->
            raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
     | TObjStar (fs, proto, other_typ, code),
@@ -514,9 +524,7 @@ and update p env field newval t =
         let vt = tc_exp env newval in
         let other_typ = un_ref other_typ in
           (try
-             let ft = snd2 (List.find (fun (x', _) -> x = x') fs) in
-               if ft = T_ then raise (Typ_error (p, "Can't assign to _"));
-             let ft = un_ref ft in
+             let ft = safe_unref (snd2 (List.find (fun (x', _) -> x = x') fs)) in
                if Env.subtype env vt ft then vt
                else raise (Typ_error (p, (sprintf "%s is not a subtype of %s in \
                                         %s[%s = %s]" (string_of_typ vt)
@@ -536,7 +544,7 @@ and update p env field newval t =
 	  (match t_field with
              | TUnion (TConstr ("Str", []), TConstr ("Undef", []))
              | TConstr ("Str", []) -> 
-                 let fts = map un_ref (map snd fs) in
+                 let fts = map safe_unref (map snd fs) in
                    if List.for_all (fun t -> Env.subtype env vt t) fts &&
                       Env.subtype env vt other_typ then
                      vt
@@ -553,7 +561,7 @@ and update p env field newval t =
                                            (string_of_typ' env vt))))
              | TStrMinus strs ->
                  let flds = List.filter (fun fld -> not (List.mem (fst fld) strs)) fs in
-                 let fts = map un_ref (map snd flds) in
+                 let fts = map safe_unref (map snd flds) in
                    if List.for_all (fun t -> Env.subtype env vt t) fts &&
                      Env.subtype env vt other_typ then
                        vt
