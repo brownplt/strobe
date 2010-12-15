@@ -186,7 +186,8 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       let a_typ = tc_exp env arg in
         (match f_typ with
            | TUnion (TArrow (this1, [arg1], rest1, TConstr ("True", [])), 
-                     TArrow (this2, [arg2], rest2, TConstr ("False", []))) ->
+                     TArrow (this2, [arg2], rest2, tc)) 
+               when Env.subtype env tc typ_bool ->
                if Env.subtype env arg1 a_typ && Env.subtype env arg2 a_typ then
                  let env_true = Env.bind_id x arg1 env in
                  let env_false = Env.bind_id x arg2 env in
@@ -679,7 +680,7 @@ and bracket p env ft ot =
           | Some t -> t
           | None -> begin match cname with 
               | "Undef" 
-              | "Null" -> TRef typ_undef
+              | "Null" -> TBot
               | "Num"
               | "Bool"
               | "Int"
