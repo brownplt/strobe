@@ -13,6 +13,8 @@ val typ_num : typ
 val typ_int : typ
 
 val typ_bool : typ
+val typ_true : typ
+val typ_false : typ
 
 val typ_null : typ
 
