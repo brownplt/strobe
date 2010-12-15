@@ -96,7 +96,7 @@ let rec exp (env : env) expr = match expr with
         EDeref (a, EId (a, x))
       else
         EId (a, x)
-    with Not_found -> error a (x ^ " is not defined")
+    with Not_found -> EId (a, x)
     end
   | IdExpr (a, x) -> EId (a, x)
   | BracketExpr (a, e1, e2) -> EDeref (a, EBracket (a, exp env e1, exp env e2))
@@ -183,7 +183,7 @@ let rec exp (env : env) expr = match expr with
       (* peculiar code: body or block ends with var *)
       ELet (a, x, exp env e, EConst (a, S.CUndefined))
   | HintExpr (p', txt, FuncStmtExpr (a, f, args, body)) ->
-      begin match match_func (IdMap.add f false env) 
+      begin match match_func (IdMap.add f false env)
         (HintExpr (p', txt, FuncExpr (a, args, body))) with
             Some (t, e) ->
               ERec ([ (f,  t, e) ], EConst (a, S.CUndefined))
