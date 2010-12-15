@@ -99,6 +99,8 @@ module Env = struct
       else match s, t with
         | TStrSet s, TConstr ("Str", []) -> true
         | TStrMinus s, TConstr ("Str", []) -> true
+        | TStrSet s1, TStrSet s2 ->
+            List.for_all (fun s -> List.mem s s2) s1
         | TConstr ("Str", []), TUnion (TStrSet s1, TStrMinus s2) 
         | TConstr ("Str", []), TUnion (TStrMinus s2, TStrSet s1) -> 
             List.for_all2 (=) s1 s2
