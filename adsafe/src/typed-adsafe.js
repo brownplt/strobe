@@ -33,7 +33,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         constructor     : true,
         'eval'          : true,
         prototype       : true,
-        stack	    : true,
+        stack           : true,
         unwatch         : true,
         valueOf         : true,
         watch           : true
