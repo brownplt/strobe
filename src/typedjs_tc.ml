@@ -519,24 +519,6 @@ and update p env field newval t =
                                         x (string_of_typ ft))))
          with Not_found ->
            raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
-    | TObjStar (fs, proto, other_typ, code),
-        EConst (_, JavaScript_syntax.CString x) ->
-        let vt = tc_exp env newval in
-        let other_typ = un_ref other_typ in
-          (try
-             let ft = safe_unref (snd2 (List.find (fun (x', _) -> x = x') fs)) in
-               if Env.subtype env vt ft then vt
-               else raise (Typ_error (p, (sprintf "%s is not a subtype of %s in \
-                                        %s[%s = %s]" (string_of_typ vt)
-                                            (string_of_typ ft) (string_of_typ t)
-                                        x (string_of_typ ft))))
-           with Not_found -> 
-             if Env.subtype env vt other_typ then vt
-             else raise (Typ_error (p, (sprintf "%s is not a subtype of %s in \
-                                        %s[%s = %s]" (string_of_typ vt)
-                                          (string_of_typ other_typ) 
-                                        (string_of_typ t)
-                                        x (string_of_typ other_typ)))))
     | TObjStar (fs, proto, other_typ, code), e ->
 	let t_field = tc_exp env e in
         let vt = tc_exp env newval in
@@ -559,6 +541,25 @@ and update p env field newval t =
                    raise (Typ_error (p, (sprintf "Dictionary assignment \
                                                   error (int): %s"
                                            (string_of_typ' env vt))))
+             | TStrSet strs ->
+                 let flds = List.filter (fun fld -> List.mem (fst fld) strs) fs in
+                 let fts = map safe_unref (map snd flds) in
+                   if List.for_all (fun t -> Env.subtype env vt t) fts
+                     && (List.length flds = List.length strs ||
+                         Env.subtype env vt other_typ)
+                   then vt else
+                     raise (Typ_error (p, (sprintf "Dictionary assignment \
+                                                    error (str+): \n \
+                                                    Object: %s \n \
+                                                    Value: %s, \n \
+                                                    Fields: %s: \n \
+                                                    Other: %s\n"
+                                                      (string_of_typ t)
+                                                      (string_of_typ vt)
+                                                      (string_of_typ_list fts)
+                                                      (string_of_typ other_typ)
+                                                      )))
+
              | TStrMinus strs ->
                  let flds = List.filter (fun fld -> not (List.mem (fst fld) strs)) fs in
                  let fts = map safe_unref (map snd flds) in
