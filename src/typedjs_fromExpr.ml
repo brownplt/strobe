@@ -128,7 +128,7 @@ let rec exp (env : env) expr = match expr with
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdMap.add x true env) e2)
   | TryCatchExpr (a, body, x, catch) ->
-      ETryCatch (a, exp env body, x, exp env catch)
+      ETryCatch (a, exp env body, x, exp (IdMap.add x false env) catch)
   | TryFinallyExpr (a, body, finally) -> 
       ETryFinally (a, exp env body, exp env finally)
   | ThrowExpr (a, e) -> EThrow (a, exp env e)
