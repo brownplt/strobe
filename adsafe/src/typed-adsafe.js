@@ -1715,6 +1715,25 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 
         root['___adsafe root___'] = '___adsafe root___';
 
+        if (typeof root.addEventListener === 'function') {
+            root.addEventListener('focus', dom_event, true);
+            root.addEventListener('blur', dom_event, true);
+            root.addEventListener('mouseover', dom_event, true);
+            root.addEventListener('mouseout', dom_event, true);
+            root.addEventListener('mouseup', dom_event, true);
+            root.addEventListener('mousedown', dom_event, true);
+            root.addEventListener('mousemove', dom_event, true);
+            root.addEventListener('click', dom_event, true);
+            root.addEventListener('dblclick', dom_event, true);
+            root.addEventListener('keypress', dom_event, true);
+        } else {
+            root.onfocusin = root.onfocusout  = root.onmouseover =
+                             root.onmouseout  = root.onmouseup   =
+                             root.onmousedown = root.onmousemove =
+                             root.onclick     = root.ondblclick  =
+                             root.onkeypress  = dom_event;
+        }
+
         return dom;
     }
 
