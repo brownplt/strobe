@@ -22,6 +22,9 @@ let map_to_list m = IdMap.fold (fun k v l -> (k,v)::l) m []
 
 let error p s = raise (Typ_error (p, s))
 
+let idmap_to_list map =
+  IdMap.fold (fun x s xs -> (x, s)::xs) map []
+
 let class_fields_list env cnames = 
   List.fold_right (fun cname l ->
                      l@(map_to_list (Env.class_fields env cname)))
@@ -29,6 +32,9 @@ let class_fields_list env cnames =
 
 let class_types (env : Env.env) constr = 
   IdMapExt.values (Env.class_fields env constr)
+
+let class_names (env : Env.env) constr = 
+  IdMapExt.keys (Env.class_fields env constr)
 
 let class_types_list env cnames = 
   List.fold_right (fun cname l -> l@(class_types env cname)) cnames []
@@ -567,47 +573,22 @@ and update p env field newval t =
         let tarr = un_ref tarr in
           (match tidx with
              | TConstr ("Int", []) -> 
-                 if Env.subtype env vt tarr then
-                   vt
+                 if Env.subtype env vt tarr then vt
                  else
                   raise (Typ_error (p, "Bad array type"))
              | _ -> raise (Typ_error (p, "Array index must be int")))
-    | TConstr (cname, _), EConst (_, JavaScript_syntax.CString x) ->
-        let vt = tc_exp env newval in
-          begin match Env.field_typ env cname x with
-            | Some tf -> 
-                let ft = un_ref tf in
-                  if Env.subtype env vt ft then
-                    vt
-                  else
-                    raise (Typ_error (p, (sprintf "Bad assignment to \
-                                      %s[%s:%s = %s]" cname x 
-                                         (string_of_typ ft)
-                                         (string_of_typ vt))))
-            | None -> begin match cname with 
-                | "Undef" 
-                | "Null" -> TBot (* Actually errors *)
-                | "Num"
-                | "Bool"
-                | "Int"
-                | "Str" -> vt
-                | _ -> raise (Typ_error (p, (sprintf "Updating non-present \
-                                             field %s of %s" x cname)))
-              end
-          end
     | TConstr (cname, _), e ->
-        let t_field = tc_exp env e in
-          (match cname with
-             | "Undef" 
-             | "Null" -> TBot (* Actually errors *)
-             | "Num"
-             | "Bool"
-             | "Int"
-             | "Str" -> tc_exp env newval
-             | _ -> raise (Typ_error (p, (sprintf "Updating non-present \
-                                             field %s of %s" 
-                                            (string_of_typ t_field) 
-                                            cname))))
+        let vt = tc_exp env newval in
+        let ft = tc_exp env e in
+        let fts = List.filter (fun fld -> 
+                                 Env.string_in_typ ft (fst fld)) 
+          (idmap_to_list (Env.class_fields env cname)) in
+          if List.for_all (fun t -> Env.subtype env vt (safe_unref (snd t))) fts 
+          then vt
+          else (match cname with
+                  | "Undef" | "Null" -> TBot (* Actually errors *)
+                  | "Num" | "Bool" | "Int" | "Str" -> vt
+                  | _ -> raise (dict_error t ft vt))
     | t, e -> raise (Typ_error (p, (sprintf "No object update on non-objects \
                                  yet, got %s" (string_of_typ t))))
 
