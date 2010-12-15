@@ -3,10 +3,10 @@
 
 // This is an ADsafe library that implements the game logic for B@TS.
 
-"use strict";
+
 
 ADSAFE.lib("bats", function () {
-
+    "use strict";
     var seed = 0xAD5AFE,    // Seed for the random number generator
         now_playing,        // The game state: true, 'DIE', 'WIN'
         width = 26,
@@ -217,7 +217,7 @@ ADSAFE.lib("bats", function () {
                             row += inc_row;
                         }
                     }
-                    piece = ADSAFE.get(ADSAFE.get(board, +row), +column);;
+                    piece = ADSAFE.get(ADSAFE.get(board, +row), +column);
                     if (piece === 'YOU') {
                         ADSAFE.set(ADSAFE.get(board, +you_row), +you_column, 'DIE');
                         now_playing = 'DIE';
