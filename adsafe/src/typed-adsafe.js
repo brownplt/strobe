@@ -1820,7 +1820,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             try {
                 f(dom, adsafe_lib);
             } catch (e) {
-                // throw e;  FIXME: getting an error "e is not defined"
+                throw e;  
             }
             root = null;
             adsafe_lib = null;
