@@ -497,6 +497,14 @@ and tc_exp_ret env e =
       t
 
 and update p env field newval t =
+  let dict_error ot ft vt =
+    (Typ_error (p, (sprintf "Dictionary assignment error: \n \
+                             Object: %s \n \
+                             Field: %s
+                             Value: %s, \n"
+                             (string_of_typ ot)
+                             (string_of_typ ft)
+                             (string_of_typ vt)))) in
   let safe_unref t = match t with
     | TSource _ -> 
         raise (Typ_error (p, (sprintf "Can't assign to const field")))
@@ -531,16 +539,11 @@ and update p env field newval t =
                       Env.subtype env vt other_typ then
                      vt
                    else
-                     raise (Typ_error (p, (sprintf "Dictionary assignment \
-                                                    error: %s, %s"
-                                             (string_of_typ' env vt)
-                                                    (string_of_typ_list fts))))
+                     raise (dict_error t t_field vt)
              | TConstr ("Int", []) ->
                  if Env.subtype env vt other_typ
                  then vt else 
-                   raise (Typ_error (p, (sprintf "Dictionary assignment \
-                                                  error (int): %s"
-                                           (string_of_typ' env vt))))
+                   raise (dict_error t t_field vt)
              | TStrSet strs ->
                  let flds = List.filter (fun fld -> List.mem (fst fld) strs) fs in
                  let fts = map safe_unref (map snd flds) in
@@ -548,18 +551,7 @@ and update p env field newval t =
                      && (List.length flds = List.length strs ||
                          Env.subtype env vt other_typ)
                    then vt else
-                     raise (Typ_error (p, (sprintf "Dictionary assignment \
-                                                    error (str+): \n \
-                                                    Object: %s \n \
-                                                    Value: %s, \n \
-                                                    Fields: %s: \n \
-                                                    Other: %s\n"
-                                                      (string_of_typ t)
-                                                      (string_of_typ vt)
-                                                      (string_of_typ_list fts)
-                                                      (string_of_typ other_typ)
-                                                      )))
-
+                     raise (dict_error t t_field vt)
              | TStrMinus strs ->
                  let flds = List.filter (fun fld -> not (List.mem (fst fld) strs)) fs in
                  let fts = map safe_unref (map snd flds) in
@@ -567,20 +559,8 @@ and update p env field newval t =
                      Env.subtype env vt other_typ then
                        vt
                    else
-                     raise (Typ_error (p, (sprintf "Dictionary assignment \
-                                           error (str-): \n \
-                                           Object: %s \n \
-                                           Value: %s, \n \
-                                           Fields: %s: \n \
-                                           Other: %s\n"
-                                             (string_of_typ t)
-                                             (string_of_typ vt)
-                                             (string_of_typ_list fts)
-                                             (string_of_typ other_typ)
-                                             )))
-	     | t -> raise (Typ_error (p, (sprintf "Index was type %s in  \
-                                            dictionary assignment" 
-                                            (string_of_typ t)))))
+                     raise (dict_error t t_field vt)
+	     | ft -> raise (dict_error t ft vt))
     | TConstr ("Array", [tarr]), eidx ->
         let tidx = tc_exp env eidx in
         let vt = tc_exp env newval in
