@@ -174,14 +174,15 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
     //  called as a function it returns the global object. ADsafe cannot tolerate
     //  that, so we wrap the methods to make them safer and slower.
 
-    var mozilla = (/*: cheat trec f . Any -> 'f */ (function(name) /*: Any -> Any */ {
+    function mozilla(name) /*: 'BadArray -> 'Mozilla */ {
         var method = Array.prototype[name];
-        Array.prototype[name] = function () /*: -> Any */ {
+        Array.prototype[name] = /*: obj* 'AdObj */ 
+        (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
             return this.window ? error() : method.apply(this, /* arguments */);
-        };
-        //        return mozilla;
-    }))
-    ('concat')
+        });
+        return mozilla;
+    }
+    mozilla('concat')
     ('every')
     ('filter')
     ('forEach')
