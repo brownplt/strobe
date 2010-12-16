@@ -78,7 +78,6 @@ let rec un_ref t = match t with
   | TRef s -> s
   | TSource s -> s
   | TSink s -> s
-  | TField -> TField
   | TUnion (t1, t2) -> TUnion (un_ref t1, un_ref t2) 
   | TConstr ("Undef", []) -> t
   | _ -> failwith ("un_ref got " ^ string_of_typ t)
@@ -326,6 +325,11 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                           (p, sprintf "arity-mismatch: the function expects %d \
                                 arguments, but %d arguments given."
                              (List.length expected_typs) (List.length args)))
+      | (TObjStar _) as o ->
+          raise 
+            (Typ_error 
+               (p, "expected a function, but expression has obj* " ^
+                  (string_of_typ o)))
       | t -> 
           raise 
             (Typ_error 
@@ -402,21 +406,39 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         | EFunc (_, _, _, _) -> TConstr ("Function", [])
         | EEmptyArray (p, elt_typ) -> TConstr ("Array", [])
         | EArray (p, elts) -> TConstr ("Array", [])
-        | e -> error p (sprintf "Not an object literal or new for ObjCast: %s" 
-                          (Typedjs_syntax.string_of_exp e))
+        | EConst (p, JavaScript_syntax.CRegexp _) -> TConstr ("RegExp", [])
+        | e -> 
+            (match un_null (tc_exp env e) with
+               | TFresh (TConstr (cname, args)) -> TConstr (cname, args)
+               | _ -> error p (sprintf "Not an object literal or new for ObjCast: %s" 
+                              (Typedjs_syntax.string_of_exp e)))
       end in
       let s = tc_exp env e in
       let t = unfold_typ (Env.check_typ p env t) in
+      let safe_unref rf = (match rf with
+        | TRef t -> t
+        | TSource t -> t
+        | T_ -> error p "Trying to unref an absent field"
+        | t -> error p (sprintf "Trying to unref a non-ref type: %s " (string_of_typ t))) in
         begin match t with
           | TObjStar (fs, proto', other_typ, code) -> 
               if not (Env.subtype env proto proto') then
                 error p (sprintf "Mismatched prototypes in ObjCast: \ 
                                  %s" (string_of_typ proto))
               else
+                let find_bad_field fss (k, t) =
+                  let t = Env.normalize_typ env t in
+                  if List.mem_assoc k fss then
+                    (if Env.subtype env (safe_unref t) (safe_unref (List.assoc k fss))
+                     then None else Some (k, safe_unref t, safe_unref (List.assoc k fss)))
+                  else
+                    (if Env.subtype env (safe_unref t) (safe_unref other_typ)
+                     then None else Some (k, safe_unref t, safe_unref other_typ))
+                in
                 let ok_field fss (k, t) =
                   if List.mem_assoc k fss then
-                    Env.subtype env t (List.assoc k fss)
-                  else Env.subtype env t other_typ
+                    Env.subtype env (safe_unref t) (safe_unref (List.assoc k fss))
+                  else Env.subtype env (safe_unref t) (safe_unref other_typ)
                 in
                   begin match s with 
                     | TObject (fs') -> 
@@ -424,10 +446,21 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                           error p (sprintf "Invalid ObjCast---bad named \
                                      fields: %s %s" (string_of_typ t) 
                                      (string_of_typ_list (map snd fs')))
+                    | TFresh (TConstr (cname, []))
                     | TConstr (cname, []) ->
                         let fs' = map_to_list (Env.class_fields env cname) in
-                          if List.for_all (ok_field fs) fs' then t else
-                            error p "Invalid ObjCast, constr missing something"
+                        let bad_field = List.fold_right
+                          (fun (k, t) bad ->
+                             match (find_bad_field fs (k, t), bad) with
+                               | None, a -> a
+                               | Some t1, Some t2 -> bad
+                               | Some t1, None -> Some t1) fs' None 
+                        in
+                          (match bad_field with
+                             | None -> t
+                             | Some (k, t, t2) ->
+                                 error p (sprintf "Invalid ObjCast: %s \n\n %s \n\n </: \n\n %s"
+                                          k (string_of_typ t) (string_of_typ t2)))
                     | TConstr ("Array", [tarr]) ->
                         if Env.subtype env tarr other_typ then t else
                           error p (sprintf "Invalid ObjCast---%s </: %s" 
@@ -467,9 +500,9 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
               error p (sprintf "expected a quantified type (got %s)"
                          (string_of_typ t))
         end
-  | EForInIdx _ -> TField
+  | EForInIdx _ -> TRef (typ_str)
   | ECheat (p, t, _) -> Env.check_typ p env t
-
+      
 and tc_exps env es = map (tc_exp env) es
 
 (* find the first bracketref, return type of lhs, or none otherwise 
@@ -588,7 +621,7 @@ and update p env field newval t =
           then vt
           else (match cname with
                   | "Undef" | "Null" -> TBot (* Actually errors *)
-                  | "Num" | "Bool" | "Int" | "Str" -> vt
+                  | "Num" | "Bool" | "Int" | "Str" | "RegExp" -> vt
                   | _ -> raise (dict_error t ft vt))
     | t, e -> raise (Typ_error (p, (sprintf "No object update on non-objects \
                                  yet, got %s" (string_of_typ t))))
@@ -596,6 +629,7 @@ and update p env field newval t =
 
 and bracket p env ft ot =
   match ot, ft with
+    | TFresh t, ft -> bracket p env ft t
     | TArrow (this_t, args_t, rest_t, return_t),
       TStrSet (["call"]) -> 
         (match this_t with
@@ -710,10 +744,6 @@ and bracket p env ft ot =
                 | TConstr ("Int", []) -> TRef (typ_undef)
                 | _ -> list_to_typ env (class_types env c)
           end
-    | TField, tf -> begin match tf with
-        | TField -> TField
-        | _ -> error p "expected a TField index"
-      end
     | t, TStrSet [s] ->
         error p ("expected object, but got " ^ string_of_typ t ^ 
                    " for lookup of " ^ s)
