@@ -141,12 +141,17 @@ module Env = struct
 	| TConstr (c1, []), TConstr (c2, []) ->
             (match c1, c2 with
                | "Int", "Num" -> true
+               | "True", "Bool" -> true
+               | "False", "Bool" -> true
                | _, _ -> c1 = c2)
+        | TFresh (TConstr ("Array", [TRef tarr])), 
+            TObjStar (fs, proto, TRef ot, code) ->
+            st (TConstr ("Array", [])) proto && st tarr ot
 	| TObject fs1, TObject fs2 -> r_subtype_fields rel env fs1 fs2
 	| TUnion (s1, s2), t -> st s1 t && st s2 t
 	| s, TUnion (t1, t2) -> st s t1 || st s t2
 	| TRef s', TRef t' -> st s' t' && st t' s'
-            
+
             (** We can fill args2 with undefineds (up to the length of
             args1), and then check *)
 
@@ -173,10 +178,12 @@ module Env = struct
             st tarr1 tarr2
 	| TObjStar (fs1, cnames1, other_typ1, code1), 
 	    TObjStar (fs2, cnames2, other_typ2, code2) ->
-	    r_subtype_fields rel env fs1 fs2 &&
-	      st cnames1 cnames2 &&
-	      st other_typ1 other_typ2 &&
-              st code1 code2
+            let (flds1, flds2) = List.partition (fun (f,t) -> List.mem f (map fst fs2)) fs1 in
+              List.for_all (fun (f, t) -> st t other_typ2) flds2 &&
+	      r_subtype_fields rel env flds1 fs2 &&
+	        st cnames1 cnames2 &&
+	        st other_typ1 other_typ2 &&
+                st code1 code2
         | TSource s, TSource t -> st s t
         | TSink s, TSink t -> st t s
         | TRef s, TSource t -> st s t
@@ -185,7 +192,10 @@ module Env = struct
             List.mem constr [ "Num"; "Int"; "Str"; "Undef"; "Bool"; "Null" ]
 	| _, TTop -> true
 	| TBot, _ -> true
+        | TFresh t, TFresh s
+        | TFresh t, s -> st t s
 	| _ -> s = t
+
 
   (* assumes fs1 and fs2 are ordered 
      fs1 <: fs2 if fs1 has everything fs2 does, and nothing more *)
@@ -275,6 +285,7 @@ module Env = struct
       | TStrMinus strs -> TStrMinus strs
       | TBad -> TBad
       | T_ -> T_
+      | TFresh t -> TFresh (normalize_typ env t)
 
   let check_typ p env t = 
     try
@@ -386,6 +397,7 @@ module Env = struct
           List.fold_left (basic_static2 cs) TBot (RTSetExt.to_list rt)
     | TId _ -> typ
     | T_ -> TBot
+    | TFresh t -> static cs rt t
 
 
   let new_root_class env class_name = 
