@@ -47,6 +47,7 @@ type typ =
           {s: t, ... #proto: p, *: star, #code: f} *)
   | TObjStar of (id * typ) list * typ * typ * typ
   | TRef of typ
+  | TFresh of typ
   | TSource of typ
   | TSink of typ
   | TTop
@@ -60,7 +61,6 @@ type typ =
 and this =
   | ThisIs of typ
   | NoThis
-
 
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list
@@ -251,6 +251,7 @@ module Pretty = struct
     match t with
       | TTop -> text "Any"
       | TBot -> text "Bot"
+      | TFresh t -> horz [text "fresh"; typ t]
       | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
       | TArrow (tt, arg_typs, rest_typ, r_typ) ->
           horz[ this f tt;
@@ -283,7 +284,7 @@ module Pretty = struct
 	  let star = horz [ text "*"; text ":"; typ other_typ ] in
           let code = horz [ text "#code"; text":"; typ code ] in
 	  let fields = map (field f) fs in
-	    braces (horz (intersperse (text ",") (fields@[constr;star;code])))
+	    braces (vert (map (fun t -> horz [t; (text ",")]) (fields@[constr;star;code])))
       | TRef s -> horz [ text "ref"; parens (typ s) ]
       | TSource s -> horz [ text "const"; parens (typ s) ]
       | TSink s -> horz [ text "sink"; parens (typ s) ]
@@ -345,7 +346,7 @@ module Pretty = struct
     | EBreak (_, x, e) -> parens (vert [ text "break"; text x; exp e ])
     | ETryCatch (_, body, x, catch) ->
         parens (vert [ text "try"; exp body; 
-                       parens (vert [ text "catch"; text x; exp body ])])
+                       parens (vert [ text "catch"; text x; exp catch ])])
     | ETryFinally (_, body, finally) ->
         parens (vert [ text "try"; exp body;
                        parens (vert [ text "finally"; exp finally ]) ])

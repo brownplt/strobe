@@ -37,6 +37,7 @@ type typ =
   | TObject of (id * typ) list
   | TObjStar of (id * typ) list * typ * typ * typ
   | TRef of typ
+  | TFresh of typ
   | TSource of typ
   | TSink of typ
   | TTop
