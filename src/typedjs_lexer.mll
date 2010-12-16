@@ -60,6 +60,7 @@ rule token = parse
    | "const" { CONST }
    | "is" { IS }
    | "obj*" { OBJCAST }
+   | "fresh" { FRESH }
    | "cheat" { CHEAT }
    | "val" { VAL }
    | "<" { LANGLE }
