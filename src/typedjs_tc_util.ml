@@ -8,7 +8,8 @@ let tc_const (const : JavaScript_syntax.const) = match const with
   | JavaScript_syntax.CRegexp _ -> typ_regexp
   | JavaScript_syntax.CNum _ -> typ_num
   | JavaScript_syntax.CInt _ -> typ_int
-  | JavaScript_syntax.CBool _ -> typ_bool
+  | JavaScript_syntax.CBool true -> typ_true
+  | JavaScript_syntax.CBool false -> typ_false
   | JavaScript_syntax.CNull -> typ_null
   | JavaScript_syntax.CUndefined -> typ_undef
 
