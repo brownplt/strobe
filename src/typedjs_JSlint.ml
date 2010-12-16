@@ -10,7 +10,7 @@ open Exprjs_syntax
 module H = Hashtbl
 module S = JavaScript_syntax
 
-let globals = ["ADSAFE"; "Math"]
+let globals = ["ADSAFE"; "Math"; "RegExp"]
 
 let mk_fun_annot n =
   let ads = List.fold_right (fun _ s -> "'Ad *" ^ s) (iota n) "'Ad ..." in
@@ -59,7 +59,6 @@ let rec upcast_map e =
           HintExpr (p, adcast, BracketExpr (p, upcast_map o, upcast_map f))
       | NewExpr (p, e', es) ->
           HintExpr (p, objcast, NewExpr (p, upcast_map e', map upcast_map es))
-      | PrefixExpr (p, "prefix:+", _) -> e
       | PrefixExpr (p, op, e') ->
           HintExpr (p, adcast, PrefixExpr (p, op, upcast_map e'))
       | InfixExpr (p, op, e1, e2) ->
