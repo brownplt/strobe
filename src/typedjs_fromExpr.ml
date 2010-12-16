@@ -212,16 +212,19 @@ let rec exp (env : env) expr = match expr with
       raise (Not_well_formed (p, "function is missing a type annotation"))
   | ForInExpr (p, x, objExpr, body) -> begin match exp env objExpr with
       | EId (_, obj)
-      | EDeref (_, EId (_, obj)) ->
-          let loop_typ = TArrow (NoThis, [TField; TField], TBot, typ_undef) in
+      | EDeref (_, EId (_, obj))
+      | ESubsumption (_, _, EDeref (_, EId (_, obj))) ->
+          let loop_typ = TArrow (NoThis, [TRef (typ_str); TRef (typ_str)], TBot, typ_undef) in
             ERec ([("%loop", loop_typ,
                     EFunc (p, [obj; x], loop_typ,
                            ESeq (p, exp env body, 
                                  EApp (p, EId (p, "%loop"),
                                        [ EId (p, obj); EId (p, x) ]))))],
                   EApp (p, EId (p, "%loop"), [EForInIdx p; EForInIdx p]))
-      | _ ->
-          raise (Not_well_formed (p, "for-in loops require a named object"))
+      | e ->
+          raise (Not_well_formed (p, 
+                                  (sprintf "for-in loops require a named object, got %s"
+                                  (FormatExt.to_string Pretty.p_exp e))))
     end
 
 and av expr = match expr with
