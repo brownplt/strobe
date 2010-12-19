@@ -69,16 +69,13 @@
         ADSAFE.go('SUDOKU_', function (dom, lib) {
             "use strict";
 
-// ADsafe makes lib an execute-only structure, so the picker, sudoku,
-        and
-// solver properties are functions that returns the functions that can
-        be
+// ADsafe makes lib an execute-only structure, so the picker, sudoku, and
+// solver properties are functions that returns the functions that can be
 // passed to the widget.
-
+        ADSAFE.log("In main");
             lib.widget(dom, lib.picker(), lib.sudoku(), lib.solver());
         });
         </script>
-        <table class="sudoku"><tbody><tr><td></td><td></td><td></td><td class="suduko-region"></td><td class="suduko-region"></td><td class="suduko-region"></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td class="suduko-region"></td><td class="suduko-region"></td><td class="suduko-region"></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td class="suduko-region"></td><td class="suduko-region"></td><td class="suduko-region"></td><td></td><td></td><td></td></tr><tr><td class="suduko-region"></td><td class="suduko-region"></td><td class="suduko-region"></td><td></td><td></td><td></td><td class="suduko-region"></td><td class="suduko-region"></td><td class="suduko-region"></td></tr><tr><td class="suduko-region"></td><td class="suduko-region"></td><td class="suduko-region"></td><td></td><td></td><td></td><td class="suduko-region"></td><td class="suduko-region"></td><td class="suduko-region"></td></tr><tr><td class="suduko-region"></td><td class="suduko-region"></td><td class="suduko-region"></td><td></td><td></td><td></td><td class="suduko-region"></td><td class="suduko-region"></td><td class="suduko-region"></td></tr><tr><td></td><td></td><td></td><td class="suduko-region"></td><td class="suduko-region"></td><td class="suduko-region"></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td class="suduko-region"></td><td class="suduko-region"></td><td class="suduko-region"></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td class="suduko-region"></td><td class="suduko-region"></td><td class="suduko-region"></td><td></td><td></td><td></td></tr></tbody></table><div class="sudoku-control"><input class="sudoku-mode" value="Set Up" type="button"><input value="Play" type="button"><input value="Clear" type="button"><input value="Solve" type="button"></div>
     <br clear="all">
     <p>Pushing the mouse down on a game cell produces a picker that displays a
     set of numbers. The number that is selected when the mouse button goes up

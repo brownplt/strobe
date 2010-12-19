@@ -1,12 +1,3 @@
-function Bunch(nodes) 
-/*: constructor (Undef + Array<HTMLElement + Undef> -> {___nodes___: Array<HTMLElement + Undef> + Undef, ___star___: Bool + Undef}) */ 
-{
-    this.___nodes___ = nodes;
-    this.___star___ = true;//star && nodes.length > 1;
-    //            star = false;
-}
-
-
 var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 
     var adsafe_lib /*: upcast Undef + 'Ad */,
@@ -142,7 +133,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
     // type T with a call to error() is equivalent to T.
 
     function error(message) /*: Str + Undef -> Bot */ {
-        //ADSAFE.log("ADsafe error: " + (message || "ADsafe violation."));
+        ADSAFE.log("ADsafe error: " + (message || "ADsafe violation."));
         throw {
             name: "ADsafe",
             message: (message || "ADsafe violation.")
@@ -178,7 +169,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         var method = Array.prototype[name];
         Array.prototype[name] = /*: obj* 'AdObj */ 
         (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
-            return this.window ? error() : method.apply(this, /* arguments */);
+            return this.window ? error() : method.apply(this /*, arguments */);
         });
         return mozilla;
     }
@@ -623,6 +614,15 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             }
         }
 
+        function Bunch(nodes) 
+        /*: constructor ([Bunch] Undef + Array<HTMLElement + Undef> -> Bunch) */ 
+        {
+            this.___nodes___ = nodes;
+            this.___star___ = star && nodes.length > 1;
+            star = false;
+            return this;
+        }
+
         var allow_focus = /*: upcast Bool */ true,
         dom /*: upcast 'Ad */,
         dom_event = function (e) /*: Event -> Undef */ {
@@ -786,7 +786,8 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             return;
         };
 
-        var Bunch_prototype = {
+
+        Bunch.prototype = {
             append : function(appendage) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
                 if (this.window) {
                     return error();
@@ -1209,9 +1210,6 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             },
             mark: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
                 if (this.window) {
-                    return error('ADsafe error.');
-                }
-                if (/url/i.test(string_check(value))) {
                     return error('ADsafe error.');
                 }
                 var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
@@ -1638,7 +1636,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                      if (typeof tag !== 'string') {
                          return error();
                      }
-                     if (makeableTagName[tag] !== true) {
+                     if (typeof makeableTagName[tag] !== "string") {
                          return error('ADsafe: Bad tag: ' + tag);
                      }
                      node = document.createElement(makeableTagName[safe_name(tag)]);
@@ -1801,7 +1799,6 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 dom = make_root(root, id);
             }
             
-            
             // If the page has registered interceptors, call them.
             
             //    for (i = 0; i < interceptors.length; i += 1) {
@@ -1820,7 +1817,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             try {
                 f(dom, adsafe_lib);
             } catch (e) {
-                throw e;  
+                throw e;
             }
             root = null;
             adsafe_lib = null;
