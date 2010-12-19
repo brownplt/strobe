@@ -474,6 +474,15 @@ let match_external_method expr = match expr with
       methodexpr) -> Some (p, cname, methodname, methodexpr)
   | _ -> None
 
+let match_prototype expr = match expr with
+    AssignExpr (
+      p,
+      PropLValue (
+        _, 
+        VarExpr (_, cname), 
+        ConstExpr (_, S.CString "prototype")),
+      ObjectExpr (p', props)) -> Some (p, cname, ObjectExpr (p', props))
+  | _ -> None
 
 and bind_top_func_ref (x, t, e) rest_exp = 
   let p = Exp.pos e in
@@ -482,6 +491,8 @@ and bind_top_func_ref (x, t, e) rest_exp =
 and set_top_func_ref (x, t, e) rest_exp =
   let p = Exp.pos e in
     DExp (ESetRef (p, EId (p, x), e), rest_exp)
+
+let exp_prop env (p, name, e) = (p, name, exp env e)
 
 let rec defs env lst = 
   begin match lst with
@@ -494,7 +505,13 @@ let rec defs env lst =
               begin match match_while match_func_decl (expr :: lst') with
                   [], expr :: lst' -> begin match match_decl expr with
                       None -> begin match match_external_method expr with
-                          None -> DExp (exp env expr, defs env lst')
+                          None -> begin match match_prototype expr with 
+                              None -> DExp (exp env expr, defs env lst')
+                            | Some (p, cname, proto) ->
+                                DPrototype (p, cname, 
+                                            exp env proto, 
+                                            defs env lst')
+                          end
                         | Some (p, name, mid, me) -> 
                             DExternalMethod (p, name, mid, exp env me, 
                                              defs env lst')

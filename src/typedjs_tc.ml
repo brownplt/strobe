@@ -835,12 +835,27 @@ let rec tc_def env def = match def with
         | _ -> raise (Typ_error (p, "expected arrow type on constructor"))
       end
   | DExternalMethod (p, cname, mid, me, d) -> 
-      try
+      begin try
         let expenv = Env.bind_id "this" (TConstr (cname, [])) env in
         let env' = Env.add_method cname mid (TRef (tc_exp expenv me)) env in
           tc_def env' d
       with Not_found -> raise (
         Typ_error (p, "class " ^ cname ^ " doesnt exist"))
+      end
+  | DPrototype (p, cname, EObject (p2, props), d) -> 
+      begin try
+        let expenv = Env.bind_id "this" (TConstr (cname, [])) env in
+        let env' = List.fold_right 
+          (fun (name, body) env' ->
+             Env.add_method cname name (tc_exp expenv body) env')
+          props env in
+          tc_def env' d
+      with Not_found -> raise (
+        Typ_error (p, "class " ^ cname ^ " doesnt exist"))
+      end
+  | DPrototype (p, _, _, _) -> 
+      raise (Typ_error (p, "Must set prototype to an object literal"))
+
         
 let typecheck init_env defs = 
   let final_env = tc_def init_env defs in

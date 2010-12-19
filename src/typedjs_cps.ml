@@ -323,6 +323,8 @@ let rec cps (def : def) : cpsexp = match def with
       (* we would punt on setting to .proto anyway, so just cps the expr
          and move on *)
       cps' me "%uncaught-exception" (fun _ -> cps d)
+  | DPrototype (p, cname, obj, d) ->
+      cps' obj "%uncaught-exception" (fun _ -> cps d)
 
 let node_of_cpsexp (cpsexp : cpsexp) : node = match cpsexp with
     Fix (n, _, _) -> n

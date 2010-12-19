@@ -139,6 +139,8 @@ type def =
   | DRec of (id * typ * exp) list * def
   | DConstructor of constr_exp * def
   | DExternalMethod of pos * id * id * exp * def
+   (** Constr.prototype = {m1 : e1, m2 : e2 ... } *)
+  | DPrototype of pos * id * exp * def
 
 (******************************************************************************)
 
