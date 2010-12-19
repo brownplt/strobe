@@ -396,6 +396,10 @@ module Pretty = struct
           vert [ sep [ text (cname ^ ".prototype." ^ fname ^ " = ");
                        exp e; ];
                  p_def d ]
+      | DPrototype (p, cname, obj, d) ->
+          vert [ sep [ text (cname ^ ".prototype = ");
+                       exp obj; ];
+                 p_def d ]
       | DLet  (_, x, e, d') ->
           vert [ parens (vert [ horz [ text "define"; text x ]; exp e ]);
                  p_def d' ]
