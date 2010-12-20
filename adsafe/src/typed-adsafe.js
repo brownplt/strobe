@@ -148,7 +148,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
     
     function string_check(string) /*: Any -> Str */ {
         if (typeof string !== 'string') {
-            return error("ADsafe string violation.");
+            return error("ADsafe string violation." + String(string));
         }
         return string;
     }
@@ -1553,14 +1553,14 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                         if (node.tagName) {
                             if (node.type !== 'password') {
                                 if (typeof node.value === 'string') {
-                                    node.value = string_check(value[i]);
+                                    node.value = String(value[i]);
                                 } else {
                                     while (node.firstChild) {
                                         purge_event_handlers(node); 
                                         node.removeChild(node.firstChild);
                                     }
                                     node.appendChild(document.createTextNode(
-                                        string_check(value[i])));
+                                        String(value[i])));
                                 }
                             }
                         } else if (node.nodeName === '#text') {
@@ -1572,16 +1572,16 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                         node = b[i];
                         if (node.tagName) {
                             if (typeof node.value === 'string') {
-                                node.value = string_check(value); // modified from adsafe
+                                node.value = String(value);
                             } else {
                                 while (node.firstChild) {
                                     purge_event_handlers(node);
                                     node.removeChild(node.firstChild);
                                 }
-                                node.appendChild(document.createTextNode(string_check(value))); // modified from adsafe
+                                node.appendChild(document.createTextNode(String(value))); // modified from adsafe
                             }
                         } else if (node.nodeName === '#text') {
-                            node.nodeValue = string_check(value);
+                            node.nodeValue = String(value);
                         }
                     }
                 }
