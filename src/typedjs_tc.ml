@@ -261,6 +261,24 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         else 
           tc_exp env (EApp (p, EId (p, "+"), [e1; e2]))
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
+  | EApp (p, EDeref (_, EBracket (_, obj, EConst (_, JavaScript_syntax.CString "apply"))),
+          [e_this; e_args]) -> 
+      let tfun =  applicables env (tc_exp env obj) in
+        begin match tfun with
+          | TObjStar (_, _, _,
+                      TArrow (expected_thist, expected_typs, rest_typ, result_typ))
+          | TArrow (expected_thist, expected_typs, rest_typ, result_typ) ->
+              let this_t = tc_exp env e_this in
+              let allow = 
+                (match expected_thist, tc_exp env e_args with
+                   | ThisIs expected, TList (args) -> args = expected_typs && 
+                    Env.subtype env this_t expected
+                   | _ -> error p "Need a list type for apply") in
+                if allow then result_typ else 
+                  error p "This type didn't match in apply"
+          | _ -> error p (sprintf "Not an arrow type in apply: %s"
+                            (string_of_typ tfun)) 
+      end
   | EApp (p, f, args) -> begin match applicables env (tc_exp env f) with
       | TForall (x, _, TArrow (obj_typ, expected_typ, rest_typ, result_typ)) ->
           let subst = unify_typ
@@ -365,6 +383,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
             let env = match this_t with
               | NoThis -> env
               | ThisIs t -> Env.bind_id "this" t env in
+            let env = Env.bind_id "arguments" (TList arg_typs) env in
             let body_typ = tc_exp env body in
               if Env.subtype env body_typ result_typ then 
                 expected_typ
@@ -630,11 +649,14 @@ and update p env field newval t =
 and bracket p env ft ot =
   match ot, ft with
     | TFresh t, ft -> bracket p env ft t
-    | TArrow (this_t, args_t, rest_t, return_t),
-      TStrSet (["call"]) -> 
-        (match this_t with
-           | ThisIs tt -> TRef (TArrow (ThisIs ot, tt::args_t, rest_t, return_t))
-           | NoThis -> failwith "Fatal, looking up call on NoThis")
+    | TArrow (this_t, args_t, rest_t, return_t), ft ->
+        (match ft with
+           | TStrSet (["call"]) -> 
+               (match this_t with
+                  | ThisIs tt -> TRef (TArrow (ThisIs ot, tt::args_t, 
+                                               rest_t, return_t))
+                  | NoThis -> failwith "Fatal, looking up call on NoThis")
+           | _ -> error p "Bad lookup on an arrow type")
     | TUnion (t1, t2), _ ->
         Env.typ_union env (bracket p env ft t1) (bracket p env ft t2)
     | TStrSet strs, _

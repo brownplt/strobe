@@ -277,6 +277,7 @@ and match_func env expr = match expr with
         raise (Not_well_formed (a, "each argument must have a distinct name"));
       let typ = match parse_annotation p txt with
         | ATyp t -> t
+        | AConstructor t -> t
         | _ -> raise
             (Not_well_formed (p, "expected type on function, got " ^ txt)) in
       let locally_defined_vars = locals body in
@@ -534,6 +535,7 @@ let rec defs env lst =
 
 let from_exprjs env expr = 
   let exp = defs 
-    (IdSet.fold (fun x env -> IdMap.add x true env) (Env.dom env) IdMap.empty)
+    (IdMap.add "arguments" false 
+       (IdSet.fold (fun x env -> IdMap.add x true env) (Env.dom env) IdMap.empty))
     (flatten_seq expr) in
     exp

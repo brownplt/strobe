@@ -169,7 +169,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         var method = Array.prototype[name];
         Array.prototype[name] = /*: obj* 'AdObj */ 
         (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
-            return this.window ? error() : method.apply(this /*, arguments */);
+            return this.window ? error() : method.apply(this, arguments);
         });
         return mozilla;
     }
@@ -615,12 +615,11 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         }
 
         function Bunch(nodes) 
-        /*: constructor ([Bunch] Undef + Array<HTMLElement + Undef> -> Bunch) */ 
+        /*: constructor ([Any] Undef + Array<HTMLElement + Undef> -> Undef) */ 
         {
-            this.___nodes___ = nodes;
-            this.___star___ = star && nodes.length > 1;
+            /*: cheat Any */ (this.___nodes___ = nodes);
+            /*: cheat Any */ (this.___star___ = star && nodes.length > 1);
             star = false;
-            return this;
         }
 
         var allow_focus = /*: upcast Bool */ true,
@@ -1884,7 +1883,13 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         //  Field deletion breaks the soundness of our type system, so we
         //  don't allow it.  Anecdotal evidence suggests that deletion is
         //  not commonly used in JS.
-        //        remove: ADSAFE_remove,
+        remove: /*: cheat 'Ad */ (function (object, name) /*: 'Ad * 'Ad -> Undef */ {
+            if(typeof object !== "object") { return error(); }
+            if(reject_name(name)) {
+                return error();
+            }
+            delete object[name];
+        }),
 
         set: function(object, name, value) 
         /*: 'Ad * 'Ad * 'Ad -> 'Ad */

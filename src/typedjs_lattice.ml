@@ -142,8 +142,9 @@ let lookup (x : id) (env : env) : av =
   try
     IdMap.find x env
   with Not_found ->
-    eprintf "%s is unbound in the abstract environment" x;
-    raise Not_found
+    ASet rtany
+(**    eprintf "%s is unbound in the abstract environment" x;
+    raise Not_found *)
 
 let bind (x : id) (v : av) (env : env) : env = 
   IdMap.add x v env

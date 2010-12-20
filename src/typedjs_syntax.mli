@@ -47,6 +47,7 @@ type typ =
   | TRec of id * typ
   | TId of id
   | TField
+  | TList of typ list
   | TBad (* ☠ *)
 and this =
   | ThisIs of typ

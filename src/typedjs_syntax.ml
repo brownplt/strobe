@@ -57,6 +57,7 @@ type typ =
   | TRec of id * typ
   | TId of id
   | TField
+  | TList of typ list
   | TBad (* ☠ *)
 and this =
   | ThisIs of typ
@@ -295,6 +296,7 @@ module Pretty = struct
       | TRec (x, t) -> parens (horz [ text "trec"; (horz [text x; text "."; typ t ] ) ])
       | TId x -> text ("'" ^ x)
       | TField -> text "field"
+      | TList ts -> brackets (horz (map typ ts))
       | T_ -> text "_"
       | TBad -> text "BAD"
           
