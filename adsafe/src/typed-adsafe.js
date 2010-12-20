@@ -1,3 +1,11 @@
+function Bunch(nodes) 
+/*: constructor (Undef + Array<HTMLElement + Undef> -> {___nodes___: Undef + Array<HTMLElement + Undef>, ___star___: Bool}) */ 
+{
+    this.___nodes___ = nodes;
+    this.___star___ = true;//star && nodes.length > 1;
+//    star = false;
+}
+
 var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 
     var adsafe_lib /*: upcast Undef + 'Ad */,
@@ -614,14 +622,6 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             }
         }
 
-        function Bunch(nodes) 
-        /*: constructor ([Any] Undef + Array<HTMLElement + Undef> -> Undef) */ 
-        {
-            /*: cheat Any */ (this.___nodes___ = nodes);
-            /*: cheat Any */ (this.___star___ = star && nodes.length > 1);
-            star = false;
-        }
-
         var allow_focus = /*: upcast Bool */ true,
         dom /*: upcast 'Ad */,
         dom_event = function (e) /*: Event -> Undef */ {
@@ -786,7 +786,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         };
 
 
-        Bunch.prototype = {
+        var Bunch_prototype = {
             append : function(appendage) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
                 if (this.window) {
                     return error();
@@ -1023,6 +1023,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     (document.createDocumentFragment())]));
             },
             getCheck: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return this.getChecks()[0];
+            },
+            getChecks: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 if (this.window) {
                     return error();
                 }
@@ -1030,9 +1033,12 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].checked;
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getClass: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return this.getClasses()[0];
+            },
+            getClasses: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 if (this.window) {
                     return error();
                 }
@@ -1040,9 +1046,12 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].className;
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getMark: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return this.getMarks()[0];
+            },
+            getMarks: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 if (this.window) {
                     return error();
                 }
@@ -1050,9 +1059,12 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i]['_adsafe mark_'];
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getName: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return this.getNames()[0];
+            },
+            getNames: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 if (this.window) {
                     return error();
                 }
@@ -1060,9 +1072,12 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].name;
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getOffsetHeight: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return this.getOffsetHeights()[0];
+            },
+            getOffsetHeights: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 if (this.window) {
                     return error();
                 }
@@ -1070,14 +1085,17 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].offsetHeight;
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getOffsetWidth: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return this.getOffsetWidths()[0];
+            },
+            getOffsetWidths: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].offsetWidth;
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getParent: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 if (this.window) {
@@ -1119,6 +1137,10 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return null;
             },
             getStyle: function(name) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                return this.getStyles()[0];
+            },
+            getStyles: function(name) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) { return error(); }
                 if (reject_name(name)) {
 	            return error("ADsafe style violation.");
                 }
@@ -1138,17 +1160,23 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 	                }
                     }
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getTagName: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return this.getTagNames()[0];
+            },
+            getTagNames: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 var a = /*: obj* 'AdObj*/ (/*: 'Ad */ []), b = this.___nodes___, i = 0, name /*: upcast Undef + Str */;
                 for (i = 0; i < b.length; i += 1) {
                     name = b[i].tagName;
                     a[i] = typeof name === 'string' ? name.toLowerCase() : name;
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getTitle: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return this.getTitles()[0];
+            },
+            getTitles: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 if (this.window) {
                     return error();
                 }
@@ -1161,6 +1189,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return a.length === 1 ? a[0] : a;
             },
             getValue: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return this.getValues()[0];
+            },
+            getValues: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, 
                 i = 0, 
                 node /*: upcast Undef + HTMLElement */;
@@ -1176,7 +1207,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                         }
                     }
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             klass: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
                 if (this.window) {
@@ -1484,7 +1515,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 }
                 var node /*: upcast HTMLElement + Undef */ ;
                 if (reject_name(tag)) {
-                    return error("ADsafe tag violation");
+                    return error("ADsafe: Bad tag: " + String(tag));
                 }
                 node = document.createElement(makeableTagName[tag]);
                 if (name) {
@@ -1632,11 +1663,8 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                  /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad * 'Ad ... -> 'Ad */ 
                  {
                      var node /*: upcast Undef + HTMLElement */;
-                     if (typeof tag !== 'string') {
-                         return error();
-                     }
-                     if (typeof makeableTagName[tag] !== "string") {
-                         return error('ADsafe: Bad tag: ' + tag);
+                     if (reject_name(tag)) {
+                         return error("ADsafe: Bad tag: " + String(tag));
                      }
                      node = document.createElement(makeableTagName[safe_name(tag)]);
                      if (name) {
