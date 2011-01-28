@@ -212,6 +212,8 @@ let main () : unit =
        "convert program to CPS, then apply flow analysis");
       ("-disable-unreachable", Arg.Unit Typedjs_tc.disable_unreachable_check,
        "do not signal an error on unreachable code");
+      ("-print-native", Arg.Unit Typedjs_tc.print_native,
+       "prints a warning when functions marked Native are applied");
       set_lint_annots;
       set_simpl_cps;
       set_print_contracts;

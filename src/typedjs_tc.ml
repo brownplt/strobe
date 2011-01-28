@@ -15,6 +15,13 @@ let error_on_unreachable = ref true
 let disable_unreachable_check () =
   error_on_unreachable := false
 
+let print_unreachable_apps = ref false
+
+let is_print_native = ref false
+
+let print_native () = 
+  is_print_native := true
+
 let rec skip n l = if n == 0 then l else (skip (n-1) (List.tl l))
 let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 
@@ -261,7 +268,15 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         else 
           tc_exp env (EApp (p, EId (p, "+"), [e1; e2]))
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
-  | EApp (p, f, args) -> begin match applicables env (tc_exp env f) with
+  | EApp (p, f, args) -> 
+      let fn_typ = tc_exp env f in
+      if !is_print_native then
+        printf "%s: %s\n" (string_of_position p)
+          (if Env.subtype env (TConstr ("Native", [])) fn_typ then
+             "native function called"
+           else
+             "safe application");
+      begin match applicables env fn_typ with
       | TForall (x, _, TArrow (obj_typ, expected_typ, rest_typ, result_typ)) ->
           let subst = unify_typ
             (TArrow (obj_typ, expected_typ, rest_typ, result_typ))
@@ -753,7 +768,8 @@ and bracket p env ft ot =
                    (string_of_typ f) ^ "]")
 
 and tc_exp (env : Env.env) exp = 
-  Env.normalize_typ env (unfold_typ (tc_exp_simple env exp))
+  let t = tc_exp_simple env exp in
+  Env.normalize_typ env (unfold_typ t)
 
 let rec tc_def env def = match def with
     DEnd -> env
