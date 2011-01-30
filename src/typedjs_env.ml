@@ -284,6 +284,7 @@ module Env = struct
       | TStrSet strs -> TStrSet strs
       | TStrMinus strs -> TStrMinus strs
       | TBad -> TBad
+      | TList t -> TList (map (normalize_typ env) t)
       | T_ -> T_
       | TFresh t -> TFresh (normalize_typ env t)
 
@@ -398,6 +399,7 @@ module Env = struct
     | TId _ -> typ
     | T_ -> TBot
     | TFresh t -> static cs rt t
+    | TList t -> TList t
 
 
   let new_root_class env class_name = 

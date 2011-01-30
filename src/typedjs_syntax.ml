@@ -57,6 +57,7 @@ type typ =
   | TRec of id * typ
   | TId of id
   | TField
+  | TList of typ list
   | TBad (* ☠ *)
 and this =
   | ThisIs of typ
@@ -139,6 +140,8 @@ type def =
   | DRec of (id * typ * exp) list * def
   | DConstructor of constr_exp * def
   | DExternalMethod of pos * id * id * exp * def
+   (** Constr.prototype = {m1 : e1, m2 : e2 ... } *)
+  | DPrototype of pos * id * exp * def
 
 (******************************************************************************)
 
@@ -293,6 +296,7 @@ module Pretty = struct
       | TRec (x, t) -> parens (horz [ text "trec"; (horz [text x; text "."; typ t ] ) ])
       | TId x -> text ("'" ^ x)
       | TField -> text "field"
+      | TList ts -> brackets (horz (map typ ts))
       | T_ -> text "_"
       | TBad -> text "BAD"
           
@@ -393,6 +397,10 @@ module Pretty = struct
       | DExternalMethod (p, cname, fname, e, d) -> 
           vert [ sep [ text (cname ^ ".prototype." ^ fname ^ " = ");
                        exp e; ];
+                 p_def d ]
+      | DPrototype (p, cname, obj, d) ->
+          vert [ sep [ text (cname ^ ".prototype = ");
+                       exp obj; ];
                  p_def d ]
       | DLet  (_, x, e, d') ->
           vert [ parens (vert [ horz [ text "define"; text x ]; exp e ]);

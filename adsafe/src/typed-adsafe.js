@@ -1,11 +1,10 @@
 function Bunch(nodes) 
-/*: constructor (Undef + Array<HTMLElement + Undef> -> {___nodes___: Array<HTMLElement + Undef> + Undef, ___star___: Bool + Undef}) */ 
+/*: constructor (Undef + Array<HTMLElement + Undef> -> {___nodes___: Undef + Array<HTMLElement + Undef>, ___star___: Bool}) */ 
 {
     this.___nodes___ = nodes;
     this.___star___ = true;//star && nodes.length > 1;
-    //            star = false;
+//    star = false;
 }
-
 
 var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 
@@ -142,7 +141,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
     // type T with a call to error() is equivalent to T.
 
     function error(message) /*: Str + Undef -> Bot */ {
-        //ADSAFE.log("ADsafe error: " + (message || "ADsafe violation."));
+        ADSAFE.log("ADsafe error: " + (message || "ADsafe violation."));
         throw {
             name: "ADsafe",
             message: (message || "ADsafe violation.")
@@ -157,19 +156,19 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
     
     function string_check(string) /*: Any -> Str */ {
         if (typeof string !== 'string') {
-            return error("ADsafe string violation.");
+            return error("ADsafe string violation." + String(string));
         }
         return string;
     }
 
-    //  The object.hasOwnProperty method has a number of hazards. So we wrap it in
-    //  the owns function.   
+//	The object.hasOwnProperty method has a number of hazards. So we wrap it in
+//	the owns function.
 
     function owns(object, string) /*: Any * Any -> Bool */ {
-        return object && typeof object === 'object' &&
-            Object.prototype.hasOwnProperty.call(object, string_check(string));
+	return object && typeof object === 'object' &&
+	    Object.prototype.hasOwnProperty.call(object, string_check(string));
     }
-
+    
     //  Firefox implemented some of its array methods carelessly. If a method is
     //  called as a function it returns the global object. ADsafe cannot tolerate
     //  that, so we wrap the methods to make them safer and slower.
@@ -178,7 +177,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         var method = Array.prototype[name];
         Array.prototype[name] = /*: obj* 'AdObj */ 
         (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
-            return this.window ? error() : method.apply(this, /* arguments */);
+            return this.window ? error() : method.apply(this, arguments);
         });
         return mozilla;
     }
@@ -213,13 +212,6 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         else {
             return name;
         }
-    }
-
-    function reject_property(object, name) /*: 'Ad * 'Ad -> Bool */ {
-        if(reject_name(name)) {
-            return true;
-        }
-        return typeof object !== 'object';
     }
 
     // The getStyleObject function returns the computed style object for a node.
@@ -420,7 +412,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         '#': function (node) /*: HTMLElement + Undef -> Undef */ {
             var n = document.getElementById(name);
             if (n.tagName) {
-                result.push(n); // problem with returning Null
+                result.push(n);
             }
         },
         '/': function (node) /*: HTMLElement + Undef -> Undef */{
@@ -750,7 +742,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 x: /*: upcast 'Ad */ (the_actual_event.clientX),
                 y: /*: upcast 'Ad */ (the_actual_event.clientY)
             };
-            that.fire(the_event);
+
             // If the target has event handlers, then fire them. Otherwise, bubble up.
 
             if (the_target['___ on ___'] &&
@@ -780,17 +772,19 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 }
                 ephemeral = null;
             }
-            // This line is annoying --- why add Null to all these types?
-            // Change to undefined
+            // Change to undefined, rather than add null to all these types
             that = the_target = the_event = the_actual_event = undefined;
             return;
         };
 
+        // Mark the node as a root. This prevents event bubbling from propogating
+        // past it.
+
+        root['___adsafe root___'] = '___adsafe root___';
+
         var Bunch_prototype = {
             append : function(appendage) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var b = this.___nodes___,
                 flag = /*: upcast Bool */ false,
                 i = 0,
@@ -825,9 +819,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },   
             blur : function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
                 has_focus = null;
                 for (i = 0; i < b.length; i += 1) {
@@ -839,9 +831,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             check : function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
                 if (value instanceof Array) {
                     if (value.length !== b.length) {
@@ -864,16 +854,42 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 }
                 return this;
             },
-            count : function () /*: ['Ad + HTMLWindow] -> Int */ {
-                if (this.window) {
-                    return error();
+            'class': function (value) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+                if (this.window) { return error(); }
+                var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
+                if (value instanceof Array) {
+                    if (value.length !== b.length) {
+                        error('ADsafe: Array length: ' +
+                                b.length + '-' + value.length);
+                    }
+                    for (i = 0; i < b.length; i += 1) {
+			if (/url/i.test(string_check(value[i]))) {
+			    return error('ADsafe error.');
+			}
+                        node = b[i];
+                        if (node.tagName) {
+                            node.className = string_check(value[i]);
+                        }
+                    }
+                } else {
+		    if (/url/i.test(string_check(value))) {
+			return error('ADsafe error.');
+		    }
+                    for (i = 0; i < b.length; i += 1) {
+                        node = b[i];
+                        if (node.tagName) {
+                            node.className = string_check(value);
+                        }
+                    }
                 }
+                return this;
+            },
+            count : function () /*: ['Ad + HTMLWindow] -> Int */ {
+                if (this.window) { return error(); }
                 return this.___nodes___.length;
             },
             each : function(func) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var b = this.___nodes___, i = 0;
                 if (typeof func === 'function') {
                     for (i = 0; i < b.length; i += 1) {
@@ -884,9 +900,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return error();
             },
             empty: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
                 if (value instanceof Array) {
                     if (value.length !== b.length) {
@@ -912,9 +926,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             enable: function (enable) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
                 if (enable instanceof Array) {
                     if (enable.length !== b.length) {
@@ -938,9 +950,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             ephemeral: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 if (ephemeral) {
                     ephemeral.remove();
                 }
@@ -948,9 +958,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             explode: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = /*: obj* 'AdObj */ (new Bunch([b[i]]));
@@ -965,6 +973,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 // name of the event. Handlers registered by the 'on'
                 // method that match the event name will be invoked.
 
+                if (this.window) { return error(); }
                 var array /*: upcast Undef + Array<['Ad + HTMLWindow] 'Ad ... -> 'Ad> */,
                 b /*: upcast Undef + Array<HTMLElement + Undef> */,
                 i = 0,
@@ -972,12 +981,8 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 n = 0,
                 node /*: upcast  HTMLElement + Undef */,
                 on /*: upcast 'Handler + Undef */,
-                type /*: upcast 'Ad */,
-                check_typ /*: upcast Any */;
+                type /*: upcast 'Ad */;
 
-                if (this.window) {
-                    return error();
-                }
                 if (typeof event === 'string') {
                     type = event;
                     event = /*: obj* 'AdObj */ {type: /*: upcast 'Ad */ type};
@@ -1008,9 +1013,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             focus: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var b = this.___nodes___;
                 if (b.length === 1 && allow_focus) {
 	            has_focus = b[0].focus();
@@ -1023,66 +1026,72 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     (document.createDocumentFragment())]));
             },
             getCheck: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                return this.getChecks()[0];
+            },
+            getChecks: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].checked;
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getClass: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                return this.getClasses()[0];
+            },
+            getClasses: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].className;
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getMark: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                return this.getMarks()[0];
+            },
+            getMarks: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i]['_adsafe mark_'];
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getName: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                return this.getNames()[0];
+            },
+            getNames: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].name;
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getOffsetHeight: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                return this.getOffsetHeights()[0];
+            },
+            getOffsetHeights: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].offsetHeight;
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getOffsetWidth: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return this.getOffsetWidths()[0];
+            },
+            getOffsetWidths: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].offsetWidth;
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getParent: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var a = /*: HTMLElement + Undef */ [], b = this.___nodes___, i = 0, n /*: upcast Undef + HTMLElement */;
                 for (i = 0; i < b.length; i += 1) {
                     n = b[i].parentNode;
@@ -1094,9 +1103,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return /*: obj* 'AdObj */ (new Bunch(a));
             },
             getSelection: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var b = this.___nodes___, 
                     end = 0, 
                     node /*: upcast Undef + HTMLElement */, 
@@ -1119,6 +1126,10 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return null;
             },
             getStyle: function(name) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                return this.getStyles()[0];
+            },
+            getStyles: function(name) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+                if (this.window) { return error(); }
                 if (reject_name(name)) {
 	            return error("ADsafe style violation.");
                 }
@@ -1138,20 +1149,24 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 	                }
                     }
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getTagName: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return this.getTagNames()[0];
+            },
+            getTagNames: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 var a = /*: obj* 'AdObj*/ (/*: 'Ad */ []), b = this.___nodes___, i = 0, name /*: upcast Undef + Str */;
                 for (i = 0; i < b.length; i += 1) {
                     name = b[i].tagName;
                     a[i] = typeof name === 'string' ? name.toLowerCase() : name;
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             getTitle: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                return this.getTitles()[0];
+            },
+            getTitles: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), 
                 b = this.___nodes___, 
                 i = 0;
@@ -1161,6 +1176,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return a.length === 1 ? a[0] : a;
             },
             getValue: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+                return this.getValues()[0];
+            },
+            getValues: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, 
                 i = 0, 
                 node /*: upcast Undef + HTMLElement */;
@@ -1176,44 +1194,13 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                         }
                     }
                 }
-                return a.length === 1 ? a[0] : a;
+                return a;
             },
             klass: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error('ADsafe error.');
-                }
-                if (/url/i.test(string_check(value))) {
-                    return error('Adsafe string violation');
-                }
-                var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
-                if (value instanceof Array) {
-                    if (value.length !== b.length) {
-                        return error('ADsafe: Array length: ' +
-                                     b.length + '-' + value.length);
-                    }
-                    for (i = 0; i < b.length; i += 1) {
-                        node = b[i];
-                        if (node.tagName) {
-                            node.className = String(value[i]);
-                        }
-                    }
-                } else {
-                    for (i = 0; i < b.length; i += 1) {
-                        node = b[i];
-                        if (node.tagName) {
-                            node.className = String(value);
-                        }
-                    }
-                }
-                return this;
-            },
+		return this['class'](value);
+	    },
             mark: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error('ADsafe error.');
-                }
-                if (/url/i.test(string_check(value))) {
-                    return error('ADsafe error.');
-                }
+                if (this.window) { return error('ADsafe error.'); }
                 var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
                 if (value instanceof Array) {
                     if (value.length !== b.length) {
@@ -1237,14 +1224,13 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             off: function(type) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error('ADsafe error');
-                }
+                if (this.window) { return error('ADsafe error'); }
                 var b = this.___nodes___, i=0, node/*: upcast Undef + HTMLElement */;
                 for (i = 0; i < b.length; i += 1) {
                     node = b[i];
                     if (typeof type === 'string') {
-                        if (node['___ on ___']) { // BUG: typeof always returns something
+                        if (node['___ on ___']) { // Bug? typeof always returns something, I'm assuming this check was intended
+                            // once again, use undef rather than null
                             node['___ on ___'][safe_name(type)] = undefined;
                         }
                     } else {
@@ -1254,9 +1240,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             on: function(type, func) /*: ['Ad + HTMLWindow] 'Ad * 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error('ADsafe error');
-                }
+                if (this.window) { return error('ADsafe error'); }
                 if (reject_name(type)) {
                     return error("ADsafe event type violation");
                 }
@@ -1272,17 +1256,20 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 for (i = 0; i < b.length; i += 1) {
                     node = b[i];
 
-                    // The change event does not propogate, so we must put the handler on the
-                    // instance.
+// The change event does not propogate, so we must put the handler on the
+// instance.
 
+                    // The way this was set up seemed silly, so I changed it to 
+                    // use onchange directly, rather than concatenate known
+                    // strings
                     if (type === 'change') {
                         if (node.onchange !== dom_event) {
                             node.onchange = dom_event;
                         }
                     }
 
-                    // Register an event. Put the function in a handler array, making one if it
-                    // doesn't yet exist for this type on this node.
+// Register an event. Put the function in a handler array, making one if it
+// doesn't yet exist for this type on this node.
 
                     on = node['___ on ___'];
                     if (!on) {
@@ -1298,9 +1285,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             protect: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error('ADsafe error.');
-                }
+                if (this.window) { return error('ADsafe error.'); }
                 var b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     b[i]['___adsafe root___'] = '___adsafe root___';
@@ -1314,15 +1299,11 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                           this.___nodes___)));
             },
             remove: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error('ADsafe error.');
-                }
+                if (this.window) { return error('ADsafe error.'); }
                 this.replace();
             },
             replace: function(replacement) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var b = this.___nodes___,
                 flag = /*: upcast Bool */ false,
                 i = 0,
@@ -1337,10 +1318,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 for (i = 0; i < b.length; i += 1) {
                     purge_event_handlers(b[i]);
                 }
-                if (!replacement ||
-                    replacement.length === 0 ||
+                if (!replacement || replacement.length === 0 ||
                     (replacement.___nodes___ &&
-	             replacement.___nodes___.length === 0)) {
+                     replacement.___nodes___.length === 0)) {
                     for (i = 0; i < b.length; i += 1) {
                         node = b[i];
                         purge_event_handlers(node);
@@ -1392,9 +1372,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             select: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var b = this.___nodes___;
                 if (b.length !== 1 || !allow_focus) {
                     return error();
@@ -1404,9 +1382,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             selection: function(string_in) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var b = this.___nodes___, 
                 end = 0, 
                 node /*: upcast Undef + HTMLElement */, 
@@ -1437,9 +1413,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             style: function(name, value) /*: ['Ad + HTMLWindow] 'Ad * 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 if (reject_name(name)) {
 	            return error("ADsafe style violation.");
                 }
@@ -1458,6 +1432,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     for (i = 0; i < b.length; i += 1) {
                         node = b[i];
 	                v = string_check(value[i]);
+			if (/url/i.test(v)) {
+			    error();
+			}
                         if (node.tagName) {
                             if (name !== 'float') {
                                 node.style[name] = v;
@@ -1467,7 +1444,10 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                         }
                     }
                 } else {
-	            v = String(value);
+	            v = string_check(value);
+                    if (/url/i.test(v)) {
+			error();
+		    }
                     for (i = 0; i < b.length; i += 1) {
                         node = b[i];
                         if (node.tagName) {
@@ -1482,12 +1462,10 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             tag: function(tag, type, name) /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad-> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var node /*: upcast HTMLElement + Undef */ ;
                 if (reject_name(tag)) {
-                    return error("ADsafe tag violation");
+                    return error("ADsafe: Bad tag: " + String(tag));
                 }
                 node = document.createElement(makeableTagName[tag]);
                 if (name) {
@@ -1512,9 +1490,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     (document.createTextNode(String(text)))]));
             },
             title: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 var b = this.___nodes___, 
                 i = 0,
                 node /*: upcast Undef + HTMLElement */;
@@ -1540,9 +1516,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 return this;
             },
             value: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
-                if (this.window) {
-                    return error();
-                }
+                if (this.window) { return error(); }
                 if (value === undefined) {
                     return error();
                 }
@@ -1556,14 +1530,14 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                         if (node.tagName) {
                             if (node.type !== 'password') {
                                 if (typeof node.value === 'string') {
-                                    node.value = string_check(value[i]);
+                                    node.value = String(value[i]);
                                 } else {
                                     while (node.firstChild) {
                                         purge_event_handlers(node); 
                                         node.removeChild(node.firstChild);
                                     }
                                     node.appendChild(document.createTextNode(
-                                        string_check(value[i])));
+                                        String(value[i])));
                                 }
                             }
                         } else if (node.nodeName === '#text') {
@@ -1575,16 +1549,16 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                         node = b[i];
                         if (node.tagName) {
                             if (typeof node.value === 'string') {
-                                node.value = string_check(value); // modified from adsafe
+                                node.value = String(value);
                             } else {
                                 while (node.firstChild) {
                                     purge_event_handlers(node);
                                     node.removeChild(node.firstChild);
                                 }
-                                node.appendChild(document.createTextNode(string_check(value))); // modified from adsafe
+                                node.appendChild(document.createTextNode(String(value))); // modified from adsafe (added call to String() here and below, rather than assigning)
                             }
                         } else if (node.nodeName === '#text') {
-                            node.nodeValue = string_check(value);
+                            node.nodeValue = String(value);
                         }
                     }
                 }
@@ -1592,15 +1566,23 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             }
         };
 
+// Return an ADsafe dom object.
+
         dom = /*: obj* 'AdObj */ {
-            q: /*:upcast 'Ad */ (/*: obj* 'AdObj */ (function (text) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
-                star = false;
-                var query = parse_query(text, id);
-                if (typeof hunter[query[0].op] !== 'function') {
-                    return error('ADsafe: Bad query: ' + query[0]);
-                }
-                return /*: obj* 'AdObj */ (new Bunch(quest(query, [root])));
-            })),
+            append: /*: upcast 'Ad */ 
+            (/*: obj* 'AdObj */ 
+                (function (bunch) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+                    var b = bunch.___nodes___, i = 0, n /*: upcast Undef + HTMLElement */;
+                    for (i = 0; i < b.length; i += 1) {
+                        n = b[i];
+                        // This is not possible.  n is a node or undefined.
+//                        if (typeof n === 'string' || typeof n === 'number') {
+//                            n = document.createTextNode(String(n));
+//                        }
+                        root.appendChild(n);
+                    }
+                    return dom;
+                })),
             combine: /*:upcast 'Ad */ (/*: obj* 'AdObj */ (function (array) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (!array || !array.length) {
                     return error('ADsafe: Bad combination.');
@@ -1624,24 +1606,53 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             fragment: /*:upcast 'Ad */ (/*: obj* 'AdObj */ (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ (document.createDocumentFragment())]));
             })),
+            prepend: /*: upcast 'Ad */ 
+            (/*: obj* 'AdObj */ 
+                (function (bunch) 
+                 /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+                     var b = bunch.___nodes___, i = 0;
+                     for (i = 0; i < b.length; i += 1) {
+                         root.insertBefore(b[i], root.firstChild);
+                     }
+                     return dom;
+                 })),
+            q: /*:upcast 'Ad */ (/*: obj* 'AdObj */ (function (text) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+                star = false;
+                var query = parse_query(text, id);
+                if (typeof hunter[query[0].op] !== 'function') {
+                    return error('ADsafe: Bad query: ' + query[0]);
+                }
+                return /*: obj* 'AdObj */ (new Bunch(quest(query, [root])));
+            })),
             remove: /*: upcast 'Ad */ (/*: obj* 'AdObj */ (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 purge_event_handlers(root);
                 root.parent.removeElement(root);
-                root = undefined;
+                root = undefined; // another undefined rather than null
             })),
+            row: /*: upcast 'Ad */ 
+            (/*: obj* 'AdObj */ 
+                (function (values) 
+                 /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+                     var tr = document.createElement('tr'),
+                     td /*: upcast Undef + HTMLElement */,
+                     i = 0;
+                     for (i = 0; i < values.length; i += 1) {
+                         td = document.createElement('td');
+                         td.appendChild(document.createTextNode(String(values[i])));
+                         tr.appendChild(td);
+                     }
+                     return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ tr]));
+                 })),
             tag: /*: upcast 'Ad */ 
             (/*: obj* 'AdObj */ 
                 (function (tag, type, name) 
                  /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad * 'Ad ... -> 'Ad */ 
                  {
                      var node /*: upcast Undef + HTMLElement */;
-                     if (typeof tag !== 'string') {
-                         return error();
+                     if (reject_name(tag)) {
+                         return error("ADsafe: Bad tag: " + String(tag));
                      }
-                     if (makeableTagName[tag] !== true) {
-                         return error('ADsafe: Bad tag: ' + tag);
-                     }
-                     node = document.createElement(makeableTagName[safe_name(tag)]);
+                     node = document.createElement(makeableTagName[tag]);
                      if (name) {
                          node.autocomplete = 'off';
                          node.name = string_check(name);
@@ -1659,58 +1670,15 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                      if (text instanceof Array) {
                          a = /*: HTMLElement + Undef */ [];
                          for (i = 0; i < text.length; i += 1) {
-                             a[i] = document.createTextNode(String(text[i]));
+                             a[i] = document.createTextNode(string_check(text[i]));
                          }
                          return /*: obj* 'AdObj */ (new Bunch(a));
                      }
                      return /*: obj* 'AdObj */ (new Bunch(
                          [/*: upcast HTMLElement + Undef */ 
-                             (document.createTextNode(String(text)))]));
+                             (document.createTextNode(string_check(text)))]));
                  })),
-            append: /*: upcast 'Ad */ 
-            (/*: obj* 'AdObj */ 
-                (function (bunch) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
-                    var b = bunch.___nodes___, i = 0, n /*: upcast Undef + HTMLElement */;
-                    for (i = 0; i < b.length; i += 1) {
-                        n = b[i];
-                        // This is not possible.  n is a node or undefined.
-//                        if (typeof n === 'string' || typeof n === 'number') {
-//                            n = document.createTextNode(String(n));
-//                        }
-                        root.appendChild(n);
-                    }
-                    return dom;
-                })),
-            prepend: /*: upcast 'Ad */ 
-            (/*: obj* 'AdObj */ 
-                (function (bunch) 
-                 /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
-                     var b = bunch.___nodes___, i = 0;
-                     for (i = 0; i < b.length; i += 1) {
-                         root.insertBefore(b[i], root.firstChild);
-                     }
-                     return dom;
-                 })),
-            row: /*: upcast 'Ad */ 
-            (/*: obj* 'AdObj */ 
-                (function (values) 
-                 /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
-                     var tr = document.createElement('tr'),
-                     td /*: upcast Undef + HTMLElement */,
-                     i = 0;
-                     for (i = 0; i < values.length; i += 1) {
-                         td = document.createElement('td');
-                         td.appendChild(document.createTextNode(String(values[i])));
-                         tr.appendChild(td);
-                     }
-                     return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ tr]));
-                 }))
         };
-
-        // Mark the node as a root. This prevents event bubbling from propogating
-        // past it.
-
-        root['___adsafe root___'] = '___adsafe root___';
 
         if (typeof root.addEventListener === 'function') {
             root.addEventListener('focus', dom_event, true);
@@ -1731,6 +1699,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                              root.onkeypress  = dom_event;
         }
 
+        // I'm ignoring interceptors, so we don't need the prototype here
         return dom;
     }
 
@@ -1753,6 +1722,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         get: function(object, name) 
         /*: 'Ad * 'Ad -> 'Ad */ 
         {
+            if (object.window) { return error(); }
             if (typeof object !== "object") { return error(); }
             if (!reject_name(name)) {
                 return object[name];
@@ -1796,13 +1766,15 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 root.removeChild(scripts[i]);
                 i -= 1;
             } while (i >= 0);
-            //    root = make_root(root, id);   // Change this to just return dom (ignoring interceptors)
-            if(root) { // need to satisfy type checker...this one's annoying
+            if(root) { // need to satisfy type checker...
                 dom = make_root(root, id);
             }
             
-            
             // If the page has registered interceptors, call them.
+
+            // I'm omitting interceptors for now, since they sort of break
+            // expectations by definition.  But for future work it's worth
+            // looking into how typing the interceptors can help
             
             //    for (i = 0; i < interceptors.length; i += 1) {
             //        fun = interceptors[i];
@@ -1820,7 +1792,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             try {
                 f(dom, adsafe_lib);
             } catch (e) {
-                throw e;  
+                throw e;
             }
             root = null;
             adsafe_lib = null;
@@ -1847,11 +1819,10 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             return Object.prototype.toString.apply(value) === '[object Array]';
         },
 
+
         //  ADSAFE.later calls a function at a later time.
 
-        later: function (func, timeout) 
-        /*: 'Ad * 'Ad -> 'Ad */
-        {
+        later: function (func, timeout) /*: 'Ad * 'Ad -> 'Ad */ {
             if (typeof func === 'function') {
                 setTimeout(func, timeout || 0);
             } else {
@@ -1859,13 +1830,13 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             }
         },
 
+
         //  ADSAFE.lib allows an approved ADsafe library to make itself available
         //  to a widget. The library provides a name and a function. The result of
         //  calling that function will be made available to the widget via the name.
 
-        lib: function (name, f) 
-        /*: 'Ad * 'Ad -> 'Ad */
-        {
+        lib: function (name, f) /*: 'Ad * 'Ad -> 'Ad */ {
+            if (!adsafe_id) { return error(); }
             if (reject_name(name)) {
 	        return error("ADsafe lib violation.");
             }
@@ -1874,24 +1845,32 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 
         //  ADSAFE.log is a debugging aid that spams text to the browser's log.
 
-        log: function(s) 
-        /*: 'Ad -> Undef */ 
-        {
+        log: function(s) /*: 'Ad -> Undef */ {
             if (window.console) {
                 console.log(String(s));        /* Firebug */
             } else if (typeof Debug === 'object') {
                 Debug.writeln(String(s));      /* IE */
+            } else if (typeof opera === 'opera') {
+                opera.postError(String(s));    /* Opera */
             }
         },
+
         
-        //  Field deletion breaks the soundness of our type system, so we
-        //  don't allow it.  Anecdotal evidence suggests that deletion is
-        //  not commonly used in JS.
-        //        remove: ADSAFE_remove,
+//  ADSAFE.remove deletes a value from an object.
+
+        remove: /*: cheat 'Ad */ (function (object, name) /*: 'Ad * 'Ad -> Undef */ {
+            if (object.window) { return error(); }
+            if(typeof object !== "object") { return error(); }
+            if(reject_name(name)) {
+                return error();
+            }
+            delete object[name];
+        }),
 
         set: function(object, name, value) 
         /*: 'Ad * 'Ad * 'Ad -> 'Ad */
         {
+            if (object.window) { return error(); }
             if (typeof object !== "object") { return error(); }
             if (!reject_name(name)) {
                 object[name] = value;

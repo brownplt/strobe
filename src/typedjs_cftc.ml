@@ -86,5 +86,7 @@ let rec a_def (def : def) : def = match def with
       in DConstructor (c', a_def d)
   | DExternalMethod (p, cname, mid, me, d) -> 
       DExternalMethod (p, cname, mid, a_exp me, a_def d)
+  | DPrototype (p, cname, obj, d) ->
+      DPrototype (p, cname, a_exp obj, a_def d)
 
 let insert_typecasts  = a_def

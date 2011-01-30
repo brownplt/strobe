@@ -47,6 +47,7 @@ type typ =
   | TRec of id * typ
   | TId of id
   | TField
+  | TList of typ list
   | TBad (* ☠ *)
 and this =
   | ThisIs of typ
@@ -139,6 +140,9 @@ type def =
   | DConstructor of constr_exp * def
       (* p, constr name, field name, field type, field expr, rest of defs *)
   | DExternalMethod of pos * id * id * exp * def
+   (** Constr.prototype = {m1 : e1, m2 : e2 ... } *)
+  | DPrototype of pos * id * exp * def
+
 
 module Exp : sig
 

@@ -17,55 +17,56 @@
 //      func        A function that will be called when a pick is made.
 
 ADSAFE.lib("picker", function () {
-    return function (box, x, y, func) {
+    return function() {
+        return function (box, x, y, func) {
+            var i;
 
-        var i;
 
+            // Make span elements and put them in the box.
 
-// Make span elements and put them in the box.
-
-        box.append(box.tag('span')
-            .value('clear')
-            .style('backgroundColor', 'white')
-            .style('color', 'black'));
-        for (i = 1; i < 10; i += 1) {
             box.append(box.tag('span')
-                .value(i)
-                .style('backgroundColor', 'white')
-                .style('color', 'black'));
-        }
-        box
-            .ephemeral()
-            .style('cursor', 'default')
-            .style('position', 'absolute')
-            .style('left', Math.max(x - (box.getOffsetWidth() / 2), 0) + 'px')
-            .style('top', (y - (box.getOffsetHeight() / 2)) + 'px')
-            .style('visibility', 'visible')
-            .on('mouseup', function (e) {
-                if (e.target.getTagName() === 'span') {
-                    func(e.target.getValue());
-                }
-                box.ephemeral();
-                e.preventDefault();
-            })
-            .on('mouseout', function (e) {
-                if (e.target.getTagName() === 'span') {
-                    e.target
-                        .style('backgroundColor', 'white')
-                        .style('color', 'black');
-                } else {
+                       .value('clear')
+                       .style('backgroundColor', 'white')
+                       .style('color', 'black'));
+            for (i = 1; i < 10; i += 1) {
+                box.append(box.tag('span')
+                           .value(i)
+                           .style('backgroundColor', 'white')
+                           .style('color', 'black'));
+            }
+            box
+                .ephemeral()
+                .style('cursor', 'default')
+                .style('position', 'absolute')
+                .style('left', Math.max(x - (box.getOffsetWidth() / 2), 0) + 'px')
+                .style('top', (y - (box.getOffsetHeight() / 2)) + 'px')
+                .style('visibility', 'visible')
+                .on('mouseup', function (e) {
+                    if (e.target.getTagName() === 'span') {
+                        func(e.target.getValue());
+                    }
                     box.ephemeral();
-                }
-                e.preventDefault();
-            })
-            .on('mouseover', function (e) {
-                if (e.target.getTagName() === 'span') {
-                    e.target
-                        .style('backgroundColor', 'green')
-                        .style('color', 'yellow');
-                }
-                e.preventDefault();
-            });
+                    e.preventDefault();
+                })
+                .on('mouseout', function (e) {
+                    if (e.target.getTagName() === 'span') {
+                        e.target
+                            .style('backgroundColor', 'white')
+                            .style('color', 'black');
+                    } else {
+                        box.ephemeral();
+                    }
+                    e.preventDefault();
+                })
+                .on('mouseover', function (e) {
+                    if (e.target.getTagName() === 'span') {
+                        e.target
+                            .style('backgroundColor', 'green')
+                            .style('color', 'yellow');
+                    }
+                    e.preventDefault();
+                });
+        };
     };
 });
 

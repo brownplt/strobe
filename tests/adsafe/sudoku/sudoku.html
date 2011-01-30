@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+
+
+    <title>Sudoku Solutionator</title>
+
+    <style>
+        table.sudoku {
+            margin: 1em;
+            border: outset 2px;
+            empty-cells: show;
+        }
+        table.sudoku td {
+            background-color: gainsboro;
+            width: 2em;
+            height: 2em;
+            text-align: center;
+            vertical-align: middle;
+            border: outset 2px;
+            cursor: default;
+            font-weight: 100;
+            color: black;
+        }
+        table.sudoku td b {
+            font-weight: 900;
+            color: blue;
+        }
+        table.sudoku td.suduko-region {
+            background-color: silver;
+        }
+
+        div.sudoku-hilite {
+            padding: 1pt;
+            text-align: center;
+            font-size: 9pt;
+            cursor: default;
+        }
+        div.sudoku-hilite {
+            background-color: silver;
+        }
+
+        div.sudoku-control {
+            border-style: outset;
+            border-width: 2px;
+            margin: 1em;
+            background-color: gainsboro;
+            text-align: center;
+            padding: 4px;
+        }
+        div.sudoku-control input {margin: 4px;}
+        div.sudoku-control input.sudoku-mode {
+            border-style: inset;
+            background-color: silver;
+        }
+    </style>
+</head><body>
+    <script src="adsafe.js"></script>
+    <div id="SUDOKU_" style="float: left;">
+    <h1 style="margin-top: 1em; text-align: center;">Sudoku Solutionator</h1>
+        <script>
+        ADSAFE.id("SUDOKU_");
+        </script>
+        <script src="picker.js"></script>
+        <script src="sudokuwidget.js"></script>
+        <script src="sudoku.js"></script>
+        <script src="sudokusolver.js"></script>
+        <script>
+        ADSAFE.go('SUDOKU_', function (dom, lib) {
+            "use strict";
+
+// ADsafe makes lib an execute-only structure, so the picker, sudoku, and
+// solver properties are functions that returns the functions that can be
+// passed to the widget.
+        ADSAFE.log("In main");
+            lib.widget(dom, lib.picker(), lib.sudoku(), lib.solver());
+        });
+        </script>
+    <br clear="all">
+    <p>Pushing the mouse down on a game cell produces a picker that displays a
+    set of numbers. The number that is selected when the mouse button goes up
+    will be input into the cell.</p>
+    <p>The game has two modes: Setup and play. Cells that are entered in
+    setup mode are protected in play mode.</p>
+    <p>The solutionator uses a brute-force algorithm that is guaranteed to
+    solve any puzzle that has a solution, but it is not very clever in how
+    it goes about it. It can take a long time to find a solution, but it
+    does not lock up the browser. This is a demonstration of eteration.</p>
+    </div>
+</body></html>
