@@ -1292,9 +1292,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 }
                 return this;
             },
-            q: function(text) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            q: function(text) /*: ['Ad + HTMLWindow] 'Ad -> Bunch */ {
                 star = this.___star___;
-                return /*: obj* 'AdObj */ (new Bunch(
+                return  (new Bunch(
                     quest(parse_query(text, id), 
                           this.___nodes___)));
             },
