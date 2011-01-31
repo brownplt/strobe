@@ -24,8 +24,8 @@ open Typedjs_types
 %%
 
 args
-  :  { ([], TConstr ("Undef", [])) }
-  | arg_typ { ([$1], TConstr ("Undef", [])) }
+  :  { ([], TBot) }
+  | arg_typ { ([$1], TBot) }
   | arg_typ DOTS { ([], $1) }
   | arg_typ STAR args { $1 :: (fst $3), snd $3 }
 
