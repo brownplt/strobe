@@ -231,6 +231,8 @@ module Env = struct
     match typ with 
       | TUnion (s, t) ->
         typ_union env (normalize_typ env s) (normalize_typ env t)
+      | TIntersect (s, t) ->
+        TIntersect (normalize_typ env s, normalize_typ env t)
       | TObject fs ->
           let fs = List.fast_sort cmp_props fs in
             TObject (map (second2 (normalize_typ env)) fs)
@@ -387,6 +389,7 @@ module Env = struct
     | TSource t -> TSource t
     | TSink t -> TSink t
     | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
+    | TIntersect (s, t) -> TIntersect (static cs rt s, static cs rt t)
     | TForall _ -> typ
     | TRec (x, t) -> static cs rt (Typedjs_syntax.Typ.typ_subst x typ t)
     | TField -> List.fold_left (basic_static cs) TBot (RTSetExt.to_list rt)

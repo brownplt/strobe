@@ -33,6 +33,7 @@ type typ =
   | TStrSet of id list (* Just these strings *)
   | TStrMinus of id list (* All strings minus some *)
   | TUnion of typ * typ
+  | TIntersect of typ * typ
   | TArrow of this * typ list * typ * typ      
   | TObject of (id * typ) list
   | TObjStar of (id * typ) list * typ * typ * typ

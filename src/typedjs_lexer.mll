@@ -44,6 +44,7 @@ rule token = parse
    | "*" { STAR }
    | ":" { COLON }
    | "+" { UNION }
+   | "&" { INTERSECTION }
    | "." { DOT }
    | "..." { DOTS }
    | ";" { SEMI }

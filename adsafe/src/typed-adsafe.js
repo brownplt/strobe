@@ -194,7 +194,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
     ('sort');
 
     var reject_name = 
-        /*: cheat (('banned -> True) + ('not_banned -> False)) */
+        /*: cheat (('banned -> True) & ('not_banned -> Bool)) */
     (function (name) /*: 'Ad -> Bool */ {
         return 
         ((typeof name !== 'number' || name < 0) &&

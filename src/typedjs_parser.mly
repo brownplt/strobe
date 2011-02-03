@@ -11,7 +11,7 @@ open Typedjs_types
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
        CHECKED CHEAT HASHPROTO TREC TYPE EQUALS BOT CODE REF OBJCAST
-       DOTS CONST CASH CARET SEMI BAD UNDER FRESH
+       DOTS CONST CASH CARET SEMI BAD UNDER FRESH INTERSECTION
 
 %right UNION
 
@@ -69,6 +69,7 @@ arg_typ
   | BOOL { typ_bool }
   | UNDEF { typ_undef }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
+  | arg_typ INTERSECTION arg_typ { TIntersect ($1, $3) }
   | LBRACE fields RBRACE { TObject $2 }
   | LBRACE fields proto COMMA star COMMA code RBRACE { TObjStar ($2, $3, $5, $7) }
   | LBRACE star COMMA proto COMMA code SEMI fields RBRACE { TObjStar ($8, $4, $2, $6) }

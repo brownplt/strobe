@@ -41,6 +41,7 @@ type typ =
   | TStrSet of id list (* Just these strings *)
   | TStrMinus of id list (* All strings minus some *)
   | TUnion of typ * typ
+  | TIntersect of typ * typ
   | TArrow of this * typ list * typ * typ (** this, args, restargs, return *)
   | TObject of (id * typ) list
       (** [TObjStar ([(s,t)], p, star, f)] 
@@ -256,6 +257,7 @@ module Pretty = struct
       | TBot -> text "Bot"
       | TFresh t -> horz [text "fresh"; typ t]
       | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
+      | TIntersect (t1, t2) -> horz [typ t1; text "&"; typ t2]
       | TArrow (tt, arg_typs, rest_typ, r_typ) ->
           horz[ this f tt;
                 horz (intersperse (text "*") 
