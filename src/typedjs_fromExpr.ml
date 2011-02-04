@@ -103,6 +103,8 @@ let rec exp (env : env) expr = match expr with
   | NewExpr (a, VarExpr (_, x), args) -> ENew (a, x, map (exp env) args)
   | NewExpr (p, _, _) ->
       raise (Not_well_formed (p, "new expressions much name the constructor"))
+  | PrefixExpr (a, "prefix:delete", BracketExpr (a2, e1, e2)) -> 
+      EInfixOp (a, "delete", exp env e1, exp env e2)
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
   | InfixExpr (p, "instanceof", e1, e2) -> begin match e2 with
       | IdExpr (p2, constr_name)
