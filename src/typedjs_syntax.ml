@@ -170,7 +170,7 @@ let rec typ_subst' s_env x s typ =
           TArrow (this_subst t1, map (typ_subst x s) t2s, typ_subst x s tr, typ_subst x s t3)
       | TObject fs -> TObject (map (second2 (typ_subst x s)) fs)
       | TObjStar (fs, proto, other_typ, code) ->
-          TObjStar ((map (second2 (typ_subst x s)) fs), proto, 
+          TObjStar ((map (second2 (typ_subst x s)) fs), typ_subst x s proto, 
                     typ_subst x s other_typ,
                     typ_subst x s code)
       | TRef t -> TRef (typ_subst x s t)
@@ -425,4 +425,3 @@ end
 
 let string_of_typ = FormatExt.to_string Pretty.p_typ
 let string_of_exp = FormatExt.to_string Pretty.p_exp
-
