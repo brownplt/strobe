@@ -203,7 +203,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             || banned[name];
     });
 
-    // Joe added this for convenience in some places, to ensure that
+    // ADDED this for convenience in some places, to ensure that
     // things are not on the prototype.  Used in quest, for instance
     function safe_name(name) /*: 'Ad -> 'not_banned */ {
         if(reject_name(name)) {
@@ -261,8 +261,8 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                   );
     }
 
-    function parse_query(text_in, id) 
-    /*: 'Ad * Str + Null + Undef -> Array<'Selector> + Undef */
+    function parse_query(text, id) 
+    /*: Str * Str + Null + Undef -> Array<'Selector> + Undef */
     {
 
         // Convert a query string into an array of op/name/value selectors.
@@ -281,10 +281,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         selector /*: upcast Undef + 'Selector */,
         qx = id ?
             /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([A-Z]+_[A-Z0-9]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/ :
-            /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([\-A-Za-z0-9_]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/,
-        // Added by Joe.  Adding a new variable helps satisfy the type checker,
-        // which has trouble keeping track of just doing string_check(text).
-        text = string_check(text_in); 
+            /^\s*(?:([\*\/])|\[\s*([a-z][0-9a-z_\-]*)\s*(?:([!*~|$\^]?\=)\s*([0-9A-Za-z_\-*%&;.\/:!]+)\s*)?\]|#\s*([\-A-Za-z0-9_]+)|:\s*([a-z]+)|([.&_>\+]?)\s*([a-z][0-9a-z\-]*))\s*/;
 
         // Loop over all of the selectors in the text.
 
@@ -1295,7 +1292,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             q: function(text) /*: ['Ad + HTMLWindow] 'Ad -> Bunch */ {
                 star = this.___star___;
                 return  (new Bunch(
-                    quest(parse_query(text, id), 
+                    quest(parse_query(string_check(text), id), 
                           this.___nodes___)));
             },
             remove: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
@@ -1618,7 +1615,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                  })),
             q: /*:upcast 'Ad */ (/*: obj* 'AdObj */ (function (text) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 star = false;
-                var query = parse_query(text, id);
+                var query = parse_query(string_check(text), id);
                 if (typeof hunter[query[0].op] !== 'function') {
                     return error('ADsafe: Bad query: ' + query[0]);
                 }
@@ -1699,7 +1696,6 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                              root.onkeypress  = dom_event;
         }
 
-        // I'm ignoring interceptors, so we don't need the prototype here
         return dom;
     }
 
@@ -1712,6 +1708,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         // This function is... difficult to type
         create: 
         /*: cheat 'Ad */ (typeof Object.create === 'function' ? Object.create : 
+                          // 'Ad -> 'Ad is the type we wish we could ascribe
                           function (o) /*: 'Ad -> 'Ad */ {
                               F.prototype = typeof o === 'object' && o ? o : Object.prototype;
                               return new F();
@@ -1882,9 +1879,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         //  ADSAFE._intercept allows the page to register a function that will
         //  see the widget's capabilities.
 
-        //        _intercept: function (f) {
-        //            interceptors.push(f);
-        //        }
+        //_intercept: function (f) /*: 'Ad * 'Ad -> 'Ad */ {
+        //    interceptors.push(f);
+        //}
 
     };
 }());
