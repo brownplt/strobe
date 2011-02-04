@@ -1858,14 +1858,14 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
         
 //  ADSAFE.remove deletes a value from an object.
 
-        remove: /*: cheat 'Ad */ (function (object, name) /*: 'Ad * 'Ad -> Undef */ {
+        remove: function (object, name) /*: 'Ad * 'Ad -> Undef */ {
             if (object.window) { return error(); }
             if(typeof object !== "object") { return error(); }
             if(reject_name(name)) {
                 return error();
             }
             delete object[name];
-        }),
+        },
 
         set: function(object, name, value) 
         /*: 'Ad * 'Ad * 'Ad -> 'Ad */
