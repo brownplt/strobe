@@ -1,12 +1,5 @@
 var star /*: cheat Undef + Bool */;
 
-function Bunch(nodes) 
-/*: constructor (Undef + Array<HTMLElement + Undef> -> {___nodes___: Undef + Array<HTMLElement + Undef>, ___star___: Bool}) */ 
-{
-    this.___nodes___ = nodes;
-    this.___star___ = star && nodes.length > 1;
-    star = false;
-}
 
 var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 
@@ -614,6 +607,14 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             }
         }
 
+        function Bunch(nodes) 
+        /*: constructor (Undef + Array<HTMLElement + Undef> -> {___nodes___: Undef + Array<HTMLElement + Undef>, ___star___: Bool}) */ 
+        {
+            this.___nodes___ = nodes;
+            this.___star___ = star && nodes.length > 1;
+            star = false;
+        }
+
         var allow_focus = /*: upcast Bool */ true,
         dom /*: upcast 'Ad */,
         dom_event = function (e) /*: Event -> Undef */ {
@@ -781,7 +782,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 
         root['___adsafe root___'] = '___adsafe root___';
 
-        var Bunch_prototype = {
+        Bunch.prototype = {
             append : function(appendage) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___,

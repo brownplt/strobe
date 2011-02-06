@@ -105,6 +105,7 @@ type exp
   | EIf of pos * exp * exp * exp
   | EApp of pos * exp * exp list
   | EFunc of pos * id list * typ * exp
+  | EConstructor of pos * constr_exp
   | ELet of pos * id * exp * exp
   | ERec of (id * typ * exp) list * exp
   | ESeq of pos * exp * exp
@@ -124,7 +125,7 @@ type exp
   | EForInIdx of pos
   | ECheat of pos * typ * exp
 
-type constr_exp = { 
+and constr_exp = { 
   constr_pos : pos;
   constr_name : id;
   constr_typ : typ;
@@ -134,7 +135,7 @@ type constr_exp = {
   constr_prototype : exp
 }
 
-type def =
+and def =
     DEnd
   | DExp of exp * def
   | DLet of pos * id * exp * def
@@ -206,7 +207,7 @@ module Exp = struct
 
   type t = exp
 
-  let pos exp = match exp with
+  let rec pos exp = match exp with
     | EConst (p, _) -> p
     | EBot p -> p
     | EAssertTyp (p, _, _) -> p
@@ -222,8 +223,9 @@ module Exp = struct
     | EIf (p, _, _, _) -> p
     | EApp (p, _, _) -> p
     | EFunc (p, _, _, _) -> p
+    | EConstructor (p, _) -> p
     | ELet (p, _, _, _) -> p
-    | ERec (_, _) -> failwith "Exp.pos of ERec"
+    | ERec (_, e) ->  pos e (* failwith "Exp.pos of ERec" *)
     | ESeq (p, _, _) -> p
     | ELabel (p, _, _, _) -> p
     | EBreak (p, _, _) -> p
@@ -340,6 +342,10 @@ module Pretty = struct
         parens (vert [ horz [ text "fun"; parens (horz (map text args)); 
                               text ":"; typ t ];
                        exp body])
+    | EConstructor (_, c) ->
+        parens (vert [ sep [ text "define-constructor"; text c.constr_name; 
+                             parens (horz (map text c.constr_args));
+                             text ":"; typ c.constr_typ ]])
     | ELet (_, x, bound, body) ->
         parens (vert [ horz [ text "let";
                               parens (vert (map bind [(x, bound)]))];

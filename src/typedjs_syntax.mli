@@ -98,6 +98,7 @@ type exp =
   | EFunc of pos * id list * typ * exp
       (* [Typedjs_fromExpr.from_exprjs] ensures that the argument names are
          unique. *)
+  | EConstructor of pos * constr_exp
   | ELet of pos * id * exp * exp
   | ERec of (id * typ * exp) list * exp
   | ESeq of pos * exp * exp
@@ -122,7 +123,7 @@ type exp =
   | EForInIdx of pos
   | ECheat of pos * typ * exp
 
-type constr_exp = { 
+and constr_exp = { 
   constr_pos : pos;
   constr_name : id;
   constr_typ : typ;
@@ -133,7 +134,7 @@ type constr_exp = {
 }
 
 (** Module-level definitions *)
-type def =
+and def =
     DEnd
   | DExp of exp * def
   | DLet of pos * id * exp * def

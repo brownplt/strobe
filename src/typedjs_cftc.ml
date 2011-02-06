@@ -52,6 +52,7 @@ let rec a_exp (exp : exp) : exp = match exp with
   | EIf (p, e1, e2, e3) -> EIf (p, a_exp e1, a_exp e2, a_exp e3)
   | EApp (p, e1, es) -> EApp (p, a_exp e1, map a_exp es)
   | EFunc (p, ids, t, e) -> EFunc (p, ids, t, a_exp e)
+  | EConstructor (p, c) -> EConstructor (p, c)
   | ELet (p, x, e1, e2) -> ELet (p, x, a_exp e1, a_exp e2)
   | ERec (binds, e) -> ERec (map a_bind binds, a_exp e)
   | ESeq (p, e1, e2) -> ESeq (p, a_exp e1, a_exp e2)

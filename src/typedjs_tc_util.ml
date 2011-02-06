@@ -21,6 +21,7 @@ let typ_of_value (exp : exp) : typ =
     | EObject (_, fields) -> TObject (map (second2 f) fields)
     | EConst (_, c) -> tc_const c
     | EFunc (_, _, t, _) -> t
+    | ERec ([(_, t, _)], _) -> t
     | ERef (_, RefCell, e') -> TRef begin match e' with
         | EObject (_, fields) -> TObject (map (second2 f) fields)
         | EConst (_, c) -> tc_const c

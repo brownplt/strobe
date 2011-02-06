@@ -64,6 +64,7 @@ let rec ext_typ typ = match typ with
       and this_typ = TObject [] in
       TArrow (ThisIs this_typ, cont_typ :: throw_typ :: this_typ :: arg_typs, rest_typ, TBot)
   | TForall (x, x_t, t) -> TForall (x, x_t, ext_typ t)
+  | TIntersect (s, t) -> TIntersect (ext_typ s, ext_typ t)
   | _ -> failwith "ext_typ expected an arrow type"
 
 
@@ -203,6 +204,14 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
              [(true, f, k' :: throw' :: "%this" :: args, ext_typ typ, 
                cps_exp body throw' (Jmp k'))],
              ret k (mk_id f))
+  | EConstructor (_, c) -> 
+      let f = mk_name ("constructor" ^ c.constr_name)
+      and k' = new_name () 
+      and throw' = new_name () in
+        Fix (new_node (),
+             [(true, f, k' :: throw' :: "%this" :: c.constr_args, ext_typ c.constr_typ, 
+               cps_exp c.constr_exp throw' (Jmp k'))],
+             ret k (mk_id f))
   | ELet (_, x, e1, e2) ->
       cps' e1 throw
         (fun v1 ->
@@ -279,6 +288,14 @@ and cps_bind ((name, typ, e) : id * typ * exp) = match e with
          k :: throw :: "%this" :: args,
          ext_typ typ,
          cps_exp body throw (Jmp k))
+  | EConstructor (p, c) ->
+      let k = new_name () in
+      let throw = new_name () in
+        (not (is_admin_name name),
+         name,
+         k :: throw :: "%this" :: c.constr_args,
+         ext_typ typ,
+         cps_exp c.constr_exp throw (Jmp k))
   | _ -> failwith "cps_bind : expected a function"
 
 and cps_exp_list exps throw (k : cpsval list -> cpsexp) = match exps with

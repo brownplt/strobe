@@ -44,7 +44,7 @@ let rec seq expr = match expr with
         ((a2, x, e1) :: decls, body)
   | SeqExpr (a1, HintExpr (a3, txt, FuncStmtExpr (a2, f, args, e1)), e2) ->
       let (decls, body) = seq e2 in
-        ((a2, f, HintExpr (a3, txt, FuncExpr (a2, args, e1))) :: decls, body)
+        ((a2, f, HintExpr (a3, txt, FuncStmtExpr (a2, f, args, e1))) :: decls, body)
   | SeqExpr (a1, HintExpr (a4, txt2, HintExpr (a3, txt, FuncStmtExpr (a2, f, args, e1))), e2) ->
       let (decls, body) = seq e2 in
         ((a2, f, HintExpr (a4, txt2, HintExpr (a3, txt, FuncExpr (a2, args, e1)))) :: decls, body)
@@ -61,6 +61,7 @@ let rec seq expr = match expr with
 
 let rec is_value e = match e with
   | HintExpr (_, _, FuncExpr _) -> true
+  | HintExpr (_, _, FuncStmtExpr _) -> true
   | HintExpr (_, _, HintExpr (_, _, FuncExpr _)) -> true
   | HintExpr (_, _, HintExpr (_, _, HintExpr (_, _, FuncExpr _))) -> true
   | ConstExpr _ -> true
@@ -186,13 +187,13 @@ let rec exp (env : env) expr = match expr with
       ELet (a, x, exp env e, EConst (a, S.CUndefined))
   | HintExpr (p', txt, FuncStmtExpr (a, f, args, body)) ->
       begin match match_func (IdMap.add f false env)
-        (HintExpr (p', txt, FuncExpr (a, args, body))) with
+        (HintExpr (p', txt, FuncExpr (a, args, body))) (Some f) with
             Some (t, e) ->
-              ERec ([ (f,  t, e) ], EConst (a, S.CUndefined))
+              ERec ([ (f,  t, e) ], EId (a, f))
           | None -> failwith "match_func returned None on a FuncExpr (2)"
       end
   | HintExpr (p, txt, FuncExpr _) -> 
-        (match match_func env expr with
+        (match match_func env expr None with
              Some (_, e) -> e
            | None -> failwith ("match_func returned None on a FuncExpr (1) at " ^
                                  (string_of_position p)))
@@ -273,21 +274,19 @@ and av expr = match expr with
   | IdExpr _ -> []
 and third e = match e with (_, _, v) -> v
 
-and match_func env expr = match expr with
-  | HintExpr (p, txt, FuncExpr (a, args, LabelledExpr (a', "%return", body))) ->
-      if List.length args != List.length (nub args) then
-        raise (Not_well_formed (a, "each argument must have a distinct name"));
-      let typ = match parse_annotation p txt with
-        | ATyp t -> t
-        | AConstructor t -> t
-        | _ -> raise
-            (Not_well_formed (p, "expected type on function, got " ^ txt)) in
+and match_constr_body2 env expr = match expr with
+    (* we drop the LabelledExpr, which will prevents us from using
+       return within a constructor. *)
+    HintExpr (p'', txt, FuncStmtExpr (p, f, args, LabelledExpr (p', l, body))) ->
+      let typ = match parse_annotation p'' txt with
+        | AConstructor typ -> typ 
+        | _ -> raise 
+            (Not_well_formed (p'', "expected a constructor annotation")) in 
       let locally_defined_vars = locals body in
       let visible_free_vars = 
         IdSet.diff (IdSetExt.from_list (IdMapExt.keys env))
           locally_defined_vars in
       let lambda_bound_vars = IdSetExt.from_list args in
-      let assignable_vars = IdSetExt.from_list (av body) in
       let locally_shadowed_args = 
         IdSet.inter lambda_bound_vars locally_defined_vars in
         if not (IdSet.is_empty locally_shadowed_args) then
@@ -295,7 +294,7 @@ and match_func env expr = match expr with
             IdSetExt.p_set FormatExt.text
               locally_shadowed_args Format.str_formatter;
             raise (Not_well_formed 
-                     (a, "the following arguments are redefined as local \
+                     (p, "the following arguments are redefined as local \
                           variables: " ^ Format.flush_str_formatter ()))
           end;
         let env' = 
@@ -305,18 +304,101 @@ and match_func env expr = match expr with
                         else 
                           acc)
             env IdMap.empty in
+          (* when doing inits, nothing is reffed yet *)
+        let inits_env = 
+          fold_left (fun acc x -> IdMap.add x false acc) env' args in
         let env' = 
-          fold_left (fun acc x -> IdMap.add x (IdSet.mem x assignable_vars) acc) env' args in
-        let mutable_arg exp id =
-          if IdSet.mem id assignable_vars then
-            ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) 
-          else exp in
+          fold_left (fun acc x -> IdMap.add x true acc) env' args in
+          (* take the beginning "this.foo = bar"s and put them into inits
+          *)
+        let match_init eexp = match eexp with
+            AssignExpr (_,
+                        PropLValue (
+                          _, ThisExpr _, ConstExpr (_, S.CString fname)),
+                        fval) -> Some (fname, exp inits_env fval)
+          | _ -> None in                
+        let body_exp = ref body in
+        let inits : (id * exp) list ref = ref [] in
+        let rec proc_body e = match e with
+            SeqExpr (_, e1, e2) -> begin match match_init e1 with
+                Some init -> begin
+                  inits := !inits @ [ init ];
+                  body_exp := e2;
+                  proc_body e2;
+                end
+              | None -> () 
+            end
+          | _ -> () in
+          proc_body !body_exp;
+          (* turn the arguments into mutable ones *)
+          let mutable_arg exp id = 
+            ELet (p, id, ERef (p, RefCell, EId (p, id)), exp) in
+            Some 
+              { constr_pos = p;
+                constr_name = f;
+                constr_typ = typ;
+                constr_args = args;
+                constr_inits = !inits;
+                constr_exp = fold_left mutable_arg 
+                  (exp env' !body_exp) args;
+                constr_prototype = EObject (p, [])
+              }
+  | _ -> None
+      
+and match_func env expr f = match expr with
+  | HintExpr (p, txt, FuncExpr (a, args, LabelledExpr (a', "%return", body))) ->
+      if List.length args != List.length (nub args) then
+        raise (Not_well_formed (a, "each argument must have a distinct name"));
+      let (typ, constr) = match parse_annotation p txt with
+        | ATyp t -> (t, false)
+        | AConstructor t -> (t, true)
+        | _ -> raise
+            (Not_well_formed (p, "expected type on function, got " ^ txt)) in
+        if constr then
+          let c_expr = match f with
+            | Some f -> match_constr_body2 env 
+                (HintExpr (p, txt, FuncStmtExpr (a, f, args, LabelledExpr (a', "%return", body))))
+            | None -> raise (Not_well_formed (a, "No constructor name")) in
+            begin match c_expr with
+              | Some c -> Some (typ, EConstructor (a, c))
+              | None -> raise (Not_well_formed (a, "Constructor didn't match")) 
+            end
+        else
+          let locally_defined_vars = locals body in
+          let visible_free_vars = 
+            IdSet.diff (IdSetExt.from_list (IdMapExt.keys env))
+              locally_defined_vars in
+          let lambda_bound_vars = IdSetExt.from_list args in
+          let assignable_vars = IdSetExt.from_list (av body) in
+          let locally_shadowed_args = 
+            IdSet.inter lambda_bound_vars locally_defined_vars in
+            if not (IdSet.is_empty locally_shadowed_args) then
+              begin
+                IdSetExt.p_set FormatExt.text
+                  locally_shadowed_args Format.str_formatter;
+                raise (Not_well_formed 
+                         (a, "the following arguments are redefined as local \
+                          variables: " ^ Format.flush_str_formatter ()))
+              end;
+            let env' = 
+              IdMap.fold (fun key v acc ->
+                        if IdSet.mem key visible_free_vars then
+                          IdMap.add key v acc
+                        else 
+                          acc)
+                env IdMap.empty in
+            let env' = 
+              fold_left (fun acc x -> IdMap.add x (IdSet.mem x assignable_vars) acc) env' args in
+            let mutable_arg exp id =
+              if IdSet.mem id assignable_vars then
+                ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) 
+              else exp in
         begin match Typ.match_func_typ typ with
             Some (arg_typs, r) ->
-(*              if List.length args != List.length arg_typs then
-                raise (Not_well_formed (
+              (*              if List.length args != List.length arg_typs then
+                              raise (Not_well_formed (
                          a, sprintf "given %d args but %d arg types"
-                           (List.length args) (List.length arg_typs)));*)
+                              (List.length args) (List.length arg_typs)));*)
               Some (typ, EFunc (a, args, typ, 
                                 fold_left mutable_arg
                                   (ELabel (a', "%return", r, exp env' body))

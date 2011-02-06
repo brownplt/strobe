@@ -97,6 +97,65 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         Env.lookup_id x env
       with Not_found -> raise (Typ_error (p, x ^ " is not defined"))
     end
+  | ESeq (a, (ESetRef (a2, EId (a3, cname), (ERec ([(_,_,EConstructor (p, cexp))], _)))), e') ->
+      begin match cexp.constr_typ with
+          TArrow (_, arg_typs, rest_typ, result_typ) -> 
+            if List.length arg_typs = List.length (cexp.constr_args) then ()
+            else raise (
+              Typ_error (p,
+                         "given " ^ (string_of_int (List.length 
+                                                      (cexp.constr_args))) 
+                         ^ " arg names but "
+                         ^ (string_of_int (List.length arg_typs)) 
+                         ^ " arg types"));            
+            let bind_arg env x t = Env.bind_id x t env in
+            let env = List.fold_left2 bind_arg env (cexp.constr_args) arg_typs
+            in
+            let env = Env.clear_labels env in           
+              begin match result_typ with
+                  TObject fields ->
+                    (* first update the env to have the class
+                       available inside the constructor body *)
+                    (* create a new class, add fields as initial methods *)
+                    (* also add the constr itself as a tarrow *)
+                    let env = Env.new_root_class env cexp.constr_name in
+                    let env = Env.bind_id cexp.constr_name 
+                      (TRef (Env.check_typ p env cexp.constr_typ)) env in
+                    let f (fname, ftype) envacc = Env.add_method
+                      cexp.constr_name fname ftype envacc in
+                    let env = fold_right f fields env in
+                      (* first make sure all fields are initialized with
+                         the right types in constr_inits. *)
+                    let check_field (name, typ) = match typ with
+                      | TRef t -> begin try 
+                          let (_, e) = List.find (fun (n,_) -> n = name) 
+                            cexp.constr_inits in 
+                          let etype = tc_exp env e in
+                            if Env.subtype env etype t then () 
+                            else 
+                              raise 
+                                (Typ_error (
+                                   p, sprintf "for field %s, expected type %s, \
+                                               got %s" name (string_of_typ t)
+                                     (string_of_typ etype)))
+                        with
+                            Not_found -> raise (
+                              Typ_error (p, "field " ^ name ^ 
+                                           " not initialized in constructor"))
+                        end
+                      | _ ->
+                          raise (Typ_error (p, "expected an arrow type for \
+                            the constructor")) in
+                      List.iter check_field fields;
+                      (* now check the body, with "this" bound to res_type *)
+                      ignore (tc_exp (Env.bind_id "this" result_typ env) 
+                                cexp.constr_exp);
+                      tc_exp env e'
+                | _ -> raise (Typ_error (
+                                p, "constructor's ret type must be obj"))
+              end
+        | _ -> raise (Typ_error (p, "expected arrow type on constructor"))
+      end
   | ELet (_, x, e1, e2) -> tc_exp (Env.bind_id x (tc_exp env e1) env) e2
   | ESeq (_, (EApp (p2, ef, [(ETypecast (p5, typ, EThis _))
                               as arg]) 
@@ -408,7 +467,6 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                   (sprintf "given %d argument names, but %d argument types"
                      (List.length args) (List.length arg_typs));
               let bind_arg env x t = 
-                printf "Binding %s to %s\n" x (string_of_typ t);
                 Env.bind_id x t env in
               let env = List.fold_left2 bind_arg env args arg_typs in
               let env = Env.clear_labels env in
