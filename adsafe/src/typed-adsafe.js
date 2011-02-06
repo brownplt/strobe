@@ -1,9 +1,11 @@
+var star /*: cheat Undef + Bool */;
+
 function Bunch(nodes) 
 /*: constructor (Undef + Array<HTMLElement + Undef> -> {___nodes___: Undef + Array<HTMLElement + Undef>, ___star___: Bool}) */ 
 {
     this.___nodes___ = nodes;
-    this.___star___ = true;//star && nodes.length > 1;
-//    star = false;
+    this.___star___ = star && nodes.length > 1;
+    star = false;
 }
 
 var ADSAFE = (function () /*:  -> 'ADSAFE */ {
