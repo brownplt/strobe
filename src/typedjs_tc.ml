@@ -98,6 +98,19 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       with Not_found -> raise (Typ_error (p, x ^ " is not defined"))
     end
   | ELet (_, x, e1, e2) -> tc_exp (Env.bind_id x (tc_exp env e1) env) e2
+  | ESeq (_, (EApp (p2, ef, [(ETypecast (p5, typ, EThis _))
+                              as arg]) 
+               as app), e2) -> 
+      begin match tc_exp env ef with
+        | TIntersect (TArrow (this1, [arg1], rest1, TBot), 
+                      TArrow (this2, [arg2], rest2, tc))
+            when not (Env.subtype env tc TBot) ->
+            let env_cont = Env.bind_id "this" arg2 env in
+              tc_exp env_cont e2
+        | _ ->
+            ignore (tc_exp env app);
+            tc_exp env e2
+      end
   | ESeq (_, e1, e2) -> begin match tc_exp env e1 with
         TBot -> (* e1 will not return; no need to typecheck e2 *)
           TBot
@@ -387,29 +400,39 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         tc_exp env body
   | EFunc (p, args, fn_typ, body) -> 
       let expected_typ = Env.check_typ p env fn_typ in
-      begin match Env.bind_typ env expected_typ with
-          (env, TArrow (this_t, arg_typs, rest_typ, result_typ)) ->
-            if not (List.length arg_typs = List.length args) then
-              error p 
-                (sprintf "given %d argument names, but %d argument types"
-                   (List.length args) (List.length arg_typs));
-            let bind_arg env x t = Env.bind_id x t env in
-            let env = List.fold_left2 bind_arg env args arg_typs in
-            let env = Env.clear_labels env in
-            let env = match this_t with
-              | NoThis -> env
-              | ThisIs t -> Env.bind_id "this" t env in
-            let env = Env.bind_id "arguments" (TList arg_typs) env in
-            let body_typ = tc_exp env body in
-              if Env.subtype env body_typ result_typ then 
-                expected_typ
-              else raise 
-                (Typ_error
-                   (p,
-                    sprintf "function body has type\n%s\n, but the \
+      let check_arrow env arrow =
+        match arrow with
+          | TArrow (this_t, arg_typs, rest_typ, result_typ) ->
+              if not (List.length arg_typs = List.length args) then
+                error p 
+                  (sprintf "given %d argument names, but %d argument types"
+                     (List.length args) (List.length arg_typs));
+              let bind_arg env x t = 
+                printf "Binding %s to %s\n" x (string_of_typ t);
+                Env.bind_id x t env in
+              let env = List.fold_left2 bind_arg env args arg_typs in
+              let env = Env.clear_labels env in
+              let env = match this_t with
+                | NoThis -> env
+                | ThisIs t -> Env.bind_id "this" t env in
+              let env = Env.bind_id "arguments" (TList arg_typs) env in
+              let body_typ = tc_exp env body in
+                if Env.subtype env body_typ result_typ then 
+                  expected_typ
+                else raise 
+                  (Typ_error
+                     (p,
+                      sprintf "function body has type\n%s\n, but the \
                              return type is\n%s" (string_of_typ body_typ)
-                      (string_of_typ result_typ)))
-        | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
+                        (string_of_typ result_typ)))
+          | _ -> raise (Typ_error (p, "invalid type annotation on a function")) in
+        begin match Env.bind_typ env expected_typ with
+          | (env, TIntersect (arrow1, arrow2)) ->
+              let left = check_arrow env arrow1 in
+              let right = check_arrow env arrow2 in
+                TIntersect (left, right)
+          | (env, arrow) ->
+              check_arrow env arrow
       end
   | ESubsumption (p, t, e) ->
       let s = tc_exp env e in
