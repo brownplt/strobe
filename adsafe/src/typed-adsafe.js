@@ -188,6 +188,11 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
     ('some')
     ('sort');
 
+    // The treatment of reject_name is in the appendices of the paper.
+    // We can write down a useful type for reject_name (shown in the
+    // cheat), but our tools are not sophisticated enough to reason
+    // about its body and prove the type correct.  See adsafe.env for
+    // the definitions of 'banned and 'not_banned
     var reject_name = 
         /*: cheat (('banned -> True) & ('not_banned -> Bool)) */
     (function (name) /*: 'Ad -> Bool */ {
@@ -198,8 +203,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             || banned[name];
     });
 
-    // ADDED this for convenience in some places, to ensure that
-    // things are not on the prototype.  Used in quest, for instance
+    // Section 7.2 of the paper discusses additional uses of
+    // reject_name.  This function is added to make these uses more
+    // convenient in some places.  Feel free to search for it
     function safe_name(name) /*: 'Ad -> 'not_banned */ {
         if(reject_name(name)) {
             return error("ADsafe string violation");
@@ -782,7 +788,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 
         root['___adsafe root___'] = '___adsafe root___';
 
-        Bunch.prototype = {
+        var Bunch_prototype = {
             append : function(appendage) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___,
@@ -1708,7 +1714,11 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 
     return {
 
-        // This function is... difficult to type
+        // The cheat here is discussed in the appendices of the paper.
+        // Briefly, our type system doesn't handle recursively typing
+        // the prototypes of objects, which create allows.  We can
+        // make an informal argument for its safety, but we cannot
+        // type-check it.
         create: 
         /*: cheat 'Ad */ (typeof Object.create === 'function' ? Object.create : 
                           // 'Ad -> 'Ad is the type we wish we could ascribe
@@ -1878,6 +1888,12 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
             }
             return error();
         },
+
+        // The appendices discuss our omission of interceptors.
+        // Essentially, the use of interceptors implies a whole-page
+        // analysis, as the hosting pages would need to be
+        // type-checked as well.  This is outside the scope of our
+        // work.
 
         //  ADSAFE._intercept allows the page to register a function that will
         //  see the widget's capabilities.
