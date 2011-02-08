@@ -6,6 +6,8 @@ open Format
 open Typedjs_dyn
 open Typedjs_tc_util
 
+let dummy = (Lexing.dummy_pos, Lexing.dummy_pos)
+
 let string_of_typ' = Env.Pretty.string_of_typ'
 
 let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
@@ -474,7 +476,9 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                 | NoThis -> env
                 | ThisIs t -> Env.bind_id "this" t env in
               let env = Env.bind_id "arguments" (TList arg_typs) env in
-              let body_typ = tc_exp env body in
+              let body_typ = match tc_def None env body with
+                | Some t, _ -> t 
+                | None, _ -> raise (Typ_error (p, "Function's body was bad")) in
                 if Env.subtype env body_typ result_typ then 
                   expected_typ
                 else raise 
@@ -875,12 +879,23 @@ and tc_exp (env : Env.env) exp =
   let t = tc_exp_simple env exp in
   Env.normalize_typ env (unfold_typ t)
 
-let rec tc_def env def = match def with
-    DEnd -> env
+and tc_def t env def = match def with
+    DEnd -> (t, env)
+  | DLabel (l, t, d) -> 
+      let env' = (Env.bind_lbl l (Env.check_typ dummy env t) env) in
+        begin match tc_def None env' d with
+          | (Some typ, _) -> if Env.subtype env' typ t then (Some t, env') 
+            else
+              failwith ("Bad label in DLabel: " ^ (string_of_typ typ) ^ " " ^ (string_of_typ t))
+          | _ -> failwith "No type in DLabel"
+        end
   | DExp (e, d) -> 
-      let _ = tc_exp env e in
-        tc_def env d
-  | DLet (p, x, e1, d2) -> tc_def (Env.bind_id x (tc_exp env e1) env) d2
+      let t = tc_exp env e in
+        if t = TBot then (Some TBot, env)
+        else tc_def (Some t) env d
+  | DLet (p, x, e1, d2) -> 
+      let t = tc_exp env e1 in
+        tc_def None (Env.bind_id x t env) d2
   | DRec (binds, d) ->
       let f env (x, t, e) = 
         Env.bind_id x (Env.check_typ (Exp.pos e) env t) env in
@@ -894,7 +909,7 @@ let rec tc_def env def = match def with
                              expression has type %s" x (string_of_typ t)
                         (string_of_typ s)) in
         List.iter tc_bind binds;
-        tc_def env d
+        tc_def None env d
   | DConstructor (cexp, d) -> let p = cexp.constr_pos in 
       begin match cexp.constr_typ with
           TArrow (_, arg_typs, rest_typ, result_typ) -> 
@@ -948,7 +963,7 @@ let rec tc_def env def = match def with
                       (* now check the body, with "this" bound to res_type *)
                       ignore (tc_exp (Env.bind_id "this" result_typ env) 
                                 cexp.constr_exp);
-                      tc_def env d
+                      tc_def None env d
                 | _ -> raise (Typ_error (
                                 p, "constructor's ret type must be obj"))
               end
@@ -958,7 +973,7 @@ let rec tc_def env def = match def with
       begin try
         let expenv = Env.bind_id "this" (TConstr (cname, [])) env in
         let env' = Env.add_method cname mid (TRef (tc_exp expenv me)) env in
-          tc_def env' d
+          tc_def None env' d
       with Not_found -> raise (
         Typ_error (p, "class " ^ cname ^ " doesnt exist"))
       end
@@ -969,15 +984,14 @@ let rec tc_def env def = match def with
           (fun (name, body) env' ->
              Env.add_method cname name (tc_exp expenv body) env')
           props env in
-          tc_def env' d
+          tc_def None env' d
       with Not_found -> raise (
         Typ_error (p, "class " ^ cname ^ " doesnt exist"))
       end
   | DPrototype (p, _, _, _) -> 
       raise (Typ_error (p, "Must set prototype to an object literal"))
 
-        
 let typecheck init_env defs = 
-  let final_env = tc_def init_env defs in
+  let (_, final_env) = tc_def None init_env defs in
   Env.diff final_env init_env
 

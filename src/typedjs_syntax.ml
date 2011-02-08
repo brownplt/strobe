@@ -104,7 +104,7 @@ type exp
   | EInfixOp of pos * id * exp * exp
   | EIf of pos * exp * exp * exp
   | EApp of pos * exp * exp list
-  | EFunc of pos * id list * typ * exp
+  | EFunc of pos * id list * typ * def
   | EConstructor of pos * constr_exp
   | ELet of pos * id * exp * exp
   | ERec of (id * typ * exp) list * exp
@@ -137,6 +137,7 @@ and constr_exp = {
 
 and def =
     DEnd
+  | DLabel of id * typ * def
   | DExp of exp * def
   | DLet of pos * id * exp * def
   | DRec of (id * typ * exp) list * def
@@ -341,7 +342,7 @@ module Pretty = struct
     | EFunc (_, args, t, body) ->
         parens (vert [ horz [ text "fun"; parens (horz (map text args)); 
                               text ":"; typ t ];
-                       exp body])
+                       p_def body])
     | EConstructor (_, c) ->
         parens (vert [ sep [ text "define-constructor"; text c.constr_name; 
                              parens (horz (map text c.constr_args));
@@ -391,16 +392,18 @@ module Pretty = struct
   and rec_bind (x, t, e) = 
     parens (horz [text x; text ":"; typ t; exp e])
 
-  let constr (c : constr_exp) =
+  and constr (c : constr_exp) =
     parens (vert [ sep [ text "define-constructor"; text c.constr_name; 
                          parens (horz (map text c.constr_args));
                          text ":"; typ c.constr_typ ];
                    exp c.constr_exp ])
       
 
-  let rec p_def (d : def) = match d with
+  and p_def (d : def) = match d with
     | DEnd -> fun fmt -> pp_print_newline fmt () 
-      | DExp (e, d') -> vert [ exp e; p_def d' ]
+      | DLabel (l, t, d) -> parens (vert [ horz [text l; text ":"; typ t];
+                                           p_def d])
+      | DExp (e, d') -> vert [ text "D"; exp e; p_def d' ]
       | DConstructor (c, d') -> vert [ constr c; p_def d' ]
       | DExternalMethod (p, cname, fname, e, d) -> 
           vert [ sep [ text (cname ^ ".prototype." ^ fname ^ " = ");

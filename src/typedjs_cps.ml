@@ -202,7 +202,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       and throw' = new_name () in
         Fix (new_node (),
              [(true, f, k' :: throw' :: "%this" :: args, ext_typ typ, 
-               cps_exp body throw' (Jmp k'))],
+               cps_def body throw' (Jmp k'))],
              ret k (mk_id f))
   | EConstructor (_, c) -> 
       let f = mk_name ("constructor" ^ c.constr_name)
@@ -287,7 +287,7 @@ and cps_bind ((name, typ, e) : id * typ * exp) = match e with
          name,
          k :: throw :: "%this" :: args,
          ext_typ typ,
-         cps_exp body throw (Jmp k))
+         cps_def body throw (Jmp k))
   | EConstructor (p, c) ->
       let k = new_name () in
       let throw = new_name () in
@@ -310,15 +310,19 @@ and cps_exp_list exps throw (k : cpsval list -> cpsexp) = match exps with
 and cps' (e : exp) throw (f : cpsval -> cpsexp) = cps_exp e throw (Cont f)
 
 
-let rec cps (def : def) : cpsexp = match def with
+and cps_def (def : def) (throw : id) (k : cont): cpsexp = match def with
   | DEnd -> App (new_node (), Id (p, "%end"), [])
-  | DExp (e, d) -> cps' e "%uncaught-exception" (fun _ -> cps d)
+  | DLabel (l, r, d) -> let r = new_name () in
+      Fix (new_node (),
+           [(false, l, [r], TArrow (ThisIs TTop, [TTop], TConstr ("Undef", []), TTop), ret k (mk_id r))],
+           cps_def d throw (Jmp l))
+  | DExp (e, d) -> cps' e throw (fun _ -> cps_def d throw k)
   | DLet (_, x, e, d) ->
-      cps' e "%uncaught-exception"
+      cps' e throw
         (fun v ->
-           Bind (new_node (), x, Let v, cps d))
+           Bind (new_node (), x, Let v, cps_def d throw k))
   | DRec (binds, d) ->
-      Fix (new_node (), map cps_bind binds, cps d)
+      Fix (new_node (), map cps_bind binds, cps_def d throw k)
   (* ignore the inits, since we punt on them anyway *)
   | DConstructor (cexp, d) -> 
       let p = cexp.constr_pos in
@@ -326,22 +330,26 @@ let rec cps (def : def) : cpsexp = match def with
                                      EFunc (p,
                                             cexp.constr_args, 
                                             TTop, 
-                                            cexp.constr_exp))], 
+                                            DExp (cexp.constr_exp,
+                                                 DEnd)))], 
              (* add setting the prototype as a plain expression: *)
-             cps (DExp (ESetRef (p,
+             cps_def (DExp (ESetRef (p,
                                  EBracket (p,
                                            EDeref (p, 
                                                    EId (p, cexp.constr_name)),
                                            EConst (p, JavaScript_syntax.CString 
                                                      "prototype")),
                                  cexp.constr_prototype), 
-                        d)))
+                        d)) throw k)
   | DExternalMethod (p, cname, mid, me, d) ->
       (* we would punt on setting to .proto anyway, so just cps the expr
          and move on *)
-      cps' me "%uncaught-exception" (fun _ -> cps d)
+      cps' me throw (fun _ -> cps_def d throw k)
   | DPrototype (p, cname, obj, d) ->
-      cps' obj "%uncaught-exception" (fun _ -> cps d)
+      cps' obj throw (fun _ -> cps_def d throw k)
+
+let cps (def : def) : cpsexp = 
+  cps_def def "%uncaught-exception" (Cont (fun v -> (App (new_node (), Id (p, "%exit"), []))))
 
 let node_of_cpsexp (cpsexp : cpsexp) : node = match cpsexp with
     Fix (n, _, _) -> n
@@ -489,4 +497,5 @@ let rec simpl_cpsexp exp = match exp with
       let f (b, f, xs, t, e) = (b, f, xs, t, simpl_cpsexp e) in
         Fix (n, map f binds, simpl_cpsexp body)
 
-let simpl_cps (def : def) : cpsexp = simpl_cpsexp (cps def)
+let simpl_cps (def : def) : cpsexp = simpl_cpsexp 
+  (cps_def def "%uncaught-exception" (Cont (fun v -> (App (new_node (), Id (p, "%end"), [])))))

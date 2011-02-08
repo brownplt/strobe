@@ -95,7 +95,7 @@ type exp =
   | EInfixOp of pos * id * exp * exp
   | EIf of pos * exp * exp * exp
   | EApp of pos * exp * exp list
-  | EFunc of pos * id list * typ * exp
+  | EFunc of pos * id list * typ * def
       (* [Typedjs_fromExpr.from_exprjs] ensures that the argument names are
          unique. *)
   | EConstructor of pos * constr_exp
@@ -136,6 +136,7 @@ and constr_exp = {
 (** Module-level definitions *)
 and def =
     DEnd
+  | DLabel of id * typ * def
   | DExp of exp * def
   | DLet of pos * id * exp * def
   | DRec of (id * typ * exp) list * def

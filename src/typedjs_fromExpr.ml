@@ -4,6 +4,8 @@ open Exprjs_syntax
 open Typedjs_types
 open Typedjs_env
 open Typedjs_tc_util
+open Format
+open FormatExt
 
 module H = Hashtbl
 module S = JavaScript_syntax
@@ -140,23 +142,25 @@ let rec exp (env : env) expr = match expr with
         ESeq (a, 
               ERec ([("%loop", loop_typ,
                       EFunc (a, [], loop_typ,
-                             EIf (a, exp env e1, 
-                                  ESeq (a, exp env e2, 
-                                        EApp (a, EId (a, "%loop"), [])),
-                                  EConst (a, S.CUndefined))))],
+                             DExp (EIf (a, exp env e1, 
+                                        ESeq (a, exp env e2, 
+                                              EApp (a, EId (a, "%loop"), [])),
+                                        EConst (a, S.CUndefined)),
+                                   DEnd)))],
                     EApp (a, EId (a, "%loop"), [])), 
-                    EConst (a, S.CUndefined))
+              EConst (a, S.CUndefined))
   | DoWhileExpr (a, body_e, test_e) ->
       let loop_typ = TArrow (NoThis, [], TBot, typ_undef) in
         ESeq (a, 
               ERec ([("%loop", loop_typ,
                       EFunc (a, [], loop_typ,
-                             ESeq (a, exp env body_e, 
-                                   EIf (a, exp env test_e, 
-                                        EApp (a, EId (a, "%loop"), []),
-                                        EConst (a, S.CUndefined)))))],
-                    EApp (a, EId (a, "%loop"), [])), 
-              EConst (a, S.CUndefined))
+                             (DExp (ESeq (a, exp env body_e, 
+                                          EIf (a, exp env test_e, 
+                                               EApp (a, EId (a, "%loop"), []),
+                                               EConst (a, S.CUndefined))),
+                                    DEnd))))],
+                      EApp (a, EId (a, "%loop"), [])), 
+                     EConst (a, S.CUndefined))
 
   | HintExpr (a, txt, LabelledExpr (a', x, e)) ->
       let t = parse_annotation a txt in
@@ -220,10 +224,11 @@ let rec exp (env : env) expr = match expr with
           let loop_typ = TArrow (NoThis, [TRef (typ_str); TRef (typ_str)], TBot, typ_undef) in
             ERec ([("%loop", loop_typ,
                     EFunc (p, [obj; x], loop_typ,
-                           ESeq (p, exp env body, 
-                                 EApp (p, EId (p, "%loop"),
-                                       [ EId (p, obj); EId (p, x) ]))))],
-                  EApp (p, EId (p, "%loop"), [EForInIdx p; EForInIdx p]))
+                           (DExp (ESeq (p, exp env body, 
+                                        EApp (p, EId (p, "%loop"),
+                                              [ EId (p, obj); EId (p, x) ])),
+                                  DEnd))))],
+                    EApp (p, EId (p, "%loop"), [EForInIdx p; EForInIdx p]))
       | e ->
           raise (Not_well_formed (p, 
                                   (sprintf "for-in loops require a named object, got %s"
@@ -389,19 +394,20 @@ and match_func env expr f = match expr with
                 env IdMap.empty in
             let env' = 
               fold_left (fun acc x -> IdMap.add x (IdSet.mem x assignable_vars) acc) env' args in
-            let mutable_arg exp id =
+            let mutable_arg def id =
               if IdSet.mem id assignable_vars then
-                ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) 
-              else exp in
+                DLet (a, id, ERef (a, RefCell, EId (a, id)), def) 
+              else def in
+            let def_body = defs env' (flatten_seq body) in
         begin match Typ.match_func_typ typ with
             Some (arg_typs, r) ->
-              (*              if List.length args != List.length arg_typs then
-                              raise (Not_well_formed (
+              if List.length args != List.length arg_typs then
+                raise (Not_well_formed (
                          a, sprintf "given %d args but %d arg types"
-                              (List.length args) (List.length arg_typs)));*)
+                           (List.length args) (List.length arg_typs)));
               Some (typ, EFunc (a, args, typ, 
                                 fold_left mutable_arg
-                                  (ELabel (a', "%return", r, exp env' body))
+                                  (DLabel ("%return", r, def_body))
                                   args))
           | None -> raise (Not_well_formed (a, "expected a function type"))
         end
@@ -444,18 +450,31 @@ and block_intro env (decls, body) = match take_while is_func_decl decls with
           (fold_right set_func_ref f_exps
              (block_intro env' (rest, body)))
 
+and nest_if e = match e with
+  | SeqExpr 
+      (p,
+       IfExpr (a, cond, (SeqExpr (_, BreakExpr (_, "%return", e),
+                                  ConstExpr (_, S.CUndefined)) as thn),
+               ConstExpr (_, S.CUndefined)),
+       next_expr) -> 
+        Some (IfExpr (a, cond, thn, next_expr))
+  | e -> None
+
 (* assumes [SeqExpr]s are nested to the right. *)
-let rec flatten_seq (expr : expr) : expr list = match expr with
-    SeqExpr (_, e1, e2) -> e1 :: flatten_seq e2
+and flatten_seq (expr : expr) : expr list = match expr with
+    SeqExpr (_, e1, e2) -> begin match nest_if expr with
+      | Some exp -> [exp]
+      | None -> e1 :: flatten_seq e2
+    end
   | _ -> [ expr ]
 
-let constructor_re = Str.regexp " *constructor.*"
+and constructor_re = Str.regexp " *constructor.*"
 
-let is_constructor_hint hint_txt =
+and is_constructor_hint hint_txt =
   let r = Str.string_match constructor_re hint_txt 0 in
     r
 
-let match_constr_body env expr = match expr with
+and match_constr_body env expr = match expr with
     (* we drop the LabelledExpr, which will prevents us from using
         return within a constructor. *)
     HintExpr (p'', txt, FuncStmtExpr (p, f, args, LabelledExpr (p', l, body)))
@@ -530,7 +549,7 @@ let match_constr_body env expr = match expr with
 
 (** [match_func_decl expr] matches function statements and variables bound to
     function expressions. *)
-let rec match_func_decl expr = match expr with
+and match_func_decl expr = match expr with
   | VarDeclExpr (p, x, e) ->
       if is_value e then Some (p, x, e) else None
   | HintExpr (p', txt, FuncStmtExpr (p, f, args, e)) ->
@@ -544,11 +563,11 @@ let rec match_func_decl expr = match expr with
           Some (p', f, HintExpr (p, txt, e)))
   | _ -> None
 
-let match_decl expr = match expr with
+and match_decl expr = match expr with
     VarDeclExpr (p, x, e) -> Some (p, x, e)
   | _ -> None
 
-let match_external_method expr = match expr with
+and match_external_method expr = match expr with
     AssignExpr (
       p, 
       PropLValue (
@@ -559,7 +578,7 @@ let match_external_method expr = match expr with
       methodexpr) -> Some (p, cname, methodname, methodexpr)
   | _ -> None
 
-let match_prototype expr = match expr with
+and match_prototype expr = match expr with
     AssignExpr (
       p,
       PropLValue (
@@ -577,9 +596,9 @@ and set_top_func_ref (x, t, e) rest_exp =
   let p = Exp.pos e in
     DExp (ESetRef (p, EId (p, x), e), rest_exp)
 
-let exp_prop env (p, name, e) = (p, name, exp env e)
+and exp_prop env (p, name, e) = (p, name, exp env e)
 
-let rec defs env lst = 
+and defs env lst = 
   begin match lst with
       [] -> DEnd
     | expr :: lst' ->

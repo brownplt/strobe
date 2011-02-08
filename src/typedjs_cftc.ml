@@ -51,7 +51,7 @@ let rec a_exp (exp : exp) : exp = match exp with
   | EInfixOp (p, op, e1, e2) -> EInfixOp (p, op, a_exp e1, a_exp e2)
   | EIf (p, e1, e2, e3) -> EIf (p, a_exp e1, a_exp e2, a_exp e3)
   | EApp (p, e1, es) -> EApp (p, a_exp e1, map a_exp es)
-  | EFunc (p, ids, t, e) -> EFunc (p, ids, t, a_exp e)
+  | EFunc (p, ids, t, e) -> EFunc (p, ids, t, a_def e)
   | EConstructor (p, c) -> EConstructor (p, c)
   | ELet (p, x, e1, e2) -> ELet (p, x, a_exp e1, a_exp e2)
   | ERec (binds, e) -> ERec (map a_bind binds, a_exp e)
@@ -75,8 +75,9 @@ let rec a_exp (exp : exp) : exp = match exp with
 
 and a_bind (i, t, e) = (i, t, a_exp e)
 
-let rec a_def (def : def) : def = match def with
+and a_def (def : def) : def = match def with
     DEnd -> DEnd
+  | DLabel (l, t, d) -> DLabel (l, t, a_def d)
   | DExp (e, d) -> DExp (a_exp e, a_def d)
   | DLet (p, i, e, d) -> DLet (p, i, a_exp e, a_def d)
   | DRec (binds, d) -> DRec (map a_bind binds, a_def d)

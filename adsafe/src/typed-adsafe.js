@@ -788,8 +788,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 
         root['___adsafe root___'] = '___adsafe root___';
 
-        var Bunch_prototype = {
-            append : function(appendage) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+        Bunch.prototype = {
+            append : /*:obj* 'AdObj */ 
+            (function(appendage) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___,
                 flag = /*: upcast Bool */ false,
@@ -823,8 +824,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },   
-            blur : function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),   
+            blur : /*: obj* 'AdObj */
+            (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
                 has_focus = null;
@@ -835,8 +837,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },
-            check : function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            check : /*: obj* 'AdObj */
+            (function(value) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
                 if (value instanceof Array) {
@@ -859,8 +862,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },
-            'class': function (value) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
+            }),
+            'class': /*: obj* 'AdObj */
+            (function (value) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
                 if (value instanceof Array) {
@@ -889,12 +893,14 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },
-            count : function () /*: ['Ad + HTMLWindow] -> Int */ {
+            }),
+            count : /*: obj* 'AdObj */
+            (function () /*: ['Ad + HTMLWindow] 'Ad ...-> Int */ {
                 if (this.window) { return error(); }
                 return this.___nodes___.length;
-            },
-            each : function(func) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            each : /*: obj* 'AdObj */ 
+            (function(func) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___, i = 0;
                 if (typeof func === 'function') {
@@ -904,8 +910,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     return this;
                 }
                 return error();
-            },
-            empty: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            empty: /*: obj* 'AdObj */ 
+            (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
                 if (value instanceof Array) {
@@ -930,8 +937,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },
-            enable: function (enable) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            enable: /*: obj* 'AdObj */ 
+            (function (enable) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
                 if (enable instanceof Array) {
@@ -954,24 +962,27 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },
-            ephemeral: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            ephemeral: /*: obj* 'AdObj */
+            (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 if (ephemeral) {
                     ephemeral.remove();
                 }
                 ephemeral = this;
                 return this;
-            },
-            explode: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            explode: /*: obj* 'AdObj */ 
+            (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = /*: obj* 'AdObj */ (new Bunch([b[i]]));
                 }
                 return a;
-            },
-            fire: function (event) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            fire: /*: obj* 'AdObj */ 
+            (function (event) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
 
                 // Fire an event on an object. The event can be either
                 // a string containing the name of the event, or an
@@ -1017,8 +1028,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 }
 
                 return this;
-            },
-            focus: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            focus: /*: obj* 'AdObj */ 
+            (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___;
                 if (b.length === 1 && allow_focus) {
@@ -1026,77 +1038,91 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
 	            return this;
                 }
                 error();
-            },
-            fragment: function () /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            fragment: /*: obj* 'AdObj */ 
+            (function () /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ 
                     (document.createDocumentFragment())]));
-            },
-            getCheck: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getCheck: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 return this.getChecks()[0];
-            },
-            getChecks: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getChecks: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].checked;
                 }
                 return a;
-            },
-            getClass: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getClass: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 return this.getClasses()[0];
-            },
-            getClasses: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getClasses: /*: obj* 'AdObj */
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].className;
                 }
                 return a;
-            },
-            getMark: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getMark: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 return this.getMarks()[0];
-            },
-            getMarks: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getMarks: /*: obj* 'AdObj */
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i]['_adsafe mark_'];
                 }
                 return a;
-            },
-            getName: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getName: /*: obj* 'AdObj */
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 return this.getNames()[0];
-            },
-            getNames: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getNames: /*: obj* 'AdObj */
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].name;
                 }
                 return a;
-            },
-            getOffsetHeight: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getOffsetHeight: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 return this.getOffsetHeights()[0];
-            },
-            getOffsetHeights: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getOffsetHeights: /*: obj* 'AdObj */
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].offsetHeight;
                 }
                 return a;
-            },
-            getOffsetWidth: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getOffsetWidth: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 return this.getOffsetWidths()[0];
-            },
-            getOffsetWidths: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getOffsetWidths: /*: obj* 'AdObj */
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     a[i] = b[i].offsetWidth;
                 }
                 return a;
-            },
-            getParent: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getParent: /*: obj* 'AdObj */
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var a = /*: HTMLElement + Undef */ [], b = this.___nodes___, i = 0, n /*: upcast Undef + HTMLElement */;
                 for (i = 0; i < b.length; i += 1) {
@@ -1107,8 +1133,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     a[i] = n;
                 }
                 return /*: obj* 'AdObj */ (new Bunch(a));
-            },
-            getSelection: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getSelection: /*: obj* 'AdObj */
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___, 
                     end = 0, 
@@ -1130,11 +1157,13 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return null;
-            },
-            getStyle: function(name) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            getStyle: /*: obj* 'AdObj */ 
+            (function(name) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 return this.getStyles()[0];
-            },
-            getStyles: function(name) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            getStyles: /*: obj* 'AdObj */ 
+            (function(name) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 if (reject_name(name)) {
 	            return error("ADsafe style violation.");
@@ -1156,22 +1185,26 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return a;
-            },
-            getTagName: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getTagName: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 return this.getTagNames()[0];
-            },
-            getTagNames: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getTagNames: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 var a = /*: obj* 'AdObj*/ (/*: 'Ad */ []), b = this.___nodes___, i = 0, name /*: upcast Undef + Str */;
                 for (i = 0; i < b.length; i += 1) {
                     name = b[i].tagName;
                     a[i] = typeof name === 'string' ? name.toLowerCase() : name;
                 }
                 return a;
-            },
-            getTitle: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getTitle: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 return this.getTitles()[0];
-            },
-            getTitles: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getTitles: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), 
                 b = this.___nodes___, 
@@ -1180,11 +1213,13 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     a[i] = b[i].title;
                 }
                 return a.length === 1 ? a[0] : a;
-            },
-            getValue: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getValue: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 return this.getValues()[0];
-            },
-            getValues: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            getValues: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 var a = /*: obj* 'AdObj */ (/*: 'Ad */ []), b = this.___nodes___, 
                 i = 0, 
                 node /*: upcast Undef + HTMLElement */;
@@ -1201,11 +1236,13 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return a;
-            },
-            klass: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            klass: /*: obj* 'AdObj */ 
+            (function(value) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
 		return this['class'](value);
-	    },
-            mark: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+	    }),
+            mark: /*: obj* 'AdObj */ 
+            (function(value) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error('ADsafe error.'); }
                 var b = this.___nodes___, i = 0, node /*: upcast Undef + HTMLElement */;
                 if (value instanceof Array) {
@@ -1228,8 +1265,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },
-            off: function(type) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            off: /*: obj* 'AdObj */ 
+            (function(type) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error('ADsafe error'); }
                 var b = this.___nodes___, i=0, node/*: upcast Undef + HTMLElement */;
                 for (i = 0; i < b.length; i += 1) {
@@ -1244,8 +1282,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },
-            on: function(type, func) /*: ['Ad + HTMLWindow] 'Ad * 'Ad -> 'Ad */ {
+            }),
+            on: /*: obj* 'AdObj */ 
+            (function(type, func) /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error('ADsafe error'); }
                 if (reject_name(type)) {
                     return error("ADsafe event type violation");
@@ -1289,26 +1328,30 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },
-            protect: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            protect: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error('ADsafe error.'); }
                 var b = this.___nodes___, i = 0;
                 for (i = 0; i < b.length; i += 1) {
                     b[i]['___adsafe root___'] = '___adsafe root___';
                 }
                 return this;
-            },
-            q: function(text) /*: ['Ad + HTMLWindow] 'Ad -> Bunch */ {
+            }),
+            q: /*: obj* 'AdObj */ 
+            (function(text) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 star = this.___star___;
-                return  (new Bunch(
+                return /*: obj* 'AdObj */ (new Bunch(
                     quest(parse_query(string_check(text), id), 
                           this.___nodes___)));
-            },
-            remove: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            remove: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error('ADsafe error.'); }
                 this.replace();
-            },
-            replace: function(replacement) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            replace: /*: obj* 'AdObj */ 
+            (function(replacement) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___,
                 flag = /*: upcast Bool */ false,
@@ -1376,8 +1419,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },
-            select: function() /*: ['Ad + HTMLWindow] -> 'Ad */ {
+            }),
+            select: /*: obj* 'AdObj */ 
+            (function() /*: ['Ad + HTMLWindow] 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___;
                 if (b.length !== 1 || !allow_focus) {
@@ -1386,8 +1430,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 b[0].focus();
                 b[0].select();
                 return this;
-            },
-            selection: function(string_in) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            selection: /*: obj* 'AdObj */ 
+            (function(string_in) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___, 
                 end = 0, 
@@ -1417,8 +1462,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },
-            style: function(name, value) /*: ['Ad + HTMLWindow] 'Ad * 'Ad -> 'Ad */ {
+            }),
+            style: /*: obj* 'AdObj */ 
+            (function(name, value) /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 if (reject_name(name)) {
 	            return error("ADsafe style violation.");
@@ -1466,8 +1512,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },
-            tag: function(tag, type, name) /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad-> 'Ad */ {
+            }),
+            tag: /*: obj* 'AdObj */ 
+            (function(tag, type, name) /*: ['Ad + HTMLWindow] 'Ad * 'Ad * 'Ad * 'Ad ...-> 'Ad */ {
                 if (this.window) { return error(); }
                 var node /*: upcast HTMLElement + Undef */ ;
                 if (reject_name(tag)) {
@@ -1482,8 +1529,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     node.type = string_check(type);
                 }
                 return /*: obj* 'AdObj */ (new Bunch([node]));
-            },
-            text: function(text) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            text: /*: obj* 'AdObj */ 
+            (function(text) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 var a /*: upcast Undef + Array<HTMLElement + Undef> */, i = 0;
                 if (text instanceof Array) {
                     a = /*: HTMLElement + Undef*/ [];
@@ -1494,8 +1542,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                 }
                 return /*: obj* 'AdObj */ (new Bunch([/*: upcast HTMLElement + Undef */ 
                     (document.createTextNode(String(text)))]));
-            },
-            title: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            title: /*: obj* 'AdObj */ 
+            (function(value) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 var b = this.___nodes___, 
                 i = 0,
@@ -1520,8 +1569,9 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            },
-            value: function(value) /*: ['Ad + HTMLWindow] 'Ad -> 'Ad */ {
+            }),
+            value: /*: obj* 'AdObj */ 
+            (function(value) /*: ['Ad + HTMLWindow] 'Ad * 'Ad ... -> 'Ad */ {
                 if (this.window) { return error(); }
                 if (value === undefined) {
                     return error();
@@ -1569,7 +1619,7 @@ var ADSAFE = (function () /*:  -> 'ADSAFE */ {
                     }
                 }
                 return this;
-            }
+            })
         };
 
 // Return an ADsafe dom object.
