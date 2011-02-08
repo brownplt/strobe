@@ -354,67 +354,56 @@ and match_func env expr f = match expr with
   | HintExpr (p, txt, FuncExpr (a, args, LabelledExpr (a', "%return", body))) ->
       if List.length args != List.length (nub args) then
         raise (Not_well_formed (a, "each argument must have a distinct name"));
-      let (typ, constr) = match parse_annotation p txt with
-        | ATyp t -> (t, false)
-        | AConstructor t -> (t, true)
+      let typ = match parse_annotation p txt with
+        | ATyp t -> t
         | _ -> raise
             (Not_well_formed (p, "expected type on function, got " ^ txt)) in
-        if constr then
-          let c_expr = match f with
-            | Some f -> match_constr_body2 env 
-                (HintExpr (p, txt, FuncStmtExpr (a, f, args, LabelledExpr (a', "%return", body))))
-            | None -> raise (Not_well_formed (a, "No constructor name")) in
-            begin match c_expr with
-              | Some c -> Some (typ, EConstructor (a, c))
-              | None -> raise (Not_well_formed (a, "Constructor didn't match")) 
-            end
-        else
-          let locally_defined_vars = locals body in
-          let visible_free_vars = 
-            IdSet.diff (IdSetExt.from_list (IdMapExt.keys env))
-              locally_defined_vars in
-          let lambda_bound_vars = IdSetExt.from_list args in
-          let assignable_vars = IdSetExt.from_list (av body) in
-          let locally_shadowed_args = 
-            IdSet.inter lambda_bound_vars locally_defined_vars in
-            if not (IdSet.is_empty locally_shadowed_args) then
-              begin
-                IdSetExt.p_set FormatExt.text
-                  locally_shadowed_args Format.str_formatter;
-                raise (Not_well_formed 
-                         (a, "the following arguments are redefined as local \
+      let locally_defined_vars = locals body in
+      let visible_free_vars = 
+        IdSet.diff (IdSetExt.from_list (IdMapExt.keys env))
+          locally_defined_vars in
+      let lambda_bound_vars = IdSetExt.from_list args in
+      let assignable_vars = IdSetExt.from_list (av body) in
+      let locally_shadowed_args = 
+        IdSet.inter lambda_bound_vars locally_defined_vars in
+        if not (IdSet.is_empty locally_shadowed_args) then
+          begin
+            IdSetExt.p_set FormatExt.text
+              locally_shadowed_args Format.str_formatter;
+            raise (Not_well_formed 
+                     (a, "the following arguments are redefined as local \
                           variables: " ^ Format.flush_str_formatter ()))
-              end;
-            let env' = 
-              IdMap.fold (fun key v acc ->
+          end;
+        let env' = 
+          IdMap.fold (fun key v acc ->
                         if IdSet.mem key visible_free_vars then
                           IdMap.add key v acc
                         else 
                           acc)
-                env IdMap.empty in
-            let env' = 
-              fold_left (fun acc x -> IdMap.add x (IdSet.mem x assignable_vars) acc) env' args in
-            let mutable_arg def id =
-              if IdSet.mem id assignable_vars then
-                DLet (a, id, ERef (a, RefCell, EId (a, id)), def) 
-              else def in
-            let def_body = defs env' (flatten_seq body) in
-        begin match Typ.match_func_typ typ with
-            Some (arg_typs, r) ->
-              if List.length args != List.length arg_typs then
-                raise (Not_well_formed (
-                         a, sprintf "given %d args but %d arg types"
-                           (List.length args) (List.length arg_typs)));
-              Some (typ, EFunc (a, args, typ, 
-                                fold_left mutable_arg
-                                  (DLabel ("%return", r, def_body))
-                                  args))
-          | None -> raise (Not_well_formed (a, "expected a function type"))
-        end
+            env IdMap.empty in
+        let env' = 
+          fold_left (fun acc x -> IdMap.add x (IdSet.mem x assignable_vars) acc) env' args in
+        let mutable_arg def id =
+          if IdSet.mem id assignable_vars then
+            DLet (a, id, ERef (a, RefCell, EId (a, id)), def) 
+          else def in
+        let def_body = defs env' (flatten_seq body) in
+          begin match Typ.match_func_typ typ with
+              Some (arg_typs, r) ->
+                if List.length args != List.length arg_typs then
+                  raise (Not_well_formed (
+                           a, sprintf "given %d args but %d arg types"
+                             (List.length args) (List.length arg_typs)));
+                Some (typ, EFunc (a, args, typ, 
+                                  fold_left mutable_arg
+                                    (DLabel ("%return", r, def_body))
+                                    args))
+            | None -> raise (Not_well_formed (a, "expected a function type"))
+          end
   | FuncExpr (a, _, _) ->
       failwith ("expected a LabelledExpr at " ^ string_of_position a)
   | _ -> None
-
+      
 and exp_seq env e = match e with
   | SeqExpr 
       (p,

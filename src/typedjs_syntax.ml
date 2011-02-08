@@ -105,7 +105,6 @@ type exp
   | EIf of pos * exp * exp * exp
   | EApp of pos * exp * exp list
   | EFunc of pos * id list * typ * def
-  | EConstructor of pos * constr_exp
   | ELet of pos * id * exp * exp
   | ERec of (id * typ * exp) list * exp
   | ESeq of pos * exp * exp
@@ -224,7 +223,6 @@ module Exp = struct
     | EIf (p, _, _, _) -> p
     | EApp (p, _, _) -> p
     | EFunc (p, _, _, _) -> p
-    | EConstructor (p, _) -> p
     | ELet (p, _, _, _) -> p
     | ERec (_, e) ->  pos e (* failwith "Exp.pos of ERec" *)
     | ESeq (p, _, _) -> p
@@ -343,10 +341,6 @@ module Pretty = struct
         parens (vert [ horz [ text "fun"; parens (horz (map text args)); 
                               text ":"; typ t ];
                        p_def body])
-    | EConstructor (_, c) ->
-        parens (vert [ sep [ text "define-constructor"; text c.constr_name; 
-                             parens (horz (map text c.constr_args));
-                             text ":"; typ c.constr_typ ]])
     | ELet (_, x, bound, body) ->
         parens (vert [ horz [ text "let";
                               parens (vert (map bind [(x, bound)]))];
