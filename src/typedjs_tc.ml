@@ -790,15 +790,6 @@ and bracket p env ft ot =
           begin match cname with
             | "Undef"
             | "Null" -> TBot
-            | "Num"
-            | "Bool"
-            | "Int"
-            | "Str" -> 
-                begin match te with 
-                  | TConstr ("Int", []) -> TRef (typ_undef)
-                  | _ -> error p (sprintf "Can't look up %s[%s]" 
-                                    cname (string_of_typ te))
-                end
             | c -> match te with
                 | TStrMinus strs -> 
                     let flds = Env.class_fields env cname in
