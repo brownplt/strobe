@@ -100,19 +100,6 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
       with Not_found -> raise (Typ_error (p, x ^ " is not defined"))
     end
   | ELet (_, x, e1, e2) -> tc_exp (Env.bind_id x (tc_exp env e1) env) e2
-  | ESeq (_, (EApp (p2, ef, [(ETypecast (p5, typ, EThis _))
-                              as arg]) 
-               as app), e2) -> 
-      begin match tc_exp env ef with
-        | TIntersect (TArrow (this1, [arg1], rest1, TBot), 
-                      TArrow (this2, [arg2], rest2, tc))
-            when not (Env.subtype env tc TBot) ->
-            let env_cont = Env.bind_id "this" arg2 env in
-              tc_exp env_cont e2
-        | _ ->
-            ignore (tc_exp env app);
-            tc_exp env e2
-      end
   | ESeq (_, e1, e2) -> begin match tc_exp env e1 with
         TBot -> (* e1 will not return; no need to typecheck e2 *)
           TBot
