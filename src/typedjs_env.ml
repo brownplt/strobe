@@ -150,6 +150,9 @@ module Env = struct
 	| TObject fs1, TObject fs2 -> r_subtype_fields rel env fs1 fs2
 	| TUnion (s1, s2), t -> st s1 t && st s2 t
 	| s, TUnion (t1, t2) -> st s t1 || st s t2
+        | TIntersect (s1, s2), TIntersect (t1, t2) ->
+            st s1 t1 && st s2 t2
+        | TIntersect (s1, s2), t -> st s1 t || st s2 t
 	| TRef s', TRef t' -> st s' t' && st t' s'
 
             (** We can fill args2 with undefineds (up to the length of
@@ -167,7 +170,7 @@ module Env = struct
                 rest_typ1 args2 in
               r_subtypes rel env args2 args1 && st rest_typ2 rest_typ1 &&
                 r_subtype rel env r1 r2 && 
-                st this_t1' this_t2'
+                st this_t2' this_t1'
         | TConstr (c_name, []), TObject fs2 ->
             (* Classes can be turned into objects. However, this drops
                all fields in the prototype. *)

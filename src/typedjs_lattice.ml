@@ -171,6 +171,8 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
   | Typedjs_syntax.TRec (x, t') -> 
       rt_of_typ (Typedjs_syntax.Typ.typ_subst x t t') 
   | Typedjs_syntax.TUnion (t1, t2) -> RTSet.union (rt_of_typ t1) (rt_of_typ t2)
+  | Typedjs_syntax.TIntersect (t1, t2) -> 
+      RTSet.union (rt_of_typ t1) (rt_of_typ t2)
   | Typedjs_syntax.TConstr (constr_name, []) -> begin match constr_name with
         "Str" ->  RTSet.singleton RT.Str
       | "RegExp" -> RTSet.singleton (RT.Object [])
@@ -199,6 +201,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
   | Typedjs_syntax.TBot -> RTSet.empty
   | Typedjs_syntax.TForall _ -> rtany
   | Typedjs_syntax.TId _ -> rtany (* TODO: should be empty!!! *)
+  | Typedjs_syntax.TList _ -> rtany
   | Typedjs_syntax.TField -> rtany
   | Typedjs_syntax.TBad -> rtany
   | Typedjs_syntax.T_ -> RTSet.empty

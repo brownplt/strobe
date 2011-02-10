@@ -290,29 +290,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                             (string_of_typ tfun)) 
       end
   | EApp (p, f, args) -> 
-      let fn_typ = tc_exp env f in
-      if !is_print_native then
-        printf "%s: %s\n" (string_of_position p)
-          (if Env.subtype env (TConstr ("Native", [])) fn_typ then
-             "native function called"
-           else
-             "safe application");
-      begin match applicables env fn_typ with
-      | TForall (x, _, TArrow (obj_typ, expected_typ, rest_typ, result_typ)) ->
-          let subst = unify_typ
-            (TArrow (obj_typ, expected_typ, rest_typ, result_typ))
-            (TArrow (obj_typ, map (tc_exp env) args, rest_typ, result_typ)) in
-            begin try
-              let u = IdMap.find x subst in (* TODO: needless recomputation *)
-                tc_exp env (EApp (p, ETypApp (p, f, u), args))
-            with Not_found ->
-              let t = TArrow (obj_typ, expected_typ, rest_typ, result_typ) in
-              error p (sprintf "could not determine \'%s in the function type \
-                                %s" x (string_of_typ t))
-            end
-      | TObjStar (_, _, _, 
-                  TArrow (expected_thist, expected_typs, rest_typ, result_typ))
-      | TArrow (expected_thist, expected_typs, rest_typ, result_typ) ->
+      let check_arrow expected_thist expected_typs rest_typ result_typ = 
           let _ = (
             let this_typ = tc_thist env f in
               match expected_thist with
@@ -367,7 +345,49 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
             else raise (Typ_error 
                           (p, sprintf "arity-mismatch: the function expects %d \
                                 arguments, but %d arguments given."
-                             (List.length expected_typs) (List.length args)))
+                             (List.length expected_typs) (List.length args))) in
+      let fn_typ = tc_exp env f in
+      if !is_print_native then
+        printf "%s: %s\n" (string_of_position p)
+          (if Env.subtype env (TConstr ("Native", [])) fn_typ then
+             "native function called"
+           else
+             "safe application");
+      begin match applicables env fn_typ with
+      | TForall (x, _, TArrow (obj_typ, expected_typ, rest_typ, result_typ)) ->
+          let subst = unify_typ
+            (TArrow (obj_typ, expected_typ, rest_typ, result_typ))
+            (TArrow (obj_typ, map (tc_exp env) args, rest_typ, result_typ)) in
+            begin try
+              let u = IdMap.find x subst in (* TODO: needless recomputation *)
+                tc_exp env (EApp (p, ETypApp (p, f, u), args))
+            with Not_found ->
+              let t = TArrow (obj_typ, expected_typ, rest_typ, result_typ) in
+              error p (sprintf "could not determine \'%s in the function type \
+                                %s" x (string_of_typ t))
+            end
+      | TObjStar (_, _, _, 
+                  TIntersect
+                    (TArrow (thist1, typs1, rest1, result1),
+                     TArrow (thist2, typs2, rest2, result2)))
+      | TIntersect
+          (TArrow (thist1, typs1, rest1, result1),
+           TArrow (thist2, typs2, rest2, result2)) ->
+          begin try
+            check_arrow thist1 typs1 rest1 result1
+          with Typ_error _ ->
+            if !is_print_native then
+              (printf "%s: %s\n" (string_of_position p)
+                 "WARNING: Right-hand side of an intersection was called")
+            else ();
+            begin try check_arrow thist2 typs2 rest2 result2
+              with e -> raise e
+            end
+          end
+      | TObjStar (_, _, _, 
+                  TArrow (expected_thist, expected_typs, rest_typ, result_typ))
+      | TArrow (expected_thist, expected_typs, rest_typ, result_typ) ->
+          check_arrow expected_thist expected_typs rest_typ result_typ
       | (TObjStar _) as o ->
           raise 
             (Typ_error 
@@ -676,7 +696,7 @@ and update p env field newval t =
           then vt
           else (match cname with
                   | "Undef" | "Null" -> TBot (* Actually errors *)
-                  | "Num" | "Bool" | "Int" | "Str" | "RegExp" -> vt
+                  | "Num" | "Bool" | "Int" | "Str" -> vt
                   | _ -> raise (dict_error t ft vt))
     | t, e -> raise (Typ_error (p, (sprintf "No object update on non-objects \
                                  yet, got %s" (string_of_typ t))))

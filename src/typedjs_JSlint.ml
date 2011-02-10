@@ -44,6 +44,9 @@ let rec upcast_map e =
           HintExpr (p, adcast, BracketExpr (p, upcast_map o, ConstExpr (p', S.CString s)))
       | BracketExpr (p, o, ConstExpr (p', S.CInt n)) -> 
           HintExpr (p, adcast, BracketExpr (p, upcast_map o, ConstExpr (p', S.CInt n)))
+          (* Regexps are objects, and are handle as such *)
+      | ConstExpr (p, JavaScript_syntax.CRegexp _) -> HintExpr (p, objcast, e)
+          (* Other constants are upcast *)
       | ConstExpr (p, _) -> HintExpr (p, adcast, e)
       | ArrayExpr (p, []) ->
           HintExpr (p, adcast, HintExpr (p, objcast, HintExpr (p, ad, ArrayExpr (p, []))))
