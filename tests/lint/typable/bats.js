@@ -49,7 +49,7 @@ ADSAFE.lib("bats", function () {
         seed ^= seed << 1;
         seed ^= seed >> 3;
         seed ^= seed << 10;
-//        return (seed + 2147483648) / 4294967296;
+//        return (seed + 2147483648) / 4294967296; // Some cross-platform compilation problem
         return seed;
     }
 
