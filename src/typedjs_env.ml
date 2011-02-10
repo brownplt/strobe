@@ -144,9 +144,6 @@ module Env = struct
                | "True", "Bool" -> true
                | "False", "Bool" -> true
                | _, _ -> c1 = c2)
-        | TFresh (TConstr ("Array", [TRef tarr])), 
-            TObjStar (fs, proto, TRef ot, code) ->
-            st (TConstr ("Array", [])) proto && st tarr ot
 	| TObject fs1, TObject fs2 -> r_subtype_fields rel env fs1 fs2
 	| TUnion (s1, s2), t -> st s1 t && st s2 t
 	| s, TUnion (t1, t2) -> st s t1 || st s t2
@@ -195,8 +192,6 @@ module Env = struct
             List.mem constr [ "Num"; "Int"; "Str"; "Undef"; "Bool"; "Null" ]
 	| _, TTop -> true
 	| TBot, _ -> true
-        | TFresh t, TFresh s
-        | TFresh t, s -> st t s
 	| _ -> s = t
 
 
@@ -291,7 +286,6 @@ module Env = struct
       | TBad -> TBad
       | TList t -> TList (map (normalize_typ env) t)
       | T_ -> T_
-      | TFresh t -> TFresh (normalize_typ env t)
 
   let check_typ p env t = 
     try
@@ -404,7 +398,6 @@ module Env = struct
           List.fold_left (basic_static2 cs) TBot (RTSetExt.to_list rt)
     | TId _ -> typ
     | T_ -> TBot
-    | TFresh t -> static cs rt t
     | TList t -> TList t
 
 

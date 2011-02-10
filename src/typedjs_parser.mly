@@ -11,7 +11,7 @@ open Typedjs_types
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
        CHECKED CHEAT HASHPROTO TREC TYPE EQUALS BOT CODE REF OBJCAST
-       DOTS CONST CASH CARET SEMI BAD UNDER FRESH INTERSECTION
+       DOTS CONST CASH CARET SEMI BAD UNDER INTERSECTION
 
 %right UNION
 
@@ -83,7 +83,6 @@ arg_typ
 
 typ 
   : arg_typ { $1 }
-  | FRESH typ { TFresh $2 }
   | args ARROW typ { TArrow (ThisIs TTop, (fst $1), (snd $1), $3) }
   | LBRACK typ RBRACK args ARROW typ { TArrow (ThisIs $2, (fst $4), (snd $4), $6) }
   | FORALL ID LTCOLON typ DOT typ { TForall ($2, $4, $6) }

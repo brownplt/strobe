@@ -352,7 +352,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
           (if Env.subtype env (TConstr ("Native", [])) fn_typ then
              "native function called"
            else
-             "safe application");
+             "non-native application");
       begin match applicables env fn_typ with
       | TForall (x, _, TArrow (obj_typ, expected_typ, rest_typ, result_typ)) ->
           let subst = unify_typ
@@ -375,10 +375,9 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
            TArrow (thist2, typs2, rest2, result2)) ->
           begin try
             check_arrow thist1 typs1 rest1 result1
-          with Typ_error _ ->
+          with Typ_error (p, e) ->
             if !is_print_native then
-              (printf "%s: %s\n" (string_of_position p)
-                 "WARNING: Right-hand side of an intersection was called")
+              (printf "%s: %s\n" (string_of_position p) e)
             else ();
             begin try check_arrow thist2 typs2 rest2 result2
               with e -> raise e
@@ -482,11 +481,8 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
         | EEmptyArray (p, elt_typ) -> TConstr ("Array", [])
         | EArray (p, elts) -> TConstr ("Array", [])
         | EConst (p, JavaScript_syntax.CRegexp _) -> TConstr ("RegExp", [])
-        | e -> 
-            (match un_null (tc_exp env e) with
-               | TFresh (TConstr (cname, args)) -> TConstr (cname, args)
-               | _ -> error p (sprintf "Not an object literal or new for ObjCast: %s" 
-                              (Typedjs_syntax.string_of_exp e)))
+        | e -> error p (sprintf "Not an object literal or new for ObjCast: %s" 
+                          (Typedjs_syntax.string_of_exp e))
       end in
       let s = tc_exp env e in
       let t = unfold_typ (Env.check_typ p env t) in
@@ -521,7 +517,6 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                           error p (sprintf "Invalid ObjCast---bad named \
                                      fields: %s %s" (string_of_typ t) 
                                      (string_of_typ_list (map snd fs')))
-                    | TFresh (TConstr (cname, []))
                     | TConstr (cname, []) ->
                         let fs' = map_to_list (Env.class_fields env cname) in
                         let bad_field = List.fold_right
@@ -704,7 +699,6 @@ and update p env field newval t =
 
 and bracket p env ft ot =
   match ot, ft with
-    | TFresh t, ft -> bracket p env ft t
     | TArrow (this_t, args_t, rest_t, return_t), ft ->
         (match ft with
            | TStrSet (["call"]) -> 

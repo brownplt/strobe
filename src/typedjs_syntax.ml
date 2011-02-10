@@ -48,7 +48,6 @@ type typ =
           {s: t, ... #proto: p, *: star, #code: f} *)
   | TObjStar of (id * typ) list * typ * typ * typ
   | TRef of typ
-  | TFresh of typ
   | TSource of typ
   | TSink of typ
   | TTop
@@ -164,6 +163,7 @@ let rec typ_subst' s_env x s typ =
       | TStrSet strs -> TStrSet strs
       | TStrMinus strs -> TStrMinus strs
       | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
+      | TIntersect (t1, t2) -> TIntersect (typ_subst x s t1, typ_subst x s t2)
       | TArrow (t1, t2s, tr, t3)  ->
           let this_subst t = (match t with
                                 | NoThis -> NoThis
@@ -181,6 +181,7 @@ let rec typ_subst' s_env x s typ =
       | TBot -> TBot
       | T_ -> T_
       | TField -> TField
+      | TList ts -> TList (map (typ_subst x s) ts)
       | TBad -> TBad
       | TForall (y, t1, t2) -> 
           begin match x = y, IdMap.mem x s_env with
@@ -256,7 +257,6 @@ module Pretty = struct
     match t with
       | TTop -> text "Any"
       | TBot -> text "Bot"
-      | TFresh t -> horz [text "fresh"; typ t]
       | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
       | TIntersect (t1, t2) -> horz [typ t1; text "&"; typ t2]
       | TArrow (tt, arg_typs, rest_typ, r_typ) ->
