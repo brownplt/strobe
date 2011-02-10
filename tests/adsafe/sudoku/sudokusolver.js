@@ -1,1 +1,0 @@
-../../lint/typable/sudokusolver.js

@@ -1,1 +1,0 @@
-../../lint/typable/picker.js
