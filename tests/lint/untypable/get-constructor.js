@@ -1,2 +1,5 @@
-var o = {};
-o.constructor;
+ADSAFE.lib("test",
+           function() {
+               var o = {};
+               o.constructor;
+           });

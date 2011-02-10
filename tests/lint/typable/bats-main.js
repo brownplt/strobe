@@ -1,3 +1,5 @@
+<div id="BATS_">
+<script>
 ADSAFE.go('BATS_', function (dom, lib) {
     "use strict";
     var input  = dom.q('#BATS_INPUT'),
@@ -150,3 +152,5 @@ ADSAFE.go('BATS_', function (dom, lib) {
             }, 1000);
         });
 });
+</script>
+</div>

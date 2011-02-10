@@ -1,3 +1,7 @@
-function f() {
-    f.toString();
-}
+ADSAFE.lib("test",
+           function() {
+               function f() {
+                   f.toString();
+               }
+           }
+          );

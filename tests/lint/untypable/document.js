@@ -1,3 +1,5 @@
-function foo() {
-    var d = document;
-}
+ADSAFE.lib("test",
+           function foo() {
+               var d = document;
+           }
+          );

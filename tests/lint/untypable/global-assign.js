@@ -1,3 +1,6 @@
-function foo() {
-    x = 12;
-}
+ADSAFE.lib("test",
+           function() {
+               function foo() {
+                   x = 12;
+               }
+           });

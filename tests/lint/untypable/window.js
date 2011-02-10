@@ -1,3 +1,5 @@
-function foo() {
-    var w = window;
-}
+ADSAFE.lib("test",
+           function() {
+               var w = window;
+           }
+          );

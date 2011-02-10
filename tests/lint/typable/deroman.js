@@ -1,3 +1,5 @@
+<div id="DEROMAN_">
+<script>
 "use strict";
 ADSAFE.go("DEROMAN_", function (dom, lib) {
     var deroman = (function () {
@@ -29,9 +31,8 @@ ADSAFE.go("DEROMAN_", function (dom, lib) {
             return result;
         };
 
-    }());
-
-    var input = dom.q("input_text");
+    }()),
+    input = dom.q("input_text");
     input
         .on('enterkey', function (e) {
             dom.q('#DEROMAN_RESULT').value(deroman(input.getValue()));
@@ -39,3 +40,5 @@ ADSAFE.go("DEROMAN_", function (dom, lib) {
         })
         .focus();
 });
+</script>
+</div>

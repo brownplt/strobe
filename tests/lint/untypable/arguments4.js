@@ -1,3 +1,5 @@
-function f() {
-    return f.arguments;
-}
+ADSAFE.lib("test",
+           function() {
+               return f.arguments;
+           }
+          );

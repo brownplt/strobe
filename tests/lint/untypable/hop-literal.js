@@ -1,3 +1,6 @@
-function foo() {
-    var o = {hasOwnProperty: function() {} };
-}
+ADSAFE.lib("test",
+           function() {
+               function foo() {
+                   var o = {hasOwnProperty: function() {} };
+               }
+           });

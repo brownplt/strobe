@@ -1,7 +1,7 @@
-
-function foo() {
-    function bar() {
-        
-    }
-    bar();
-}
+ADSAFE.lib("TEST_",
+           function () {
+               function bar() {
+                   
+               }
+               bar();
+           });

@@ -1,2 +1,6 @@
-var o = {};
-o.___nodes___;
+ADSAFE.lib("test",
+           function() {
+               var o = {};
+               o.___nodes___;
+           }
+          );

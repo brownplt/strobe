@@ -1,3 +1,5 @@
-function f() {
-    arguments[0] = 12;
-}
+ADSAFE.lib("test",
+           function() {
+               arguments[0] = 12;
+           }
+          );

@@ -4,9 +4,10 @@
 
 // 2008-10-10
 
-"use strict";
+
 
 ADSAFE.lib("widget", function () {
+    "use strict";
         return function (dom, picker, game, sudokusolver) {
             var clear,              // Reference to the clear button dom node.
             div,                // Reference to the button box dom node.

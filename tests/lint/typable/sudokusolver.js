@@ -12,10 +12,11 @@
 // there is more work to do, then it uses ADSAFE.later to schedule the next unit
 // of work.
 
-"use strict";
+
 
 ADSAFE.lib("solver", function () {
 
+    "use strict";
     return function() {
         // TypedJS doesn't support named function expressions, so this small change
         // is made for now.

@@ -1,6 +1,8 @@
-function foo(o) {
-    function foo() {}
-    if(o instanceof foo) {
-
-    }
-}
+ADSAFE.lib("TEST_",
+           function () {
+               function foo() {}
+               var o = {};
+               if(o instanceof foo) {
+                   o.boozle();
+               }
+           });

@@ -10,11 +10,6 @@
 
 // option = {adsafe: true, fragment: false}
 
-/*members check, cookie, each, edition, get, getTitle, getValue, indent,
-    isArray, join, jslint, lib, maxerr, maxlen, on, passfail, predef, push,
-    q, select, set, split, value, white
-*/
-
 ADSAFE.lib("init_ui", function (lib) {
     "use strict";
 

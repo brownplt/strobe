@@ -6,10 +6,10 @@
 // The sudoku function makes an object which manages the gamestate of a sudoku
 // game.
 
-"use strict";
+
 
 ADSAFE.lib("sudoku", function () {
-
+    "use strict";
     return function() {
         var mode = 'setup', board = [], protect = [],
 

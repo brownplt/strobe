@@ -1,7 +1,6 @@
 // picker.js
 // 2008-10-23
 
-"use strict";
 
 
 // The picker is a lightweight data entry device. It is activated by a
@@ -17,6 +16,8 @@
 //      func        A function that will be called when a pick is made.
 
 ADSAFE.lib("picker", function () {
+    "use strict";
+
     return function() {
         return function (box, x, y, func) {
             var i;

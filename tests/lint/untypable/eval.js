@@ -1,3 +1,4 @@
-function f() {
-    eval("bad stuff");
-}
+ADSAFE.lib("test",
+           function f() {
+               eval("bad stuff");
+           });
