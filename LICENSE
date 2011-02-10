@@ -1,5 +1,3 @@
-Typed JavaScript
-
 This software is provided anonymously and for the sole intention of
 peer review for the submission
 
@@ -14,3 +12,5 @@ All Rights Reserved.
 /tests/browser, /tests/gadgets, /tests/lint/jslint.js,
 /tests/lint/jslint-lib.js contain 3rd-party code that is not covered
 by this license.
+
+Derived from code Copyright Brown University and Claudiu Saftoui.
