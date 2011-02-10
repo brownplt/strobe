@@ -2,7 +2,7 @@
  *   sentinel values), and just 2 function annotations. not bad!
  */
 var curAudioClip_ = /*:upcast Audioclip + Undef*/ undefined;
-var timer = 0; // Arjun: null --> 0
+var timer = 0; // : null --> 0
 var flag = 0;
 var bpm = 0;
 var AUDIO_CLIP_URI = "tick.wav";
@@ -18,7 +18,7 @@ function onAddCustomMenuItems(menu) /*: Menu -> Undef */ {
   menu.AddItem("More Gadgets", 0, onMoreGadgetsClick);
 }
 
-function onMoreGadgetsClick(_ /* Arjun: ignored arg */) /*: { } -> Undef */ {
+function onMoreGadgetsClick(_ /* : ignored arg */) /*: { } -> Undef */ {
 	framework.openURL("http://www.gdgadgets.com");
 }
 
@@ -42,7 +42,7 @@ function onStart() /*: -> Undef */ {
 }
 
 function onStop() /*: -> Undef */ {
-  if(timer != 0) { // Arjun: null --> 0
+  if(timer != 0) { // : null --> 0
     clearInterval(timer);
     timer = 0;
   }
@@ -78,7 +78,7 @@ function onPlay() /*: -> Undef */ {
     startedAudio();
   } else {                  // Already playing something
     curAudioClip_.stop();
-    curAudioClip_ = undefined; // Claudiu: null -> undefined
+    curAudioClip_ = undefined; // : null -> undefined
     stoppedAudio();
   }
 }
@@ -86,7 +86,7 @@ function onPlay() /*: -> Undef */ {
 function onAudioStateChange(audioClip, state) /*: Audioclip * Int -> Undef */ {
   if (state == gddSoundStateStopped) {
     stoppedAudio();
-    curAudioClip_ = undefined; // Claudiu: null -> undefined
+    curAudioClip_ = undefined; // : null -> undefined
   } else if (state == gddSoundStatePlaying) {
     startedAudio();
   }
@@ -101,7 +101,7 @@ function stoppedAudio() /*: -> Undef */ {
 }
 
 function check_key() /*: -> Undef */ {
-  // Claudiu: keycode --> keyCode
+  // : keycode --> keyCode
   if(event.keyCode == 45)
     decr();
   if(event.keyCode == 43)

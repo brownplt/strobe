@@ -104,7 +104,7 @@ function getDateDiff(start, end)
   var msec = (diff % 1000);
 
   // Seconds.
-  // Claudiu: added floor to the diffs
+  // : added floor to the diffs
   diff = Math.floor(diff / 1000);
   var seconds = Math.floor(diff % 60);
 

@@ -1,4 +1,4 @@
-// Claudiu: no modifications required except for function annotations!
+// : no modifications required except for function annotations!
 /*
 Copyright (C) 2007 Google Inc.
 

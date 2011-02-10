@@ -96,7 +96,7 @@ function Main() {
   pluginHelper.onCommand = OnCommand;
   pluginHelper.onDisplayStateChange = stateChange;
 
-  //pluginHelper.onAddCustomMenuItems = AddCustomMenuItems; //Claudiu: for tracer
+  //pluginHelper.onAddCustomMenuItems = AddCustomMenuItems; //: for tracer
   pluginHelper.onShowOptionsDlg = ShowOptionsDlg;
 
   // Every so often load more events from the server
@@ -944,7 +944,7 @@ function showErrorItem(title, subtitle, snippet, url) {
 }
 
 var COLOR_MAP = [
-  undefined , // no color 0 //Claudiu: added explicit 'undefined'
+  undefined , // no color 0 //: added explicit 'undefined'
   ['#A32929', '#CC3333'],
   ['#B1365F', '#DD4477'],
   ['#7A367A', '#994499'],
@@ -1660,7 +1660,7 @@ function drawCalendar() {
   var displaycontentItems = getEventsForDate(currentDate, eventStore);
 
   AddItem(MSG_PREV_DATE, x, y + 2, arrowConst, itemHeight, DrawItemCalBold, gotoPrevDate);
-  var numItemsShown = 0; //Claudiu: added semicolon
+  var numItemsShown = 0; //: added semicolon
   if (displaycontentItems.length == 0) {
     var dateText = NiceDate(currentDate, true, false)
     var drawFunc = drawLongShort(MSG_NO_EVENTS_ON + ' ' + dateText, dateText, gddFontBold);

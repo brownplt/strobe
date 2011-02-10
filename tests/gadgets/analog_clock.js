@@ -6,7 +6,7 @@ var _SecondHandFade = 0;
 
 var _UpdateSecondHandInterval = 0,
     _BounceRotationIncrement = 1.8,
-    _NewRotation = 0.0; // Claudiu: changed to number
+    _NewRotation = 0.0; // : changed to number
 
 function _view_onopen() /*:  -> Undef */ {
     f();
@@ -35,7 +35,7 @@ function _view_onpopout() /*:  -> Undef */ {
 }
 
 function d() /*:  -> Undef */ {
-  var a = new Date(undefined); // Claudiu : added undefined
+  var a = new Date(undefined); //  : added undefined
     if (_minimized) {
         var b = /*:upcast Str + Int */(/*:is Int */(a.getHours()));
         if (b > 12) b = b - 12;
@@ -86,7 +86,7 @@ function f() /*:  -> Undef */ {
         _SecondInterval = 0;
     }
     //switch (options("SecondHand")) {
-    //Claudiu : options is callable?? or a bug
+    // : options is callable?? or a bug
     switch (options.getValue("SecondHand")) {
     case 0:
         g(false);

@@ -1,7 +1,7 @@
 //4 vars added
 //5 init i to 0 instead of undefined
 //4 changes to settimeout to not use a string
-var token = 0; //CLAUDIU: move here for func lift
+var token = 0; // move here for func lift
 
 function view_onOpen() /*:  -> Undef */ {
     edit1.value = "Type the text...";
