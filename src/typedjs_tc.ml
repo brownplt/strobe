@@ -325,15 +325,22 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                                   (string_of_typ this_typ)))
                     else this_typ) in
           let arg_typs' = map (tc_exp_ret env) args in
-          let arg_typs = 
-            fill (List.length expected_typs - List.length args) 
-              typ_undef arg_typs' in
-          let expected_typs =
-            fill (List.length args - List.length expected_typs)
-              rest_typ expected_typs in
+          let expected_typs, arg_typs = 
+            (* If there are fewer arguments than expected_typs, fill
+               the arguments (including the rest position) with undefs 
+              (e.g. appling Int * Bool * Str ... to an Int *)
+            if List.length arg_typs' < List.length expected_typs then
+              (rest_typ::expected_typs,
+               typ_undef::(fill (List.length expected_typs - List.length arg_typs')
+                             typ_undef arg_typs'))
+            (* Otherwise, fill expecteds with a rest_typ for every arg_typ *)
+            else 
+              (fill (List.length arg_typs' - List.length expected_typs)
+                 rest_typ expected_typs,
+               arg_typs') in
             if Env.subtypes env arg_typs expected_typs 
             then result_typ 
-            else if List.length args = List.length expected_typs (* || 
+            else if List.length arg_typs = List.length expected_typs (* || 
                  dont need to supply undefined arguments =) 
               (List.length args < List.length expected_typs && 
                  (List.iter (
@@ -405,7 +412,7 @@ let rec tc_exp_simple (env : Env.env) exp = match exp with
                 | ThisIs t -> Env.bind_id "this" t env in
               let env = Env.bind_id "arguments" (TList arg_typs) env in
               let body_typ = match tc_def None env body with
-                | Some t, _ -> t 
+                | Some t, _ -> Env.check_typ p env t 
                 | None, _ -> raise (Typ_error (p, "Function's body was bad")) in
                 if Env.subtype env body_typ result_typ then 
                   expected_typ

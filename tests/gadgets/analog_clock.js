@@ -1,6 +1,6 @@
 options.putDefaultValue("SecondHand", 1);
 var _SecondInterval = 0,
-    _minimized = false;
+   _minimized = /*: upcast Bool */ false;
 
 var _SecondHandFade = 0;
 

@@ -9,3 +9,6 @@ Point.prototype.sum = f;
 
 var p = new Point(10, 20);
 p.sum();
+
+var heck = {x:10, y:20, sum: f, blarg: f};
+heck.blarg();

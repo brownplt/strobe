@@ -75,10 +75,10 @@ var SVSFlagsAsync = 1;
 var SVSFIsFilename = 4;
 
 
-var isSpeakingText = false;
+var isSpeakingText = /*: upcast Bool */ false;
 var checkTextSpeakingStatusToken=0;
 
-var isReadingTextFile = false;
+var isReadingTextFile = /*: upcast Bool */ false;
 var checkTextFileReadingStatusToken=0;
 var textFilePath = "";
 

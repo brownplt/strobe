@@ -7,7 +7,7 @@
  - german
 
 ******************/
-var debug = false; // FIX: 0 -> false
+var debug = /*: upcast Bool */ false; // FIX: 0 -> false
 
 var bTimer = 0, secTimer = 0; //FIX: = 0
 
@@ -36,7 +36,7 @@ function smallestCount() /*: -> Int */ // FIX: we do not lift functions
 }
 
 var smCount = smallestCount();
-var minimized = false;
+var minimized = /*: upcast Bool */ false;
 
 var oneSec = debug ? 100 : 1000; // FIX: we do not do the style below
 var secTime = debug ? 20 * oneSec : 60 * oneSec;

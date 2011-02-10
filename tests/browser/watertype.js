@@ -35,16 +35,16 @@ var QUALITY_X = 6,
     contextText = /*:upcast Undef + CanvasRenderingContext2D*/undefined,
     dataText = [0],
 
-    input = /*:upcast Undef + HTMLInputElement*/undefined, text="",
+    input = /*:upcast Undef + HTMLElement*/undefined, text="",
 
-    isUserInteracting = false, pointers = [[0.0]];
+isUserInteracting = /*: upcast Bool */ false, pointers = [[0.0]];
 
 function init() /*: -> Undef */ {
 
     var container = document.getElementById('container');
 
     // input box
-    input = /*:downcast HTMLInputElement*/(document.createElement("input"));
+    input = document.createElement("input");
     input.type = "text";
     input.value = "type";
     input.style.position = "absolute";

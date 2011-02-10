@@ -1,7 +1,8 @@
-var f = function(a) /*: [{x: Str}] Int -> Str */ {
+var f = function(a) /*: [{f: Int -> Str, x: Str}] Int -> Str */ {
   return this.x;
 };
 
-var obj = {foo: f, x : "HI"};
-obj.foo(10);
+var obj = {f: function(n) /*: Int -> Str */ { return "str"; }, 
+           x : /*: upcast Str */ "HI"};
+obj.f(obj);
 
