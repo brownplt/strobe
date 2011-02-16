@@ -180,6 +180,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | _ -> 
           error p "field-lookup requires a string literal"
     end
+  | EUpdate (p, _, _, _) -> error p ("Haven't implemented update yet")
   | EThis p -> begin
       try 
         Env.lookup_id "this" env
