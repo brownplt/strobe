@@ -61,6 +61,9 @@ let is_empty lst = match lst with
 
 type env = bool IdMap.t
 
+let to_string  p e = EApp (p, EDeref (p, EId (p, "%ToString")),  [e])
+let to_object  p e = EApp (p, EDeref (p, EId (p, "%ToObject")),  [e])
+let to_boolean p e = EApp (p, EDeref (p, EId (p, "%ToBoolean")), [e])
 
 let rec exp (env : env) expr = match expr with
   | ConstExpr (a, c) -> EConst (a, c)
@@ -85,7 +88,9 @@ let rec exp (env : env) expr = match expr with
     with Not_found -> error a (x ^ " is not defined")
     end
   | IdExpr (a, x) -> EId (a, x)
-  | BracketExpr (a, e1, e2) -> EDeref (a, EBracket (a, exp env e1, exp env e2))
+  | BracketExpr (a, e1, e2) -> 
+      EDeref (a, EBracket (a, to_object a (exp env e1), 
+                              to_string a (exp env e2)))
   | NewExpr (a, VarExpr (_, x), args) -> ENew (a, x, map (exp env) args)
   | NewExpr (p, _, _) ->
       raise (Not_well_formed (p, "new expressions much name the constructor"))
@@ -98,10 +103,13 @@ let rec exp (env : env) expr = match expr with
                  EId (p, "%or-left"),
                  exp env e2))
   | InfixExpr (a, op, e1, e2) -> EInfixOp (a, op, exp env e1, exp env e2)
-  | IfExpr (a, e1, e2, e3) -> EIf (a, exp env e1, exp env e2, exp env e3)
+  | IfExpr (a, e1, e2, e3) -> 
+      EIf (a, to_boolean a (exp env e1), exp env e2, exp env e3)
   | AssignExpr (a, VarLValue (p', x), e) -> ESetRef (a, EId (p', x), exp env e)
   | AssignExpr (p, PropLValue (_, e1, e2), e3) ->
-      EUpdate (p, exp env e1, exp env e2, exp env e3)
+      EUpdate (p, to_object p (exp env e1), 
+                  to_string p (exp env e2), 
+                  exp env e3)
   | AppExpr (a, f, args) -> EApp (a, exp env f, map (exp env) args)
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdMap.add x true env) e2)
