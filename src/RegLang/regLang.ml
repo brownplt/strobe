@@ -127,6 +127,20 @@ let intersect fsm1 fsm2 =
     accept = II (fsm1.accept, fsm2.accept);
   }
 
+let negate fsm = 
+  (* I think the accept state is always the highest state,
+   * which makes this perfectly "accept"able (ha?) *)
+  let rec new_accept accept = match accept with
+    | I i -> I (1 + i) 
+    | II (s1, s2) -> II (new_accept s1, new_accept s2) in
+  let accept' = new_accept fsm.accept in
+  let add_accept_edge edges = (Epsilon, accept')::edges in
+  {
+    edges = StateMap.map add_accept_edge fsm.edges;
+    start = fsm.start;
+    accept = accept'
+  }
+
 let nullable fsm = 
   let rec f edges fringe = match fringe with
     | [] -> false
@@ -137,4 +151,12 @@ let nullable fsm =
         f (StateMap.remove state edges)
           (rest @ (map snd2 (StateMap.find state edges)))
   in f fsm.edges [fsm.start]
-    
+
+(* TODO: Idea---use the highest "accept" number to decide which
+ * to negate as an optimization to minimize edges *)
+let contains fsm1 fsm2 =
+  nullable (intersect fsm1 (negate fsm2))
+
+let reg_contains field1 field2 = match field1, field2 with
+  | (_, fsm1), (_, fsm2) -> contains fsm1 fsm2
+

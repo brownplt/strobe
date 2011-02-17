@@ -13,12 +13,17 @@ let tc_const (const : JavaScript_syntax.const) = match const with
   | JavaScript_syntax.CUndefined -> TPrim Undef 
 
 let typ_of_value (exp : exp) : typ = 
+  let mk_field f (name, exp) =
+    ((RegLang.String name, RegLang.nfa_of_regex (RegLang.String name)),
+      f exp) in
   let rec f e = match e with
-    | EObject (_, fields) -> TObject (map (second2 f) fields)
+    | EObject (_, fields) -> 
+       TObject (map (mk_field f) fields)
     | EConst (_, c) -> tc_const c
     | EFunc (_, _, t, _) -> t
     | ERef (_, RefCell, e') -> TRef begin match e' with
-        | EObject (_, fields) -> TObject (map (second2 f) fields)
+        | EObject (_, fields) -> 
+            TObject (map (mk_field f) fields)
         | EConst (_, c) -> tc_const c
         | EFunc (_, _, t, _) -> t
         | _ -> raise (Not_value  (FormatExt.to_string Pretty.p_exp e'))

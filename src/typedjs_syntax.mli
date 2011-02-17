@@ -35,14 +35,15 @@ type prim =
   | Undef
   | Null
 
-type field = string * RegLang.fsm
+type field = RegLang.regex * RegLang.fsm
 
 type typ = 
   | TPrim of prim
   | TUnion of typ * typ
   | TIntersect of typ * typ
   | TArrow of typ list * typ      
-  | TObject of (id * typ) list
+  | TObject of (field * typ) list
+  | TRegex of field
   | TRef of typ
   | TSource of typ
   | TSink of typ

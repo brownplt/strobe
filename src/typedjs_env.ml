@@ -121,14 +121,7 @@ module Env = struct
     | [], [] -> cache
     | [], _ -> raise Not_subtype (* fs1 is missing some things fs2 has *)
     | _, [] -> cache (* can have many extra fields, doesn't matter *)
-    | (x, s) :: fs1', (y, t) :: fs2' ->
-        let cmp = String.compare x y in
-          if cmp = 0 then subtype_fields env (subt env cache s t) fs1' fs2'
-            (* if cmp < 0, x is an extra field, so just move on *)
-          else if cmp < 0 then 
-            subtype_fields env cache fs1' fs2
-          (* otherwise, y is a field that x does not have *)
-          else raise Not_subtype
+    | (x, s) :: fs1', (y, t) :: fs2' -> raise Not_subtype
 
   let subtypes env ss ts = 
     try 
@@ -156,19 +149,15 @@ module Env = struct
     | false, true -> t
     | false, false -> TIntersect (s, t)
 
-  let cmp_props (k1, _) (k2, _) = match String.compare k1 k2 with
-    | 0 -> raise (Not_wf_typ ("the field " ^ k1 ^ " is repeated"))
-    | n -> n
-        
   let rec normalize_typ env typ = match typ with
     | TPrim _ -> typ
     | TUnion (s, t) -> 
         typ_union env (normalize_typ env s) (normalize_typ env t)
     | TIntersect (s, t) -> 
         typ_intersect env (normalize_typ env s) (normalize_typ env t)
+    | TRegex _ -> typ
     | TObject fs ->
-        let fs = List.fast_sort cmp_props fs in
-          TObject (map (second2 (normalize_typ env)) fs)
+        TObject (map (second2 (normalize_typ env)) fs)
     | TArrow (args, result) ->
         TArrow (map (normalize_typ env) args,
                 normalize_typ env result)
@@ -213,7 +202,8 @@ module Env = struct
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
     | TBot -> TBot (* might change if we allow arbitrary casts *)
     | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
-    | TPrim (Str) -> if RTSet.mem RT.Str rt then typ else TBot
+    | TPrim (Str)
+    | TRegex _ -> if RTSet.mem RT.Str rt then typ else TBot
     | TPrim (Num) 
     | TPrim (Int) -> if RTSet.mem RT.Num rt then typ else TBot
     | TPrim (True)
@@ -268,7 +258,10 @@ module Env = struct
     let ci = IdMap.find cname env.typ_syns in
     match ci with
       | TObject fs ->
-        let add_field env (x, t) = bind_id x t env in
+        let add_field env (x, t) = begin match x with
+          | (RegLang.String s, _) -> bind_id s t env 
+          | _ -> raise (Not_wf_typ (cname ^ " field was a regex in global"))
+        end in
         List.fold_left add_field env fs
       | _ -> 
         raise (Not_wf_typ (cname ^ " global must be an object"))

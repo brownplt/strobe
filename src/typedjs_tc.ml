@@ -125,15 +125,22 @@ let rec tc_exp (env : Env.env) exp = match exp with
           error p ("expected condition to have type Bool, but got a " ^ 
                     (string_of_typ c))
   | EObject (p, fields) ->
-      Env.check_typ p env (TObject (map (second2 (tc_exp env)) fields))
+      let mk_field (name, exp) =
+        ((RegLang.String name, RegLang.nfa_of_regex (RegLang.String name)),
+         tc_exp env exp) in
+      Env.check_typ p env (TObject (map mk_field fields))
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (un_null (tc_exp env obj)), field with
       | TObject fs, EPrefixOp (_, "%ToString", 
                                EConst (_, JavaScript_syntax.CString x)) -> 
-          (try
-             snd2 (List.find (fun (x', _) -> x = x') fs)
+           begin try
+             snd2 (List.find (fun (x', _) -> 
+                (match x' with 
+                   | (RegLang.String x'', _) -> x'' = x
+                   | _ -> failwith "Can'd do complicated regexes yet")) fs)
            with Not_found ->
-             raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
+             raise (Typ_error (p, "the field " ^ x ^ " does not exist"))
+           end
       | TField, field -> begin match tc_exp env field with
           | TField -> TField
           | _ -> error p "expected a TField index"
@@ -341,44 +348,7 @@ let rec tc_def env def = match def with
             in
             let env = Env.clear_labels env in           
               begin match result_typ with
-                  TObject fields -> 
-                    (* first update the env to have the class
-                       available inside the constructor body *)
-                    (* create a new class, add fields as initial methods *)
-                    (* also add the constr itself as a tarrow *)
-                    let env = Env.new_root_class env cexp.constr_name in
-                    let env = Env.bind_id cexp.constr_name 
-                      (TRef (Env.check_typ p env cexp.constr_typ)) env in
-                    let f (fname, ftype) envacc = Env.add_method
-                      cexp.constr_name fname ftype envacc in
-                    let env = fold_right f fields env in
-                      (* first make sure all fields are initialized with
-                         the right types in constr_inits. *)
-                    let check_field (name, typ) = match typ with
-                      | TRef t -> begin try 
-                          let (_, e) = List.find (fun (n,_) -> n = name) 
-                            cexp.constr_inits in 
-                          let etype = tc_exp env e in
-                            if Env.subtype env etype t then () 
-                            else 
-                              raise 
-                                (Typ_error (
-                                   p, sprintf "for field %s, expected type %s, \
-                                               got %s" name (string_of_typ t)
-                                     (string_of_typ etype)))
-                        with
-                            Not_found -> raise (
-                              Typ_error (p, "field " ^ name ^ 
-                                           " not initialized in constructor"))
-                        end
-                      | _ ->
-                          raise (Typ_error (p, "expected an arrow type for \
-                            the constructor")) in
-                      List.iter check_field fields;
-                      (* now check the body, with "this" bound to res_type *)
-                      ignore (tc_exp (Env.bind_id "this" result_typ env) 
-                                cexp.constr_exp);
-                      tc_def env d
+                  TObject fields -> failwith "No constructing yet"
                 | _ -> raise (Typ_error (
                                 p, "constructor's ret type must be obj"))
               end

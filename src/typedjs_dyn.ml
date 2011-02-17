@@ -39,7 +39,7 @@ type contract =
   | CPred of string * expr
   | CArrow of contract list * contract
   | CUnion of contract * contract
-  | CObject of (string * contract) list
+  | CObject of (field * contract) list
 
 let p = (Lexing.dummy_pos, Lexing.dummy_pos)
 
@@ -82,11 +82,7 @@ let rec cc p (ctc : contract) : expr = match ctc with
            ArrayExpr (p, []); (* zero var-arity arguments *)
            cc p result ])
   | CObject fields ->
-      let f (x, ctc) = (p, PropString x, cc p ctc) in
-        CallExpr
-          (p, CallExpr (p, DotExpr (p, contract_lib, "obj"),
-                        [ ConstExpr (p, CString "object") ]),
-           [ ObjectExpr (p, map f fields) ])
+      failwith "Broken by regex fields"
   | CUnion (lhs, rhs) ->
       CallExpr
         (p, CallExpr (p, DotExpr (p, contract_lib, "union"),

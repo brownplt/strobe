@@ -39,14 +39,15 @@ type prim =
   | Undef
   | Null
 
-type field = string * RegLang.fsm
+type field = RegLang.regex * RegLang.fsm
 
 type typ = 
   | TPrim of prim
   | TUnion of typ * typ
   | TIntersect of typ * typ
   | TArrow of typ list * typ
-  | TObject of (id * typ) list
+  | TObject of (field * typ) list
+  | TRegex of field
   | TRef of typ
   | TSource of typ
   | TSink of typ
@@ -190,6 +191,9 @@ module Pretty = struct
   open Format
   open FormatExt
 
+  let fld field = match field with
+    | _ -> text "REGEX"
+
   let rec typ t  = match t with
     | TTop -> text "Any"
     | TBot -> text "DoesNotReturn"
@@ -222,7 +226,7 @@ module Pretty = struct
               text "->";
               typ r_typ ]
     | TObject fs ->
-        let f (k, t) = horz [ text k; text ":"; typ t ] in
+        let f (k, t) = horz [ fld k; text ":"; typ t ] in
           braces (horz (intersperse (text ",") (map f fs)))
     | TRef s -> horz [ text "ref"; parens (typ s) ]
     | TSource s -> horz [ text "source"; parens (typ s) ]
