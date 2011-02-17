@@ -150,6 +150,12 @@ module Env = struct
     | false, true -> s (* t <: s *)
     | false, false -> TUnion (s, t)
 
+  let typ_intersect cs s t = match subtype cs s t, subtype cs t s with
+    | true, true -> s
+    | true, false -> s (* s <: t *)
+    | false, true -> t
+    | false, false -> TIntersect (s, t)
+
   let cmp_props (k1, _) (k2, _) = match String.compare k1 k2 with
     | 0 -> raise (Not_wf_typ ("the field " ^ k1 ^ " is repeated"))
     | n -> n
@@ -159,7 +165,7 @@ module Env = struct
     | TUnion (s, t) -> 
         typ_union env (normalize_typ env s) (normalize_typ env t)
     | TIntersect (s, t) -> 
-        TIntersect (normalize_typ env s, normalize_typ env t)
+        typ_intersect env (normalize_typ env s) (normalize_typ env t)
     | TObject fs ->
         let fs = List.fast_sort cmp_props fs in
           TObject (map (second2 (normalize_typ env)) fs)
@@ -221,7 +227,7 @@ module Env = struct
     | TSource t -> TSource t
     | TSink t -> TSink t
     | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
-    | TIntersect (s, t) -> TIntersect (static cs rt s, static cs rt t)
+    | TIntersect (s, t) -> typ_intersect cs (static cs rt s) (static cs rt t)
     | TForall _ -> typ
     | TField -> List.fold_left (basic_static cs) TBot (RTSetExt.to_list rt)
     | TTop -> 

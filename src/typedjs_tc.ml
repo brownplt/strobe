@@ -189,9 +189,9 @@ let rec tc_exp (env : Env.env) exp = match exp with
            | TIntersect (t1, t2) -> begin try
                    let r1 = check_app t1 in begin try
                      let r2 = check_app t2 in
-                       Env.typ_union env r1 r2
-                     with Typ_error _ -> TBot end
-                   with Typ_error _ -> TBot end
+                       Env.typ_intersect env r1 r2
+                     with Typ_error _ -> r1 end
+                   with Typ_error _ -> check_app t2 end
            | _ -> failwith ("Expected an arrow or intersection in EApp, got: " ^
                                 (string_of_typ tfun))
         end in
@@ -207,7 +207,10 @@ let rec tc_exp (env : Env.env) exp = match exp with
               error p (sprintf "could not determine \'%s in the function type \
                                 %s" x (string_of_typ t))
             end
-      | t -> check_app t
+      | t -> let res = check_app t in
+               if res = TBot then error p ("TBot returned from function, \
+                                            perhaps an intersection failed?")
+               else res
     end
   | ERec (binds, body) -> 
       let f env (x, t, e) =

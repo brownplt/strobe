@@ -51,6 +51,8 @@ module Env : sig
 
   val typ_union : env -> typ -> typ -> typ
 
+  val typ_intersect : env -> typ -> typ -> typ
+
   val static : env -> RTSet.t -> typ -> typ
 
   val bind_typ : env -> typ -> env * typ
