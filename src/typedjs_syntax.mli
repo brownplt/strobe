@@ -35,6 +35,8 @@ type prim =
   | Undef
   | Null
 
+type field = string * RegLang.fsm
+
 type typ = 
   | TPrim of prim
   | TUnion of typ * typ
