@@ -9,7 +9,7 @@ open Typedjs_syntax
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST FORALL LTCOLON IS
-       CHECKED CHEAT
+       CHECKED CHEAT NULL
 
 %right UNION
 
@@ -37,11 +37,12 @@ fields
 
 arg_typ
   : ANY { TTop }
-  | INT { TPrim (Int) }
-  | NUM { TPrim (Num) }
-  | STR { TPrim (Str) }
+  | INT { TPrim Int }
+  | NUM { TPrim Num }
+  | STR { TPrim Str }
   | BOOL { typ_bool }
-  | UNDEF { TPrim (Undef) }
+  | UNDEF { TPrim Undef }
+  | NULL { TPrim Null }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | LBRACE fields RBRACE { TObject $2 }
   | LPAREN typ RPAREN { $2 }

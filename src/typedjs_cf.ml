@@ -65,6 +65,7 @@ let calc_op1 node env heap (op : op1) v = match op, v with
         ARef loc, set_ref loc (to_set v) heap
   | Deref, ARef loc -> (ADeref (loc, deref loc heap), heap)
   | Op1Prefix "prefix:typeof", ADeref (loc, _) -> ALocTypeof loc, heap
+  | Op1Prefix "%ToBoolean", ALocTypeIs _ -> v, heap
   | _ -> any, heap
 
 
