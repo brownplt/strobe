@@ -1,9 +1,8 @@
 Typed JavaScript
-Copyright (c) 2009-2010 Brown University and Claudiu Saftoiu
+Copyright (c) 2009-2011 Brown University and Claudiu Saftoiu
 All Rights Reserved.
 
-/tests/browser and /tests/gadgets contains 3rd-party code that is not
-covered by this license.
+/tests contains 3rd-party code that is not covered by this license.
 
 /javascript-trace is not covered by this license.
 
