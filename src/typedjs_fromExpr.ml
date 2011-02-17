@@ -103,7 +103,7 @@ let rec exp (env : env) expr = match expr with
                  exp env e2))
   | InfixExpr (a, op, e1, e2) -> EInfixOp (a, op, exp env e1, exp env e2)
   | IfExpr (a, e1, e2, e3) -> 
-      EIf (a, to_boolean a (exp env e1), exp env e2, exp env e3)
+      EIf (a, to_boolean p (exp env e1), exp env e2, exp env e3)
   | AssignExpr (a, VarLValue (p', x), e) -> ESetRef (a, EId (p', x), exp env e)
   | AssignExpr (p, PropLValue (_, e1, e2), e3) ->
       EUpdate (p, to_object p (exp env e1), 

@@ -46,6 +46,7 @@ arg_typ
   | LBRACE fields RBRACE { TObject $2 }
   | LPAREN typ RPAREN { $2 }
   | TID { TId $1 }
+  | ID { TId $1 }
 
 
 typ 

@@ -62,6 +62,7 @@ module Env = struct
     let subtype = subtype env in
     let subtypes = subtypes env in
       match s, t with
+        | TPrim Int, TPrim Num -> true
         | TId x, TId y -> x = y
         | TId x, t ->
             let s = IdMap.find x env.typ_ids in (* S-TVar *)
@@ -322,6 +323,9 @@ let apply_subst subst typ = IdMap.fold typ_subst subst typ
 
  (* TODO: occurs check *)
 let rec unify subst s t : typ IdMap.t = match s, t with
+  | TPrim s, TPrim t -> 
+      if s = t then subst 
+      else failwith ("cannot unify differently typed primitives")
   | TId x, TId y -> 
       if x = y then subst 
       else failwith ("cannot unify bound variables " ^ x ^ " and " ^ y)
