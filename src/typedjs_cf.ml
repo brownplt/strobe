@@ -7,6 +7,8 @@ module H = Hashtbl
 module J = JavaScript_syntax
 module Heap = Map.Make (Loc)
 
+let typ_syns : (typ IdMap.t) ref = ref IdMap.empty
+
 (* The abstract environment at each node lets us lookup the abstract value
    of bound identifiers and perform abstract operations. *)
 let envs : (node, env) H.t = H.create 200
@@ -163,7 +165,8 @@ and sub_flow (env_node : node) (_, f, args, typ, body_exp) =
          else
          H.add lambdas (node_of_cpsexp body_exp)
            (env_node, 
-            List.fold_right2 bind args (map runtime arg_typs) empty_env,
+            List.fold_right2 bind args (map (runtime !typ_syns) arg_typs)
+              empty_env,
             body_exp)
        end
     | _ -> failwith "expected TArrow in sub_flow"
@@ -191,7 +194,8 @@ and flow prev_node (env : env) (heap : heap) (cpsexp : cpsexp) =
 
 
               
-let typed_cfa (env : env) (cpsexp : cpsexp) : unit =
+let typed_cfa (syns : typ IdMap.t) (env : env) (cpsexp : cpsexp) : unit =
+  typ_syns := syns;
   flow (-1) env empty_heap cpsexp;
   let rec sub_flows () =
     if H.length lambdas > 0 then 

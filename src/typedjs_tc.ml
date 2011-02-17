@@ -127,7 +127,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EObject (p, fields) ->
       Env.check_typ p env (TObject (map (second2 (tc_exp env)) fields))
   | EBracket (p, obj, field) -> 
-    begin match typ_unfold (un_null (tc_exp env obj)), field with
+    begin match simpl_typ env (un_null (tc_exp env obj)), field with
       | TObject fs, EPrefixOp (_, "%ToString", 
                                EConst (_, JavaScript_syntax.CString x)) -> 
           (try

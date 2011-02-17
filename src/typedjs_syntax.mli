@@ -50,11 +50,12 @@ type typ =
   | TId of id
   | TField
   | TRec of id * typ 
+  | TSyn of id (** type synonym *)
 
 val typ_bool : typ
 
 type env_decl =
-  | EnvClass of constr * constr option * (id * typ) list
+  | EnvClass of constr * constr option * typ
   | EnvBind of id * typ
 
 type annotation =

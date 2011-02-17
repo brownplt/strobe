@@ -57,6 +57,8 @@ module Env : sig
 
   val bind_typ : env -> typ -> env * typ
 
+  val syns : env -> typ IdMap.t
+
 end
 
 
@@ -71,6 +73,8 @@ val cf_env_of_tc_env : Env.env -> Typedjs_lattice.env
 val typ_subst : id -> typ -> typ -> typ
 
 val typ_unfold :  typ -> typ
+
+val simpl_typ : Env.env -> typ -> typ
 
 val unify_typ : typ -> typ -> typ IdMap.t
 

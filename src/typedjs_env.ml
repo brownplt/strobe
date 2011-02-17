@@ -25,6 +25,7 @@ module Env = struct
     classes : class_info IdMap.t;
     subclasses : id IdMap.t; (* direct subclasses *)
     typ_ids: typ IdMap.t; (* bounded type variables *)
+    typ_syns : typ IdMap.t; (* type synonyms *)
   }
 
 
@@ -34,6 +35,7 @@ module Env = struct
     classes = IdMap.empty;
     subclasses = IdMap.empty;
     typ_ids = IdMap.empty;
+    typ_syns = IdMap.empty;
   }
 
   let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
@@ -109,6 +111,7 @@ module Env = struct
         | TRef s, TSink t -> subtype cache t s
         | _, TTop -> cache
         | TBot, _ -> cache
+        | TSyn x, TSyn y -> if x = y then cache else raise Not_subtype
         | _ -> raise Not_subtype
 
   (* assumes fs1 and fs2 are ordered 
@@ -182,6 +185,9 @@ module Env = struct
           TForall (x, s, normalize_typ (bind_typ_id x s env) t)
     | TRec (x, t) ->
       TRec (x, normalize_typ (bind_typ_id x typ env) t)
+    | TSyn x ->
+      if IdMap.mem x env.typ_syns then typ
+      else raise (Not_wf_typ (x ^ " is not a type"))
 
   let check_typ p env t = 
     try normalize_typ env t
@@ -230,6 +236,7 @@ module Env = struct
           List.fold_left (basic_static2 cs) TBot (RTSetExt.to_list rt)
     | TId _ -> typ
     | TRec (x, t) -> TRec (x, static cs rt t)
+    | TSyn _ -> typ
 
 
   let new_root_class env class_name = 
@@ -257,17 +264,19 @@ module Env = struct
           { env with classes = IdMap.add c_name ci' env.classes }
 
   let rec set_global_object env cname =
-    let ci = IdMap.find cname env.classes in
-    let fs = IdMapExt.to_list ci.fields in
-    let add_field env (x, t) = bind_id x t env in
-    let env = List.fold_left add_field env fs in
-      match ci.sup with
-        | None -> env
-        | Some cname' -> set_global_object env cname'
+    let ci = IdMap.find cname env.typ_syns in
+    match ci with
+      | TObject fs ->
+        let add_field env (x, t) = bind_id x t env in
+        List.fold_left add_field env fs
+      | _ -> 
+        raise (Not_wf_typ (cname ^ " global must be an object"))
 
   let rec bind_typ env typ : env * typ = match typ with
     | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) t
     | typ -> (env, typ)
+
+  let syns env = env.typ_syns
 
 end
 
@@ -290,61 +299,37 @@ let parse_env (cin : in_channel) (name : string) : env_decl list =
                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
 
 
-
-let rec add_methods (lst : (id * typ) list) (class_name : id) (env : Env.env) = 
-  match lst with
-      [] -> env
-    | (method_name, method_typ) :: rest ->
-        add_methods rest class_name
-          (Env.add_method class_name method_name method_typ env)
-
-let rec add_classes (lst : env_decl list) (env : Env.env) = match lst with
-  | [] -> env
-  | EnvClass (c_name, Some p_name, _) :: rest ->
-      add_classes rest (Env.new_subclass env c_name p_name)
-  | EnvClass (cname, None, _) :: rest ->
-      add_classes rest (Env.new_root_class env cname)
-  | _ :: rest -> add_classes rest env
-
-(* [mk_env'] ensures that a type declaration is  well-formed and well-kinded.
-   For these checks, it needs the existing environment. *)
-let rec mk_env' (lst : env_decl list) (env : Env.env) : Env.env =  
-  match lst with
-    | [] -> env
-    | EnvBind (x, typ) :: rest ->
-        if IdMap.mem x env.Env.id_typs then
-          raise (Not_wf_typ (x ^ " is already bound in the environment"))
-        else
-          mk_env' rest (Env.bind_id x typ env)
-    | EnvClass (class_name, proto, methods) :: rest ->
-        let env = try match proto with
-          | None -> add_methods methods class_name env
-          | Some proto_name ->
-              add_methods methods class_name env
-        with Not_wf_typ s ->
-          raise (Not_wf_typ ("error adding class " ^ class_name ^ "; " ^ s)) in
-          (* TODO account for prototype *)
-          mk_env' rest env
-
-let extend_global_env env lst = mk_env' lst (add_classes lst env)
+let extend_global_env env lst =
+  let add env decl = match decl with
+    | EnvBind (x, typ) ->
+      if IdMap.mem x env.Env.id_typs then
+        raise (Not_wf_typ (x ^ " is already bound in the environment"))
+      else
+        Env.bind_id x typ env
+    | EnvClass (x, _, t) ->
+      if IdMap.mem x env.Env.typ_syns then
+        raise (Not_wf_typ ("the type " ^ x ^ " is already defined"))
+      else
+        { env with Env.typ_syns = IdMap.add x t env.Env.typ_syns }
+  in List.fold_left add env lst
 
 module L = Typedjs_lattice
 
-let df_func_of_typ (t : typ) : L.av list -> L.av = match t with
+let df_func_of_typ syns (t : typ) : L.av list -> L.av = match t with
   | TArrow (_, r_typ) ->
-      let r_av = L.ASet (L.rt_of_typ r_typ) in
+      let r_av = L.ASet (L.rt_of_typ syns r_typ) in
         (fun _ -> r_av)
   | TForall (x, r_typ, TArrow (_, TId y)) when x = y ->
-      let r_av = L.ASet (L.rt_of_typ r_typ) in
+      let r_av = L.ASet (L.rt_of_typ syns r_typ) in
         (fun _ -> r_av)
   | _ -> (fun _ -> L.any)
 
 let cf_env_of_tc_env tc_env = 
-  let fn x typ cf_env = L.bind x (L.runtime typ) cf_env in
+  let fn x typ cf_env = L.bind x (L.runtime tc_env.Env.typ_syns typ) cf_env in
     IdMap.fold fn (Env.id_env tc_env) L.empty_env
 
 let operator_env_of_tc_env tc_env =
-  let fn x t env = IdMap.add x (df_func_of_typ t) env in
+  let fn x t env = IdMap.add x (df_func_of_typ (Env.syns tc_env) t) env in
     IdMap.fold fn (Env.id_env tc_env) IdMap.empty
   
 
@@ -377,6 +362,13 @@ let rec typ_subst x s typ = match typ with
 let typ_unfold typ = match typ with
     | TRec (x, t) -> typ_subst x typ t
     | _ -> typ
+
+let simpl_typ env typ = 
+  let typ = match typ with
+    | TSyn x -> IdMap.find x env.Env.typ_syns (* normalization => success *)
+    | _ -> typ
+  in typ_unfold typ
+
 
 let apply_subst subst typ = IdMap.fold typ_subst subst typ
 

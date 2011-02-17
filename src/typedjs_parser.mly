@@ -50,7 +50,7 @@ arg_typ
   | LBRACE fields RBRACE { TObject $2 }
   | LPAREN typ RPAREN { $2 }
   | TID { TId $1 }
-  | ID { TId $1 }
+  | ID { TSyn $1 }
 
 
 typ 
@@ -95,15 +95,15 @@ op_typ :
   | FORALL ID DOT op_typ { TForall ($2, TTop, $4) }
 
 env_decl :
-  | CLASS checked any_id PROTOTYPE any_id LBRACE fields RBRACE
+  | CLASS checked any_id PROTOTYPE any_id arg_typ (* will disappear *)
     { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
       EnvClass
         ( $3 (* name *) , 
           Some $5 (* prototype type *),
-          $7 (* local fields *)) }
-  | CLASS checked any_id LBRACE fields RBRACE 
+          $6 (* type *)) }
+  | CLASS checked any_id arg_typ
       { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
-        EnvClass ($3, None (* root *), $5) }
+        EnvClass ($3, None (* root *), $4) }
   | VAL ID COLON typ { EnvBind ($2, $4) }
   | ID COLON typ { EnvBind ($1, TRef $3) }
   | OPERATOR STRING COLON op_typ { EnvBind ($2, $4) }

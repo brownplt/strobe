@@ -116,7 +116,7 @@ let annotate_exp exp =
          (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
             (cf_env_of_tc_env (get_env ())))) in
     set_op_env (get_env ());
-    typed_cfa cf_env cpstypedjs;
+    typed_cfa (Env.syns (get_env ())) cf_env cpstypedjs;
     insert_typecasts exp
 
 let action_tc () : unit = 
@@ -139,7 +139,7 @@ let action_df () : unit =
          (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
             (cf_env_of_tc_env (get_env ())))) in
     set_op_env (get_env ());
-    typed_cfa env cpstypedjs;
+    typed_cfa (Env.syns (get_env ())) env cpstypedjs;
     let annotated_exp = insert_typecasts typedjs in
       Typedjs_syntax.Pretty.p_def annotated_exp std_formatter ;
       printf "Dataflow analysis successful.\n"
