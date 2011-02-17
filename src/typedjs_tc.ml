@@ -126,8 +126,10 @@ let rec tc_exp (env : Env.env) exp = match exp with
                     (string_of_typ c))
   | EObject (p, fields) ->
       Env.check_typ p env (TObject (map (second2 (tc_exp env)) fields))
-  | EBracket (p, obj, field) -> begin match un_null (tc_exp env obj), field with
-      | TObject fs, EConst (_, JavaScript_syntax.CString x) -> 
+  | EBracket (p, obj, field) -> 
+    begin match typ_unfold (un_null (tc_exp env obj)), field with
+      | TObject fs, EPrefixOp (_, "%ToString", 
+                               EConst (_, JavaScript_syntax.CString x)) -> 
           (try
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
@@ -136,10 +138,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
           | TField -> TField
           | _ -> error p "expected a TField index"
         end
-      | t, EConst (_, JavaScript_syntax.CString _) ->
+      | t, EPrefixOp (_, "%ToString",
+                      EConst (_, JavaScript_syntax.CString _)) ->
           error p ("expected object, but got " ^ string_of_typ t)
-      | _ -> 
-          error p "field-lookup requires a string literal"
+      | _, field -> 
+          error p (FormatExt.to_string FormatExt.horz
+                     [ FormatExt.text "lookup requires a literal, got";
+                       Pretty.p_exp field ])
     end
   | EUpdate (p, _, _, _) -> error p ("Haven't implemented update yet")
   | ENew (p, cid, args) -> error p "New doesn't work yet (constrs)"
