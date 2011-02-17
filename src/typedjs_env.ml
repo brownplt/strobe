@@ -80,6 +80,8 @@ module Env = struct
       let subtype = subt env in
       let cache = TPSet.add (s, t) cache in
       match s, t with
+        | TSyn x, _ -> subt env cache (IdMap.find x env.typ_syns) t
+        | _, TSyn y -> subt env cache s (IdMap.find y env.typ_syns)
         | TPrim Int, TPrim Num -> cache
         | TId x, TId y -> if x = y then cache else raise Not_subtype
         | TId x, t ->
@@ -111,7 +113,6 @@ module Env = struct
         | TRef s, TSink t -> subtype cache t s
         | _, TTop -> cache
         | TBot, _ -> cache
-        | TSyn x, TSyn y -> if x = y then cache else raise Not_subtype
         | _ -> raise Not_subtype
 
   (* assumes fs1 and fs2 are ordered 
