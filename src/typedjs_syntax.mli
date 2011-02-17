@@ -38,6 +38,7 @@ type prim =
 type typ = 
   | TPrim of prim
   | TUnion of typ * typ
+  | TIntersect of typ * typ
   | TArrow of typ list * typ      
   | TObject of (id * typ) list
   | TRef of typ
@@ -48,6 +49,7 @@ type typ =
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TId of id
   | TField
+  | TRec of id * typ 
 
 val typ_bool : typ
 

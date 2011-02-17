@@ -42,6 +42,7 @@ type prim =
 type typ = 
   | TPrim of prim
   | TUnion of typ * typ
+  | TIntersect of typ * typ
   | TArrow of typ list * typ
   | TObject of (id * typ) list
   | TRef of typ
@@ -52,6 +53,7 @@ type typ =
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TId of id
   | TField
+  | TRec of id * typ 
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
@@ -198,6 +200,7 @@ module Pretty = struct
        | Undef -> "Undef"
       end
     | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
+    | TIntersect (t1, t2) -> horz [typ t1; text "&"; typ t2]
     | TArrow (tt::arg_typs, r_typ) ->
         horz[ brackets (typ tt);
               horz (intersperse (text "*") 
@@ -225,6 +228,7 @@ module Pretty = struct
         horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
     | TId x -> text x
     | TField -> text "field"
+    | TRec (x, t) -> horz [ text x; text "."; typ t ]
 
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c

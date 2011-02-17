@@ -148,6 +148,8 @@ let set_ref loc value heap =
 let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
     Typedjs_syntax.TArrow _ -> RTSet.singleton RT.Function
   | Typedjs_syntax.TUnion (t1, t2) -> RTSet.union (rt_of_typ t1) (rt_of_typ t2)
+  | Typedjs_syntax.TIntersect (t1, t2) ->
+      RTSet.union (rt_of_typ t1) (rt_of_typ t2)
   | Typedjs_syntax.TPrim (s) -> begin match s with
       | Str ->  RTSet.singleton RT.Str
       | Num
@@ -166,6 +168,7 @@ let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
   | Typedjs_syntax.TForall _ -> rtany
   | Typedjs_syntax.TId _ -> rtany (* TODO: should be empty!!! *)
   | Typedjs_syntax.TField -> rtany
+  | Typedjs_syntax.TRec (_, t) -> rt_of_typ t
 
 let runtime t : av = ASet (rt_of_typ t)
 

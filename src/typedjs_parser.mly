@@ -9,9 +9,9 @@ open Typedjs_syntax
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST FORALL LTCOLON IS
-       CHECKED CHEAT NULL TRUE FALSE
+       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION
 
-%right UNION
+%right UNION INTERSECTION
 
 %start typ_ann
 %start env
@@ -46,6 +46,7 @@ arg_typ
   | UNDEF { TPrim Undef }
   | NULL { TPrim Null }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
+  | arg_typ INTERSECTION arg_typ { TIntersect ($1, $3) }
   | LBRACE fields RBRACE { TObject $2 }
   | LPAREN typ RPAREN { $2 }
   | TID { TId $1 }
@@ -58,6 +59,7 @@ typ
   | LBRACK typ RBRACK args ARROW typ { TArrow ($2::$4, $6) }
   | FORALL ID LTCOLON typ DOT typ { TForall ($2, $4, $6) }
   | FORALL ID DOT typ { TForall ($2, TTop, $4) }
+  | REC ID DOT typ { TRec ($2, $4) }
 
 
 annotation :

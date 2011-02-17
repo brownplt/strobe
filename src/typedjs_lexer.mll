@@ -46,6 +46,7 @@ rule token = parse
    | "*" { STAR }
    | ":" { COLON }
    | "+" { UNION }
+   | "&" { INTERSECTION }
    | "." { DOT }
    | "constructor" { CONSTRUCTOR }
    | "prototype" { PROTOTYPE }
@@ -59,6 +60,7 @@ rule token = parse
    | "forall" { FORALL }
    | "checked" { CHECKED }
    | "<:" { LTCOLON }
+   | "rec" { REC }
    | eof { EOF }
    | ident as x { ID x }
    | '"' (double_quoted_string_char* as x) '"' { STRING x }
