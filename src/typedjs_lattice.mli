@@ -32,7 +32,7 @@ val rtany : RTSet.t
 
 val any : av
 
-val runtime : Typedjs_syntax.typ -> av
+val runtime : typ IdMap.t -> Typedjs_syntax.typ -> av
 
 val empty : av
 
@@ -70,4 +70,4 @@ val escape_env : heap -> env -> env
 
 val escape_heap : heap -> heap
 
-val rt_of_typ : typ -> RTSet.t
+val rt_of_typ : Typedjs_syntax.typ IdMap.t -> typ -> RTSet.t

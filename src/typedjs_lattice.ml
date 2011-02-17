@@ -145,32 +145,35 @@ let escape_heap (heap : heap) =
 let set_ref loc value heap =
   Heap.add loc value heap
 
-let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
-    Typedjs_syntax.TArrow _ -> RTSet.singleton RT.Function
-  | Typedjs_syntax.TUnion (t1, t2) -> RTSet.union (rt_of_typ t1) (rt_of_typ t2)
-  | Typedjs_syntax.TIntersect (t1, t2) ->
-      RTSet.union (rt_of_typ t1) (rt_of_typ t2)
-  | Typedjs_syntax.TPrim (s) -> begin match s with
-      | Str ->  RTSet.singleton RT.Str
-      | Num
-      | Int -> RTSet.singleton RT.Num
-      | True
-      | False -> RTSet.singleton RT.Bool
-      | Null -> RTSet.singleton RT.Object
-      | Undef -> RTSet.singleton RT.Undefined
+let rec rt_of_typ syns (t : Typedjs_syntax.typ) : RTSet.t =
+  let rt = rt_of_typ syns in
+  match t with
+    |  Typedjs_syntax.TArrow _ -> RTSet.singleton RT.Function
+    | Typedjs_syntax.TUnion (t1, t2) -> RTSet.union (rt t1) (rt t2)
+    | Typedjs_syntax.TIntersect (t1, t2) ->
+      RTSet.union (rt t1) (rt t2)
+    | Typedjs_syntax.TPrim (s) -> begin match s with
+        | Str ->  RTSet.singleton RT.Str
+        | Num
+        | Int -> RTSet.singleton RT.Num
+        | True
+        | False -> RTSet.singleton RT.Bool
+        | Null -> RTSet.singleton RT.Object
+        | Undef -> RTSet.singleton RT.Undefined
     end
-  | Typedjs_syntax.TObject _ -> RTSet.singleton RT.Object
-  | Typedjs_syntax.TRef t -> rt_of_typ t
-  | Typedjs_syntax.TSource t -> rt_of_typ t
-  | Typedjs_syntax.TSink t -> rt_of_typ t
-  | Typedjs_syntax.TTop -> rtany
-  | Typedjs_syntax.TBot -> RTSet.empty
-  | Typedjs_syntax.TForall _ -> rtany
-  | Typedjs_syntax.TId _ -> rtany (* TODO: should be empty!!! *)
-  | Typedjs_syntax.TField -> rtany
-  | Typedjs_syntax.TRec (_, t) -> rt_of_typ t
+    | Typedjs_syntax.TObject _ -> RTSet.singleton RT.Object
+    | Typedjs_syntax.TRef t -> rt t
+    | Typedjs_syntax.TSource t -> rt t
+    | Typedjs_syntax.TSink t -> rt t
+    | Typedjs_syntax.TTop -> rtany
+    | Typedjs_syntax.TBot -> RTSet.empty
+    | Typedjs_syntax.TForall _ -> rtany
+    | Typedjs_syntax.TId _ -> rtany (* TODO: should be empty!!! *)
+    | Typedjs_syntax.TField -> rtany
+    | Typedjs_syntax.TRec (_, t) -> rt t
+    | Typedjs_syntax.TSyn x -> rt (IdMap.find x syns)
 
-let runtime t : av = ASet (rt_of_typ t)
+let runtime syns t : av = ASet (rt_of_typ syns t)
 
 let union_heap h1 h2 =
   HeapExt.join (fun _ -> RTSet.union) h1 h2
@@ -180,9 +183,3 @@ let empty_heap = Heap.empty
 let compare_heap = Heap.compare RTSet.compare
 
 let compare_env = IdMap.compare AV.compare
-
-let df_func_of_typ (t : typ) : av list -> av = match t with
-  | TArrow (_, r_typ) ->
-      let r_av = ASet (rt_of_typ r_typ) in
-        (fun _ -> r_av)
-  | _ -> (fun _ -> ASet rtany)
