@@ -26,8 +26,17 @@ module RTSetExt : SetExt.S
 
 type constr = string
 
+type prim =
+  | Num
+  | Int
+  | Str
+  | True
+  | False
+  | Undef
+  | Null
+
 type typ = 
-  | TConstr of constr * typ list
+  | TPrim of prim
   | TUnion of typ * typ
   | TArrow of typ * typ list * typ      
   | TObject of (id * typ) list
@@ -39,6 +48,8 @@ type typ =
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TId of id
   | TField
+
+val typ_bool : typ
 
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list

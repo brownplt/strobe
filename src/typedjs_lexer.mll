@@ -5,7 +5,7 @@
 
 }
 
-let ident = ['a'-'z' 'A'-'Z' '$' '_']([ '.' 'a'-'z' 'A'-'Z' '0'-'9' '$' '_']*)
+let ident = ['a'-'z' 'A'-'Z' '$' '_' '%']([ '.' 'a'-'z' 'A'-'Z' '0'-'9' '$' '_']*)
 
 let blank = [ ' ' '\t' '\r' ]
 
@@ -53,8 +53,6 @@ rule token = parse
    | "is" { IS }
    | "cheat" { CHEAT }
    | "val" { VAL }
-   | "<" { LANGLE }
-   | ">" { RANGLE }
    | "forall" { FORALL }
    | "checked" { CHECKED }
    | "<:" { LTCOLON }

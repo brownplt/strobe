@@ -1,17 +1,16 @@
 open Prelude
 open Typedjs_syntax
-open Typedjs_types
-
-let tc_const (const : JavaScript_syntax.const) = match const with
-    JavaScript_syntax.CString _ -> typ_str
-  | JavaScript_syntax.CRegexp _ -> typ_regexp
-  | JavaScript_syntax.CNum _ -> typ_num
-  | JavaScript_syntax.CInt _ -> typ_int
-  | JavaScript_syntax.CBool _ -> typ_bool
-  | JavaScript_syntax.CNull -> typ_null
-  | JavaScript_syntax.CUndefined -> typ_undef
 
 exception Not_value of string
+
+let tc_const (const : JavaScript_syntax.const) = match const with
+    JavaScript_syntax.CString _ -> TPrim Str 
+  | JavaScript_syntax.CRegexp _ -> raise (Not_value "RegExps are awkward") 
+  | JavaScript_syntax.CNum _ -> TPrim Num 
+  | JavaScript_syntax.CInt _ -> TPrim Int 
+  | JavaScript_syntax.CBool _ -> typ_bool
+  | JavaScript_syntax.CNull -> TPrim Null 
+  | JavaScript_syntax.CUndefined -> TPrim Undef 
 
 let typ_of_value (exp : exp) : typ = 
   let rec f e = match e with

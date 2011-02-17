@@ -1,7 +1,6 @@
 open Prelude
 open Typedjs_syntax
 open Exprjs_syntax
-open Typedjs_types
 open Typedjs_env
 open Typedjs_tc_util
 
@@ -119,7 +118,7 @@ let rec exp (env : env) expr = match expr with
       ETryFinally (a, exp env body, exp env finally)
   | ThrowExpr (a, e) -> EThrow (a, exp env e)
   | WhileExpr (a, e1, e2) ->
-      let loop_typ = TArrow (TTop, [], typ_undef) in
+      let loop_typ = TArrow (TTop, [], TPrim Undef) in
         ERec ([("%loop", loop_typ,
                 EFunc (a, [], loop_typ,
                        EIf (a, exp env e1, 
@@ -128,7 +127,7 @@ let rec exp (env : env) expr = match expr with
                             EConst (a, S.CUndefined))))],
               EApp (a, EId (a, "%loop"), []))
   | DoWhileExpr (a, body_e, test_e) ->
-      let loop_typ = TArrow (TTop, [], typ_undef) in
+      let loop_typ = TArrow (TTop, [], TPrim Undef) in
         ERec ([("%loop", loop_typ,
                 EFunc (a, [], loop_typ,
                        ESeq (a, exp env body_e, 
@@ -140,7 +139,7 @@ let rec exp (env : env) expr = match expr with
   | LabelledExpr (a, x, e) -> 
       (** We assume that this [LabelledExpr] is from a [LabelledStmt]. 
           Therefore, the return type is [ty_undef]. *)
-      ELabel (a, x, typ_undef, exp env e)
+      ELabel (a, x, TPrim Undef, exp env e)
   | BreakExpr (a, x, e) -> EBreak (a, x, exp env e)
   | SeqExpr 
       (p,
@@ -179,7 +178,7 @@ let rec exp (env : env) expr = match expr with
       raise (Not_well_formed (p, "function is missing a type annotation"))
   | ForInExpr (p, x, objExpr, body) -> begin match exp env objExpr with
       | EDeref (_, EId (_, obj)) ->
-          let loop_typ = TArrow (TTop, [TField; TField], typ_undef) in
+          let loop_typ = TArrow (TTop, [TField; TField], TPrim Undef) in
             ERec ([("%loop", loop_typ,
                     EFunc (p, [obj; x], loop_typ,
                            ESeq (p, exp env body, 

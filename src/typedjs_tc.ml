@@ -1,7 +1,6 @@
 open Prelude
 open Typedjs_syntax
 open Typedjs_env
-open Typedjs_types 
 open Format
 open Typedjs_dyn
 open Typedjs_tc_util
@@ -21,10 +20,10 @@ let error p s = raise (Typ_error (p, s))
 let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
 
 let un_null t = match t with
-  | TUnion (TConstr ("Undef", []), t') -> t'
-  | TUnion (t', TConstr ("Undef", [])) -> t'
-  | TUnion (TConstr ("Null", []), t') -> t'
-  | TUnion (t', TConstr ("Null", [])) -> t'
+  | TUnion (TPrim (Undef), t') -> t'
+  | TUnion (t', TPrim (Undef)) -> t'
+  | TUnion (TPrim (Null), t') -> t'
+  | TUnion (t', TPrim (Null)) -> t'
   | _ -> t
 
 let un_ref t = match t with
@@ -113,24 +112,18 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let t = tc_exp env e in
         Env.static env rt t
   | EEmptyArray (p, elt_typ) -> 
-      TConstr ("Array", [ Env.check_typ p env elt_typ ])
+      error p "Don't know what to do with arrays yet"
   | EArray (p, []) -> 
       raise (Typ_error (p, "an empty array literal requires a type annotation"))
   | EArray (p, e :: es) -> 
-      (* We are promoting the type of values in each element to the union *)
-      let f t1 t2 = match t1, t2 with
-        | TRef s1, TRef s2 -> TRef (Env.typ_union env s1 s2)
-        | _ -> failwith "expected Ref cells in array" in
-      let u = fold_left f (tc_exp env e) (map (tc_exp env) es) in
-        (* hack to make arrays not have undefined elements: *)
-        Env.check_typ p env (TConstr ("Array", [u]))
-  | EIf (p, e1, e2, e3) -> begin
-      match tc_exp env e1, tc_exp env e2, tc_exp env e3 with
-          TConstr ("Bool", []), t2, t3 -> Env.typ_union env t2 t3
-        | t, _, _ -> 
-            raise (Typ_error (p, "expected condition to have type Bool, but got a " ^ 
-                                (string_of_typ t)))
-    end
+      error p "Don't know what to do with arrays yet"
+  | EIf (p, e1, e2, e3) ->
+      let c = tc_exp env e1 in
+        if Env.subtype env c typ_bool then
+          Env.typ_union env (tc_exp env e2) (tc_exp env e3)
+        else
+          error p ("expected condition to have type Bool, but got a " ^ 
+                    (string_of_typ c))
   | EObject (p, fields) ->
       Env.check_typ p env (TObject (map (second2 (tc_exp env)) fields))
   | EBracket (p, obj, field) -> begin match un_null (tc_exp env obj), field with
@@ -139,38 +132,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
              snd2 (List.find (fun (x', _) -> x = x') fs)
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist")))
-      | TConstr ("Array", [tarr]), eidx ->
-          let (p1, p2) = p in 
-            contracts := IntMap.add p1.Lexing.pos_cnum 
-              (* TODO: NotUndef is not a type, but just a contract *)
-              (p2.Lexing.pos_cnum, TConstr ("NotUndef", []))
-              !contracts;
-          let tidx = tc_exp env eidx in
-            begin match tidx with
-              | TConstr ("Int", []) -> tarr
-              | TConstr ("Str", []) -> begin match eidx with
-                  | EConst (_, JavaScript_syntax.CString "length") -> 
-                      TRef typ_int
-                  | EConst (_, JavaScript_syntax.CString "push") ->
-                      TRef (TArrow (TConstr ("Array", [tarr]),
-                                    [un_ref tarr], typ_undef))
-                  | EConst (_, JavaScript_syntax.CString "join") ->
-                      (match un_ref tarr with
-                         | TConstr ("Str", []) ->
-                             TRef (TArrow (TConstr ("Array", [tarr]),
-                                           [typ_str], typ_str))
-                         | _ -> error p ("expected array of strings"))
-                             
-                  | _ -> error p ("unknown array method")
-                end
-              | _ -> error p 
-                  ("array index requires Int, got " ^ string_of_typ tidx)
-            end
-      | TConstr (cname, []), EConst (_, JavaScript_syntax.CString fname) ->
-          begin match Env.field_typ env cname fname with
-            | Some t -> t
-            | None -> error p ("object does not have a field " ^ fname)
-          end
       | TField, field -> begin match tc_exp env field with
           | TField -> TField
           | _ -> error p "expected a TField index"
@@ -186,18 +147,13 @@ let rec tc_exp (env : Env.env) exp = match exp with
         Env.lookup_id "this" env
       with Not_found -> raise (Typ_error (p, "'this' used in non-func"))
     end
-  | ENew (p, cid, args) ->
-      (* treat it as a function application, but return the class
-         type instead of the return type *)
-      (if not (Env.is_class env cid) then error p ("undefined class: " ^ cid));
-      let _ = tc_exp env (EApp (p, EDeref (p, EId (p, cid)), args)) in
-        TConstr (cid, [])
+  | ENew (p, cid, args) -> error p "New doesn't work yet (constrs)"
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
   | EInfixOp (p, "+", e1, e2) -> 
       let t1 = tc_exp env e1 in
       let t2 = tc_exp env e2 in
-        if (t1 = typ_str || t2 = typ_str) then
-          typ_str
+        if (t1 = (TPrim Str) || t2 = (TPrim Str)) then
+          TPrim Str 
         else 
           tc_exp env (EApp (p, EId (p, "+"), [e1; e2]))
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
@@ -225,7 +181,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
           let arg_typs' = map (tc_exp_ret env) args in
           let arg_typs = 
             fill (List.length expected_typs - List.length args) 
-              typ_undef arg_typs' in
+              (TPrim Undef) arg_typs' in
             if Env.subtypes env arg_typs expected_typs 
             then result_typ 
             else if List.length args = List.length expected_typs (* || 
@@ -453,13 +409,8 @@ let rec tc_def env def = match def with
         | _ -> raise (Typ_error (p, "expected arrow type on constructor"))
       end
   | DExternalMethod (p, cname, mid, me, d) -> 
-      try
-        let expenv = Env.bind_id "this" (TConstr (cname, [])) env in
-        let env' = Env.add_method cname mid (TRef (tc_exp expenv me)) env in
-          tc_def env' d
-      with Not_found -> raise (
-        Typ_error (p, "class " ^ cname ^ " doesnt exist"))
-        
+       error p "Can't do external methods yet (constrs"
+
 let typecheck = tc_def
 
 

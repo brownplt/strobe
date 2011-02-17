@@ -30,8 +30,17 @@ module RTSetExt = SetExt.Make (RTSet)
 
 type constr = string
 
+type prim =
+  | Num
+  | Int
+  | Str
+  | True
+  | False
+  | Undef
+  | Null
+
 type typ = 
-  | TConstr of constr * typ list
+  | TPrim of prim
   | TUnion of typ * typ
   | TArrow of typ * typ list * typ
   | TObject of (id * typ) list
@@ -43,6 +52,8 @@ type typ =
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TId of id
   | TField
+
+let typ_bool = TUnion (TPrim (True), TPrim (False))
 
 type env_decl =
   | EnvClass of constr * constr option * (id * typ) list
@@ -179,6 +190,15 @@ module Pretty = struct
   let rec typ t  = match t with
     | TTop -> text "Any"
     | TBot -> text "DoesNotReturn"
+    | TPrim p -> text begin match p with
+       | Num -> "Num"
+       | Int -> "Int"
+       | True -> "True"
+       | False -> "False"
+       | Str -> "Str"
+       | Null -> "Null"
+       | Undef -> "Undef"
+      end
     | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
     | TArrow (tt, arg_typs, r_typ) ->
         horz[ brackets (typ tt);
@@ -189,10 +209,6 @@ module Pretty = struct
                             end) arg_typs));
               text "->";
               typ r_typ ]
-    | TConstr (s, []) -> text s
-    | TConstr (s, ts) ->
-        horz [ text s; 
-               angles (horz (intersperse (text ",") (map typ ts))) ]
     | TObject fs ->
         let f (k, t) = horz [ text k; text ":"; typ t ] in
           braces (horz (intersperse (text ",") (map f fs)))

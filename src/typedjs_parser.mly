@@ -2,14 +2,13 @@
 
 open Prelude
 open Typedjs_syntax
-open Typedjs_types
 
 %}
 
 %token <string> ID TID STRING
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
-       PROTOTYPE CLASS UPCAST DOWNCAST LANGLE RANGLE FORALL LTCOLON IS
+       PROTOTYPE CLASS UPCAST DOWNCAST FORALL LTCOLON IS
        CHECKED CHEAT
 
 %right UNION
@@ -38,16 +37,14 @@ fields
 
 arg_typ
   : ANY { TTop }
-  | INT { typ_int }
-  | NUM { typ_num }
-  | STR { typ_str }
+  | INT { TPrim (Int) }
+  | NUM { TPrim (Num) }
+  | STR { TPrim (Str) }
   | BOOL { typ_bool }
-  | UNDEF { typ_undef }
+  | UNDEF { TPrim (Undef) }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | LBRACE fields RBRACE { TObject $2 }
   | LPAREN typ RPAREN { $2 }
-  | ID { TConstr ( $1, [] ) }
-  | ID LANGLE typs RANGLE { TConstr ($1, map (fun t -> TRef t) $3) }
   | TID { TId $1 }
 
 
@@ -58,11 +55,6 @@ typ
   | FORALL ID LTCOLON typ DOT typ { TForall ($2, $4, $6) }
   | FORALL ID DOT typ { TForall ($2, TTop, $4) }
 
-
-typs :
-  | { [] }
-  | typ { [$1] }
-  | typ COMMA typs { $1 :: $3 }
 
 annotation :
   | typ { ATyp $1 }

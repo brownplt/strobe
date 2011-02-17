@@ -54,16 +54,11 @@ let instanceof p name =
 let rec ctc_of_typ p (typ : typ) = match typ with
   | TArrow (_, args, result) -> 
       CArrow (map (ctc_of_typ p) args, ctc_of_typ p result)
-  | TConstr ("Int", []) -> flat p "Int"
-  | TConstr ("Str", []) -> flat p "Str"
-  | TConstr ("Undef", []) -> flat p "Undef"
-  | TConstr ("NotUndef", []) -> flat p "NotUndef"
-  | TConstr ("Bool", []) -> flat p "Bool"
-  | TConstr (name, []) -> 
-      if is_instanceof_contract name then
-        instanceof p name
-      else 
-        flat p "None"
+  | TPrim (Int) -> flat p "Int"
+  | TPrim (Str) -> flat p "Str"
+  | TPrim (Undef) -> flat p "Undef"
+  | TPrim (True) 
+  | TPrim (False) -> flat p "Bool"
   | TUnion (s, t) -> CUnion (ctc_of_typ p s, ctc_of_typ p t)
   | TObject fields ->
       CObject (map (fun (f, t) -> (f, ctc_of_typ p t)) fields)

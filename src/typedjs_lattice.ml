@@ -148,18 +148,15 @@ let set_ref loc value heap =
 let rec rt_of_typ (t : Typedjs_syntax.typ) : RTSet.t = match t with
     Typedjs_syntax.TArrow _ -> RTSet.singleton RT.Function
   | Typedjs_syntax.TUnion (t1, t2) -> RTSet.union (rt_of_typ t1) (rt_of_typ t2)
-  | Typedjs_syntax.TConstr (s, []) -> begin match s with
-        "Str" ->  RTSet.singleton RT.Str
-      | "RegExp" -> RTSet.singleton RT.Object
-      | "Num"  -> RTSet.singleton RT.Num
-      | "Int" -> RTSet.singleton RT.Num
-      | "Bool" -> RTSet.singleton RT.Bool
-      | "Undef" -> RTSet.singleton RT.Undefined
-      | _ -> RTSet.singleton RT.Object
+  | Typedjs_syntax.TPrim (s) -> begin match s with
+      | Str ->  RTSet.singleton RT.Str
+      | Num
+      | Int -> RTSet.singleton RT.Num
+      | True
+      | False -> RTSet.singleton RT.Bool
+      | Null -> RTSet.singleton RT.Object
+      | Undef -> RTSet.singleton RT.Undefined
     end
-  | Typedjs_syntax.TConstr ("Array", [arrayt]) -> RTSet.singleton RT.Object
-  | Typedjs_syntax.TConstr _ -> failwith 
-      (sprintf "unknown type: %s" (to_string Typedjs_syntax.Pretty.p_typ t))
   | Typedjs_syntax.TObject _ -> RTSet.singleton RT.Object
   | Typedjs_syntax.TRef t -> rt_of_typ t
   | Typedjs_syntax.TSource t -> rt_of_typ t
