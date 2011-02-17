@@ -15,7 +15,7 @@ open Typedjs_cf
 open Typedjs_cftc
 open Lexing
 open Typedjs_dyn
-
+open RegLang
 
 module Lat = Typedjs_lattice
 

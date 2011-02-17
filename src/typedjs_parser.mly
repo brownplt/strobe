@@ -21,13 +21,16 @@ open Typedjs_syntax
 
 %%
 
+regex :
+  | STRING { RegLang.String $1 }
+  
 args
   :  { [] }
   | arg_typ { [$1] }
   | arg_typ STAR args { $1 :: $3 }
 
 field
-  : ID COLON typ { ($1, TRef $3) }
+  : regex COLON typ { (($1, RegLang.nfa_of_regex $1), TRef $3) }
 
 fields
   : { [] }
