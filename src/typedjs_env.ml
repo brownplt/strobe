@@ -87,12 +87,6 @@ module Env = struct
         | TId x, t ->
           let s = IdMap.find x env.typ_ids in (* S-TVar *)
             subtype cache s t (* S-Trans *)
-        | TUnion (s1, s2), _ -> subt env (subt env cache s1 t) s2 t
-        | _, TUnion (t1, t2) ->
-          begin 
-            try subtype cache s t1
-            with Not_subtype -> subtype cache s t2
-          end
         | TIntersect (s1, s2), _ -> 
           begin 
             try subtype cache s1 t
@@ -100,7 +94,13 @@ module Env = struct
           end
         | _, TIntersect (t1, t2) ->
             subt env (subt env cache s t1) s t2
-        | TArrow (args1, r1), TArrow (args2, r2) ->
+        | TUnion (s1, s2), _ -> subt env (subt env cache s1 t) s2 t
+        | _, TUnion (t1, t2) ->
+          begin 
+            try subtype cache s t1
+            with Not_subtype -> subtype cache s t2
+          end
+       | TArrow (args1, r1), TArrow (args2, r2) ->
           begin
             try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
             with Invalid_argument _ -> raise Not_subtype (* unequal lengths *)
