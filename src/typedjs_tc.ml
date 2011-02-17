@@ -207,10 +207,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
               error p (sprintf "could not determine \'%s in the function type \
                                 %s" x (string_of_typ t))
             end
-      | t -> let res = check_app t in
-               if res = TBot then error p ("TBot returned from function, \
-                                            perhaps an intersection failed?")
-               else res
+      | t -> check_app t
     end
   | ERec (binds, body) -> 
       let f env (x, t, e) =
