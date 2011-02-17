@@ -23,6 +23,7 @@ open Typedjs_syntax
 
 regex :
   | STRING { RegLang.String $1 }
+  | ID { RegLang.String $1 }
   
 args
   :  { [] }
