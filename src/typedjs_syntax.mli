@@ -48,6 +48,7 @@ type typ =
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TId of id
   | TField
+  | TRec of id * typ 
 
 val typ_bool : typ
 

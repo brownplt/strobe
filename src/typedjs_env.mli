@@ -40,7 +40,8 @@ module Env : sig
 
   val check_typ : pos -> env -> typ -> typ
 
-  (** [subtype typ1 typ2] assumes that [typ1] and [typ2] are in normal form. *)
+  (** [subtype end typ1 typ2] assumes that [typ1] and [typ2] are in normal form.
+      The [env] is needed for bounded quantification. *)
   val subtype : env -> typ -> typ -> bool
 
   (** [subtypes typs1 typs2] applies [subtype] pairwise to the elements of
@@ -67,7 +68,11 @@ val cf_env_of_tc_env : Env.env -> Typedjs_lattice.env
     for the type [s] in the type [t]. *)
 val typ_subst : id -> typ -> typ -> typ
 
+val typ_unfold :  typ -> typ
+
 val unify_typ : typ -> typ -> typ IdMap.t
+
+
 
 val operator_env_of_tc_env : Env.env 
   -> (Typedjs_lattice.av list -> Typedjs_lattice.av) IdMap.t

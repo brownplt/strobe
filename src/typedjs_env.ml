@@ -3,6 +3,15 @@ open Typedjs_syntax
 
 exception Not_wf_typ of string
 
+(* Necessary for equi-recursive subtyping. *)
+module TypPair = struct
+  type t = typ * typ
+  let compare = Pervasives.compare
+end
+
+module TPSet = Set.Make (TypPair)
+module TPSetExt = SetExt.Make (TPSet)
+
 module Env = struct
 
   type class_info = {
@@ -58,50 +67,71 @@ module Env = struct
 
   let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)
 
-  let rec subtype env s t = 
-    let subtype = subtype env in
-    let subtypes = subtypes env in
+  exception Not_subtype
+
+  let rec subt env cache s t = 
+    if TPSet.mem (s, t) cache then
+      cache
+    else if s = t then
+      cache
+    else
+      let subtype = subt env in
+      let cache = TPSet.add (s, t) cache in
       match s, t with
-        | TPrim Int, TPrim Num -> true
-        | TId x, TId y -> x = y
+        | TPrim Int, TPrim Num -> cache
+        | TId x, TId y -> if x = y then cache else raise Not_subtype
         | TId x, t ->
-            let s = IdMap.find x env.typ_ids in (* S-TVar *)
-              subtype s t (* S-Trans *)
-        | TUnion (s1, s2), _ -> 
-            subtype s1 t && subtype s2 t
+          let s = IdMap.find x env.typ_ids in (* S-TVar *)
+            subtype cache s t (* S-Trans *)
+        | TUnion (s1, s2), _ -> subt env (subt env cache s1 t) s2 t
         | _, TUnion (t1, t2) ->
-            subtype s t1 || subtype s t2
+          begin 
+            try subtype cache s t1
+            with Not_subtype -> subtype cache s t2
+          end
         | TArrow (args1, r1), TArrow (args2, r2) ->
-            subtypes args2 args1 && subtype r1 r2
-        | TObject fs1, TObject fs2 -> subtype_fields env fs1 fs2
-        | TRef s', TRef t' -> subtype s' t' && subtype t' s'
-        | TSource s, TSource t -> subtype s t
-        | TSink s, TSink t -> subtype t s
-        | TRef s, TSource t -> subtype s t
-        | TRef s, TSink t -> subtype t s
-        | _, TTop -> true
-        | TBot, _ -> true
-        | _ -> s = t
+          begin
+            try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
+            with Invalid_argument _ -> raise Not_subtype (* unequal lengths *)
+          end
+        | TObject fs1, TObject fs2 -> subtype_fields env cache fs1 fs2
+        | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
+        | TSource s, TSource t -> subtype cache s t
+        | TSink s, TSink t -> subtype cache t s
+        | TRef s, TSource t -> subtype cache s t
+        | TRef s, TSink t -> subtype cache t s
+        | _, TTop -> cache
+        | TBot, _ -> cache
+        | _ -> raise Not_subtype
 
   (* assumes fs1 and fs2 are ordered 
      fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
-  and subtype_fields env fs1 fs2 = match fs1, fs2 with
-    | [], [] -> true
-    | [], _ -> false (* fs1 is missing some things fs2 has *)
-    | _, [] -> true (* can have many extra fields, doesn't matter *)
+  and subtype_fields env cache fs1 fs2 = match fs1, fs2 with
+    | [], [] -> cache
+    | [], _ -> raise Not_subtype (* fs1 is missing some things fs2 has *)
+    | _, [] -> cache (* can have many extra fields, doesn't matter *)
     | (x, s) :: fs1', (y, t) :: fs2' ->
         let cmp = String.compare x y in
-          if cmp = 0 then subtype env s t && subtype_fields env fs1' fs2'
+          if cmp = 0 then subtype_fields env (subt env cache s t) fs1' fs2'
             (* if cmp < 0, x is an extra field, so just move on *)
-          else (if cmp < 0 then 
-                  (printf "%s is extra field" x; 
-                   subtype_fields env fs1' fs2)
-                    (* otherwise, y is a field that x does not have *)
-                else (printf "lhs doesnt have %s" y; false))
-            
-  and subtypes env (ss : typ list) (ts : typ list) : bool = 
-    try List.for_all2 (subtype env) ss ts
-    with Invalid_argument _ -> false (* unequal lengths *)
+          else if cmp < 0 then 
+            subtype_fields env cache fs1' fs2
+          (* otherwise, y is a field that x does not have *)
+          else raise Not_subtype
+
+  let subtypes env ss ts = 
+    try 
+      let _ = List.fold_left2 (subt env) TPSet.empty ss ts in
+      true
+    with 
+      | Invalid_argument _ -> false (* unequal lengths *)
+      | Not_subtype -> false
+
+  let subtype env s t = 
+    try
+      let _ = subt env TPSet.empty s t in
+      true
+    with Not_subtype -> false
 
   let typ_union cs s t = match subtype cs s t, subtype cs t s with
       true, true -> s (* t = s *)
@@ -135,6 +165,8 @@ module Env = struct
     | TForall (x, s, t) -> 
         let s = normalize_typ env s in
           TForall (x, s, normalize_typ (bind_typ_id x s env) t)
+    | TRec (x, t) ->
+      TRec (x, normalize_typ (bind_typ_id x typ env) t)
 
   let check_typ p env t = 
     try normalize_typ env t
@@ -181,6 +213,7 @@ module Env = struct
         else (* TODO: no arrow type that is the supertype of all arrows *)
           List.fold_left (basic_static2 cs) TBot (RTSetExt.to_list rt)
     | TId _ -> typ
+    | TRec (x, t) -> TRec (x, static cs rt t)
 
 
   let new_root_class env class_name = 
@@ -219,7 +252,6 @@ module Env = struct
   let rec bind_typ env typ : env * typ = match typ with
     | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) t
     | typ -> (env, typ)
-
 
 end
 
@@ -318,6 +350,15 @@ let rec typ_subst x s typ = match typ with
         TForall (y, typ_subst x s t1, t2)
       else 
         failwith "TODO: capture-free substitution"
+  | TRec (y, t) ->
+    if x = y then
+      typ
+    else 
+      failwith "TODO: capture-free substitution"
+
+let typ_unfold typ = match typ with
+    | TRec (x, t) -> typ_subst x typ t
+    | _ -> typ
 
 let apply_subst subst typ = IdMap.fold typ_subst subst typ
 
