@@ -39,6 +39,8 @@ rule token = parse
    | "Num" { NUM }
    | "Str" { STR }
    | "Bool" { BOOL }
+   | "True" { TRUE }
+   | "False" { FALSE }
    | "Undef" { UNDEF }
    | "Null" { NULL }
    | "*" { STAR }

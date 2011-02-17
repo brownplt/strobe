@@ -9,7 +9,7 @@ open Typedjs_syntax
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST FORALL LTCOLON IS
-       CHECKED CHEAT NULL
+       CHECKED CHEAT NULL TRUE FALSE
 
 %right UNION
 
@@ -41,6 +41,8 @@ arg_typ
   | NUM { TPrim Num }
   | STR { TPrim Str }
   | BOOL { typ_bool }
+  | TRUE { TPrim True }
+  | FALSE { TPrim False }
   | UNDEF { TPrim Undef }
   | NULL { TPrim Null }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
