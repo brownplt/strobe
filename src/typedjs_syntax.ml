@@ -42,7 +42,7 @@ type prim =
 type typ = 
   | TPrim of prim
   | TUnion of typ * typ
-  | TArrow of typ * typ list * typ
+  | TArrow of typ list * typ
   | TObject of (id * typ) list
   | TRef of typ
   | TSource of typ
@@ -83,7 +83,6 @@ type exp
   | EArray of pos * exp list
   | EEmptyArray of pos * typ
   | EObject of pos * (string * exp) list
-  | EThis of pos
   | EId of pos * id
   | EBracket of pos * exp * exp
   | EUpdate of pos * exp * exp * exp
@@ -136,7 +135,7 @@ module Typ = struct
 
   let rec match_func_typ (typ : typ) : (typ list * typ) option = match typ with
     | TForall (_, _, t) -> match_func_typ t
-    | TArrow (_, args, ret) -> Some (args, ret)
+    | TArrow (args, ret) -> Some (args, ret)
     | _ -> None
 
 end
@@ -151,7 +150,6 @@ module Exp = struct
     | EAssertTyp (p, _, _) -> p
     | EArray (p, _) -> p
     | EObject (p, _) -> p
-    | EThis p -> p
     | EId (p, _) -> p
     | EBracket (p, _, _) -> p
     | EUpdate (p, _, _, _) -> p
@@ -200,9 +198,17 @@ module Pretty = struct
        | Undef -> "Undef"
       end
     | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
-    | TArrow (tt, arg_typs, r_typ) ->
+    | TArrow (tt::arg_typs, r_typ) ->
         horz[ brackets (typ tt);
               horz (intersperse (text "*") 
+                      (map (fun at -> begin match at with
+                              | TArrow _ -> parens (typ at)
+                              | _ -> typ at 
+                            end) arg_typs));
+              text "->";
+              typ r_typ ]
+    | TArrow (arg_typs, r_typ) ->
+        horz[ horz (intersperse (text "*") 
                       (map (fun at -> begin match at with
                               | TArrow _ -> parens (typ at)
                               | _ -> typ at 
@@ -228,7 +234,6 @@ module Pretty = struct
     | EEmptyArray _ -> text "[ ]"
     | EArray (_, es) -> brackets (horz (map exp es))
     | EObject (_, ps) -> brackets (vert (map prop ps))
-    | EThis _ -> text "this"
     | EId (_, x) -> text x
     | EBracket (_, e1, e2) -> squish [ exp e1; brackets (exp e2) ]
     | EUpdate (_, e1, e2, e3) -> 
@@ -317,3 +322,7 @@ module Pretty = struct
   let pp_typ ppf t = p_typ t ppf
    
 end
+
+let string_of_typ = FormatExt.to_string Pretty.p_typ
+
+

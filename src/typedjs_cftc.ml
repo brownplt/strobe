@@ -12,7 +12,6 @@ let rec a_exp (exp : exp) : exp = match exp with
   | EEmptyArray _ -> exp
   | EArray (p, es) -> EArray (p, map a_exp es)
   | EObject (p, props) -> EObject (p, map (second2 a_exp) props)
-  | EThis p -> EThis p
   | ESetRef (p', EId (p, x), e) -> begin try
       let node = H.find bound_id_map (p, x) in
       let env = H.find envs node in

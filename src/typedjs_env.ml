@@ -71,7 +71,7 @@ module Env = struct
             subtype s1 t && subtype s2 t
         | _, TUnion (t1, t2) ->
             subtype s t1 || subtype s t2
-        | TArrow (_, args1, r1), TArrow (_, args2, r2) ->
+        | TArrow (args1, r1), TArrow (args2, r2) ->
             subtypes args2 args1 && subtype r1 r2
         | TObject fs1, TObject fs2 -> subtype_fields env fs1 fs2
         | TRef s', TRef t' -> subtype s' t' && subtype t' s'
@@ -120,8 +120,8 @@ module Env = struct
     | TObject fs ->
         let fs = List.fast_sort cmp_props fs in
           TObject (map (second2 (normalize_typ env)) fs)
-    | TArrow (this, args, result) ->
-        TArrow (normalize_typ env this, map (normalize_typ env) args,
+    | TArrow (args, result) ->
+        TArrow (map (normalize_typ env) args,
                 normalize_typ env result)
     | TRef t -> TRef (normalize_typ env t)
     | TSource t -> TSource (normalize_typ env t)
@@ -283,10 +283,10 @@ let extend_global_env env lst = mk_env' lst (add_classes lst env)
 module L = Typedjs_lattice
 
 let df_func_of_typ (t : typ) : L.av list -> L.av = match t with
-  | TArrow (_, _, r_typ) ->
+  | TArrow (_, r_typ) ->
       let r_av = L.ASet (L.rt_of_typ r_typ) in
         (fun _ -> r_av)
-  | TForall (x, r_typ, TArrow (_, _, TId y)) when x = y ->
+  | TForall (x, r_typ, TArrow (_, TId y)) when x = y ->
       let r_av = L.ASet (L.rt_of_typ r_typ) in
         (fun _ -> r_av)
   | _ -> (fun _ -> L.any)
@@ -304,8 +304,8 @@ let rec typ_subst x s typ = match typ with
   | TPrim _ -> typ
   | TId y -> if x = y then s else typ
   | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
-  | TArrow (t1, t2s, t3)  ->
-      TArrow (typ_subst x s t1, map (typ_subst x s) t2s, typ_subst x s t3)
+  | TArrow (t2s, t3)  ->
+      TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
   | TObject fs -> TObject (map (second2 (typ_subst x s)) fs)
   | TRef t -> TRef (typ_subst x s t)
   | TSource t -> TSource (typ_subst x s t)
@@ -340,8 +340,8 @@ let rec unify subst s t : typ IdMap.t = match s, t with
   | s, TId y -> unify subst (TId y) s
   | TUnion (s1, s2), TUnion (t1, t2) -> unify (unify subst s1 t1) s2 t2
 
-  | TArrow (s1, s2s, s3), TArrow (t1, t2s, t3) ->
-      List.fold_left2 unify subst (s1 :: s3 :: s2s) (t1 :: t3 :: t2s)
+  | TArrow (s2s, s3), TArrow (t2s, t3) ->
+      List.fold_left2 unify subst (s3 :: s2s) (t3 :: t2s)
   | TObject fs1, TObject fs2 ->
       let f subst (x, s) (y, t) = 
         if x = y then unify subst s t
@@ -353,7 +353,9 @@ let rec unify subst s t : typ IdMap.t = match s, t with
   | TTop, TTop -> subst
   | TBot, TBot -> subst
   | TForall _, TForall _ -> failwith "cannot unify quantified types"
-  | _ -> failwith "unification failure"
+  | _ -> failwith ("unification failure" ^ 
+                   (Typedjs_syntax.string_of_typ s) ^ " " ^ 
+                   (Typedjs_syntax.string_of_typ t))
 
 
 let unify_typ (s : typ) (t : typ) : typ IdMap.t = 

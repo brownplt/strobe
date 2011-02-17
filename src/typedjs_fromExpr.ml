@@ -78,7 +78,7 @@ let rec exp (env : env) expr = match expr with
       if List.length ps != List.length (nub (map (fun (_, p, _) -> p) ps)) then
         raise (Not_well_formed (a, "repeated field names"));
       EObject (a, map (fun (_, x, e) ->  x, ERef (a, RefCell, exp env e)) ps)
-  | ThisExpr a -> EThis a
+  | ThisExpr a -> EId (a, "this")
   | VarExpr (a, x) -> begin try
       if IdMap.find x env then
         EDeref (a, EId (a, x))
@@ -109,7 +109,10 @@ let rec exp (env : env) expr = match expr with
       EUpdate (p, to_object p (exp env e1), 
                   to_string p (exp env e2), 
                   exp env e3)
-  | AppExpr (a, f, args) -> EApp (a, exp env f, map (exp env) args)
+  | AppExpr (a, ((BracketExpr (a2, e1, e2)) as f), args) ->
+      EApp (a, exp env f, (exp env e1)::(map (exp env) args))
+  | AppExpr (a, f, args) -> 
+      EApp (a, exp env f, EId (a, "%global")::(map (exp env) args))
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdMap.add x true env) e2)
   | TryCatchExpr (a, body, x, catch) ->
@@ -118,7 +121,7 @@ let rec exp (env : env) expr = match expr with
       ETryFinally (a, exp env body, exp env finally)
   | ThrowExpr (a, e) -> EThrow (a, exp env e)
   | WhileExpr (a, e1, e2) ->
-      let loop_typ = TArrow (TTop, [], TPrim Undef) in
+      let loop_typ = TArrow ([], TPrim Undef) in
         ERec ([("%loop", loop_typ,
                 EFunc (a, [], loop_typ,
                        EIf (a, exp env e1, 
@@ -127,7 +130,7 @@ let rec exp (env : env) expr = match expr with
                             EConst (a, S.CUndefined))))],
               EApp (a, EId (a, "%loop"), []))
   | DoWhileExpr (a, body_e, test_e) ->
-      let loop_typ = TArrow (TTop, [], TPrim Undef) in
+      let loop_typ = TArrow ([], TPrim Undef) in
         ERec ([("%loop", loop_typ,
                 EFunc (a, [], loop_typ,
                        ESeq (a, exp env body_e, 
@@ -178,7 +181,7 @@ let rec exp (env : env) expr = match expr with
       raise (Not_well_formed (p, "function is missing a type annotation"))
   | ForInExpr (p, x, objExpr, body) -> begin match exp env objExpr with
       | EDeref (_, EId (_, obj)) ->
-          let loop_typ = TArrow (TTop, [TField; TField], TPrim Undef) in
+          let loop_typ = TArrow ([TField; TField], TPrim Undef) in
             ERec ([("%loop", loop_typ,
                     EFunc (p, [obj; x], loop_typ,
                            ESeq (p, exp env body, 
@@ -225,6 +228,7 @@ and match_func env expr = match expr with
           fold_left (fun acc x -> IdMap.add x true acc) env' args in
         let mutable_arg exp id =
           ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) in
+        let args = "this"::args in
         begin match Typ.match_func_typ typ with
             Some (arg_typs, r) ->
               if List.length args != List.length arg_typs then
@@ -290,6 +294,7 @@ let match_constr_body env expr = match expr with
           | AConstructor typ -> typ 
           | _ -> raise 
               (Not_well_formed (p'', "expected a constructor annotation")) in 
+            let args = "this"::args in
             let locally_defined_vars = locals body in
             let visible_free_vars = 
               IdSet.diff (IdSetExt.from_list (IdMapExt.keys env))

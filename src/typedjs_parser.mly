@@ -54,8 +54,8 @@ arg_typ
 
 typ 
   : arg_typ { $1 }
-  | args ARROW typ { TArrow (TTop, $1, $3) }
-  | LBRACK typ RBRACK args ARROW typ { TArrow ($2, $4, $6) }
+  | args ARROW typ { TArrow (TTop::$1, $3) }
+  | LBRACK typ RBRACK args ARROW typ { TArrow ($2::$4, $6) }
   | FORALL ID LTCOLON typ DOT typ { TForall ($2, $4, $6) }
   | FORALL ID DOT typ { TForall ($2, TTop, $4) }
 
@@ -86,6 +86,12 @@ checked :
   | CHECKED { true }
   | { false }
 
+op_typ :
+  | args ARROW typ { TArrow ($1, $3) }
+  | LBRACK typ RBRACK args ARROW typ { TArrow ($2::$4, $6) }
+  | FORALL ID LTCOLON typ DOT op_typ { TForall ($2, $4, $6) }
+  | FORALL ID DOT op_typ { TForall ($2, TTop, $4) }
+
 env_decl :
   | CLASS checked any_id PROTOTYPE any_id LBRACE fields RBRACE
     { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
@@ -98,7 +104,7 @@ env_decl :
         EnvClass ($3, None (* root *), $5) }
   | VAL ID COLON typ { EnvBind ($2, $4) }
   | ID COLON typ { EnvBind ($1, TRef $3) }
-  | OPERATOR STRING COLON typ { EnvBind ($2, $4) }
+  | OPERATOR STRING COLON op_typ { EnvBind ($2, $4) }
 
 env_decls
   : { [] }

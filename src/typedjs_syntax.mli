@@ -38,7 +38,7 @@ type prim =
 type typ = 
   | TPrim of prim
   | TUnion of typ * typ
-  | TArrow of typ * typ list * typ      
+  | TArrow of typ list * typ      
   | TObject of (id * typ) list
   | TRef of typ
   | TSource of typ
@@ -80,7 +80,6 @@ type exp =
   | EEmptyArray of pos * typ
   | EObject of pos * (string * exp) list
       (* [Typedjs_fromExpr.from_exprjs] ensures that field names are unique. *)
-  | EThis of pos
   | EId of pos * id
   | EBracket of pos * exp * exp
   | EUpdate of pos * exp * exp * exp
@@ -165,3 +164,6 @@ module Pretty : sig
   val pp_typ : formatter -> typ -> unit
 
 end
+
+val string_of_typ : typ -> string
+

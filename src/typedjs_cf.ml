@@ -138,7 +138,10 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         List.iter (sub_flow (node_of_cpsexp cont)) binds
   | App (n, f, args) ->
       begin match abs_of_cpsval n env f, map (abs_of_cpsval n env) args with
-        | AClosure (_, formals, body), argvs -> 
+        | AClosure (_, formals, body), argvs ->
+              if List.length formals != List.length argvs then
+                failwith "Argument lengths didn't match in cf"
+              else 
               let flow_env = List.fold_right2 bind formals argvs empty_env in
                 flow n flow_env heap body
         | _ -> ()
@@ -155,6 +158,9 @@ and sub_flow (env_node : node) (_, f, args, typ, body_exp) =
     |  Some (arg_typs, _) -> begin try
          ignore (H.find lambdas (node_of_cpsexp body_exp))
        with Not_found ->
+         if List.length args != List.length arg_typs then
+            failwith "Argument lengths didn't match in sub_flow"
+         else
          H.add lambdas (node_of_cpsexp body_exp)
            (env_node, 
             List.fold_right2 bind args (map runtime arg_typs) empty_env,

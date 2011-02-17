@@ -142,11 +142,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
           error p "field-lookup requires a string literal"
     end
   | EUpdate (p, _, _, _) -> error p ("Haven't implemented update yet")
-  | EThis p -> begin
-      try 
-        Env.lookup_id "this" env
-      with Not_found -> raise (Typ_error (p, "'this' used in non-func"))
-    end
   | ENew (p, cid, args) -> error p "New doesn't work yet (constrs)"
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
   | EInfixOp (p, "+", e1, e2) -> 
@@ -158,41 +153,25 @@ let rec tc_exp (env : Env.env) exp = match exp with
           tc_exp env (EApp (p, EId (p, "+"), [e1; e2]))
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> begin match un_null (tc_exp env f) with
-      | TForall (x, _, TArrow (obj_typ, expected_typ, result_typ)) ->
-          let subst = unify_typ (TArrow (obj_typ, expected_typ, result_typ))
-            (TArrow (obj_typ, map (tc_exp env) args, result_typ)) in
+      | TForall (x, _, TArrow (expected_typ, result_typ)) ->
+          let subst = unify_typ (TArrow (expected_typ, result_typ))
+            (TArrow (map (tc_exp env) args, result_typ)) in
             begin try
               let u = IdMap.find x subst in (* TODO: needless recomputation *)
                 tc_exp env (EApp (p, ETypApp (p, f, u), args))
             with Not_found ->
-              let t = TArrow (obj_typ, expected_typ, result_typ) in
+              let t = TArrow (expected_typ, result_typ) in
               error p (sprintf "could not determine \'%s in the function type \
                                 %s" x (string_of_typ t))
             end
-      | TArrow (expected_thist, expected_typs, result_typ) ->
-          let _ = (
-            let this_typ = tc_thist env f in
-              if not (Env.subtype env this_typ expected_thist) then
-                raise (Typ_error 
-                         (p, sprintf "expected this type %s, got %s"
-                            (string_of_typ expected_thist)
-                            (string_of_typ this_typ)))
-              else this_typ) in
+      | TArrow (expected_typs, result_typ) ->
           let arg_typs' = map (tc_exp_ret env) args in
           let arg_typs = 
             fill (List.length expected_typs - List.length args) 
               (TPrim Undef) arg_typs' in
             if Env.subtypes env arg_typs expected_typs 
             then result_typ 
-            else if List.length args = List.length expected_typs (* || 
-                 dont need to supply undefined arguments =) 
-              (List.length args < List.length expected_typs && 
-                 (List.iter (
-                    fun t -> if Env.subtype env typ_undef t then () else
-                      raise (
-                        Typ_error (
-                          p, "argument that can't be undefined not given")))
-                    (skip (List.length args) expected_typs);true)) *)
+            else if List.length args = List.length expected_typs  
             then
               let typ_pairs = List.combine arg_typs expected_typs in
               let arg_ix = ref 1 in
@@ -233,7 +212,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EFunc (p, args, fn_typ, body) -> 
       let expected_typ = Env.check_typ p env fn_typ in
       begin match Env.bind_typ env expected_typ with
-          (env, TArrow (this_t, arg_typs, result_typ)) ->
+          (env, TArrow (arg_typs, result_typ)) ->
             if not (List.length arg_typs = List.length args) then
               error p 
                 (sprintf "given %d argument names, but %d argument types"
@@ -241,7 +220,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
             let bind_arg env x t = Env.bind_id x t env in
             let env = List.fold_left2 bind_arg env args arg_typs in
             let env = Env.clear_labels env in
-            let env = Env.bind_id "this" this_t env in
             let body_typ = tc_exp env body in
               if Env.subtype env body_typ result_typ then 
                 expected_typ
@@ -351,7 +329,7 @@ let rec tc_def env def = match def with
         tc_def env d
   | DConstructor (cexp, d) -> let p = cexp.constr_pos in 
       begin match cexp.constr_typ with
-          TArrow (_, arg_typs, result_typ) -> 
+          TArrow (arg_typs, result_typ) -> 
             if List.length arg_typs = List.length (cexp.constr_args) then ()
             else raise (
               Typ_error (p,
