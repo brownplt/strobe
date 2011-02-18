@@ -270,7 +270,7 @@ end
 
     let is_accepting l = match l with
       | LeafIn s -> S.mem AugChar.Accept s
-      | _ -> false
+      | LeafNotIn s -> not (S.mem AugChar.Accept s)
 
     let is_not_empty l = match l with
       | LeafIn s -> not (S.is_empty s)
@@ -332,7 +332,10 @@ let follow (arx : augex) : follow_tbl * sym_tbl =
       printf "At position %d %s\n" pos
         (FormatExt.to_string (AugCharSetExt.p_set AugChar.pp) set);
       lbl.(pos) <- LeafIn set
-    | ANotInSet (set, pos, _) -> lbl.(pos) <- LeafNotIn set
+    | ANotInSet (set, pos, _) -> 
+      printf "At (nis) position %d %s\n" pos
+        (FormatExt.to_string (AugCharSetExt.p_set AugChar.pp) set);
+      lbl.(pos) <- LeafNotIn set
     | AAlt (arx1, arx2, _) -> f arx1; f arx2
     | ACat (arx1, arx2, _) ->
         f arx1;
@@ -414,6 +417,8 @@ let follow (arx : augex) : follow_tbl * sym_tbl =
     (* start of algorithm *)
     let first_state = (aux_of arx).first_pos in
     let first_st = next_st () in
+    printf "first state is %s\n" (FormatExt.to_string (IntSetExt.p_set
+    FormatExt.int) first_state);
     H.add state_names first_state first_st;
     loop [ first_state ];
     printf "DFA construction complete!\n";
