@@ -13,15 +13,9 @@ type regex =
   | Concat of regex * regex
   | AnyChar
 
-type label =
-  | Epsilon
-  | In of CharSet.t
-  | NotIn of CharSet.t
-
-
 type fsm
 
-val nfa_of_regex : regex -> fsm
+val fsm_of_regex : regex -> fsm
 val intersect : fsm -> fsm -> fsm
 val nullable : fsm -> bool 
 val contains : fsm -> fsm -> bool

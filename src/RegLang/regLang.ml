@@ -15,201 +15,374 @@ type regex =
   | Concat of regex * regex
   | AnyChar
 
-type label =
-  | Epsilon
-  | In of CharSet.t
-  | NotIn of CharSet.t
+(* augmented regular expressions *)
 
-type state = 
-    | I of int
-    | II of (state * state)
+module AugChar = struct
+  type t = Char of char | Accept
 
-module Label = struct
-  type t = label
-
-  open FormatExt
-  let pp t = match t with
-    | Epsilon -> text "epsilon"
-    | In set -> CharSetExt.p_set (fun ch fmt -> Format.pp_print_char fmt ch) set
-    | NotIn set -> 
-      sep [ text "not"; 
-            CharSetExt.p_set (fun ch fmt -> Format.pp_print_char fmt ch) set ]
-end
-
-module State = struct
-  type t = state
   let compare = Pervasives.compare
-
-  open FormatExt
-  let rec pp t = match t with
-    | I n -> int n
-    | II (s1, s2) -> angles (squish [ pp s1; text ","; pp s2 ])
-
 end
 
-module StateMap = Map.Make (State)
-module StateMapExt = MapExt.Make (State) (StateMap)
-module StateSet = Set.Make (State)
+module AugCharSet = Set.Make (AugChar)
 
-type fsm = {
-  edges: (label * state) list StateMap.t;
-  start: state;
-  accept: state;
-}
+let make_augCharSet (set : CharSet.t) : AugCharSet.t =
+  CharSet.fold (fun ch set' -> AugCharSet.add (AugChar.Char ch) set')
+    set AugCharSet.empty
 
-module FSM = struct
-  type t = fsm
+module DFA = struct
 
-  open FormatExt
-
-  let pp t =
-    vert
-      [ horz [ text "Start: "; State.pp t.start ];
-        horz [ text "Accept: "; State.pp t.accept ];
-        StateMapExt.p_map State.pp 
-          (fun lst -> vert
-            (map (fun (l,s) -> horz [ Label.pp l; State.pp s ]) lst))
-          t.edges ]
-
-end
-
-(* Returns the empty list if [state] is not a state. *)
-let next_states (fsm : fsm) (state : state) : state list =
-  try
-    (map snd2 (StateMap.find state fsm.edges))
-  with Not_found -> []
-
-let join_err _ _ _ = failwith "overlapping states"
-
-let nfa_of_regex (re : regex) : fsm =
-  let free_state = ref 0 in
-  let make_state () = 
-    incr free_state;
-    I (!free_state - 1) in
-  let rec f  re = match re with
-    | Concat (re1, re2) ->
-      let fsm1 = f re1 in
-      let fsm2 = f re2 in
-      { 
-        edges = StateMap.add fsm1.accept [(Epsilon, fsm2.start)]
-          (StateMapExt.join join_err fsm1.edges fsm2.edges);
-        start = fsm1.start;
-        accept = fsm2.accept
-      }
-    | InSet set -> 
-      let start = make_state () in
-      let accept = make_state () in
-      {
-        edges = StateMap.singleton start [(In set, accept)];
-        start = start;
-        accept = accept
-      }
-    | NotInSet set ->
-      let start = make_state () in
-      let accept = make_state () in
-      {
-        edges = StateMap.singleton start [(NotIn set, accept)];
-        start = start;
-        accept = accept
-      }
-    | Star re' ->
-      let fsm' = f re' in
-      let accept = make_state () in
-      { 
-        edges =
-          StateMap.add fsm'.accept [(Epsilon, fsm'.start)]
-            (StateMap.add fsm'.accept [(Epsilon, accept)] fsm'.edges);
-        start = fsm'.start;
-        accept = accept
-      }
-    | Alt (re1, re2) ->
-      let fsm1 = f re1 in
-      let fsm2 = f re2 in
-      let start = make_state () in
-      let accept = make_state () in
-      {
-        edges =
-          StateMap.add start [(Epsilon, fsm1.start); (Epsilon, fsm2.start)]
-            (StateMap.add fsm1.accept [(Epsilon, accept)]
-               (StateMap.add fsm2.accept [(Epsilon, accept)]
-                  (StateMapExt.join join_err fsm1.edges fsm2.edges)));
-        start = start;
-        accept = accept
-      }
-    | Empty ->
-      let start = make_state () in
-      let accept = make_state () in
-      { 
-        edges = StateMap.singleton start [(Epsilon, accept)];
-        start = start;
-        accept = accept
-      }
-    | String str ->
-      let re = ref Empty in
-      String.iter
-        (fun ch -> re := Concat (!re, InSet (CharSet.singleton ch)))
-        str;
-      begin match !re with
-        | Concat (Empty, re) -> f re (* optimization *)
-        | re -> f re
-      end
-
-    | AnyChar -> f (NotInSet CharSet.empty)
-  in f re
-
-let intersect fsm1 fsm2 =
-  let f state1 edges1 edgemap1 =
-    let g state2 edges2 edgemap2 =
-      StateMap.add (II (state1, state2)) 
-        ((map (fun (label, target1) -> 
-          (label, II (target1, state2))) edges1)@
-            (map (fun (label, target2) -> 
-              (label, II (state1, target2))) edges2))
-        edgemap2 in
-    StateMap.fold g fsm2.edges edgemap1 in
-  {
-    edges = StateMap.fold f fsm1.edges StateMap.empty;
-    start = II (fsm1.start, fsm2.start);
-    accept = II (fsm1.accept, fsm2.accept);
-  }
-
-let negate fsm = 
-  (* I think the accept state is always the highest state,
-   * which makes this perfectly "accept"able (ha?) *)
-  let rec new_accept accept = match accept with
-    | I i -> I (1 + i) 
-    | II (s1, s2) -> II (new_accept s1, new_accept s2) in
-  let accept' = new_accept fsm.accept in
-  let add_accept_edge edges = (Epsilon, accept')::edges in
-  {
-    edges = StateMap.map add_accept_edge fsm.edges;
-    start = fsm.start;
-    accept = accept'
+  type pos = int
+      
+  type aux = {
+    nullable : bool;
+    first_pos : IntSet.t;
+    last_pos : IntSet.t;
   }
 
 
-let nullable fsm = 
-  printf "%s\n\n" (FormatExt.to_string FSM.pp fsm);
-  let rec f edges fringe = 
-    let state = StateSet.choose fringe in
-    if state = fsm.accept then
-      true
-    else 
-      let fringe' = 
-        StateSet.remove state
-          (fold_right StateSet.add (next_states fsm state) fringe) in
-      f (StateMap.remove state edges) fringe'
-  in try
-       f fsm.edges (StateSet.singleton fsm.start)
-    with Not_found -> false (* choose failed above *)
+  type augex =
+    | AInSet of AugCharSet.t * pos * aux
+    | ANotInSet of AugCharSet.t * pos * aux
+    | AAlt of augex * augex * aux
+    | ACat of augex * augex * aux
+    | AStar of augex * aux
+    | AEpsilon of aux
 
-(* TODO: Idea---use the highest "accept" number to decide which
- * to negate as an optimization to minimize edges *)
-let contains fsm1 fsm2 =
-  printf "%s\n\n" (FormatExt.to_string FSM.pp fsm1);
-  printf "%s\n\n" (FormatExt.to_string FSM.pp (negate fsm2));
-  nullable (intersect fsm1 (negate fsm2))
+  (* augex construction ensures that this is the max. position *)
+  let max_pos (arx : augex) = match arx with
+    | ACat (_, AInSet (_, p, _), _) -> p
+    | _ -> raise (Invalid_argument "ill-formed augex (missing # ?)")
 
-let reg_contains field1 field2 = match field1, field2 with
-  | (_, fsm1), (_, fsm2) -> contains fsm1 fsm2
+  let aux_of arx = match arx with
+    | AInSet (_, _, x) -> x
+    | ANotInSet (_, _, x) -> x
+    | AAlt (_, _, x) -> x
+    | ACat (_, _, x) -> x
+    | AStar (_, x) -> x
+    | AEpsilon x -> x
 
+  let rec augex_of_regex (re : regex) : augex = 
+    let next_pos = ref 0 in
+    let pos () = incr next_pos; !next_pos - 1 in
+
+    let rec f (re : regex) : augex = match re with
+      | Empty -> AEpsilon ({ nullable = true; 
+                             first_pos = IntSet.empty; 
+                             last_pos = IntSet.empty })
+      | InSet set -> 
+        let p = pos () in
+        let s = IntSet.singleton p in
+        AInSet (make_augCharSet set, p,
+                { nullable = true;
+                  first_pos = s;
+                  last_pos = s })
+      | NotInSet set -> 
+        let p = pos () in
+        let s = IntSet.singleton p in
+        ANotInSet (make_augCharSet set, p,
+                   { nullable = true;
+                     first_pos = s;
+                     last_pos = s })
+      | Alt (re1, re2) ->
+        let arx1 = f re1 in
+        let arx2 = f re2 in
+        let aux1 = aux_of arx1 in
+        let aux2 = aux_of arx2 in
+        AAlt (arx1, arx2, 
+              { nullable = aux1.nullable || aux2.nullable;
+                first_pos = IntSet.union aux1.first_pos aux2.first_pos;
+                last_pos = IntSet.union aux1.last_pos aux2.last_pos })
+      | Concat (re1, re2) ->
+        let arx1 = f re1 in
+        let arx2 = f re2 in
+        let aux1 = aux_of arx1 in
+        let aux2 = aux_of arx2 in
+        ACat (arx1, arx2, 
+              { nullable = aux1.nullable || aux2.nullable;
+                first_pos = 
+                  if aux1.nullable then
+                    IntSet.union aux1.first_pos aux2.first_pos
+                  else 
+                    aux1.first_pos;
+                last_pos = 
+                  if aux2.nullable then
+                    IntSet.union aux1.last_pos aux2.last_pos
+                  else 
+                    aux2.last_pos })
+      | Star re' ->
+        let arx' = f re' in
+        let aux' = aux_of arx' in
+        AStar (arx', { nullable = true;
+                       first_pos = aux'.first_pos;
+                       last_pos = aux'.last_pos })
+      (* The remaining variants of regex are inessential *)
+      | String str ->
+        let re = ref Empty in
+        String.iter
+          (fun ch -> re := Concat (!re, InSet (CharSet.singleton ch)))
+          str;
+        f !re
+      | AnyChar -> f (NotInSet CharSet.empty) in
+    let arx = f re in
+    let aux = aux_of arx in
+    let accept_pos = pos () in
+    let accept_pos_set = IntSet.singleton accept_pos in
+    let accept_aux =
+      { nullable = false; 
+        first_pos = accept_pos_set;
+        last_pos = accept_pos_set } in
+    let accept_rx =
+      AInSet (AugCharSet.singleton AugChar.Accept, accept_pos, accept_aux) in
+    (* ACat, knowing that accept_aux is not nullable *)
+    ACat (arx, accept_rx,
+          { nullable = aux.nullable;
+            first_pos = 
+              if aux.nullable then
+                IntSet.union aux.first_pos accept_aux.first_pos
+              else 
+                aux.first_pos;
+            last_pos = accept_aux.last_pos })
+
+
+  type follow_tbl  = IntSet.t array
+
+  type lbl =
+    | LIn of CharSet.t
+    | LNotIn of CharSet.t
+
+  type leaf = 
+    | LeafIn of AugCharSet.t 
+    | LeafNotIn of AugCharSet.t
+
+  let lbl_of_leaf leaf =
+    let unaug set = AugCharSet.fold
+      (fun ac set' -> match ac with
+        | AugChar.Char ch -> CharSet.add ch set'
+        | AugChar.Accept -> set')
+      set CharSet.empty in
+    match leaf with
+      | LeafIn s -> LIn (unaug s)
+      | LeafNotIn s -> LNotIn (unaug s)
+
+  type sym_tbl = leaf array
+
+  module Leaf = struct
+
+    type t = leaf
+
+    module S = AugCharSet
+
+    let is_accepting l = match l with
+      | LeafIn s -> S.mem AugChar.Accept s
+      | _ -> false
+
+    let is_not_empty l = match l with
+      | LeafIn s -> not (S.is_empty s)
+      | _ -> true
+
+    (* Returns upto three non-overlapping [Leaf]s that cover the same characters
+       as [l1] and [l2]. *)
+    let disjoint_cover (l1 : leaf) (l2 : leaf) : leaf list =
+      let lst = match l1, l2 with
+        | LeafIn s1, LeafIn s2 -> 
+          let s3 = AugCharSet.inter s1 s2 in
+          if AugCharSet.is_empty s3 then
+            [ l1; l2 ]
+          else
+            [ LeafIn (AugCharSet.diff s1 s3);
+            LeafIn (AugCharSet.diff s2 s3);
+            LeafIn s3 ]
+        | LeafNotIn s1, LeafNotIn s2 -> [ LeafNotIn (AugCharSet.inter s1 s2) ]
+        | LeafIn s1, LeafNotIn s2 (* symmetric to case below *)
+        | LeafNotIn s2, LeafIn s1 -> [ LeafNotIn (AugCharSet.diff s2 s1) ]
+      in List.filter is_not_empty lst
+
+    let is_disjoint (l1 : leaf) (l2 : leaf) : bool = match l1, l2 with
+      | LeafIn s1, LeafIn s2 -> S.is_empty (S.inter s1 s2)
+      | LeafNotIn s1, LeafNotIn s2 -> false
+      | LeafIn s1, LeafNotIn s2
+      | LeafNotIn s2, LeafIn s1 -> S.subset s1 s2
+
+    let subset (t1 : t) (t2 : t) : bool = match t1, t2 with
+      | LeafIn s1, LeafIn s2 -> AugCharSet.subset s1 s2
+      | LeafNotIn s1, LeafNotIn s2 -> AugCharSet.subset s2 s1
+      | LeafIn s1, LeafNotIn s2 -> AugCharSet.is_empty (AugCharSet.inter s1 s2)
+      | LeafNotIn s1, LeafIn s2 -> AugCharSet.is_empty (AugCharSet.inter s1 s2)
+
+    let disjoint_cover_list (overlapped : leaf list) : leaf list =
+      let rec loop (disjoint : leaf list) (overlapped : leaf list) = 
+        match overlapped with
+          | [] -> disjoint
+          | leaf :: overlapped -> (* rebind overlapped *)
+            (* disjoint' and overlapped' are mutually disjoint *)
+            let (disjoint', overlapped') = 
+              List.partition (is_disjoint leaf) disjoint in
+            match overlapped' with
+              | first_overlapped' :: rest_overlapped' ->
+                loop 
+                  ((disjoint_cover leaf first_overlapped') @ disjoint')
+                  (rest_overlapped' @ overlapped)
+              | [] -> loop (leaf :: disjoint') overlapped
+      in loop [] overlapped
+
+
+  end
+
+  let follow (arx : augex) : follow_tbl * sym_tbl =
+    let tbl = Array.make (max_pos arx + 1) IntSet.empty in
+    let lbl = Array.make (max_pos arx + 1) (LeafNotIn AugCharSet.empty) in
+    let rec f (arx : augex) : unit = match arx with
+      | AInSet (set, pos, _) -> lbl.(pos) <- LeafIn set
+      | ANotInSet (set, pos, _) -> lbl.(pos) <- LeafNotIn set
+      | AAlt (arx1, arx2, _) -> f arx1; f arx2
+      | ACat (arx1, arx2, _) ->
+        f arx1;
+        f arx2;
+        let arx2_first_pos = (aux_of arx2).first_pos in
+        IntSet.iter
+          (fun last ->
+            tbl.(last) <- IntSet.union arx2_first_pos tbl.(last))
+          (aux_of arx1).last_pos
+      | AStar (arx', aux) ->
+        f arx';
+        let arx_first_pos = aux.first_pos in
+        IntSet.iter
+          (fun last ->
+            tbl.(last) <- IntSet.union arx_first_pos tbl.(last))
+          aux.last_pos
+      | AEpsilon _ -> () in
+    f arx;
+    (tbl, lbl)
+
+  type st = 
+    | S of int
+    | J of st * st (* used for intersection *)
+
+
+  module St = struct
+    type t = st
+    let compare = Pervasives.compare
+  end 
+
+  module StMap = Map.Make (St)
+
+  module StSet = Set.Make (St)
+
+
+  type dfa = {
+    edges: (lbl * st) list StMap.t;
+    start: st;
+    accept: StSet.t
+  }
+
+  (* Page 141, Figure 3.44 *)
+  let make_dfa (arx : augex) (follow : follow_tbl) (sym : sym_tbl)  =
+    let next_st_num = ref 0 in
+    let next_st () = incr next_st_num; S (!next_st_num - 1) in 
+    let accept = ref StSet.empty in
+    let edges : (lbl * st) list StMap.t ref  = ref StMap.empty in
+    let marked_states : (IntSet.t, st) H.t = H.create 100 in
+    let rec loop (unmarked_states : IntSet.t list) = match unmarked_states with
+      | [] -> ()
+      | state :: unmarked_states' ->
+        (* recurring on the tail of unmarked_states implicitly marks state *)
+        let st = H.find marked_states state in (* abbreviation for T *)
+        (* deviates from the figure *)
+        (* followpos(st) *)
+        let follow_st = IntSet.fold 
+          (fun i s -> IntSet.union follow.(i) s) state IntSet.empty in
+        let leaves = map (fun i -> sym.(i)) (IntSet.elements follow_st) in
+        (* leaves are mutually-disjoint non-empty edges out of state *)
+        let leaves = Leaf.disjoint_cover_list leaves in
+        let more_unmarked_states = ref [] in
+        let edges_from_st : (lbl * st) list =
+          map
+            (fun leaf -> (* variable a in the figure *)
+              let next_state = (* variable U in the figure *)
+                IntSet.filter (fun i -> Leaf.subset leaf sym.(i)) follow_st in
+              let next_st =
+                try H.find marked_states next_state
+                with Not_found ->
+                  let abbrev = next_st () in
+                  H.add marked_states next_state abbrev;
+                  more_unmarked_states := next_state :: !more_unmarked_states;
+                  abbrev in
+              if Leaf.is_accepting leaf then
+                accept := StSet.add st !accept;
+              (lbl_of_leaf leaf, next_st))
+            leaves in
+        edges := StMap.add st edges_from_st !edges;
+        loop unmarked_states' in
+    (* start of algorithm *)
+    let first_state = (aux_of arx).first_pos in
+    let first_st = next_st () in
+    H.add marked_states first_state first_st;
+    loop [ first_state ];
+    { edges = !edges;
+      start = first_st;
+      accept = !accept }
+
+  let intersect dfa1 dfa2 =
+    let f state1 edges1 edgemap1 =
+      let g state2 edges2 edgemap2 =
+        StMap.add (J (state1, state2)) 
+          ((map (fun (label, target1) -> 
+            (label, J (target1, state2))) edges1)@
+              (map (fun (label, target2) -> 
+                (label, J (state1, target2))) edges2))
+          edgemap2 in
+    StMap.fold g dfa2.edges edgemap1 in
+    { edges = StMap.fold f dfa1.edges StMap.empty;
+      start = J (dfa1.start, dfa2.start);
+      accept =
+        StSet.fold
+          (fun s1 cross_prod ->
+            StSet.fold
+              (fun s2 cross_prod -> StSet.add (J (s1, s2)) cross_prod)
+              dfa2.accept
+              cross_prod)
+          dfa1.accept
+          StSet.empty }
+
+  let negate dfa = 
+    { edges = dfa.edges;
+      start = dfa.start;
+      accept = 
+        let lst = List.filter
+          (fun s -> not (StSet.mem s dfa.accept))
+          (map fst2 (StMap.bindings dfa.edges)) in
+        fold_right StSet.add lst StSet.empty }
+      
+  let nullable dfa = 
+    let next_states state =
+      try map snd2 (StMap.find state dfa.edges)
+      with Not_found -> [] in
+    let rec f edges fringe = 
+      let state = StSet.choose fringe in
+      if StSet.mem state dfa.accept then
+        true
+      else 
+        let fringe' = 
+          StSet.remove state
+            (fold_right StSet.add (next_states state) fringe) in
+        f (StMap.remove state edges) fringe'
+    in try
+         f dfa.edges (StSet.singleton dfa.start)
+      with Not_found -> false (* choose failed above *)
+
+  let contains dfa1 dfa2 = 
+    nullable (intersect dfa1 (negate dfa2))
+        
+  let dfa_of_regex (re : regex) : dfa = 
+    let arx = augex_of_regex re in
+    let follow_tbl, symbol_tbl = follow arx in
+    make_dfa arx follow_tbl symbol_tbl
+        
+end
+
+type fsm = DFA.dfa
+
+let fsm_of_regex = DFA.dfa_of_regex
+let intersect = DFA.intersect
+let nullable = DFA.nullable
+let contains = DFA.contains

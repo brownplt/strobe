@@ -14,7 +14,7 @@ let tc_const (const : JavaScript_syntax.const) = match const with
 
 let typ_of_value (exp : exp) : typ = 
   let mk_field f (name, exp) =
-    ((RegLang.String name, RegLang.nfa_of_regex (RegLang.String name)),
+    ((RegLang.String name, RegLang.fsm_of_regex (RegLang.String name)),
       f exp) in
   let rec f e = match e with
     | EObject (_, fields) -> 

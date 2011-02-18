@@ -37,7 +37,7 @@ args
   | arg_typ STAR args { $1 :: $3 }
 
 field
-  : regex COLON typ { (($1, RegLang.nfa_of_regex $1), TRef $3) }
+  : regex COLON typ { (($1, RegLang.fsm_of_regex $1), TRef $3) }
 
 fields
   : { [] }

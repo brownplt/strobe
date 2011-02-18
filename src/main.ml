@@ -161,8 +161,8 @@ let action_regex () : unit =
                        (lexbuf.lex_curr_p, lexbuf.lex_curr_p))
                     (lexeme lexbuf)) in
   let run_test (re1, re2) = 
-    let fsm1 = RegLang.nfa_of_regex re1 in
-    let fsm2 = RegLang.nfa_of_regex re2 in
+    let fsm1 = RegLang.fsm_of_regex re1 in
+    let fsm2 = RegLang.fsm_of_regex re2 in
     if RegLang.contains fsm1 fsm2 then
       printf "Regex test succeeded.\n"
     else

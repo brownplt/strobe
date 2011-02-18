@@ -126,7 +126,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
                     (string_of_typ c))
   | EObject (p, fields) ->
       let mk_field (name, exp) =
-        ((RegLang.String name, RegLang.nfa_of_regex (RegLang.String name)),
+        ((RegLang.String name, RegLang.fsm_of_regex (RegLang.String name)),
          tc_exp env exp) in
       Env.check_typ p env (TObject (map mk_field fields))
   | EBracket (p, obj, field) -> 
