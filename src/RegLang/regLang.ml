@@ -29,7 +29,6 @@ let make_augCharSet (set : CharSet.t) : AugCharSet.t =
   CharSet.fold (fun ch set' -> AugCharSet.add (AugChar.Char ch) set')
     set AugCharSet.empty
 
-module DFA = struct
 
   type pos = int
       
@@ -47,6 +46,72 @@ module DFA = struct
     | ACat of augex * augex * aux
     | AStar of augex * aux
     | AEpsilon of aux
+
+  type st = 
+    | S of int
+    | J of st * st (* used for intersection *)
+
+
+  module St = struct
+    type t = st
+    let compare = Pervasives.compare
+
+    open FormatExt
+
+    let rec pp t = match t with
+      | S n -> int n
+      | J (s1, s2) -> angles (squish [ pp s1; text ","; pp s2 ])
+
+  end 
+
+  module StMap = Map.Make (St)
+  module StMapExt = MapExt.Make (St) (StMap)
+
+  module StSet = Set.Make (St)
+  module StSetExt = SetExt.Make (StSet)
+
+type lbl =
+  | LIn of CharSet.t
+  | LNotIn of CharSet.t
+      
+type leaf = 
+  | LeafIn of AugCharSet.t 
+  | LeafNotIn of AugCharSet.t
+
+type dfa = {
+  edges: (lbl * st) list StMap.t;
+  start: st;
+  accept: StSet.t
+}
+
+module Lbl = struct
+  type t = lbl
+
+  open FormatExt
+
+  let pp t = match t with
+    | LIn set -> 
+      CharSetExt.p_set (fun ch fmt -> Format.pp_print_char fmt ch) set
+    | LNotIn set -> 
+      sep [ text "not"; 
+            CharSetExt.p_set (fun ch fmt -> Format.pp_print_char fmt ch) set ]
+end
+
+module DFA = struct
+  type t = dfa
+    
+  open FormatExt
+  
+  let pp t =
+    vert
+      [ horz [ text "Start: "; St.pp t.start ];
+        horz [ text "Accept: "; StSetExt.p_set St.pp t.accept ];
+        StMapExt.p_map St.pp 
+          (fun lst -> vert
+            (map (fun (l,s) -> horz [ Lbl.pp l; St.pp s ]) lst))
+          t.edges ]
+end
+
 
   (* augex construction ensures that this is the max. position *)
   let max_pos (arx : augex) = match arx with
@@ -146,13 +211,6 @@ module DFA = struct
 
   type follow_tbl  = IntSet.t array
 
-  type lbl =
-    | LIn of CharSet.t
-    | LNotIn of CharSet.t
-
-  type leaf = 
-    | LeafIn of AugCharSet.t 
-    | LeafNotIn of AugCharSet.t
 
   let lbl_of_leaf leaf =
     let unaug set = AugCharSet.fold
@@ -254,26 +312,6 @@ module DFA = struct
     f arx;
     (tbl, lbl)
 
-  type st = 
-    | S of int
-    | J of st * st (* used for intersection *)
-
-
-  module St = struct
-    type t = st
-    let compare = Pervasives.compare
-  end 
-
-  module StMap = Map.Make (St)
-
-  module StSet = Set.Make (St)
-
-
-  type dfa = {
-    edges: (lbl * st) list StMap.t;
-    start: st;
-    accept: StSet.t
-  }
 
   (* Page 141, Figure 3.44 *)
   let make_dfa (arx : augex) (follow : follow_tbl) (sym : sym_tbl)  =
@@ -370,19 +408,20 @@ module DFA = struct
          f dfa.edges (StSet.singleton dfa.start)
       with Not_found -> false (* choose failed above *)
 
-  let contains dfa1 dfa2 = 
-    nullable (intersect dfa1 (negate dfa2))
+let contains dfa1 dfa2 = 
+  let dfa2' = negate dfa2 in
+  let dfa3 = intersect dfa1 dfa2' in
+  printf "DFAs:\n%s\n%s\n%s\n\n\n" (FormatExt.to_string DFA.pp dfa1)
+    (FormatExt.to_string DFA.pp dfa2')
+ (FormatExt.to_string DFA.pp dfa3);
+  nullable dfa3
+
         
   let dfa_of_regex (re : regex) : dfa = 
     let arx = augex_of_regex re in
     let follow_tbl, symbol_tbl = follow arx in
     make_dfa arx follow_tbl symbol_tbl
         
-end
 
-type fsm = DFA.dfa
-
-let fsm_of_regex = DFA.dfa_of_regex
-let intersect = DFA.intersect
-let nullable = DFA.nullable
-let contains = DFA.contains
+type fsm = dfa
+let fsm_of_regex = dfa_of_regex
