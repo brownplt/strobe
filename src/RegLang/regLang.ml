@@ -3,6 +3,7 @@ open Prelude
 module H = Hashtbl
 
 module CharSet = Set.Make (Char)
+module CharSetExt = SetExt.Make (CharSet)
 
 type regex =
   | InSet of CharSet.t
@@ -23,9 +24,27 @@ type state =
     | I of int
     | II of (state * state)
 
+module Label = struct
+  type t = label
+
+  open FormatExt
+  let pp t = match t with
+    | Epsilon -> text "epsilon"
+    | In set -> CharSetExt.p_set (fun ch fmt -> Format.pp_print_char fmt ch) set
+    | NotIn set -> 
+      sep [ text "not"; 
+            CharSetExt.p_set (fun ch fmt -> Format.pp_print_char fmt ch) set ]
+end
+
 module State = struct
   type t = state
   let compare = Pervasives.compare
+
+  open FormatExt
+  let rec pp t = match t with
+    | I n -> int n
+    | II (s1, s2) -> angles (squish [ pp s1; text ","; pp s2 ])
+
 end
 
 module StateMap = Map.Make (State)
@@ -37,6 +56,22 @@ type fsm = {
   start: state;
   accept: state;
 }
+
+module FSM = struct
+  type t = fsm
+
+  open FormatExt
+
+  let pp t =
+    vert
+      [ horz [ text "Start: "; State.pp t.start ];
+        horz [ text "Accept: "; State.pp t.accept ];
+        StateMapExt.p_map State.pp 
+          (fun lst -> vert
+            (map (fun (l,s) -> horz [ Label.pp l; State.pp s ]) lst))
+          t.edges ]
+
+end
 
 (* Returns the empty list if [state] is not a state. *)
 let next_states (fsm : fsm) (state : state) : state list =
@@ -114,7 +149,11 @@ let nfa_of_regex (re : regex) : fsm =
       String.iter
         (fun ch -> re := Concat (!re, InSet (CharSet.singleton ch)))
         str;
-      f !re
+      begin match !re with
+        | Concat (Empty, re) -> f re (* optimization *)
+        | re -> f re
+      end
+
     | AnyChar -> f (NotInSet CharSet.empty)
   in f re
 
@@ -150,7 +189,7 @@ let negate fsm =
 
 
 let nullable fsm = 
-  printf "num states: %d\n%!" (StateMap.cardinal fsm.edges);
+  printf "%s\n\n" (FormatExt.to_string FSM.pp fsm);
   let rec f edges fringe = 
     let state = StateSet.choose fringe in
     if state = fsm.accept then
@@ -167,6 +206,8 @@ let nullable fsm =
 (* TODO: Idea---use the highest "accept" number to decide which
  * to negate as an optimization to minimize edges *)
 let contains fsm1 fsm2 =
+  printf "%s\n\n" (FormatExt.to_string FSM.pp fsm1);
+  printf "%s\n\n" (FormatExt.to_string FSM.pp (negate fsm2));
   nullable (intersect fsm1 (negate fsm2))
 
 let reg_contains field1 field2 = match field1, field2 with
