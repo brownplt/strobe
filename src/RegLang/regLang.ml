@@ -21,9 +21,17 @@ module AugChar = struct
   type t = Char of char | Accept
 
   let compare = Pervasives.compare
+
+  open FormatExt
+
+  let pp t = match t with
+    | Char ch -> fun fmt -> Format.pp_print_char fmt ch
+    | Accept -> text "#"
+
 end
 
 module AugCharSet = Set.Make (AugChar)
+module AugCharSetExt = SetExt.Make (AugCharSet)
 
 let make_augCharSet (set : CharSet.t) : AugCharSet.t =
   CharSet.fold (fun ch set' -> AugCharSet.add (AugChar.Char ch) set')
@@ -32,20 +40,31 @@ let make_augCharSet (set : CharSet.t) : AugCharSet.t =
 
   type pos = int
       
-  type aux = {
-    nullable : bool;
-    first_pos : IntSet.t;
-    last_pos : IntSet.t;
-  }
+type aux = {
+  nullable : bool;
+  first_pos : IntSet.t;
+  last_pos : IntSet.t;
+}
+
+module Aux = struct
+  type t = aux
+
+  open FormatExt
+  
+  let pp t =
+    braces (horz [ text (if t.nullable then "nullable" else "");
+                   IntSetExt.p_set int t.first_pos;
+                   IntSetExt.p_set int t.last_pos ])
+end
 
 
-  type augex =
-    | AInSet of AugCharSet.t * pos * aux
-    | ANotInSet of AugCharSet.t * pos * aux
-    | AAlt of augex * augex * aux
-    | ACat of augex * augex * aux
-    | AStar of augex * aux
-    | AEpsilon of aux
+type augex =
+  | AInSet of AugCharSet.t * pos * aux
+  | ANotInSet of AugCharSet.t * pos * aux
+  | AAlt of augex * augex * aux
+  | ACat of augex * augex * aux
+  | AStar of augex * aux
+  | AEpsilon of aux
 
   type st = 
     | S of int
@@ -138,14 +157,14 @@ end
         let p = pos () in
         let s = IntSet.singleton p in
         AInSet (make_augCharSet set, p,
-                { nullable = true;
+                { nullable = false;
                   first_pos = s;
                   last_pos = s })
       | NotInSet set -> 
         let p = pos () in
         let s = IntSet.singleton p in
         ANotInSet (make_augCharSet set, p,
-                   { nullable = true;
+                   { nullable = false;
                      first_pos = s;
                      last_pos = s })
       | Alt (re1, re2) ->
@@ -163,7 +182,7 @@ end
         let aux1 = aux_of arx1 in
         let aux2 = aux_of arx2 in
         ACat (arx1, arx2, 
-              { nullable = aux1.nullable || aux2.nullable;
+              { nullable = aux1.nullable && aux2.nullable;
                 first_pos = 
                   if aux1.nullable then
                     IntSet.union aux1.first_pos aux2.first_pos
@@ -286,14 +305,17 @@ end
 
   end
 
-  let follow (arx : augex) : follow_tbl * sym_tbl =
-    let tbl = Array.make (max_pos arx + 1) IntSet.empty in
-    let lbl = Array.make (max_pos arx + 1) (LeafNotIn AugCharSet.empty) in
-    let rec f (arx : augex) : unit = match arx with
-      | AInSet (set, pos, _) -> lbl.(pos) <- LeafIn set
-      | ANotInSet (set, pos, _) -> lbl.(pos) <- LeafNotIn set
-      | AAlt (arx1, arx2, _) -> f arx1; f arx2
-      | ACat (arx1, arx2, _) ->
+let follow (arx : augex) : follow_tbl * sym_tbl =
+  let tbl = Array.make (max_pos arx + 1) IntSet.empty in
+  let lbl = Array.make (max_pos arx + 1) (LeafNotIn AugCharSet.empty) in
+  let rec f (arx : augex) : unit =  match arx with
+    | AInSet (set, pos, aux) ->
+      printf "At position %d %s\n" pos
+        (FormatExt.to_string (AugCharSetExt.p_set AugChar.pp) set);
+      lbl.(pos) <- LeafIn set
+    | ANotInSet (set, pos, _) -> lbl.(pos) <- LeafNotIn set
+    | AAlt (arx1, arx2, _) -> f arx1; f arx2
+    | ACat (arx1, arx2, _) ->
         f arx1;
         f arx2;
         let arx2_first_pos = (aux_of arx2).first_pos in
@@ -310,6 +332,11 @@ end
           aux.last_pos
       | AEpsilon _ -> () in
     f arx;
+    for i = 0 to (max_pos arx) do
+      printf "%d:\n follows %s\n" i
+        (FormatExt.to_string (IntSetExt.p_set FormatExt.int) tbl.(i))
+      
+    done;
     (tbl, lbl)
 
 
@@ -319,43 +346,56 @@ end
     let next_st () = incr next_st_num; S (!next_st_num - 1) in 
     let accept = ref StSet.empty in
     let edges : (lbl * st) list StMap.t ref  = ref StMap.empty in
-    let marked_states : (IntSet.t, st) H.t = H.create 100 in
+    let state_names : (IntSet.t, st) H.t = H.create 100 in
     let rec loop (unmarked_states : IntSet.t list) = match unmarked_states with
       | [] -> ()
       | state :: unmarked_states' ->
         (* recurring on the tail of unmarked_states implicitly marks state *)
-        let st = H.find marked_states state in (* abbreviation for T *)
+        let st = H.find state_names state in (* abbreviation for T *)
         (* deviates from the figure *)
         (* followpos(st) *)
         let follow_st = IntSet.fold 
           (fun i s -> IntSet.union follow.(i) s) state IntSet.empty in
-        let leaves = map (fun i -> sym.(i)) (IntSet.elements follow_st) in
+        printf "%s is followed by %s\n"
+          (FormatExt.to_string (IntSetExt.p_set FormatExt.int) state)
+          (FormatExt.to_string (IntSetExt.p_set FormatExt.int) follow_st);
+        let leaves = map (fun i -> sym.(i)) (IntSet.elements state) in
         (* leaves are mutually-disjoint non-empty edges out of state *)
         let leaves = Leaf.disjoint_cover_list leaves in
         let more_unmarked_states = ref [] in
         let edges_from_st : (lbl * st) list =
           map
             (fun leaf -> (* variable a in the figure *)
-              let next_state = (* variable U in the figure *)
-                IntSet.filter (fun i -> Leaf.subset leaf sym.(i)) follow_st in
+              printf "... label %s\n" (FormatExt.to_string Lbl.pp (lbl_of_leaf leaf));
+              let next_state =
+                IntSet.fold
+                  (fun i s -> IntSet.union follow.(i) s)
+                  (IntSet.filter (fun i -> Leaf.subset leaf sym.(i)) state)
+                  IntSet.empty in
+(*              let next_state = (* variable U in the figure *)
+                IntSet.filter (fun i -> Leaf.subset leaf sym.(i)) follow_st in *)
+              printf "  created edge to %s\n"
+                (FormatExt.to_string (IntSetExt.p_set FormatExt.int) next_state);
               let next_st =
-                try H.find marked_states next_state
+                try H.find state_names next_state
                 with Not_found ->
                   let abbrev = next_st () in
-                  H.add marked_states next_state abbrev;
+                  H.add state_names next_state abbrev;
                   more_unmarked_states := next_state :: !more_unmarked_states;
                   abbrev in
               if Leaf.is_accepting leaf then
                 accept := StSet.add st !accept;
+
               (lbl_of_leaf leaf, next_st))
             leaves in
         edges := StMap.add st edges_from_st !edges;
-        loop unmarked_states' in
+        loop (!more_unmarked_states @ unmarked_states') in
     (* start of algorithm *)
     let first_state = (aux_of arx).first_pos in
     let first_st = next_st () in
-    H.add marked_states first_state first_st;
+    H.add state_names first_state first_st;
     loop [ first_state ];
+    printf "DFA construction complete!\n";
     { edges = !edges;
       start = first_st;
       accept = !accept }
