@@ -1,7 +1,8 @@
-a <: b
-a <: a
-abc <: abc 
-ab <: abc
-abcd <: abc
-// "hello" <: "hello"
-// hello <: hello
+a <: b;
+aa <: a*;
+aa <: a.;
+a <: .;
+a* <: aa;
+a.* <: aa;
+a <: .*;
+.* <: a;

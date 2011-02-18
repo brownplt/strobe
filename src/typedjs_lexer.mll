@@ -5,7 +5,7 @@
 
 }
 
-let ident = ['a'-'z' 'A'-'Z' '$' '_' '%']([ '.' 'a'-'z' 'A'-'Z' '0'-'9' '$' '_']*)
+let ident = ['a'-'z' 'A'-'Z' '$' '_' '%']([ 'a'-'z' 'A'-'Z' '0'-'9' '$' '_']*)
 
 let blank = [ ' ' '\t' '\r' ]
 
@@ -45,6 +45,7 @@ rule token = parse
    | "Null" { NULL }
    | "*" { STAR }
    | ":" { COLON }
+   | ";" { SEMI }
    | "+" { UNION }
    | "&" { INTERSECTION }
    | "." { DOT }

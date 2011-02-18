@@ -9,7 +9,7 @@ open Typedjs_syntax
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST FORALL LTCOLON IS
-       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION
+       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI
 
 %right UNION INTERSECTION
 
@@ -25,11 +25,15 @@ open Typedjs_syntax
 
 regex_tests :
   | EOF { [] }
-  | regex LTCOLON regex regex_tests { ($1, $3) :: $4 }
+  | regex LTCOLON regex SEMI regex_tests { ($1, $3) :: $5 }
 
 regex :
   | STRING { RegLang.String $1 }
   | ID { RegLang.String $1 }
+  | regex STAR { RegLang.Star $1 }
+  | DOT { RegLang.AnyChar }
+  | LPAREN regex RPAREN { $2 }
+  | regex regex { RegLang.Concat ($1, $2) }
   
 args
   :  { [] }
