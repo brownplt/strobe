@@ -30,12 +30,19 @@ end
 
 module StateMap = Map.Make (State)
 module StateMapExt = MapExt.Make (State) (StateMap)
+module StateSet = Set.Make (State)
 
 type fsm = {
   edges: (label * state) list StateMap.t;
   start: state;
   accept: state;
 }
+
+(* Returns the empty list if [state] is not a state. *)
+let next_states (fsm : fsm) (state : state) : state list =
+  try
+    (map snd2 (StateMap.find state fsm.edges))
+  with Not_found -> []
 
 let join_err _ _ _ = failwith "overlapping states"
 
@@ -141,16 +148,21 @@ let negate fsm =
     accept = accept'
   }
 
+
 let nullable fsm = 
-  let rec f edges fringe = match fringe with
-    | [] -> false
-    | state :: rest ->
-      if state = fsm.accept then
-        true
-      else 
-        f (StateMap.remove state edges)
-          (rest @ (map snd2 (StateMap.find state edges)))
-  in f fsm.edges [fsm.start]
+  printf "num states: %d\n%!" (StateMap.cardinal fsm.edges);
+  let rec f edges fringe = 
+    let state = StateSet.choose fringe in
+    if state = fsm.accept then
+      true
+    else 
+      let fringe' = 
+        StateSet.remove state
+          (fold_right StateSet.add (next_states fsm state) fringe) in
+      f (StateMap.remove state edges) fringe'
+  in try
+       f fsm.edges (StateSet.singleton fsm.start)
+    with Not_found -> false (* choose failed above *)
 
 (* TODO: Idea---use the highest "accept" number to decide which
  * to negate as an optimization to minimize edges *)

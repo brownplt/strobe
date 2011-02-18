@@ -144,6 +144,32 @@ let action_df () : unit =
       Typedjs_syntax.Pretty.p_def annotated_exp std_formatter ;
       printf "Dataflow analysis successful.\n"
 
+let action_regex () : unit =
+  let lexbuf = from_string (get_cin ()) in
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = get_cin_name () };
+  let tests = 
+    try
+      Typedjs_parser.regex_tests Typedjs_lexer.token lexbuf
+    with
+      |  Failure "lexing: empty token" ->
+           failwith (sprintf "lexical error at %s"
+                       (string_of_position
+                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+      | Typedjs_parser.Error ->
+        failwith (sprintf "parse error at %s; unexpected token %s"
+                    (string_of_position
+                       (lexbuf.lex_curr_p, lexbuf.lex_curr_p))
+                    (lexeme lexbuf)) in
+  let run_test (re1, re2) = 
+    let fsm1 = RegLang.nfa_of_regex re1 in
+    let fsm2 = RegLang.nfa_of_regex re2 in
+    if RegLang.contains fsm1 fsm2 then
+      printf "Regex test succeeded.\n"
+    else
+      printf "Regex test failed.\n" in 
+  List.iter run_test tests
+  
+
 let action = ref action_tc
 
 let is_action_set = ref false
@@ -176,6 +202,8 @@ let main () : unit =
        "convert program to CPS, then apply flow analysis");
       ("-disable-unreachable", Arg.Unit Typedjs_tc.disable_unreachable_check,
        "do not signal an error on unreachable code");
+      ("-regex", Arg.Unit (set_action action_regex),
+       "regular expression containment tests");
       set_simpl_cps;
       set_print_contracts;
       set_no_cf;

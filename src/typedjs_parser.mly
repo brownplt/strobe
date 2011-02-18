@@ -15,11 +15,17 @@ open Typedjs_syntax
 
 %start typ_ann
 %start env
+%start regex_tests
 
 %type <Typedjs_syntax.annotation> typ_ann
 %type <Typedjs_syntax.env_decl list> env
+%type <(RegLang.regex * RegLang.regex) list> regex_tests
 
 %%
+
+regex_tests :
+  | EOF { [] }
+  | regex LTCOLON regex regex_tests { ($1, $3) :: $4 }
 
 regex :
   | STRING { RegLang.String $1 }
