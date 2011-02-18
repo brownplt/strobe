@@ -1,4 +1,4 @@
 #!/bin/bash
-pushd ../build
+pushd ../obj
 ocamldebug main.d.byte  -env ../data/env $@
 popd
