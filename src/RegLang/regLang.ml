@@ -108,6 +108,25 @@ module Lbl = struct
 
   open FormatExt
 
+  let complement lbls = match lbls with
+    | [LNotIn cs] -> LIn cs
+    | _ -> let lins = List.map (fun lbl -> match lbl with
+                                     | LIn cs -> cs
+                                     | _ -> failwith "Broken label invariant")
+                        lbls in
+             LNotIn (CharSetExt.unions lins)
+
+
+  let intersect lbl1 lbl2 = match lbl1, lbl2 with
+    | LIn cs1, LIn cs2 -> LIn (CharSet.inter cs1 cs2)
+    | LIn cs1, LNotIn cs2
+    | LNotIn cs2, LIn cs1 -> LIn (CharSet.diff cs1 cs2)
+    | LNotIn cs1, LNotIn cs2 -> LNotIn (CharSet.union cs1 cs2)
+
+  let is_empty lbl = match lbl with
+    | LIn cs -> CharSet.is_empty cs
+    | LNotIn _ -> false
+
   let pp t = match t with
     | LIn set -> 
       CharSetExt.p_set (fun ch fmt -> Format.pp_print_char fmt ch) set
@@ -258,7 +277,7 @@ end
       | _ -> true
 
     (* Returns upto three non-overlapping [Leaf]s that cover the same characters
-       as [l1] and [l2]. *)
+       as [li] and [l2]. *)
     let disjoint_cover (l1 : leaf) (l2 : leaf) : leaf list =
       let lst = match l1, l2 with
         | LeafIn s1, LeafIn s2 -> 
@@ -347,6 +366,7 @@ let follow (arx : augex) : follow_tbl * sym_tbl =
     let accept = ref StSet.empty in
     let edges : (lbl * st) list StMap.t ref  = ref StMap.empty in
     let state_names : (IntSet.t, st) H.t = H.create 100 in
+    let err_st = next_st () in
     let rec loop (unmarked_states : IntSet.t list) = match unmarked_states with
       | [] -> ()
       | state :: unmarked_states' ->
@@ -388,7 +408,8 @@ let follow (arx : augex) : follow_tbl * sym_tbl =
 
               (lbl_of_leaf leaf, next_st))
             leaves in
-        edges := StMap.add st edges_from_st !edges;
+        edges := StMap.add st (((Lbl.complement (map fst2 edges_from_st)), err_st)::
+                                (edges_from_st)) !edges;
         loop (!more_unmarked_states @ unmarked_states') in
     (* start of algorithm *)
     let first_state = (aux_of arx).first_pos in
@@ -396,19 +417,44 @@ let follow (arx : augex) : follow_tbl * sym_tbl =
     H.add state_names first_state first_st;
     loop [ first_state ];
     printf "DFA construction complete!\n";
-    { edges = !edges;
+    { edges = StMap.add err_st [(LNotIn CharSet.empty, err_st)] !edges;
       start = first_st;
       accept = !accept }
 
+  let split_list lbls1 lbls2 = 
+    let rec slice lbl lbls = match lbl, lbls with
+      | lbl1, lbl2::rest -> 
+         let inter = Lbl.intersect lbl1 lbl2 in
+         if Lbl.is_empty inter 
+         then slice lbl rest
+         else inter::(slice lbl rest)
+      | lbl1, [] -> [] in
+    let rec f cs1 cs2 = match cs1, cs2 with
+      | cs::rest, _ -> (slice cs cs2)@(f rest cs2)
+      | [], _ -> [] in
+    f lbls1 lbls2
+
   let intersect dfa1 dfa2 =
+    let contains cs1 cs2 : bool = match cs1, cs2 with
+      | LIn s1, LIn s2 -> CharSet.subset s1 s2
+      | LNotIn s1, LNotIn s2 -> CharSet.subset s2 s1 
+      | LIn s1, LNotIn s2
+      | LNotIn s2, LIn s1 -> CharSet.is_empty (CharSet.inter s1 s2) in
     let f state1 edges1 edgemap1 =
       let g state2 edges2 edgemap2 =
-        StMap.add (J (state1, state2)) 
-          ((map (fun (label, target1) -> 
-            (label, J (target1, state2))) edges1)@
-              (map (fun (label, target2) -> 
-                (label, J (state1, target2))) edges2))
-          edgemap2 in
+        (* Given a leaf and a set of edges, find the target state *)
+        let target lbl (edges : (lbl * st) list) : st =
+          try
+            (* The leaf labels must be smaller (since we disjoint them) *)
+            snd2 (List.find (fun (lbl', st) -> 
+                    contains lbl lbl') edges) 
+          with Not_found -> failwith "Bad miss in intersect" in
+        let cover = split_list (map fst2 edges1) (map fst2 edges2) in
+        printf "cover: %s \n" (FormatExt.to_string (fun lst -> FormatExt.horz (map
+        Lbl.pp lst)) cover);
+        let new_edges = List.map
+             (fun lbl -> lbl, J (target lbl edges1, target lbl edges2)) cover in
+        StMap.add (J (state1, state2)) new_edges edgemap2 in
     StMap.fold g dfa2.edges edgemap1 in
     { edges = StMap.fold f dfa1.edges StMap.empty;
       start = J (dfa1.start, dfa2.start);
@@ -454,7 +500,7 @@ let contains dfa1 dfa2 =
   printf "DFAs:\n%s\n%s\n%s\n\n\n" (FormatExt.to_string DFA.pp dfa1)
     (FormatExt.to_string DFA.pp dfa2')
  (FormatExt.to_string DFA.pp dfa3);
-  nullable dfa3
+  not (nullable dfa3)
 
         
   let dfa_of_regex (re : regex) : dfa = 

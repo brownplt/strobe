@@ -1,3 +1,7 @@
-arjun <: a
+a <: b
+a <: a
+abc <: abc 
+ab <: abc
+abcd <: abc
 // "hello" <: "hello"
 // hello <: hello
