@@ -136,7 +136,10 @@ let rec tc_exp (env : Env.env) exp = match exp with
            begin try
              snd2 (List.find (fun (x', _) -> 
                 (match x' with 
-                   | (RegLang.String x'', _) -> x'' = x
+                   | (_, fsm) -> 
+                       RegLang.contains 
+                         (RegLang.fsm_of_regex (RegLang.String x))
+                           fsm
                    | _ -> failwith "Can'd do complicated regexes yet")) fs)
            with Not_found ->
              raise (Typ_error (p, "the field " ^ x ^ " does not exist"))

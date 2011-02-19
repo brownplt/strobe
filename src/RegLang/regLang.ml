@@ -483,10 +483,10 @@ let follow (arx : augex) : follow_tbl * sym_tbl =
         fold_right StSet.add lst StSet.empty }
       
   let nullable dfa = 
-    let next_states state =
-      try map snd2 (StMap.find state dfa.edges)
-      with Not_found -> [] in
     let rec f edges fringe = 
+      let next_states state =
+        try map snd2 (StMap.find state edges)
+        with Not_found -> [] in
       let state = StSet.choose fringe in
       if StSet.mem state dfa.accept then
         true
@@ -502,7 +502,7 @@ let follow (arx : augex) : follow_tbl * sym_tbl =
 let contains dfa1 dfa2 = 
   let dfa2' = negate dfa2 in
   let dfa3 = intersect dfa1 dfa2' in
-  printf "DFAs:\n%s\n%s\n%s\n\n\n" (FormatExt.to_string DFA.pp dfa1)
+  printf "DFAs:\n%s\n%s\n%s\n\n\n%!" (FormatExt.to_string DFA.pp dfa1)
     (FormatExt.to_string DFA.pp dfa2')
  (FormatExt.to_string DFA.pp dfa3);
   not (nullable dfa3)
