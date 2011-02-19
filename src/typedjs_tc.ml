@@ -133,17 +133,12 @@ let rec tc_exp (env : Env.env) exp = match exp with
     begin match simpl_typ env (un_null (tc_exp env obj)), field with
       | TObject fs, EPrefixOp (_, "%ToString", 
                                EConst (_, JavaScript_syntax.CString x)) -> 
-           begin try
-             snd2 (List.find (fun (x', _) -> 
-                (match x' with 
-                   | (_, fsm) -> 
-                       RegLang.contains 
-                         (RegLang.fsm_of_regex (RegLang.String x))
-                           fsm
-                   | _ -> failwith "Can'd do complicated regexes yet")) fs)
-           with Not_found ->
-             raise (Typ_error (p, "the field " ^ x ^ " does not exist"))
-           end
+          List.fold_right (fun ((_, fsm), s) t -> 
+                             if RegLang.contains 
+                                 (RegLang.fsm_of_regex (RegLang.String x))
+                                   fsm
+                             then TRef (Env.typ_union env (un_ref s) (un_ref t))
+                             else t) fs (TRef TBot)
       | TField, field -> begin match tc_exp env field with
           | TField -> TField
           | _ -> error p "expected a TField index"
