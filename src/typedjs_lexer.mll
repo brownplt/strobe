@@ -33,6 +33,7 @@ rule token = parse
    | "}" { RBRACE }
    | "[" { LBRACK }
    | "]" { RBRACK }
+   | "/" { FSLASH }
    | "," { COMMA }
    | "Any" { ANY }
    | "Int" { INT }

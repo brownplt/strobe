@@ -206,6 +206,7 @@ module Pretty = struct
        | Null -> "Null"
        | Undef -> "Undef"
       end
+    | TRegex (regex, fsm) -> text "TODO: pp regexes"
     | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
     | TIntersect (t1, t2) -> horz [typ t1; text "&"; typ t2]
     | TArrow (tt::arg_typs, r_typ) ->

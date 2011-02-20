@@ -83,6 +83,7 @@ module Env = struct
         | TSyn x, _ -> subt env cache (IdMap.find x env.typ_syns) t
         | _, TSyn y -> subt env cache s (IdMap.find y env.typ_syns)
         | TPrim Int, TPrim Num -> cache
+        | TRegex _, TPrim Str -> cache
         | TId x, TId y -> if x = y then cache else raise Not_subtype
         | TId x, t ->
           let s = IdMap.find x env.typ_ids in (* S-TVar *)

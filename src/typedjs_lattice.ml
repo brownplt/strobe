@@ -148,7 +148,7 @@ let set_ref loc value heap =
 let rec rt_of_typ syns (t : Typedjs_syntax.typ) : RTSet.t =
   let rt = rt_of_typ syns in
   match t with
-    |  Typedjs_syntax.TArrow _ -> RTSet.singleton RT.Function
+    | Typedjs_syntax.TArrow _ -> RTSet.singleton RT.Function
     | Typedjs_syntax.TUnion (t1, t2) -> RTSet.union (rt t1) (rt t2)
     | Typedjs_syntax.TIntersect (t1, t2) ->
       RTSet.union (rt t1) (rt t2)
@@ -161,6 +161,7 @@ let rec rt_of_typ syns (t : Typedjs_syntax.typ) : RTSet.t =
         | Null -> RTSet.singleton RT.Object
         | Undef -> RTSet.singleton RT.Undefined
     end
+    | Typedjs_syntax.TRegex _ -> RTSet.singleton RT.Str
     | Typedjs_syntax.TObject _ -> RTSet.singleton RT.Object
     | Typedjs_syntax.TRef t -> rt t
     | Typedjs_syntax.TSource t -> rt t
@@ -172,6 +173,7 @@ let rec rt_of_typ syns (t : Typedjs_syntax.typ) : RTSet.t =
     | Typedjs_syntax.TField -> rtany
     | Typedjs_syntax.TRec (_, t) -> rt t
     | Typedjs_syntax.TSyn x -> rt (IdMap.find x syns)
+
 
 let runtime syns t : av = ASet (rt_of_typ syns t)
 

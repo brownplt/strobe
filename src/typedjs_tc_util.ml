@@ -4,7 +4,9 @@ open Typedjs_syntax
 exception Not_value of string
 
 let tc_const (const : JavaScript_syntax.const) = match const with
-    JavaScript_syntax.CString _ -> TPrim Str 
+    JavaScript_syntax.CString s -> 
+      let regex = RegLang.String s in
+        TRegex (regex, RegLang.fsm_of_regex regex)
   | JavaScript_syntax.CRegexp _ -> raise (Not_value "RegExps are awkward") 
   | JavaScript_syntax.CNum _ -> TPrim Num 
   | JavaScript_syntax.CInt _ -> TPrim Int 

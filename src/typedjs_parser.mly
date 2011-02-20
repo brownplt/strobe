@@ -9,7 +9,7 @@ open Typedjs_syntax
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST FORALL LTCOLON IS
-       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI
+       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI FSLASH
 
 %right UNION INTERSECTION
 
@@ -59,13 +59,13 @@ arg_typ
   | FALSE { TPrim False }
   | UNDEF { TPrim Undef }
   | NULL { TPrim Null }
+  | FSLASH regex FSLASH { TRegex ($2, RegLang.fsm_of_regex $2) }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | arg_typ INTERSECTION arg_typ { TIntersect ($1, $3) }
   | LBRACE fields RBRACE { TObject $2 }
   | LPAREN typ RPAREN { $2 }
   | TID { TId $1 }
   | ID { TSyn $1 }
-
 
 typ 
   : arg_typ { $1 }

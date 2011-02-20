@@ -18,5 +18,6 @@ type fsm
 val fsm_of_regex : regex -> fsm
 val intersect : fsm -> fsm -> fsm
 val nullable : fsm -> bool 
+val overlap : fsm -> fsm -> bool
 val contains : fsm -> fsm -> bool
 

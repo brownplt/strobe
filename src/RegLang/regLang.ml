@@ -499,6 +499,9 @@ let follow (arx : augex) : follow_tbl * sym_tbl =
          f dfa.edges (StSet.singleton dfa.start)
       with Not_found -> false (* choose failed above *)
 
+  let overlap dfa1 dfa2 =
+    nullable (intersect dfa1 dfa2)
+
 let contains dfa1 dfa2 = 
   let dfa2' = negate dfa2 in
   let dfa3 = intersect dfa1 dfa2' in

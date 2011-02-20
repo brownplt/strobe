@@ -131,14 +131,14 @@ let rec tc_exp (env : Env.env) exp = match exp with
       Env.check_typ p env (TObject (map mk_field fields))
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (un_null (tc_exp env obj)), field with
-      | TObject fs, EPrefixOp (_, "%ToString", 
-                               EConst (_, JavaScript_syntax.CString x)) -> 
-          List.fold_right (fun ((_, fsm), s) t -> 
-                             if RegLang.contains 
-                                 (RegLang.fsm_of_regex (RegLang.String x))
-                                   fsm
-                             then TRef (Env.typ_union env (un_ref s) (un_ref t))
-                             else t) fs (TRef TBot)
+      | TObject fs, fld -> (match tc_exp env fld with
+          | TRegex (_, field_fsm) -> 
+              List.fold_right (fun ((_, fsm), s) t -> 
+                                 if RegLang.overlap fsm field_fsm
+                                 then TRef (Env.typ_union env 
+                                              (un_ref s) (un_ref t))
+                                 else t) fs (TRef TBot)
+          | _ -> error p "Not a regex in lookup")
       | TField, field -> begin match tc_exp env field with
           | TField -> TField
           | _ -> error p "expected a TField index"
