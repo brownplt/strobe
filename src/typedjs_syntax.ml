@@ -65,8 +65,9 @@ let typ_bool = TUnion (TPrim (True), TPrim (False))
 
 let mk_object_typ fs =
   let union (re1, _) re2 = RegLang_syntax.Alt (re1, re2) in
-  let rest_re = List.fold_right union (map fst2 fs) RegLang_syntax.Empty in
-    TRef (TObject (fs, (rest_re, RegLang.fsm_of_regex rest_re)))
+  let union_re = List.fold_right union (map fst2 fs) RegLang_syntax.Empty in
+  let rest_fsm = RegLang.negate (RegLang.fsm_of_regex union_re) in
+    TRef (TObject (fs, (union_re, rest_fsm)))
 
 
 type env_decl =
