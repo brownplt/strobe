@@ -60,7 +60,7 @@ let rec ctc_of_typ p (typ : typ) = match typ with
   | TPrim (True) 
   | TPrim (False) -> flat p "Bool"
   | TUnion (s, t) -> CUnion (ctc_of_typ p s, ctc_of_typ p t)
-  | TObject fields ->
+  | TObject (fields, _) ->
       CObject (map (fun (f, t) -> (f, ctc_of_typ p t)) fields)
   | TRef t -> ctc_of_typ p t (* \JS artifacts, source and sinks are moot since
                                 contracts don't preserve identity *)

@@ -55,7 +55,7 @@ arg_typ
   | regex { TRegex ($1, RegLang.fsm_of_regex $1) }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | arg_typ INTERSECTION arg_typ { TIntersect ($1, $3) }
-  | LBRACE fields RBRACE { TRef (TObject $2) }
+  | LBRACE fields RBRACE { mk_object_typ $2 }
   | LPAREN typ RPAREN { $2 }
   | TID { TId $1 }
   | ID { TSyn $1 }

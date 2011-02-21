@@ -129,15 +129,18 @@ let rec tc_exp (env : Env.env) exp = match exp with
         ((RegLang_syntax.String name,
           RegLang.fsm_of_regex (RegLang_syntax.String name)),
          tc_exp env exp) in
-      Env.check_typ p env (TObject (map mk_field fields))
+      Env.check_typ p env (mk_object_typ (map mk_field fields))
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (un_null (tc_exp env obj)), 
       simpl_typ env (tc_exp env field) with
-      | TObject fs, TRegex (_, field_fsm) -> 
-          List.fold_right (fun ((_, fsm), s) t -> 
-                             if RegLang.overlap fsm field_fsm
-                             then Env.typ_union env s t
-                             else t) fs TBot
+      | TObject (fs, (_, rest_fsm)), TRegex (_, field_fsm) -> 
+          if RegLang.overlap field_fsm rest_fsm then
+            error p (sprintf "Missed lookup and no proto implemented")
+          else
+            List.fold_right (fun ((_, fsm), s) t -> 
+                               if RegLang.overlap fsm field_fsm
+                               then Env.typ_union env s t
+                               else t) fs TBot
       | TObject _, typ -> 
           error p (sprintf "Got %s rather than a regex in lookup"
                      (string_of_typ typ))
@@ -147,7 +150,29 @@ let rec tc_exp (env : Env.env) exp = match exp with
           error p (sprintf "Got %s[%s] in object lookup."
                      (string_of_typ obj) (string_of_typ field))
     end
-  | EUpdate (p, _, _, _) -> error p ("Haven't implemented update yet")
+  | EUpdate (p, obj, field, value) -> begin
+      match simpl_typ env (tc_exp env obj), 
+        tc_exp env field, tc_exp env value with
+        | ((TObject (fs, (_, rest_fsm))) as tobj), 
+            ((TRegex (re, field_fsm)) as tfld), typ ->
+            if RegLang.overlap rest_fsm field_fsm then
+              error p (sprintf "Updating non-existent field")
+            else
+              let okfield ((_, fsm), s) = 
+                if RegLang.overlap fsm field_fsm
+                then if Env.subtype env typ s then true
+                else error p (sprintf "%s not a subtype of %s in %s[%s = %s]" 
+                                (string_of_typ typ) (string_of_typ s) 
+                                (string_of_typ tobj) (string_of_typ tfld)
+                                (string_of_typ typ))
+                else true in
+                if List.for_all okfield fs then tobj
+                else error p "Shouldn't happen --- unknown error in update"
+        | obj, fld, typ ->
+            error p (sprintf "Bad update: %s[%s = %s]"
+                       (string_of_typ obj) (string_of_typ fld) 
+                       (string_of_typ typ))
+    end
   | ENew (p, cid, args) -> error p "New doesn't work yet (constrs)"
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
   | EInfixOp (p, "+", e1, e2) -> 
@@ -342,7 +367,7 @@ let rec tc_def env def = match def with
             in
             let env = Env.clear_labels env in           
               begin match result_typ with
-                  TObject fields -> failwith "No constructing yet"
+                  TObject _ -> failwith "No constructing yet"
                 | _ -> raise (Typ_error (
                                 p, "constructor's ret type must be obj"))
               end

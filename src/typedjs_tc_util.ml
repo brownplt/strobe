@@ -21,12 +21,12 @@ let typ_of_value (exp : exp) : typ =
       f exp) in
   let rec f e = match e with
     | EObject (_, fields) -> 
-       TObject (map (mk_field f) fields)
+        mk_object_typ (map (mk_field f) fields)
     | EConst (_, c) -> tc_const c
     | EFunc (_, _, t, _) -> t
     | ERef (_, RefCell, e') -> TRef begin match e' with
         | EObject (_, fields) -> 
-            TObject (map (mk_field f) fields)
+            mk_object_typ (map (mk_field f) fields)
         | EConst (_, c) -> tc_const c
         | EFunc (_, _, t, _) -> t
         | _ -> raise (Not_value  (FormatExt.to_string Pretty.p_exp e'))
