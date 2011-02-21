@@ -13,7 +13,8 @@ open RegLang_syntax
 %start regex_tests
 %start regex
 
-%type <(RegLang_syntax.regex * RegLang_syntax.regex * bool) list> regex_tests
+%type <(Prelude.pos * RegLang_syntax.regex *
+         RegLang_syntax.regex * bool) list> regex_tests
 %type <RegLang_syntax.regex> regex
 
 %%
@@ -37,8 +38,8 @@ regex :
 
 regex_tests :
   | EOF { [] }
-  | cat LTCOLON cat SEMI regex_tests { ($1, $3, true) :: $5 }
-  | cat LTSLASHCOLON cat SEMI regex_tests { ($1, $3, false) :: $5 }
+  | cat LTCOLON cat SEMI regex_tests { (($startpos, $endpos), $1, $3, true) :: $5 }
+  | cat LTSLASHCOLON cat SEMI regex_tests { (($startpos, $endpos), $1, $3, false) :: $5 }
 
 
 %%
