@@ -10,6 +10,7 @@ open Typedjs_syntax
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST FORALL LTCOLON IS
        CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI FSLASH
+       LTSLASHCOLON
 
 %right UNION INTERSECTION
 
@@ -19,13 +20,14 @@ open Typedjs_syntax
 
 %type <Typedjs_syntax.annotation> typ_ann
 %type <Typedjs_syntax.env_decl list> env
-%type <(RegLang.regex * RegLang.regex) list> regex_tests
+%type <(RegLang.regex * RegLang.regex * bool) list> regex_tests
 
 %%
 
 regex_tests :
   | EOF { [] }
-  | regex LTCOLON regex SEMI regex_tests { ($1, $3) :: $5 }
+  | regex LTCOLON regex SEMI regex_tests { ($1, $3, true) :: $5 }
+  | regex LTSLASHCOLON regex SEMI regex_tests { ($1, $3, false) :: $5 }
 
 regex :
   | STRING { RegLang.String $1 }

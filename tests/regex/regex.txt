@@ -1,11 +1,11 @@
-a <: b; // to fail
+a </: b; // to fail
 aa <: a*;
 aa <: a.;
 a <: .;
-a* <: aa; // to fail
-a.* <: aa; // to fail
+a* </: aa; // to fail
+a.* </: aa; // to fail
 a <: .*;
-.* <: a; // to fail
+.* </: a; // to fail
 __proto__ <: _.*_;
 foo <: f(o*);
 a(.*)aa <: a(.*)a;
@@ -14,6 +14,6 @@ a(.*)a <: a(.*)aa;
 a(.*)b <: a(.*)ba;
 (.*)b <: (.*)ba;
 a(.*)ba <: a(.*)a;
-a <: aa; // to fail
+a </: aa; // to fail
 (.*)b <: (.*)ba;
 

@@ -62,6 +62,7 @@ rule token = parse
    | "forall" { FORALL }
    | "checked" { CHECKED }
    | "<:" { LTCOLON }
+   | "</:" { LTSLASHCOLON }
    | "rec" { REC }
    | eof { EOF }
    | ident as x { ID x }
