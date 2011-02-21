@@ -21,21 +21,24 @@ open RegLang_syntax
 atom :
   | STRING { String $1 }
   | CHAR { InSet (CharSet.singleton $1) }
-  | LPAREN regex RPAREN { $2 }
+  | LPAREN cat RPAREN { $2 }
   | DOT { NotInSet CharSet.empty }
 
-regex_cat :
+star :
   | atom { $1 }
   | atom STAR { Star $1 }
 
+cat :
+  | star { $1 }
+  | star cat { Concat ($1, $2) }
+
 regex :
-  | regex_cat { $1 }
-  | regex_cat regex { Concat ($1, $2) }
+  | cat EOF { $1 }
 
 regex_tests :
   | EOF { [] }
-  | regex LTCOLON regex SEMI regex_tests { ($1, $3, true) :: $5 }
-  | regex LTSLASHCOLON regex SEMI regex_tests { ($1, $3, false) :: $5 }
+  | cat LTCOLON cat SEMI regex_tests { ($1, $3, true) :: $5 }
+  | cat LTSLASHCOLON cat SEMI regex_tests { ($1, $3, false) :: $5 }
 
 
 %%

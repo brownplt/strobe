@@ -40,7 +40,6 @@ rule token = parse
    | "}" { RBRACE }
    | "[" { LBRACK }
    | "]" { RBRACK }
-   | "/" { FSLASH }
    | "," { COMMA }
    | "Any" { ANY }
    | "Int" { INT }
@@ -69,7 +68,6 @@ rule token = parse
    | "forall" { FORALL }
    | "checked" { CHECKED }
    | "<:" { LTCOLON }
-   | "</:" { LTSLASHCOLON }
    | "rec" { REC }
    | eof { EOF }
    | ident as x { ID x }

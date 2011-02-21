@@ -8,18 +8,20 @@ type regex = RegLang_syntax.regex
 
 let parse_regex pos str =
   let lexbuf = Lexing.from_string str in
-    try 
-      lexbuf.Lexing.lex_curr_p <- pos;
-      RegLang_parser.regex RegLang_lexer.token lexbuf
-    with
-      |  Failure "lexing: empty token" ->
-           failwith (sprintf "lexical error at %s"
-                       (string_of_position 
-                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
-      | RegLang_parser.Error ->
-           failwith (sprintf "parse error at %s"
-                       (string_of_position 
-                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
+  try 
+    lexbuf.Lexing.lex_curr_p <- pos;
+    RegLang_parser.regex RegLang_lexer.token lexbuf
+  with
+    |  Failure "lexing: empty token" ->
+      failwith (sprintf "error lexing regex %s at %s"
+                  str
+                  (string_of_position 
+                     (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
+    | RegLang_parser.Error ->
+      failwith (sprintf "error parsing regex %s at %s"
+                  str
+                  (string_of_position 
+                     (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
 
 
 type follow_tbl  = IntSet.t array
@@ -35,7 +37,7 @@ type aux = {
 (* The NFA for [re] requires [num_terminals re] states. *)
 let rec num_terminals (re : regex) : int = match re with
   | InSet _
-  | NotInSet _ 
+  | NotInSet _ -> 1
   | Empty -> 0
   | String s -> String.length s
   | Star re' -> num_terminals re'
@@ -243,11 +245,12 @@ let tables_of_regex (re : regex) =
       IntSet.add max_pos aux.first_pos
     else
       aux.first_pos in
+(*
   for i = 0 to max_pos  do
     printf "position %d (%s) followed by%s\n" i
       (FormatExt.to_string Leaf.pp (sym_tbl.(i)))
       (FormatExt.to_string (IntSetExt.p_set FormatExt.int) follow_tbl.(i));
-  done;
+  done; *)
   (first_state, follow_tbl, sym_tbl)
 
  (* Page 141, Figure 3.44 *)
@@ -320,11 +323,10 @@ let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
       loop (!more_unmarked_states @ unmarked_states') in
     (* start of algorithm *)
   let first_st = next_st () in
-  printf "first state is %s\n" (FormatExt.to_string (IntSetExt.p_set
-                                                       FormatExt.int) first_state);
+(*  printf "first state is %s\n" (FormatExt.to_string (IntSetExt.p_set
+                                                       FormatExt.int) first_state); *)
   state_names := [ (first_state, first_st) ];
   loop [ (first_state, first_st) ];
-  printf "DFA construction complete!\n";
   { edges = StMap.add err_st
       { on_char = AugCharMap.empty; other_chars = err_st } 
       !edges;
@@ -391,9 +393,9 @@ let nullable (dfa : dfa) : bool =
 let contains (dfa1 : dfa) (dfa2 : dfa) : bool = 
   let dfa2' = negate dfa2 in
   let dfa3 = intersect dfa1 dfa2' in
-  printf "DFAs:\n%s\n%s\n%s\n\n\n%!" (FormatExt.to_string DFA.pp dfa1)
+(*  printf "DFAs:\n%s\n%s\n%s\n\n\n%!" (FormatExt.to_string DFA.pp dfa1)
     (FormatExt.to_string DFA.pp dfa2')
-    (FormatExt.to_string DFA.pp dfa3);
+    (FormatExt.to_string DFA.pp dfa3); *)
   not (nullable dfa3)
 
         
