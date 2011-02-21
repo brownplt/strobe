@@ -177,7 +177,6 @@ type dfa = {
   accept: StSet.t
 }
 
-
 module DFA = struct
   type t = dfa
     
@@ -192,7 +191,6 @@ module DFA = struct
             (map (fun (l,s) -> horz [ Leaf.pp l; St.pp s ]) lst))
           t.edges ]
 end
-
 
 let tables_of_regex (re : regex) =
   let pos = 
@@ -272,161 +270,154 @@ let tables_of_regex (re : regex) =
       aux.first_pos in
   (first_state, follow_tbl, sym_tbl)
 
-
-
-
-
-  (* Page 141, Figure 3.44 *)
-  let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
-    let next_st_num = ref 0 in
-    let next_st () = incr next_st_num; S (!next_st_num - 1) in 
-    let accept = ref StSet.empty in
-    let edges : (leaf * st) list StMap.t ref  = ref StMap.empty in
-    let state_names : (IntSet.t, st) H.t = H.create 100 in
-    let err_st = next_st () in
-    let rec loop (unmarked_states : IntSet.t list) = match unmarked_states with
-      | [] -> ()
-      | state :: unmarked_states' ->
-        (* recurring on the tail of unmarked_states implicitly marks state *)
-        let st = H.find state_names state in (* abbreviation for T *)
-        (* deviates from the figure *)
-        (* followpos(st) *)
-        let follow_st = IntSet.fold 
-          (fun i s -> IntSet.union follow.(i) s) state IntSet.empty in
-        printf "%s is followed by %s\n"
-          (FormatExt.to_string (IntSetExt.p_set FormatExt.int) state)
-          (FormatExt.to_string (IntSetExt.p_set FormatExt.int) follow_st);
-        let leaves = map (fun i -> sym.(i)) (IntSet.elements state) in
-        (* leaves are mutually-disjoint non-empty edges out of state *)
-        let leaves = Leaf.disjoint_cover_list leaves in
-        let more_unmarked_states = ref [] in
-        let edges_from_st : (leaf * st) list =
-          map
-            (fun leaf -> (* variable a in the figure *)
-              let next_state =
-                IntSet.fold
-                  (fun i s -> IntSet.union follow.(i) s)
-                  (IntSet.filter (fun i -> Leaf.subset leaf sym.(i)) state)
-                  IntSet.empty in
+ (* Page 141, Figure 3.44 *)
+let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
+  let next_st_num = ref 0 in
+  let next_st () = incr next_st_num; S (!next_st_num - 1) in 
+  let accept = ref StSet.empty in
+  let edges : (leaf * st) list StMap.t ref  = ref StMap.empty in
+  let state_names : (IntSet.t, st) H.t = H.create 100 in
+  let err_st = next_st () in
+  let rec loop (unmarked_states : IntSet.t list) = match unmarked_states with
+    | [] -> ()
+    | state :: unmarked_states' ->
+      (* recurring on the tail of unmarked_states implicitly marks state *)
+      let st = H.find state_names state in (* abbreviation for T *)
+      (* deviates from the figure *)
+      (* followpos(st) *)
+      let follow_st = IntSet.fold 
+        (fun i s -> IntSet.union follow.(i) s) state IntSet.empty in
+      printf "%s is followed by %s\n"
+        (FormatExt.to_string (IntSetExt.p_set FormatExt.int) state)
+        (FormatExt.to_string (IntSetExt.p_set FormatExt.int) follow_st);
+      let leaves = map (fun i -> sym.(i)) (IntSet.elements state) in
+      (* leaves are mutually-disjoint non-empty edges out of state *)
+      let leaves = Leaf.disjoint_cover_list leaves in
+      let more_unmarked_states = ref [] in
+      let edges_from_st : (leaf * st) list =
+        map
+          (fun leaf -> (* variable a in the figure *)
+            let next_state =
+              IntSet.fold
+                (fun i s -> IntSet.union follow.(i) s)
+                (IntSet.filter (fun i -> Leaf.subset leaf sym.(i)) state)
+                IntSet.empty in
 (*              let next_state = (* variable U in the figure *)
                 IntSet.filter (fun i -> Leaf.subset leaf sym.(i)) follow_st in *)
-              printf "  created edge to %s\n"
-                (FormatExt.to_string (IntSetExt.p_set FormatExt.int) next_state);
-              let next_st =
-                try H.find state_names next_state
-                with Not_found ->
-                  let abbrev = next_st () in
-                  H.add state_names next_state abbrev;
-                  more_unmarked_states := next_state :: !more_unmarked_states;
-                  abbrev in
-              if Leaf.is_accepting leaf then
-                accept := StSet.add st !accept;
-
-              (leaf, next_st))
-            leaves in
-        edges := StMap.add st (((Leaf.complement (map fst2 edges_from_st)), err_st)::
-                                (edges_from_st)) !edges;
-        loop (!more_unmarked_states @ unmarked_states') in
+            printf "  created edge to %s\n"
+              (FormatExt.to_string (IntSetExt.p_set FormatExt.int) next_state);
+            let next_st =
+              try H.find state_names next_state
+              with Not_found ->
+                let abbrev = next_st () in
+                H.add state_names next_state abbrev;
+                more_unmarked_states := next_state :: !more_unmarked_states;
+                abbrev in
+            if Leaf.is_accepting leaf then
+              accept := StSet.add st !accept;
+            (leaf, next_st))
+          leaves in
+      edges := StMap.add st (((Leaf.complement (map fst2 edges_from_st)), 
+                              err_st)::(edges_from_st)) !edges;
+      loop (!more_unmarked_states @ unmarked_states') in
     (* start of algorithm *)
-    let first_st = next_st () in
-    printf "first state is %s\n" (FormatExt.to_string (IntSetExt.p_set
-    FormatExt.int) first_state);
-    H.add state_names first_state first_st;
-    loop [ first_state ];
-    printf "DFA construction complete!\n";
-    { edges = StMap.add err_st [(LeafNotIn AugCharSet.empty, err_st)] !edges;
-      start = first_st;
-      accept = !accept }
+  let first_st = next_st () in
+  printf "first state is %s\n" (FormatExt.to_string (IntSetExt.p_set
+                                                       FormatExt.int) first_state);
+  H.add state_names first_state first_st;
+  loop [ first_state ];
+  printf "DFA construction complete!\n";
+  { edges = StMap.add err_st [(LeafNotIn AugCharSet.empty, err_st)] !edges;
+    start = first_st;
+    accept = !accept }
+    
+let split_list lbls1 lbls2 = 
+  let rec slice lbl lbls = match lbl, lbls with
+    | lbl1, lbl2::rest -> 
+      let inter = Leaf.intersect lbl1 lbl2 in
+      if Leaf.is_empty inter 
+      then slice lbl rest
+      else inter::(slice lbl rest)
+    | lbl1, [] -> [] in
+  let rec f cs1 cs2 = match cs1, cs2 with
+    | cs::rest, _ -> (slice cs cs2)@(f rest cs2)
+    | [], _ -> [] in
+  f lbls1 lbls2
 
-  let split_list lbls1 lbls2 = 
-    let rec slice lbl lbls = match lbl, lbls with
-      | lbl1, lbl2::rest -> 
-         let inter = Leaf.intersect lbl1 lbl2 in
-         if Leaf.is_empty inter 
-         then slice lbl rest
-         else inter::(slice lbl rest)
-      | lbl1, [] -> [] in
-    let rec f cs1 cs2 = match cs1, cs2 with
-      | cs::rest, _ -> (slice cs cs2)@(f rest cs2)
-      | [], _ -> [] in
-    f lbls1 lbls2
-
-  let intersect dfa1 dfa2 =
-    let contains cs1 cs2 : bool = match cs1, cs2 with
-      | LeafIn s1, LeafIn s2 -> AugCharSet.subset s1 s2
-      | LeafNotIn s1, LeafNotIn s2 -> AugCharSet.subset s2 s1 
-      | LeafIn s1, LeafNotIn s2
-      | LeafNotIn s2, LeafIn s1 -> AugCharSet.is_empty (AugCharSet.inter s1 s2) in
-    let f state1 edges1 edgemap1 =
-      let g state2 edges2 edgemap2 =
-        (* Given a leaf and a set of edges, find the target state *)
-        let target lbl (edges : (leaf * st) list) : st =
-          try
-            (* The leaf labels must be smaller (since we disjoint them) *)
-            snd2 (List.find (fun (lbl', st) -> 
-                    contains lbl lbl') edges) 
-          with Not_found -> failwith "Bad miss in intersect" in
-        let cover = split_list (map fst2 edges1) (map fst2 edges2) in
-        printf "cover: %s \n" (FormatExt.to_string (fun lst -> FormatExt.horz (map
-        Leaf.pp lst)) cover);
-        let new_edges = List.map
-             (fun lbl -> lbl, J (target lbl edges1, target lbl edges2)) cover in
-        StMap.add (J (state1, state2)) new_edges edgemap2 in
+let intersect dfa1 dfa2 =
+  let contains cs1 cs2 : bool = match cs1, cs2 with
+    | LeafIn s1, LeafIn s2 -> AugCharSet.subset s1 s2
+    | LeafNotIn s1, LeafNotIn s2 -> AugCharSet.subset s2 s1 
+    | LeafIn s1, LeafNotIn s2
+    | LeafNotIn s2, LeafIn s1 -> AugCharSet.is_empty (AugCharSet.inter s1 s2) in
+  let f state1 edges1 edgemap1 =
+    let g state2 edges2 edgemap2 =
+      (* Given a leaf and a set of edges, find the target state *)
+      let target lbl (edges : (leaf * st) list) : st =
+        try
+          (* The leaf labels must be smaller (since we disjoint them) *)
+          snd2 (List.find (fun (lbl', st) -> 
+            contains lbl lbl') edges) 
+        with Not_found -> failwith "Bad miss in intersect" in
+      let cover = split_list (map fst2 edges1) (map fst2 edges2) in
+      let new_edges = List.map
+        (fun lbl -> lbl, J (target lbl edges1, target lbl edges2)) cover in
+      StMap.add (J (state1, state2)) new_edges edgemap2 in
     StMap.fold g dfa2.edges edgemap1 in
-    { edges = StMap.fold f dfa1.edges StMap.empty;
-      start = J (dfa1.start, dfa2.start);
-      accept =
-        StSet.fold
-          (fun s1 cross_prod ->
-            StSet.fold
-              (fun s2 cross_prod -> StSet.add (J (s1, s2)) cross_prod)
-              dfa2.accept
-              cross_prod)
-          dfa1.accept
-          StSet.empty }
+  { edges = StMap.fold f dfa1.edges StMap.empty;
+    start = J (dfa1.start, dfa2.start);
+    accept =
+      StSet.fold
+        (fun s1 cross_prod ->
+          StSet.fold
+            (fun s2 cross_prod -> StSet.add (J (s1, s2)) cross_prod)
+            dfa2.accept
+            cross_prod)
+        dfa1.accept
+        StSet.empty }
 
-  let negate dfa = 
-    { edges = dfa.edges;
-      start = dfa.start;
-      accept = 
-        let lst = List.filter
-          (fun s -> not (StSet.mem s dfa.accept))
-          (map fst2 (StMap.bindings dfa.edges)) in
-        fold_right StSet.add lst StSet.empty }
+let negate dfa = 
+  { edges = dfa.edges;
+    start = dfa.start;
+    accept = 
+      let lst = List.filter
+        (fun s -> not (StSet.mem s dfa.accept))
+        (map fst2 (StMap.bindings dfa.edges)) in
+      fold_right StSet.add lst StSet.empty }
       
-  let nullable dfa = 
-    let rec f edges fringe = 
-      let next_states state =
-        try map snd2 (StMap.find state edges)
-        with Not_found -> [] in
-      let state = StSet.choose fringe in
-      if StSet.mem state dfa.accept then
-        true
-      else 
-        let fringe' = 
-          StSet.remove state
-            (fold_right StSet.add (next_states state) fringe) in
-        f (StMap.remove state edges) fringe'
-    in try
-         f dfa.edges (StSet.singleton dfa.start)
-      with Not_found -> false (* choose failed above *)
+let nullable (dfa : dfa) : bool = 
+  let rec f edges fringe = 
+    let next_states state =
+      try map snd2 (StMap.find state edges)
+      with Not_found -> [] in
+    let state = StSet.choose fringe in
+    if StSet.mem state dfa.accept then
+      true
+    else 
+      let fringe' = 
+        StSet.remove state
+          (fold_right StSet.add (next_states state) fringe) in
+      f (StMap.remove state edges) fringe'
+  in try
+       f dfa.edges (StSet.singleton dfa.start)
+    with Not_found -> false (* choose failed above *)
 
   let overlap dfa1 dfa2 =
     nullable (intersect dfa1 dfa2)
 
-let contains dfa1 dfa2 = 
+let contains (dfa1 : dfa) (dfa2 : dfa) : bool = 
   let dfa2' = negate dfa2 in
   let dfa3 = intersect dfa1 dfa2' in
   printf "DFAs:\n%s\n%s\n%s\n\n\n%!" (FormatExt.to_string DFA.pp dfa1)
     (FormatExt.to_string DFA.pp dfa2')
- (FormatExt.to_string DFA.pp dfa3);
+    (FormatExt.to_string DFA.pp dfa3);
   not (nullable dfa3)
 
         
-  let dfa_of_regex (re : regex) : dfa = 
-    let (first_state, follow_tbl, symbol_tbl) = tables_of_regex re in
-    make_dfa first_state follow_tbl symbol_tbl
-        
+let dfa_of_regex (re : regex) : dfa = 
+  let (first_state, follow_tbl, symbol_tbl) = tables_of_regex re in
+  make_dfa first_state follow_tbl symbol_tbl
+
 
 type fsm = dfa
 let fsm_of_regex = dfa_of_regex
