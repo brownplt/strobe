@@ -80,51 +80,103 @@ module StMapExt = MapExt.Make (St) (StMap)
 module StSet = Set.Make (St)
 module StSetExt = SetExt.Make (StSet)
   
-type lbl =
-  | LIn of CharSet.t
-  | LNotIn of CharSet.t
       
 type leaf = 
   | LeafIn of AugCharSet.t 
   | LeafNotIn of AugCharSet.t
 
+module Leaf = struct
+
+  type t = leaf
+      
+  module S = AugCharSet
+
+  let is_accepting l = match l with
+    | LeafIn s -> S.mem AugChar.Accept s
+    | LeafNotIn s -> not (S.mem AugChar.Accept s)
+      
+  let is_not_empty l = match l with
+    | LeafIn s -> not (S.is_empty s)
+    | _ -> true
+      
+  (* Returns upto three non-overlapping [Leaf]s that cover the same characters
+     as [li] and [l2]. *)
+  let disjoint_cover (l1 : leaf) (l2 : leaf) : leaf list =
+    let lst = match l1, l2 with
+      | LeafIn s1, LeafIn s2 -> 
+        let s3 = AugCharSet.inter s1 s2 in
+        if AugCharSet.is_empty s3 then
+          [ l1; l2 ]
+        else
+          [ LeafIn (AugCharSet.diff s1 s3);
+            LeafIn (AugCharSet.diff s2 s3);
+            LeafIn s3 ]
+      | LeafNotIn s1, LeafNotIn s2 -> [ LeafNotIn (AugCharSet.inter s1 s2) ]
+      | LeafIn s1, LeafNotIn s2 (* symmetric to case below *)
+      | LeafNotIn s2, LeafIn s1 -> [ LeafNotIn (AugCharSet.diff s2 s1) ]
+    in List.filter is_not_empty lst
+    
+  let is_disjoint (l1 : leaf) (l2 : leaf) : bool = match l1, l2 with
+    | LeafIn s1, LeafIn s2 -> S.is_empty (S.inter s1 s2)
+    | LeafNotIn s1, LeafNotIn s2 -> false
+    | LeafIn s1, LeafNotIn s2
+    | LeafNotIn s2, LeafIn s1 -> S.subset s1 s2
+
+  let subset (t1 : t) (t2 : t) : bool = match t1, t2 with
+    | LeafIn s1, LeafIn s2 -> AugCharSet.subset s1 s2
+    | LeafNotIn s1, LeafNotIn s2 -> AugCharSet.subset s2 s1
+    | LeafIn s1, LeafNotIn s2 -> AugCharSet.is_empty (AugCharSet.inter s1 s2)
+    | LeafNotIn s1, LeafIn s2 -> AugCharSet.is_empty (AugCharSet.inter s1 s2)
+      
+  let disjoint_cover_list (overlapped : leaf list) : leaf list =
+    let rec loop (disjoint : leaf list) (overlapped : leaf list) = 
+      match overlapped with
+        | [] -> disjoint
+        | leaf :: overlapped -> (* rebind overlapped *)
+            (* disjoint' and overlapped' are mutually disjoint *)
+          let (disjoint', overlapped') = 
+            List.partition (is_disjoint leaf) disjoint in
+          match overlapped' with
+            | first_overlapped' :: rest_overlapped' ->
+              loop 
+                ((disjoint_cover leaf first_overlapped') @ disjoint')
+                (rest_overlapped' @ overlapped)
+            | [] -> loop (leaf :: disjoint') overlapped
+    in loop [] overlapped
+    
+  let complement lbls = match lbls with
+    | [LeafNotIn cs] -> LeafIn cs
+    | _ -> let lins = List.map (fun lbl -> match lbl with
+                                     | LeafIn cs -> cs
+                                     | _ -> failwith "Broken label invariant")
+                        lbls in
+             LeafNotIn (AugCharSetExt.unions lins)
+
+
+  let intersect lbl1 lbl2 = match lbl1, lbl2 with
+    | LeafIn cs1, LeafIn cs2 -> LeafIn (AugCharSet.inter cs1 cs2)
+    | LeafIn cs1, LeafNotIn cs2
+    | LeafNotIn cs2, LeafIn cs1 -> LeafIn (AugCharSet.diff cs1 cs2)
+    | LeafNotIn cs1, LeafNotIn cs2 -> LeafNotIn (AugCharSet.union cs1 cs2)
+
+  let is_empty lbl = match lbl with
+    | LeafIn cs -> AugCharSet.is_empty cs
+    | LeafNotIn _ -> false
+
+  open FormatExt
+
+  let pp (t : t) = match t with
+    | LeafIn s -> AugCharSetExt.p_set AugChar.pp s
+    | LeafNotIn s -> horz [ text "complement"; AugCharSetExt.p_set AugChar.pp s ]
+
+end
+
 type dfa = {
-  edges: (lbl * st) list StMap.t;
+  edges: (leaf * st) list StMap.t;
   start: st;
   accept: StSet.t
 }
 
-module Lbl = struct
-  type t = lbl
-
-  open FormatExt
-
-  let complement lbls = match lbls with
-    | [LNotIn cs] -> LIn cs
-    | _ -> let lins = List.map (fun lbl -> match lbl with
-                                     | LIn cs -> cs
-                                     | _ -> failwith "Broken label invariant")
-                        lbls in
-             LNotIn (CharSetExt.unions lins)
-
-
-  let intersect lbl1 lbl2 = match lbl1, lbl2 with
-    | LIn cs1, LIn cs2 -> LIn (CharSet.inter cs1 cs2)
-    | LIn cs1, LNotIn cs2
-    | LNotIn cs2, LIn cs1 -> LIn (CharSet.diff cs1 cs2)
-    | LNotIn cs1, LNotIn cs2 -> LNotIn (CharSet.union cs1 cs2)
-
-  let is_empty lbl = match lbl with
-    | LIn cs -> CharSet.is_empty cs
-    | LNotIn _ -> false
-
-  let pp t = match t with
-    | LIn set -> 
-      CharSetExt.p_set (fun ch fmt -> Format.pp_print_char fmt ch) set
-    | LNotIn set -> 
-      sep [ text "not"; 
-            CharSetExt.p_set (fun ch fmt -> Format.pp_print_char fmt ch) set ]
-end
 
 module DFA = struct
   type t = dfa
@@ -137,7 +189,7 @@ module DFA = struct
         horz [ text "Accept: "; StSetExt.p_set St.pp t.accept ];
         StMapExt.p_map St.pp 
           (fun lst -> vert
-            (map (fun (l,s) -> horz [ Lbl.pp l; St.pp s ]) lst))
+            (map (fun (l,s) -> horz [ Leaf.pp l; St.pp s ]) lst))
           t.edges ]
 end
 
@@ -220,86 +272,16 @@ let tables_of_regex (re : regex) =
       aux.first_pos in
   (first_state, follow_tbl, sym_tbl)
 
-  let lbl_of_leaf leaf =
-    let unaug set = AugCharSet.fold
-      (fun ac set' -> match ac with
-        | AugChar.Char ch -> CharSet.add ch set'
-        | AugChar.Accept -> set')
-      set CharSet.empty in
-    match leaf with
-      | LeafIn s -> LIn (unaug s)
-      | LeafNotIn s -> LNotIn (unaug s)
 
 
 
-  module Leaf = struct
-
-    type t = leaf
-
-    module S = AugCharSet
-
-    let is_accepting l = match l with
-      | LeafIn s -> S.mem AugChar.Accept s
-      | LeafNotIn s -> not (S.mem AugChar.Accept s)
-
-    let is_not_empty l = match l with
-      | LeafIn s -> not (S.is_empty s)
-      | _ -> true
-
-    (* Returns upto three non-overlapping [Leaf]s that cover the same characters
-       as [li] and [l2]. *)
-    let disjoint_cover (l1 : leaf) (l2 : leaf) : leaf list =
-      let lst = match l1, l2 with
-        | LeafIn s1, LeafIn s2 -> 
-          let s3 = AugCharSet.inter s1 s2 in
-          if AugCharSet.is_empty s3 then
-            [ l1; l2 ]
-          else
-            [ LeafIn (AugCharSet.diff s1 s3);
-            LeafIn (AugCharSet.diff s2 s3);
-            LeafIn s3 ]
-        | LeafNotIn s1, LeafNotIn s2 -> [ LeafNotIn (AugCharSet.inter s1 s2) ]
-        | LeafIn s1, LeafNotIn s2 (* symmetric to case below *)
-        | LeafNotIn s2, LeafIn s1 -> [ LeafNotIn (AugCharSet.diff s2 s1) ]
-      in List.filter is_not_empty lst
-
-    let is_disjoint (l1 : leaf) (l2 : leaf) : bool = match l1, l2 with
-      | LeafIn s1, LeafIn s2 -> S.is_empty (S.inter s1 s2)
-      | LeafNotIn s1, LeafNotIn s2 -> false
-      | LeafIn s1, LeafNotIn s2
-      | LeafNotIn s2, LeafIn s1 -> S.subset s1 s2
-
-    let subset (t1 : t) (t2 : t) : bool = match t1, t2 with
-      | LeafIn s1, LeafIn s2 -> AugCharSet.subset s1 s2
-      | LeafNotIn s1, LeafNotIn s2 -> AugCharSet.subset s2 s1
-      | LeafIn s1, LeafNotIn s2 -> AugCharSet.is_empty (AugCharSet.inter s1 s2)
-      | LeafNotIn s1, LeafIn s2 -> AugCharSet.is_empty (AugCharSet.inter s1 s2)
-
-    let disjoint_cover_list (overlapped : leaf list) : leaf list =
-      let rec loop (disjoint : leaf list) (overlapped : leaf list) = 
-        match overlapped with
-          | [] -> disjoint
-          | leaf :: overlapped -> (* rebind overlapped *)
-            (* disjoint' and overlapped' are mutually disjoint *)
-            let (disjoint', overlapped') = 
-              List.partition (is_disjoint leaf) disjoint in
-            match overlapped' with
-              | first_overlapped' :: rest_overlapped' ->
-                loop 
-                  ((disjoint_cover leaf first_overlapped') @ disjoint')
-                  (rest_overlapped' @ overlapped)
-              | [] -> loop (leaf :: disjoint') overlapped
-      in loop [] overlapped
-
-
-  end
 
   (* Page 141, Figure 3.44 *)
   let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
     let next_st_num = ref 0 in
     let next_st () = incr next_st_num; S (!next_st_num - 1) in 
     let accept = ref StSet.empty in
-    let edges : (lbl * st) list StMap.t ref  = ref StMap.empty in
+    let edges : (leaf * st) list StMap.t ref  = ref StMap.empty in
     let state_names : (IntSet.t, st) H.t = H.create 100 in
     let err_st = next_st () in
     let rec loop (unmarked_states : IntSet.t list) = match unmarked_states with
@@ -318,10 +300,9 @@ let tables_of_regex (re : regex) =
         (* leaves are mutually-disjoint non-empty edges out of state *)
         let leaves = Leaf.disjoint_cover_list leaves in
         let more_unmarked_states = ref [] in
-        let edges_from_st : (lbl * st) list =
+        let edges_from_st : (leaf * st) list =
           map
             (fun leaf -> (* variable a in the figure *)
-              printf "... label %s\n" (FormatExt.to_string Lbl.pp (lbl_of_leaf leaf));
               let next_state =
                 IntSet.fold
                   (fun i s -> IntSet.union follow.(i) s)
@@ -341,9 +322,9 @@ let tables_of_regex (re : regex) =
               if Leaf.is_accepting leaf then
                 accept := StSet.add st !accept;
 
-              (lbl_of_leaf leaf, next_st))
+              (leaf, next_st))
             leaves in
-        edges := StMap.add st (((Lbl.complement (map fst2 edges_from_st)), err_st)::
+        edges := StMap.add st (((Leaf.complement (map fst2 edges_from_st)), err_st)::
                                 (edges_from_st)) !edges;
         loop (!more_unmarked_states @ unmarked_states') in
     (* start of algorithm *)
@@ -353,15 +334,15 @@ let tables_of_regex (re : regex) =
     H.add state_names first_state first_st;
     loop [ first_state ];
     printf "DFA construction complete!\n";
-    { edges = StMap.add err_st [(LNotIn CharSet.empty, err_st)] !edges;
+    { edges = StMap.add err_st [(LeafNotIn AugCharSet.empty, err_st)] !edges;
       start = first_st;
       accept = !accept }
 
   let split_list lbls1 lbls2 = 
     let rec slice lbl lbls = match lbl, lbls with
       | lbl1, lbl2::rest -> 
-         let inter = Lbl.intersect lbl1 lbl2 in
-         if Lbl.is_empty inter 
+         let inter = Leaf.intersect lbl1 lbl2 in
+         if Leaf.is_empty inter 
          then slice lbl rest
          else inter::(slice lbl rest)
       | lbl1, [] -> [] in
@@ -372,14 +353,14 @@ let tables_of_regex (re : regex) =
 
   let intersect dfa1 dfa2 =
     let contains cs1 cs2 : bool = match cs1, cs2 with
-      | LIn s1, LIn s2 -> CharSet.subset s1 s2
-      | LNotIn s1, LNotIn s2 -> CharSet.subset s2 s1 
-      | LIn s1, LNotIn s2
-      | LNotIn s2, LIn s1 -> CharSet.is_empty (CharSet.inter s1 s2) in
+      | LeafIn s1, LeafIn s2 -> AugCharSet.subset s1 s2
+      | LeafNotIn s1, LeafNotIn s2 -> AugCharSet.subset s2 s1 
+      | LeafIn s1, LeafNotIn s2
+      | LeafNotIn s2, LeafIn s1 -> AugCharSet.is_empty (AugCharSet.inter s1 s2) in
     let f state1 edges1 edgemap1 =
       let g state2 edges2 edgemap2 =
         (* Given a leaf and a set of edges, find the target state *)
-        let target lbl (edges : (lbl * st) list) : st =
+        let target lbl (edges : (leaf * st) list) : st =
           try
             (* The leaf labels must be smaller (since we disjoint them) *)
             snd2 (List.find (fun (lbl', st) -> 
@@ -387,7 +368,7 @@ let tables_of_regex (re : regex) =
           with Not_found -> failwith "Bad miss in intersect" in
         let cover = split_list (map fst2 edges1) (map fst2 edges2) in
         printf "cover: %s \n" (FormatExt.to_string (fun lst -> FormatExt.horz (map
-        Lbl.pp lst)) cover);
+        Leaf.pp lst)) cover);
         let new_edges = List.map
              (fun lbl -> lbl, J (target lbl edges1, target lbl edges2)) cover in
         StMap.add (J (state1, state2)) new_edges edgemap2 in
