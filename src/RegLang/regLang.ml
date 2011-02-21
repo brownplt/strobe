@@ -17,6 +17,14 @@ type regex =
 
 type follow_tbl  = IntSet.t array
 
+type pos = int
+      
+type aux = {
+  nullable : bool;
+  first_pos : IntSet.t;
+  last_pos : IntSet.t;
+}
+
 (* The NFA for [re] requires [num_terminals re] states. *)
 let rec num_terminals (re : regex) : int = match re with
   | InSet _
@@ -50,49 +58,28 @@ let make_augCharSet (set : CharSet.t) : AugCharSet.t =
   CharSet.fold (fun ch set' -> AugCharSet.add (AugChar.Char ch) set')
     set AugCharSet.empty
 
+type st = 
+  | S of int
+  | J of st * st (* used for intersection *)
 
-  type pos = int
-      
-type aux = {
-  nullable : bool;
-  first_pos : IntSet.t;
-  last_pos : IntSet.t;
-}
-
-module Aux = struct
-  type t = aux
-
+module St = struct
+  type t = st
+  let compare = Pervasives.compare
+    
   open FormatExt
   
-  let pp t =
-    braces (horz [ text (if t.nullable then "nullable" else "");
-                   IntSetExt.p_set int t.first_pos;
-                   IntSetExt.p_set int t.last_pos ])
-end
+  let rec pp t = match t with
+    | S n -> int n
+    | J (s1, s2) -> angles (squish [ pp s1; text ","; pp s2 ])
+      
+end 
 
-  type st = 
-    | S of int
-    | J of st * st (* used for intersection *)
-
-
-  module St = struct
-    type t = st
-    let compare = Pervasives.compare
-
-    open FormatExt
-
-    let rec pp t = match t with
-      | S n -> int n
-      | J (s1, s2) -> angles (squish [ pp s1; text ","; pp s2 ])
-
-  end 
-
-  module StMap = Map.Make (St)
-  module StMapExt = MapExt.Make (St) (StMap)
-
-  module StSet = Set.Make (St)
-  module StSetExt = SetExt.Make (StSet)
-
+module StMap = Map.Make (St)
+module StMapExt = MapExt.Make (St) (StMap)
+  
+module StSet = Set.Make (St)
+module StSetExt = SetExt.Make (StSet)
+  
 type lbl =
   | LIn of CharSet.t
   | LNotIn of CharSet.t
@@ -155,84 +142,83 @@ module DFA = struct
 end
 
 
-  let tables_of_regex (re : regex) =
-    let pos = 
-      let next_pos = ref 0 in
-      fun () -> incr next_pos; !next_pos - 1 in
+let tables_of_regex (re : regex) =
+  let pos = 
+    let next_pos = ref 0 in
+    fun () -> incr next_pos; !next_pos - 1 in
     (* 1st terminal is at position 0, so +1 for ending # *)
-    let max_pos = num_terminals re in 
-    let follow_tbl = Array.make (max_pos + 1) IntSet.empty in
-    let sym_tbl = Array.make (max_pos + 1) (LeafNotIn AugCharSet.empty) in
-    let rec f (re : regex) : aux = match re with
-      | Empty -> 
-        { nullable = true; first_pos = IntSet.empty; last_pos = IntSet.empty }
-      | InSet set -> 
-        let p = pos () in
-        let s = IntSet.singleton p in
-        let ch_set = make_augCharSet set in
-        sym_tbl.(p) <- LeafIn ch_set;
-        { nullable = false; first_pos = s; last_pos = s }
-      | NotInSet set -> 
-        let p = pos () in
-        let s = IntSet.singleton p in
-        let ch_set = make_augCharSet set in
-        sym_tbl.(p) <- LeafNotIn ch_set;
-        { nullable = false; first_pos = s; last_pos = s }
-      | Alt (re1, re2) ->
-        let aux1 = f re1 in
-        let aux2 = f re1 in
-        { nullable = aux1.nullable || aux2.nullable;
-          first_pos = IntSet.union aux1.first_pos aux2.first_pos;
-          last_pos = IntSet.union aux1.last_pos aux2.last_pos }
-      | Concat (re1, re2) ->
-        let aux1 = f re1 in
-        let aux2 = f re2 in
-        IntSet.iter
-          (fun last ->
-            follow_tbl.(last) <- IntSet.union aux2.first_pos follow_tbl.(last))
-          aux1.last_pos;
-        { nullable = aux1.nullable && aux2.nullable;
-          first_pos = 
-            if aux1.nullable then
-              IntSet.union aux1.first_pos aux2.first_pos
-            else 
-              aux1.first_pos;
-          last_pos = 
-            if aux2.nullable then
-              IntSet.union aux1.last_pos aux2.last_pos
-            else 
-              aux2.last_pos }
-      | Star re' ->
-        let aux' = f re' in
-        IntSet.iter
-          (fun last ->
-            follow_tbl.(last) <- IntSet.union aux'.first_pos follow_tbl.(last))
-          aux'.last_pos;
-        { nullable = true;
-          first_pos = aux'.first_pos;
-          last_pos = aux'.last_pos }
-      (* The remaining variants of regex are inessential *)
-      | String str ->
-        let re = ref Empty in
-        String.iter
-          (fun ch -> re := Concat (!re, InSet (CharSet.singleton ch)))
-          str;
-        f !re
-      | AnyChar -> f (NotInSet CharSet.empty) in
-    let aux = f re in
-    (* ACat, knowing that accept_aux is not nullable *)
-    IntSet.iter
-      (fun last ->
-        follow_tbl.(last) <- IntSet.add max_pos follow_tbl.(last))
-      aux.last_pos;
-    sym_tbl.(max_pos) <- LeafIn (AugCharSet.singleton AugChar.Accept);
-
-    let first_state = 
-      if aux.nullable then
-        IntSet.add max_pos aux.first_pos
-      else
-        aux.first_pos in
-    first_state, follow_tbl, sym_tbl
+  let max_pos = num_terminals re in 
+  let follow_tbl = Array.make (max_pos + 1) IntSet.empty in
+  let sym_tbl = Array.make (max_pos + 1) (LeafNotIn AugCharSet.empty) in
+  let rec f (re : regex) : aux = match re with
+    | Empty -> 
+      { nullable = true; first_pos = IntSet.empty; last_pos = IntSet.empty }
+    | InSet set -> 
+      let p = pos () in
+      let s = IntSet.singleton p in
+      let ch_set = make_augCharSet set in
+      sym_tbl.(p) <- LeafIn ch_set;
+      { nullable = false; first_pos = s; last_pos = s }
+    | NotInSet set -> 
+      let p = pos () in
+      let s = IntSet.singleton p in
+      let ch_set = make_augCharSet set in
+      sym_tbl.(p) <- LeafNotIn ch_set;
+      { nullable = false; first_pos = s; last_pos = s }
+    | Alt (re1, re2) ->
+      let aux1 = f re1 in
+      let aux2 = f re1 in
+      { nullable = aux1.nullable || aux2.nullable;
+        first_pos = IntSet.union aux1.first_pos aux2.first_pos;
+        last_pos = IntSet.union aux1.last_pos aux2.last_pos }
+    | Concat (re1, re2) ->
+      let aux1 = f re1 in
+      let aux2 = f re2 in
+      IntSet.iter
+        (fun last ->
+          follow_tbl.(last) <- IntSet.union aux2.first_pos follow_tbl.(last))
+        aux1.last_pos;
+      { nullable = aux1.nullable && aux2.nullable;
+        first_pos = 
+          if aux1.nullable then
+            IntSet.union aux1.first_pos aux2.first_pos
+          else 
+            aux1.first_pos;
+        last_pos = 
+          if aux2.nullable then
+            IntSet.union aux1.last_pos aux2.last_pos
+          else 
+            aux2.last_pos }
+    | Star re' ->
+      let aux' = f re' in
+      IntSet.iter
+        (fun last ->
+          follow_tbl.(last) <- IntSet.union aux'.first_pos follow_tbl.(last))
+        aux'.last_pos;
+      { nullable = true;
+        first_pos = aux'.first_pos;
+        last_pos = aux'.last_pos }
+    (* The remaining variants of regex are inessential *)
+    | String str ->
+      let re = ref Empty in
+      String.iter
+        (fun ch -> re := Concat (!re, InSet (CharSet.singleton ch)))
+        str;
+      f !re
+    | AnyChar -> f (NotInSet CharSet.empty) in
+  let aux = f re in
+  (* ACat, knowing that accept_aux is not nullable *)
+  IntSet.iter
+    (fun last ->
+      follow_tbl.(last) <- IntSet.add max_pos follow_tbl.(last))
+    aux.last_pos;
+  sym_tbl.(max_pos) <- LeafIn (AugCharSet.singleton AugChar.Accept);
+  let first_state = 
+    if aux.nullable then
+      IntSet.add max_pos aux.first_pos
+    else
+      aux.first_pos in
+  (first_state, follow_tbl, sym_tbl)
 
   let lbl_of_leaf leaf =
     let unaug set = AugCharSet.fold
@@ -244,7 +230,7 @@ end
       | LeafIn s -> LIn (unaug s)
       | LeafNotIn s -> LNotIn (unaug s)
 
-  type sym_tbl = leaf array
+
 
   module Leaf = struct
 
@@ -309,7 +295,7 @@ end
   end
 
   (* Page 141, Figure 3.44 *)
-  let make_dfa (first_state : IntSet.t) (follow : follow_tbl) (sym : sym_tbl)  =
+  let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
     let next_st_num = ref 0 in
     let next_st () = incr next_st_num; S (!next_st_num - 1) in 
     let accept = ref StSet.empty in
