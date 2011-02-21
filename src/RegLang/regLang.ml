@@ -1,19 +1,26 @@
 open Prelude
 
+open RegLang_syntax
+
 module H = Hashtbl
 
-module CharSet = Set.Make (Char)
-module CharSetExt = SetExt.Make (CharSet)
+type regex = RegLang_syntax.regex
 
-type regex =
-  | InSet of CharSet.t
-  | NotInSet of CharSet.t
-  | Alt of regex * regex
-  | Star of regex
-  | Empty
-  | String of string
-  | Concat of regex * regex
-  | AnyChar
+let parse_regex pos str =
+  let lexbuf = Lexing.from_string str in
+    try 
+      lexbuf.Lexing.lex_curr_p <- pos;
+      RegLang_parser.regex RegLang_lexer.token lexbuf
+    with
+      |  Failure "lexing: empty token" ->
+           failwith (sprintf "lexical error at %s"
+                       (string_of_position 
+                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
+      | RegLang_parser.Error ->
+           failwith (sprintf "parse error at %s"
+                       (string_of_position 
+                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
+
 
 type follow_tbl  = IntSet.t array
 

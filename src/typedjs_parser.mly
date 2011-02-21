@@ -5,7 +5,7 @@ open Typedjs_syntax
 
 %}
 
-%token <string> ID TID STRING
+%token <string> ID TID STRING REGEX
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST FORALL LTCOLON IS
@@ -16,26 +16,14 @@ open Typedjs_syntax
 
 %start typ_ann
 %start env
-%start regex_tests
 
 %type <Typedjs_syntax.annotation> typ_ann
 %type <Typedjs_syntax.env_decl list> env
-%type <(RegLang.regex * RegLang.regex * bool) list> regex_tests
 
 %%
 
-regex_tests :
-  | EOF { [] }
-  | regex LTCOLON regex SEMI regex_tests { ($1, $3, true) :: $5 }
-  | regex LTSLASHCOLON regex SEMI regex_tests { ($1, $3, false) :: $5 }
-
 regex :
-  | STRING { RegLang.String $1 }
-  | ID { RegLang.String $1 }
-  | regex STAR { RegLang.Star $1 }
-  | DOT { RegLang.AnyChar }
-  | LPAREN regex RPAREN { $2 }
-  | regex regex { RegLang.Concat ($1, $2) }
+  | REGEX { RegLang.parse_regex $startpos $1 }
   
 args
   :  { [] }

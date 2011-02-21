@@ -5,7 +5,7 @@ exception Not_value of string
 
 let tc_const (const : JavaScript_syntax.const) = match const with
     JavaScript_syntax.CString s -> 
-      let regex = RegLang.String s in
+      let regex = RegLang_syntax.String s in
         TRegex (regex, RegLang.fsm_of_regex regex)
   | JavaScript_syntax.CRegexp _ -> raise (Not_value "RegExps are awkward") 
   | JavaScript_syntax.CNum _ -> TPrim Num 
@@ -16,7 +16,8 @@ let tc_const (const : JavaScript_syntax.const) = match const with
 
 let typ_of_value (exp : exp) : typ = 
   let mk_field f (name, exp) =
-    ((RegLang.String name, RegLang.fsm_of_regex (RegLang.String name)),
+    ((RegLang_syntax.String name,
+      RegLang.fsm_of_regex (RegLang_syntax.String name)),
       f exp) in
   let rec f e = match e with
     | EObject (_, fields) -> 

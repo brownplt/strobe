@@ -35,7 +35,7 @@ type prim =
   | Undef
   | Null
 
-type field = RegLang.regex * RegLang.fsm
+type field = RegLang_syntax.regex * RegLang.fsm
 
 type typ = 
   | TPrim of prim
