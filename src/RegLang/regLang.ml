@@ -148,15 +148,16 @@ module DFA = struct
   type t = dfa
     
   open FormatExt
+
+  let p_edge e =
+    vert [ AugCharMapExt.p_map AugChar.pp St.pp e.on_char;
+           horz [ text "otherwise ->"; St.pp e.other_chars ] ]
   
   let pp t =
     vert
       [ horz [ text "Start: "; St.pp t.start ];
-        horz [ text "Accept: "; StSetExt.p_set St.pp t.accept ]
-        (* StMapExt.p_map St.pp 
-          (fun lst -> vert
-            (map (fun (l,s) -> horz [ Leaf.pp l; St.pp s ]) lst))
-          t.edges *)]
+        horz [ text "Accept: "; StSetExt.p_set St.pp t.accept ];
+        StMapExt.p_map St.pp p_edge t.edges ]
 end
 
 let tables_of_regex (re : regex) =
@@ -235,6 +236,11 @@ let tables_of_regex (re : regex) =
       IntSet.add max_pos aux.first_pos
     else
       aux.first_pos in
+  for i = 0 to max_pos  do
+    printf "position %d (%s) followed by %s\n" i
+      (FormatExt.to_string Leaf.pp (sym_tbl.(i)))
+      (FormatExt.to_string (IntSetExt.p_set FormatExt.int) follow_tbl.(i));
+  done;
   (first_state, follow_tbl, sym_tbl)
 
  (* Page 141, Figure 3.44 *)
@@ -243,13 +249,13 @@ let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
   let next_st () = incr next_st_num; S (!next_st_num - 1) in 
   let accept = ref StSet.empty in
   let edges : edge_list StMap.t ref  = ref StMap.empty in
-  let state_names : (IntSet.t, st) H.t = H.create 100 in
+  let state_names : (IntSet.t * st) list ref = ref [] in
   let err_st = next_st () in
-  let rec loop (unmarked_states : IntSet.t list) = match unmarked_states with
+  let rec loop (unmarked_states : (IntSet.t * st) list) = 
+    match unmarked_states with
     | [] -> ()
-    | state :: unmarked_states' ->
+    | (state, st) :: unmarked_states' ->
       (* recurring on the tail of unmarked_states implicitly marks state *)
-      let st = H.find state_names state in (* abbreviation for T *)
       (* deviates from the figure *)
       (* followpos(st) *)
       let follow_st = IntSet.fold 
@@ -269,11 +275,13 @@ let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
                 (IntSet.filter (fun i -> Leaf.subset leaf sym.(i)) state)
                 IntSet.empty in
             let next_st =
-              try H.find state_names next_state
+              try snd2 (List.find (fun (n, k) -> IntSet.equal n next_state)
+                          !state_names)
               with Not_found ->
                 let abbrev = next_st () in
-                H.add state_names next_state abbrev;
-                more_unmarked_states := next_state :: !more_unmarked_states;
+                state_names := (next_state, abbrev) :: !state_names;
+                more_unmarked_states := 
+                  (next_state, abbrev) :: !more_unmarked_states;
                 abbrev in
             if Leaf.is_accepting leaf then
               accept := StSet.add st !accept;
@@ -300,8 +308,8 @@ let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
   let first_st = next_st () in
   printf "first state is %s\n" (FormatExt.to_string (IntSetExt.p_set
                                                        FormatExt.int) first_state);
-  H.add state_names first_state first_st;
-  loop [ first_state ];
+  state_names := [ (first_state, first_st) ];
+  loop [ (first_state, first_st) ];
   printf "DFA construction complete!\n";
   { edges = StMap.add err_st
       { on_char = AugCharMap.empty; other_chars = err_st } 
