@@ -261,9 +261,9 @@ module Env = struct
   let rec set_global_object env cname =
     let ci = IdMap.find cname env.typ_syns in
     match ci with
-      | TObject fs ->
+      | TRef (TObject fs) ->
         let add_field env (x, t) = begin match x with
-          | (RegLang_syntax.String s, _) -> bind_id s t env 
+          | (RegLang_syntax.String s, _) -> bind_id s (TRef t) env 
           | _ -> raise (Not_wf_typ (cname ^ " field was a regex in global"))
         end in
         List.fold_left add_field env fs
@@ -333,7 +333,9 @@ let operator_env_of_tc_env tc_env =
 
 let rec typ_subst x s typ = match typ with
   | TPrim _ -> typ
+  | TRegex _ -> typ
   | TId y -> if x = y then s else typ
+  | TSyn x -> typ
   | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
   | TIntersect (t1, t2) ->
       TIntersect (typ_subst x s t1, typ_subst x s t2)

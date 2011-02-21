@@ -31,10 +31,10 @@ args
   | arg_typ STAR args { $1 :: $3 }
 
 field
-  : regex COLON typ { (($1, RegLang.fsm_of_regex $1), TRef $3) }
+  : regex COLON typ { (($1, RegLang.fsm_of_regex $1), $3) }
   | ID COLON typ 
       { let re = RegLang_syntax.String $1 in
-        ((re, RegLang.fsm_of_regex re), TRef $3) }
+        ((re, RegLang.fsm_of_regex re), $3) }
 
 fields
   : { [] }
@@ -55,7 +55,7 @@ arg_typ
   | regex { TRegex ($1, RegLang.fsm_of_regex $1) }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | arg_typ INTERSECTION arg_typ { TIntersect ($1, $3) }
-  | LBRACE fields RBRACE { TObject $2 }
+  | LBRACE fields RBRACE { TRef (TObject $2) }
   | LPAREN typ RPAREN { $2 }
   | TID { TId $1 }
   | ID { TSyn $1 }

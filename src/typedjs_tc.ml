@@ -53,7 +53,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
           | SinkCell -> TSink t
           | RefCell -> TRef t
         end
-  | EDeref (p, e) -> begin match tc_exp env e with
+  | EDeref (p, e) -> begin match simpl_typ env (tc_exp env e) with
       | TRef t -> t
       | TSource t -> t
       | TField -> TField
@@ -131,26 +131,21 @@ let rec tc_exp (env : Env.env) exp = match exp with
          tc_exp env exp) in
       Env.check_typ p env (TObject (map mk_field fields))
   | EBracket (p, obj, field) -> 
-    begin match simpl_typ env (un_null (tc_exp env obj)), field with
-      | TObject fs, fld -> (match tc_exp env fld with
-          | TRegex (_, field_fsm) -> 
-              List.fold_right (fun ((_, fsm), s) t -> 
-                                 if RegLang.overlap fsm field_fsm
-                                 then TRef (Env.typ_union env 
-                                              (un_ref s) (un_ref t))
-                                 else t) fs (TRef TBot)
-          | _ -> error p "Not a regex in lookup")
-      | TField, field -> begin match tc_exp env field with
-          | TField -> TField
-          | _ -> error p "expected a TField index"
-        end
-      | t, EPrefixOp (_, "%ToString",
-                      EConst (_, JavaScript_syntax.CString _)) ->
-          error p ("expected object, but got " ^ string_of_typ t)
-      | _, field -> 
-          error p (FormatExt.to_string FormatExt.horz
-                     [ FormatExt.text "lookup requires a literal, got";
-                       Pretty.p_exp field ])
+    begin match simpl_typ env (un_null (tc_exp env obj)), 
+      simpl_typ env (tc_exp env field) with
+      | TObject fs, TRegex (_, field_fsm) -> 
+          List.fold_right (fun ((_, fsm), s) t -> 
+                             if RegLang.overlap fsm field_fsm
+                             then Env.typ_union env s t
+                             else t) fs TBot
+      | TObject _, typ -> 
+          error p (sprintf "Got %s rather than a regex in lookup"
+                     (string_of_typ typ))
+      | TField, TField -> TField
+      | TField, _ -> error p "expected a TField index"
+      | obj, field -> 
+          error p (sprintf "Got %s[%s] in object lookup."
+                     (string_of_typ obj) (string_of_typ field))
     end
   | EUpdate (p, _, _, _) -> error p ("Haven't implemented update yet")
   | ENew (p, cid, args) -> error p "New doesn't work yet (constrs)"

@@ -106,13 +106,15 @@ let rec exp (env : env) expr = match expr with
       EIf (a, to_boolean a (exp env e1), exp env e2, exp env e3)
   | AssignExpr (a, VarLValue (p', x), e) -> ESetRef (a, EId (p', x), exp env e)
   | AssignExpr (p, PropLValue (_, e1, e2), e3) ->
-      EUpdate (p, to_object p (exp env e1), 
-                  to_string p (exp env e2), 
-                  exp env e3)
+      ELet (p, "%obj", to_object p (exp env e1),
+            ESetRef(p, EId (p, "%obj"),
+              EUpdate (p, EDeref (p, EId (p, "%obj")), 
+                       to_string p (exp env e2), 
+                       exp env e3)))
   | AppExpr (a, ((BracketExpr (a2, e1, e2)) as f), args) ->
       EApp (a, exp env f, (exp env e1)::(map (exp env) args))
   | AppExpr (a, f, args) -> 
-      EApp (a, exp env f, EId (a, "%global")::(map (exp env) args))
+      EApp (a, exp env f, EDeref (a, EId (a, "%global"))::(map (exp env) args))
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdMap.add x true env) e2)
   | TryCatchExpr (a, body, x, catch) ->
