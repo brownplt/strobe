@@ -5,37 +5,25 @@ open Typedjs_syntax
 
 %}
 
-%token <string> ID TID STRING
+%token <string> ID TID STRING REGEX
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE CLASS UPCAST DOWNCAST FORALL LTCOLON IS
-       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI FSLASH
-       LTSLASHCOLON
+       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI
+       
 
 %right UNION INTERSECTION
 
 %start typ_ann
 %start env
-%start regex_tests
 
 %type <Typedjs_syntax.annotation> typ_ann
 %type <Typedjs_syntax.env_decl list> env
-%type <(RegLang.regex * RegLang.regex * bool) list> regex_tests
 
 %%
 
-regex_tests :
-  | EOF { [] }
-  | regex LTCOLON regex SEMI regex_tests { ($1, $3, true) :: $5 }
-  | regex LTSLASHCOLON regex SEMI regex_tests { ($1, $3, false) :: $5 }
-
 regex :
-  | STRING { RegLang.String $1 }
-  | ID { RegLang.String $1 }
-  | regex STAR { RegLang.Star $1 }
-  | DOT { RegLang.AnyChar }
-  | LPAREN regex RPAREN { $2 }
-  | regex regex { RegLang.Concat ($1, $2) }
+  | REGEX { RegLang.parse_regex $startpos $1 }
   
 args
   :  { [] }
@@ -44,6 +32,9 @@ args
 
 field
   : regex COLON typ { (($1, RegLang.fsm_of_regex $1), TRef $3) }
+  | ID COLON typ 
+      { let re = RegLang_syntax.String $1 in
+        ((re, RegLang.fsm_of_regex re), TRef $3) }
 
 fields
   : { [] }
@@ -61,7 +52,7 @@ arg_typ
   | FALSE { TPrim False }
   | UNDEF { TPrim Undef }
   | NULL { TPrim Null }
-  | FSLASH regex FSLASH { TRegex ($2, RegLang.fsm_of_regex $2) }
+  | regex { TRegex ($1, RegLang.fsm_of_regex $1) }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | arg_typ INTERSECTION arg_typ { TIntersect ($1, $3) }
   | LBRACE fields RBRACE { TObject $2 }

@@ -263,7 +263,7 @@ module Env = struct
     match ci with
       | TObject fs ->
         let add_field env (x, t) = begin match x with
-          | (RegLang.String s, _) -> bind_id s t env 
+          | (RegLang_syntax.String s, _) -> bind_id s t env 
           | _ -> raise (Not_wf_typ (cname ^ " field was a regex in global"))
         end in
         List.fold_left add_field env fs

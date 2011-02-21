@@ -3,6 +3,13 @@
   open Lexing
   open Typedjs_parser
 
+  let string_buf = Buffer.create 100
+
+  let get_string () = 
+    let s = Buffer.contents string_buf in
+    Buffer.clear string_buf;
+    s
+
 }
 
 let ident = ['a'-'z' 'A'-'Z' '$' '_' '%']([ 'a'-'z' 'A'-'Z' '0'-'9' '$' '_']*)
@@ -33,7 +40,6 @@ rule token = parse
    | "}" { RBRACE }
    | "[" { LBRACK }
    | "]" { RBRACK }
-   | "/" { FSLASH }
    | "," { COMMA }
    | "Any" { ANY }
    | "Int" { INT }
@@ -62,12 +68,13 @@ rule token = parse
    | "forall" { FORALL }
    | "checked" { CHECKED }
    | "<:" { LTCOLON }
-   | "</:" { LTSLASHCOLON }
    | "rec" { REC }
    | eof { EOF }
    | ident as x { ID x }
    | '"' (double_quoted_string_char* as x) '"' { STRING x }
    | '\''(ident as x) { TID x }
+   | '/' { regexp lexbuf }
+
 
 
 and block_comment = parse
@@ -75,3 +82,8 @@ and block_comment = parse
   | '*' { block_comment lexbuf }
   | [ '\n' '\r' ]  { block_comment lexbuf }
   | [^ '\n' '\r' '*'] { block_comment lexbuf }
+
+and regexp = parse
+  | "/" { REGEX (get_string ()) }
+  | '\\' (_ as ch) { Buffer.add_char string_buf ch; regexp lexbuf }
+  | _ as ch { Buffer.add_char string_buf ch; regexp lexbuf }

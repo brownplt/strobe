@@ -149,24 +149,22 @@ let action_regex () : unit =
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = get_cin_name () };
   let tests = 
     try
-      Typedjs_parser.regex_tests Typedjs_lexer.token lexbuf
+      RegLang_parser.regex_tests RegLang_lexer.token lexbuf
     with
       |  Failure "lexing: empty token" ->
            failwith (sprintf "lexical error at %s"
                        (string_of_position
                           (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
-      | Typedjs_parser.Error ->
+      | RegLang_parser.Error ->
         failwith (sprintf "parse error at %s; unexpected token %s"
                     (string_of_position
                        (lexbuf.lex_curr_p, lexbuf.lex_curr_p))
                     (lexeme lexbuf)) in
-  let run_test (re1, re2, should_succeed) = 
+  let run_test (pos, re1, re2, should_succeed) = 
     let fsm1 = RegLang.fsm_of_regex re1 in
     let fsm2 = RegLang.fsm_of_regex re2 in
-    if RegLang.contains fsm1 fsm2 = should_succeed then
-      printf "Regex test succeeded.\n"
-    else
-      printf "Regex test failed.\n" in 
+    if RegLang.contains fsm1 fsm2 != should_succeed then
+      failwith (sprintf "regex test failed at %s" (string_of_position pos)) in
   List.iter run_test tests
   
 
