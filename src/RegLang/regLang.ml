@@ -98,6 +98,20 @@ module Leaf = struct
   let is_not_empty l = match l with
     | LeafIn s -> not (S.is_empty s)
     | _ -> true
+
+  (* Returns a single leaf that covers the entire list of leaves. *)
+  let union_list (leaves : leaf list) = 
+    let rec f acc (leaves : leaf list) = match leaves with
+      | [] -> acc
+      | (LeafIn chs) :: leaves' -> begin match acc with
+          | LeafIn chs' -> f (LeafIn (S.union chs chs')) leaves'
+          | LeafNotIn chs' -> f (LeafNotIn (S.diff chs' chs)) leaves'
+      end
+      | (LeafNotIn chs) :: leaves' -> begin match acc with
+          | LeafIn chs' -> f (LeafNotIn (S.diff chs chs')) leaves'
+          | LeafNotIn chs' -> f (LeafNotIn (S.inter chs chs')) leaves'
+      end in
+    f (LeafIn S.empty) leaves
       
   (* Returns upto three non-overlapping [Leaf]s that cover the same characters
      as [li] and [l2]. *)
@@ -144,13 +158,9 @@ module Leaf = struct
             | [] -> loop (leaf :: disjoint') overlapped
     in loop [] overlapped
     
-  let complement lbls = match lbls with
-    | [LeafNotIn cs] -> LeafIn cs
-    | _ -> let lins = List.map (fun lbl -> match lbl with
-                                     | LeafIn cs -> cs
-                                     | _ -> failwith "Broken label invariant")
-                        lbls in
-             LeafNotIn (AugCharSetExt.unions lins)
+  let complement leaf = match leaf with
+    | LeafNotIn set -> LeafIn set
+    | LeafIn set -> LeafNotIn set
 
 
   let intersect lbl1 lbl2 = match lbl1, lbl2 with
@@ -317,7 +327,8 @@ let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
               accept := StSet.add st !accept;
             (leaf, next_st))
           leaves in
-      edges := StMap.add st (((Leaf.complement (map fst2 edges_from_st)), 
+      let fail_leaf = Leaf.complement (Leaf.union_list leaves) in
+      edges := StMap.add st ((fail_leaf, 
                               err_st)::(edges_from_st)) !edges;
       loop (!more_unmarked_states @ unmarked_states') in
     (* start of algorithm *)
