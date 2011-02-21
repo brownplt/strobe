@@ -36,7 +36,6 @@ type aux = {
 let rec num_terminals (re : regex) : int = match re with
   | InSet _
   | NotInSet _ 
-  | AnyChar -> 1
   | Empty -> 0
   | String s -> String.length s
   | Star re' -> num_terminals re'
@@ -231,8 +230,7 @@ let tables_of_regex (re : regex) =
       String.iter
         (fun ch -> re := Concat (!re, InSet (CharSet.singleton ch)))
         str;
-      f !re
-    | AnyChar -> f (NotInSet CharSet.empty) in
+      f !re in
   let aux = f re in
   (* ACat, knowing that accept_aux is not nullable *)
   IntSet.iter
