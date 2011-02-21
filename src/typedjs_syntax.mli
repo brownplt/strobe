@@ -42,7 +42,7 @@ type typ =
   | TUnion of typ * typ
   | TIntersect of typ * typ
   | TArrow of typ list * typ      
-  | TObject of (field * typ) list
+  | TObject of (field * typ) list * field
   | TRegex of field
   | TRef of typ
   | TSource of typ
@@ -56,6 +56,8 @@ type typ =
   | TSyn of id (** type synonym *)
 
 val typ_bool : typ
+
+val mk_object_typ : (field * typ) list -> typ
 
 type env_decl =
   | EnvClass of constr * constr option * typ

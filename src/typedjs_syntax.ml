@@ -46,7 +46,9 @@ type typ =
   | TUnion of typ * typ
   | TIntersect of typ * typ
   | TArrow of typ list * typ
-  | TObject of (field * typ) list
+      (* The list holds everything that's typed.
+         The final field is a description of what's absent. *)
+  | TObject of (field * typ) list * field
   | TRegex of field
   | TRef of typ
   | TSource of typ
@@ -60,6 +62,12 @@ type typ =
   | TSyn of id (** type synonym *)
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
+
+let mk_object_typ fs =
+  let union (re1, _) re2 = RegLang_syntax.Alt (re1, re2) in
+  let rest_re = List.fold_right union (map fst2 fs) RegLang_syntax.Empty in
+    TRef (TObject (fs, (rest_re, RegLang.fsm_of_regex rest_re)))
+
 
 type env_decl =
   | EnvClass of constr * constr option * typ
@@ -226,7 +234,7 @@ module Pretty = struct
                             end) arg_typs));
               text "->";
               typ r_typ ]
-    | TObject fs ->
+    | TObject (fs, _) ->
         let f (k, t) = horz [ fld k; text ":"; typ t ] in
           braces (horz (intersperse (text ",") (map f fs)))
     | TRef s -> horz [ text "ref"; parens (typ s) ]
