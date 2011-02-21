@@ -27,6 +27,7 @@ rule token = parse
    | "}" { RBRACE }
    | "[" { LBRACK }
    | "]" { RBRACK }
+   | "|" { PIPE }
    | "," { COMMA }
    | "*" { STAR }
    | "." { DOT }

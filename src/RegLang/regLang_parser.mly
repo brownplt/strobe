@@ -32,6 +32,7 @@ star :
 cat :
   | star { $1 }
   | star cat { Concat ($1, $2) }
+  | atom PIPE atom { Alt($1, $3) }
 
 regex :
   | cat EOF { $1 }

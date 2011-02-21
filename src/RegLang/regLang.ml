@@ -195,7 +195,7 @@ let tables_of_regex (re : regex) =
       { nullable = false; first_pos = s; last_pos = s }
     | Alt (re1, re2) ->
       let aux1 = f re1 in
-      let aux2 = f re1 in
+      let aux2 = f re2 in
       { nullable = aux1.nullable || aux2.nullable;
         first_pos = IntSet.union aux1.first_pos aux2.first_pos;
         last_pos = IntSet.union aux1.last_pos aux2.last_pos }
