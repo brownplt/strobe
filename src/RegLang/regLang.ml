@@ -93,6 +93,8 @@ module Leaf = struct
       
   module S = AugCharSet
 
+  let one s = LeafIn (AugCharSet.singleton s)
+
   let is_accepting l = match l with
     | LeafIn s -> S.mem AugChar.Accept s
     | LeafNotIn s -> not (S.mem AugChar.Accept s)
@@ -129,7 +131,26 @@ module Leaf = struct
 
   let pp (t : t) = match t with
     | LeafIn s -> AugCharSetExt.p_set AugChar.pp s
-    | LeafNotIn s -> horz [ text "complement"; AugCharSetExt.p_set AugChar.pp s ]
+    | LeafNotIn s -> horz [ text "complement"; AugCharSetExt.p_set AugChar.pp s 
+                          ]
+
+  let explode (leaves : leaf list) =
+    let rec f incl_chs excl_chs leaves = match leaves with
+      | [] -> (incl_chs, excl_chs)
+      | LeafIn chs :: leaves' ->
+        f (S.union chs incl_chs) 
+          (match excl_chs with
+            | None -> None
+            | Some chs' -> Some (S.union chs' chs))
+          leaves'
+      | LeafNotIn chs :: leaves' ->
+        f incl_chs
+          (match excl_chs with
+            | None -> Some (S.union incl_chs chs)
+            | Some chs' -> Some (S.inter chs chs'))
+          leaves' in
+    f S.empty None leaves
+
 
 end
 
@@ -237,7 +258,7 @@ let tables_of_regex (re : regex) =
     else
       aux.first_pos in
   for i = 0 to max_pos  do
-    printf "position %d (%s) followed by %s\n" i
+    printf "position %d (%s) followed by%s\n" i
       (FormatExt.to_string Leaf.pp (sym_tbl.(i)))
       (FormatExt.to_string (IntSetExt.p_set FormatExt.int) follow_tbl.(i));
   done;
@@ -255,6 +276,8 @@ let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
     match unmarked_states with
     | [] -> ()
     | (state, st) :: unmarked_states' ->
+      printf "%s = %s\n" (FormatExt.to_string St.pp st)
+        (FormatExt.to_string (IntSetExt.p_set FormatExt.int) state);
       (* recurring on the tail of unmarked_states implicitly marks state *)
       (* deviates from the figure *)
       (* followpos(st) *)
@@ -264,15 +287,27 @@ let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
         (FormatExt.to_string (IntSetExt.p_set FormatExt.int) state)
         (FormatExt.to_string (IntSetExt.p_set FormatExt.int) follow_st);
       let leaves = map (fun i -> sym.(i)) (IntSet.elements state) in
-      let leaves = leaves in 
+      (* If any characters are explicitly excluded, those characters
+         go to err_st. If no characters are explicitly excluded, the
+         wildcard-edge goes to err_st. *)
+      let (incl_chs, opt_excl_chs) = Leaf.explode leaves in
+      if (AugCharSet.mem AugChar.Accept incl_chs) then
+        accept := StSet.add st !accept;
+      printf "In: %s Out: %s\n"
+        (FormatExt.to_string (AugCharSetExt.p_set AugChar.pp) incl_chs)
+        (match opt_excl_chs with
+          | None -> "nothing"
+          | Some excl_chs ->
+            (FormatExt.to_string (AugCharSetExt.p_set AugChar.pp) excl_chs));
       let more_unmarked_states = ref [] in
-      let edges_from_st =
-        fold_right
-          (fun leaf edges_from_st ->
+      let on_char_map =
+        AugCharSet.fold
+          (fun ch on_char_map ->
             let next_state =
               IntSet.fold
                 (fun i s -> IntSet.union follow.(i) s)
-                (IntSet.filter (fun i -> Leaf.subset leaf sym.(i)) state)
+                (IntSet.filter 
+                   (fun i -> Leaf.subset (Leaf.one ch) sym.(i)) state)
                 IntSet.empty in
             let next_st =
               try snd2 (List.find (fun (n, k) -> IntSet.equal n next_state)
@@ -283,25 +318,32 @@ let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
                 more_unmarked_states := 
                   (next_state, abbrev) :: !more_unmarked_states;
                 abbrev in
-            if Leaf.is_accepting leaf then
-              accept := StSet.add st !accept;
-            match leaf with
-              | LeafNotIn _ -> { edges_from_st with other_chars = st }
-              | LeafIn chs ->
-                { edges_from_st with
-                  on_char = 
-                    AugCharSet.fold (fun ch m -> AugCharMap.add ch next_st m)
-                      chs edges_from_st.on_char })
-          leaves { on_char = AugCharMap.empty; other_chars = (S (-1)) } in
-      let fail_leaf = Leaf.complement (Leaf.union_list leaves) in
-      let edges_from_st = match fail_leaf with
-        | LeafIn chs ->
-          { edges_from_st with
-            on_char = 
-              AugCharSet.fold (fun ch m -> AugCharMap.add ch err_st m)
-                chs edges_from_st.on_char }
-        | LeafNotIn _ -> 
-          { edges_from_st with other_chars = err_st } in
+            AugCharMap.add ch next_st on_char_map)
+          incl_chs AugCharMap.empty in
+      let edges_from_st = 
+        match opt_excl_chs with
+          | None ->
+            { on_char = on_char_map; other_chars = err_st }
+          | Some excl_chs ->
+            { on_char =
+                AugCharSet.fold (fun ch m -> AugCharMap.add ch err_st m)
+                  (AugCharSet.diff excl_chs incl_chs) on_char_map;
+              other_chars =
+                let next_state = 
+                  IntSet.fold
+                    (fun i s -> IntSet.union follow.(i) s)
+                    (IntSet.filter 
+                       (fun i -> Leaf.subset (LeafNotIn excl_chs) sym.(i))
+                       state)
+                    IntSet.empty in
+                try snd2 (List.find (fun (n, k) -> IntSet.equal n next_state)
+                            !state_names)
+                with Not_found ->
+                  let abbrev = next_st () in
+                  state_names := (next_state, abbrev) :: !state_names;
+                  more_unmarked_states := 
+                    (next_state, abbrev) :: !more_unmarked_states;
+                  abbrev } in
       edges := StMap.add st (edges_from_st) !edges;
       loop (!more_unmarked_states @ unmarked_states') in
     (* start of algorithm *)
