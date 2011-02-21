@@ -77,7 +77,7 @@ let rec exp (env : env) expr = match expr with
   | ObjectExpr (a, ps) -> 
       if List.length ps != List.length (nub (map (fun (_, p, _) -> p) ps)) then
         raise (Not_well_formed (a, "repeated field names"));
-      EObject (a, map (fun (_, x, e) ->  x, ERef (a, RefCell, exp env e)) ps)
+      ERef (a, RefCell, EObject (a, map (fun (_, x, e) ->  x, exp env e) ps))
   | ThisExpr a -> EId (a, "this")
   | VarExpr (a, x) -> begin try
       if IdMap.find x env then
@@ -88,8 +88,8 @@ let rec exp (env : env) expr = match expr with
     end
   | IdExpr (a, x) -> EId (a, x)
   | BracketExpr (a, e1, e2) -> 
-      EDeref (a, EBracket (a, to_object a (exp env e1), 
-                              to_string a (exp env e2)))
+      EBracket (a, EDeref (a, to_object a (exp env e1)),
+                to_string a (exp env e2))
   | NewExpr (a, VarExpr (_, x), args) -> ENew (a, x, map (exp env) args)
   | NewExpr (p, _, _) ->
       raise (Not_well_formed (p, "new expressions much name the constructor"))

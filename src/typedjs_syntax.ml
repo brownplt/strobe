@@ -235,6 +235,7 @@ module Pretty = struct
     | TForall (x, s, t) -> 
         horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
     | TId x -> text x
+    | TSyn (name) -> text name
     | TField -> text "field"
     | TRec (x, t) -> horz [ text x; text "."; typ t ]
 
