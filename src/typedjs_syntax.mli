@@ -57,7 +57,7 @@ type typ =
 
 val typ_bool : typ
 
-val mk_object_typ : (field * typ) list -> typ
+val mk_object_typ : (field * typ) list -> typ option -> typ
 
 type env_decl =
   | EnvClass of constr * constr option * typ

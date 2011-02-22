@@ -199,8 +199,8 @@ module Env = struct
     | RT.Num -> typ_union env (TPrim Num) typ
     | RT.Str -> typ_union env (TPrim Str) typ
     | RT.Bool -> typ_union env typ_bool typ
-    | RT.Function -> typ_union env (mk_object_typ []) typ
-    | RT.Object -> typ_union env (mk_object_typ []) typ
+    | RT.Function -> typ_union env (mk_object_typ [] None) typ
+    | RT.Object -> typ_union env (mk_object_typ [] None) typ
     | RT.Undefined -> typ_union env (TPrim Undef) typ
 
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with

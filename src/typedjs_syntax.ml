@@ -63,11 +63,17 @@ type typ =
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
-let mk_object_typ fs =
+let mk_object_typ (fs : (field * typ) list) (star : typ option) : typ =
   let union (re1, _) re2 = RegLang_syntax.Alt (re1, re2) in
   let union_re = List.fold_right union (map fst2 fs) RegLang_syntax.Empty in
   let rest_fsm = RegLang.negate (RegLang.fsm_of_regex union_re) in
-    TRef (TObject (fs, (union_re, rest_fsm)))
+    match star with
+      | Some typ ->
+          TRef (TObject (((union_re, rest_fsm), typ)::fs, 
+                         (RegLang_syntax.Empty, 
+                          RegLang.fsm_of_regex RegLang_syntax.Empty)))
+      | None ->
+          TRef (TObject (fs, (union_re, rest_fsm)))
 
 
 type env_decl =

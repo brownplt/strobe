@@ -129,7 +129,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
         ((RegLang_syntax.String name,
           RegLang.fsm_of_regex (RegLang_syntax.String name)),
          tc_exp env exp) in
-      Env.check_typ p env (mk_object_typ (map mk_field fields))
+      Env.check_typ p env (mk_object_typ (map mk_field fields) None)
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (un_null (tc_exp env obj)), 
       simpl_typ env (tc_exp env field) with
