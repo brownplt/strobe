@@ -24,6 +24,7 @@ rule token = parse
    | "(" { LPAREN }
    | ")" { RPAREN }
    | "|" { PIPE }
+   | "!" { BANG }
    | "*" { STAR }
    | "." { DOT }
    | "<:" { LTCOLON }

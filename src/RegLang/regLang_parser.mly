@@ -7,7 +7,7 @@ open RegLang_syntax
 
 %token <string> STRING
 %token <char> CHAR
-%token LPAREN RPAREN STAR PIPE DOT 
+%token LPAREN RPAREN STAR PIPE DOT BANG
        LTCOLON LTSLASHCOLON SEMI EOF
 
 %start regex_tests
@@ -22,6 +22,7 @@ open RegLang_syntax
 atom :
   | STRING { String $1 }
   | CHAR { InSet (CharSet.singleton $1) }
+  | BANG CHAR { NotInSet (CharSet.singleton $2) }
   | LPAREN cat RPAREN { $2 }
   | DOT { NotInSet CharSet.empty }
 
