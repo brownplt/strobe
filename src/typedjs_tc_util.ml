@@ -23,12 +23,12 @@ let typ_of_value (exp : exp) : typ =
     | EObject (_, fields) -> 
         mk_object_typ (map (mk_field f) fields) None (TSyn "Object")
     | EConst (_, c) -> tc_const c
-    | EFunc (_, _, t, _) -> t
+    | EFunc (_, _, fi, _) -> fi.func_typ
     | ERef (_, RefCell, e') -> TRef begin match e' with
         | EObject (_, fields) -> 
             mk_object_typ (map (mk_field f) fields) None (TSyn "Object")
         | EConst (_, c) -> tc_const c
-        | EFunc (_, _, t, _) -> t
+        | EFunc (_, _, fi, _) -> fi.func_typ
         | _ -> raise (Not_value  (FormatExt.to_string Pretty.p_exp e'))
       end
     | _ -> raise (Not_value (FormatExt.to_string Pretty.p_exp e)) in

@@ -187,7 +187,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       and k' = new_name () 
       and throw' = new_name () in
         Fix (new_node (),
-             [(true, f, k' :: throw' :: "%this" :: args, ext_typ typ, 
+             [(true, f, k' :: throw' :: "%this" :: args, ext_typ typ.func_typ, 
                cps_exp body throw' (Jmp k'))],
              ret k (mk_id f))
   | ELet (_, x, e1, e2) ->
@@ -293,7 +293,8 @@ let rec cps (def : def) : cpsexp = match def with
         Fix (new_node (), [cps_bind (cexp.constr_name, cexp.constr_typ,
                                      EFunc (p,
                                             cexp.constr_args, 
-                                            TTop, 
+                                            { func_typ = TTop; 
+                                              func_owned = IdSet.empty }, 
                                             cexp.constr_exp))], 
              (* add setting the prototype as a plain expression: *)
              cps (DExp (ESetRef (p,

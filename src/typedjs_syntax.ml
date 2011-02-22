@@ -62,6 +62,11 @@ type typ =
   | TRec of id * typ 
   | TSyn of id (** type synonym *)
 
+and  func_info = {
+  func_typ : typ;
+  func_owned: IdSet.t;
+}
+
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
 let mk_object_typ (fs : (field * typ) list) (star : typ option) proto : typ =
@@ -113,7 +118,7 @@ type exp
   | EInfixOp of pos * id * exp * exp
   | EIf of pos * exp * exp * exp
   | EApp of pos * exp * exp list
-  | EFunc of pos * id list * typ * exp
+  | EFunc of pos * id list * func_info * exp
   | ELet of pos * id * exp * exp
   | ERec of (id * typ * exp) list * exp
   | ESeq of pos * exp * exp
@@ -276,7 +281,7 @@ module Pretty = struct
     | EApp (_, f, args) -> parens (horz (exp f :: map exp args))
     | EFunc (_, args, t, body) ->
         parens (vert [ horz [ text "fun"; parens (horz (map text args)); 
-                              text ":"; typ t ];
+                              text ":"; typ t.func_typ ];
                        exp body])
     | ELet (_, x, bound, body) ->
         parens (vert [ horz [ text "let";
