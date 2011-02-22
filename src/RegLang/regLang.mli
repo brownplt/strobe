@@ -12,5 +12,6 @@ val negate : fsm -> fsm
 val nullable : fsm -> bool 
 val is_finite : fsm -> bool
 val overlap : fsm -> fsm -> bool
+val subtract : fsm -> fsm -> fsm
 val contains : fsm -> fsm -> bool
-
+val is_empty : fsm -> bool

@@ -134,15 +134,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (un_null (tc_exp env obj)), 
       simpl_typ env (tc_exp env field) with
-      | TObject (fs, proto), TRegex (_, field_fsm) -> 
-          let merge_prop ((_, fsm), prop) t =
-            if RegLang.overlap fsm field_fsm
-            then match prop with 
-              | PPresent typ -> Env.typ_union env typ t
-              | PMaybe typ -> Env.typ_union env typ t
-              | PAbsent -> t 
-            else t in
-            List.fold_right merge_prop fs TBot
+      | ((TObject (fs, proto)) as tobj), TRegex (_, field_fsm) -> 
+          fields env tobj field_fsm
       | TObject _, typ -> 
           error p (sprintf "Got %s rather than a regex in lookup"
                      (string_of_typ typ))

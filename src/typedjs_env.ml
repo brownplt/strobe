@@ -167,7 +167,8 @@ module Env = struct
     | TObject (fs, proto) ->
         let fsms = (map snd2 (map fst2 fs)) in
           if List.exists (fun fsm1 -> List.exists
-                            (fun fsm2 -> RegLang.overlap fsm1 fsm2) 
+                            (fun fsm2 -> fsm1 != fsm2 &&
+                               RegLang.overlap fsm1 fsm2)
                             fsms) fsms then
             raise (Not_wf_typ "overlapping fields")
           else
@@ -439,5 +440,31 @@ let rec unify subst s t : typ IdMap.t = match s, t with
 let unify_typ (s : typ) (t : typ) : typ IdMap.t = 
   unify IdMap.empty s t
 
+let rec fields env obj fsm = match simpl_typ env obj, fsm with
+  | _, fsm when RegLang.is_empty fsm -> TBot
+  | TRef (TObject (fs, proto)), _ 
+  | TObject (fs, proto), _ ->
+      (** Since the fsms in fs are disjoint, we can safely subtract
+          them from the fsm in the regex without worrying about
+          missing overlaps in the cases where we know the field must
+          be present.  merge_prop iterates over fields and builds a
+          type and a more restricted fsm to use on prototype lookup *)
+      let merge_prop ((_, fsm), prop) (fsm', typ) =
+        if RegLang.overlap fsm fsm' 
+        then match prop with
+            (** If the property is present, we subtract the fsm *)
+          | PPresent s -> 
+              let fsm'' = RegLang.subtract fsm' fsm in
+              let typ' = Env.typ_union env s typ in
+                (fsm'', typ')
+                  (** If the property is possibly present, we can't 
+                      subtract the fsm, but we must include the type *)
+          | PMaybe s ->
+              (fsm', Env.typ_union env s typ)
+          | PAbsent -> (fsm', typ)
+        else (fsm', typ) in
+      let (proto_fsm, top_typ) = List.fold_right merge_prop fs (fsm, TBot) in
+        Env.typ_union env top_typ (fields env proto proto_fsm)
+  | TPrim Null, _ -> TPrim Undef
+  | _, _ -> failwith ("Bad fields invocation" ^ (string_of_typ obj))
 
-      

@@ -78,7 +78,7 @@ val simpl_typ : Env.env -> typ -> typ
 
 val unify_typ : typ -> typ -> typ IdMap.t
 
-
+val fields : Env.env -> typ -> RegLang.fsm -> typ
 
 val operator_env_of_tc_env : Env.env 
   -> (Typedjs_lattice.av list -> Typedjs_lattice.av) IdMap.t

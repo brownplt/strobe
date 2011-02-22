@@ -400,7 +400,9 @@ let nullable (dfa : dfa) : bool =
           List.for_all (f (StSet.add current visited)) next_states in
       f StSet.empty dfa.start
             
-            
+  let subtract dfa1 dfa2 =
+    let dfa2' = negate dfa2 in
+      intersect dfa1 dfa2'
 
 let contains (dfa1 : dfa) (dfa2 : dfa) : bool = 
   let dfa2' = negate dfa2 in
@@ -418,3 +420,5 @@ let dfa_of_regex (re : regex) : dfa =
 
 type fsm = dfa
 let fsm_of_regex = dfa_of_regex
+
+let is_empty dfa = contains (fsm_of_regex RegLang_syntax.Empty) dfa
