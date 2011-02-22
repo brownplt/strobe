@@ -138,10 +138,14 @@ let rec tc_exp (env : Env.env) exp = match exp with
           if RegLang.overlap field_fsm rest_fsm then
             error p (sprintf "Missed lookup and no proto implemented")
           else
-            List.fold_right (fun ((_, fsm), s) t -> 
-                               if RegLang.overlap fsm field_fsm
-                               then Env.typ_union env s t
-                               else t) fs TBot
+            let merge_prop ((_, fsm), prop) t =
+              if RegLang.overlap fsm field_fsm
+              then match prop with 
+                | PPresent typ -> Env.typ_union env typ t
+                | PMaybe typ -> Env.typ_union env typ t
+                | PAbsent -> t 
+              else t in
+            List.fold_right merge_prop fs TBot
       | TObject _, typ -> 
           error p (sprintf "Got %s rather than a regex in lookup"
                      (string_of_typ typ))
@@ -159,13 +163,16 @@ let rec tc_exp (env : Env.env) exp = match exp with
             if RegLang.overlap rest_fsm field_fsm then
               error p (sprintf "Updating non-existent field")
             else
-              let okfield ((_, fsm), s) = 
+              let okfield ((_, fsm), prop) = 
                 if RegLang.overlap fsm field_fsm
-                then if Env.subtype env typ s then true
-                else error p (sprintf "%s not a subtype of %s in %s[%s = %s]" 
-                                (string_of_typ typ) (string_of_typ s) 
-                                (string_of_typ tobj) (string_of_typ tfld)
-                                (string_of_typ typ))
+                then match prop with
+                  | PPresent s
+                  | PMaybe s -> if Env.subtype env typ s then true
+                    else error p (sprintf "%s not a subtype of %s in %s[%s = %s]" 
+                                    (string_of_typ typ) (string_of_typ s) 
+                                    (string_of_typ tobj) (string_of_typ tfld)
+                                    (string_of_typ typ))
+                  | PAbsent -> error p (sprintf "Assigning to absent field")
                 else true in
                 if List.for_all okfield fs then tobj
                 else error p "Shouldn't happen --- unknown error in update"
