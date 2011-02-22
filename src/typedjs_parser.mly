@@ -66,8 +66,8 @@ arg_typ
       { mk_object_typ $6 (Some $4) (TSyn "Object") }
   | LBRACE PROTO COLON arg_typ SEMI fields RBRACE
       { mk_object_typ $6 None $4 }
-  | LBRACE PROTO COLON arg_typ STAR COLON arg_typ SEMI fields RBRACE
-      { mk_object_typ $9 (Some $7) $4 }
+  | LBRACE PROTO COLON arg_typ COMMA STAR COLON arg_typ SEMI fields RBRACE
+      { mk_object_typ $10 (Some $8) $4 }
   | LPAREN typ RPAREN { $2 }
   | TID { TId $1 }
   | ID { TSyn $1 }

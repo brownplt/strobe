@@ -412,6 +412,7 @@ let contains (dfa1 : dfa) (dfa2 : dfa) : bool =
     (FormatExt.to_string DFA.pp dfa3); *)
   not (nullable dfa3)
 
+let is_empty dfa = not (nullable dfa)
         
 let dfa_of_regex (re : regex) : dfa = 
   let (first_state, follow_tbl, symbol_tbl) = tables_of_regex re in
@@ -421,4 +422,4 @@ let dfa_of_regex (re : regex) : dfa =
 type fsm = dfa
 let fsm_of_regex = dfa_of_regex
 
-let is_empty dfa = contains (fsm_of_regex RegLang_syntax.Empty) dfa
+
