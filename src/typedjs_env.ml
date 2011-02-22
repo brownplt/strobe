@@ -109,7 +109,11 @@ module Env = struct
             try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
             with Invalid_argument _ -> raise Not_subtype (* unequal lengths *)
           end
-        | TObject (fs1, _), TObject (fs2, _) -> subtype_fields env cache fs1 fs2
+        | TObject (fs1, p1, _), TObject (fs2, p2, _) -> 
+            begin
+              try subtype_fields env cache fs1 fs2
+              with Not_subtype -> subtype cache p1 p2
+            end
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
         | TSource s, TSource t -> subtype cache s t
         | TSink s, TSink t -> subtype cache t s
@@ -160,8 +164,8 @@ module Env = struct
     | TIntersect (s, t) -> 
         typ_intersect env (normalize_typ env s) (normalize_typ env t)
     | TRegex _ -> typ
-    | TObject (fs, rest) ->
-        TObject (map (second2 (normalize_typ env)) fs, rest)
+    | TObject (fs, proto, rest) ->
+        TObject (map (second2 (normalize_typ env)) fs, proto, rest)
     | TArrow (args, result) ->
         TArrow (map (normalize_typ env) args,
                 normalize_typ env result)
@@ -199,8 +203,8 @@ module Env = struct
     | RT.Num -> typ_union env (TPrim Num) typ
     | RT.Str -> typ_union env (TPrim Str) typ
     | RT.Bool -> typ_union env typ_bool typ
-    | RT.Function -> typ_union env (mk_object_typ [] None) typ
-    | RT.Object -> typ_union env (mk_object_typ [] None) typ
+    | RT.Function -> typ_union env (mk_object_typ [] None (TSyn "Function")) typ
+    | RT.Object -> typ_union env (mk_object_typ [] None (TSyn "Object")) typ
     | RT.Undefined -> typ_union env (TPrim Undef) typ
 
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
@@ -261,7 +265,7 @@ module Env = struct
   let rec set_global_object env cname =
     let ci = IdMap.find cname env.typ_syns in
     match ci with
-      | TRef (TObject (fs, _)) ->
+      | TRef (TObject (fs, _, _)) ->
         let add_field env (x, t) = begin match x with
           | (RegLang_syntax.String s, _) -> bind_id s (TRef t) env 
           | _ -> raise (Not_wf_typ (cname ^ " field was a regex in global"))
@@ -341,7 +345,8 @@ let rec typ_subst x s typ = match typ with
       TIntersect (typ_subst x s t1, typ_subst x s t2)
   | TArrow (t2s, t3)  ->
       TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
-  | TObject (fs, rest) -> TObject (map (second2 (typ_subst x s)) fs, rest)
+  | TObject (fs, proto, rest) -> 
+      TObject (map (second2 (typ_subst x s)) fs, proto, rest)
   | TRef t -> TRef (typ_subst x s t)
   | TSource t -> TSource (typ_subst x s t)
   | TSink t -> TSink (typ_subst x s t)
@@ -394,11 +399,12 @@ let rec unify subst s t : typ IdMap.t = match s, t with
       unify (unify subst s1 t1) s2 t2
   | TArrow (s2s, s3), TArrow (t2s, t3) ->
       List.fold_left2 unify subst (s3 :: s2s) (t3 :: t2s)
-  | TObject (fs1, _), TObject (fs2, _) ->
+  | TObject (fs1, p1, _), TObject (fs2, p2, _) ->
       let f subst (x, s) (y, t) = 
         if x = y then unify subst s t
         else failwith "cannot unify objects with distinct field names" in
-      List.fold_left2 f subst fs1 fs2
+      let subst' = List.fold_left2 f subst fs1 fs2 in
+        unify subst' p1 p2
   | TRef s, TRef t -> unify subst s t
   | TSource s, TSource t -> unify subst s t
   | TSink s, TSink t -> unify subst s t

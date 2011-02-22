@@ -58,6 +58,7 @@ rule token = parse
    | "." { DOT }
    | "constructor" { CONSTRUCTOR }
    | "prototype" { PROTOTYPE }
+   | "proto" { PROTO }
    | "class" { CLASS }
    | "upcast" { UPCAST }
    | "downcast" { DOWNCAST }

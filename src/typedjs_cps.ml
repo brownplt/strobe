@@ -61,7 +61,7 @@ let rec ext_typ typ = match typ with
       let cont_typ = TArrow ([result_typ], TBot)
         (* We can throw anything. *)
       and throw_typ = TArrow ([TTop], TBot) 
-      and this_typ = mk_object_typ [] None in
+      and this_typ = mk_object_typ [] None (TSyn "Object") in
       TArrow (cont_typ :: throw_typ :: this_typ :: arg_typs, TBot)
   | TForall (x, x_t, t) -> TForall (x, x_t, ext_typ t)
   | _ -> failwith "ext_typ expected an arrow type"

@@ -47,8 +47,9 @@ type typ =
   | TIntersect of typ * typ
   | TArrow of typ list * typ
       (* The list holds everything that's typed.
+         The second type is the prototype
          The final field is a description of what's absent. *)
-  | TObject of (field * typ) list * field
+  | TObject of (field * typ) list * typ * field
   | TRegex of field
   | TRef of typ
   | TSource of typ
@@ -63,17 +64,17 @@ type typ =
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
-let mk_object_typ (fs : (field * typ) list) (star : typ option) : typ =
+let mk_object_typ (fs : (field * typ) list) (star : typ option) proto : typ =
   let union (re1, _) re2 = RegLang_syntax.Alt (re1, re2) in
   let union_re = List.fold_right union (map fst2 fs) RegLang_syntax.Empty in
   let rest_fsm = RegLang.negate (RegLang.fsm_of_regex union_re) in
     match star with
       | Some typ ->
-          TRef (TObject (((union_re, rest_fsm), typ)::fs, 
+          TRef (TObject (((union_re, rest_fsm), typ)::fs, proto,
                          (RegLang_syntax.Empty, 
                           RegLang.fsm_of_regex RegLang_syntax.Empty)))
       | None ->
-          TRef (TObject (fs, (union_re, rest_fsm)))
+          TRef (TObject (fs, proto, (union_re, rest_fsm)))
 
 
 type env_decl =
@@ -241,9 +242,10 @@ module Pretty = struct
                             end) arg_typs));
               text "->";
               typ r_typ ]
-    | TObject (fs, _) ->
+    | TObject (fs, proto, _) ->
         let f (k, t) = horz [ fld k; text ":"; typ t ] in
-          braces (horz (intersperse (text ",") (map f fs)))
+          braces (horz ([text "proto:"; typ proto]@
+                          (intersperse (text ",") (map f fs))))
     | TRef s -> horz [ text "ref"; parens (typ s) ]
     | TSource s -> horz [ text "source"; parens (typ s) ]
     | TSink s -> horz [ text "sink"; parens (typ s) ]

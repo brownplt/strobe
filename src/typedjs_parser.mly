@@ -8,7 +8,7 @@ open Typedjs_syntax
 %token <string> ID TID STRING REGEX
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
-       PROTOTYPE CLASS UPCAST DOWNCAST FORALL LTCOLON IS
+       PROTOTYPE PROTO CLASS UPCAST DOWNCAST FORALL LTCOLON IS
        CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI
        
 
@@ -55,8 +55,13 @@ arg_typ
   | regex { TRegex ($1, RegLang.fsm_of_regex $1) }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | arg_typ INTERSECTION arg_typ { TIntersect ($1, $3) }
-  | LBRACE fields RBRACE { mk_object_typ $2 None }
-  | LBRACE STAR COLON arg_typ SEMI fields RBRACE { mk_object_typ $6 (Some $4) }
+  | LBRACE fields RBRACE { mk_object_typ $2 None (TSyn "Object") }
+  | LBRACE STAR COLON arg_typ SEMI fields RBRACE 
+      { mk_object_typ $6 (Some $4) (TSyn "Object") }
+  | LBRACE PROTO COLON arg_typ SEMI fields RBRACE
+      { mk_object_typ $6 None $4 }
+  | LBRACE PROTO COLON arg_typ STAR COLON arg_typ SEMI fields RBRACE
+      { mk_object_typ $9 (Some $7) $4 }
   | LPAREN typ RPAREN { $2 }
   | TID { TId $1 }
   | ID { TSyn $1 }
