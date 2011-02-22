@@ -9,7 +9,7 @@ open Typedjs_syntax
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE PROTO CLASS UPCAST DOWNCAST FORALL LTCOLON IS
-       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI
+       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI UNDERSCORE
        
 
 %right UNION INTERSECTION
@@ -31,10 +31,16 @@ args
   | arg_typ STAR args { $1 :: $3 }
 
 field
-  : regex COLON typ { (($1, RegLang.fsm_of_regex $1), $3) }
+  : regex COLON typ { let fsm = RegLang.fsm_of_regex $1 in
+                        (($1, fsm), 
+                         if RegLang.is_finite fsm
+                         then PPresent $3
+                         else PMaybe $3) }
   | ID COLON typ 
       { let re = RegLang_syntax.String $1 in
-        ((re, RegLang.fsm_of_regex re), $3) }
+        ((re, RegLang.fsm_of_regex re), PPresent $3) }
+  | regex COLON UNDERSCORE { let fsm = RegLang.fsm_of_regex $1 in
+                               (($1, fsm), PAbsent) }
 
 fields
   : { [] }
@@ -127,7 +133,5 @@ env_decls
 
 env
   : env_decls EOF { $1 }
-
-
 
 %%

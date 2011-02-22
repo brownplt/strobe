@@ -60,7 +60,7 @@ let rec ctc_of_typ p (typ : typ) = match typ with
   | TPrim (True) 
   | TPrim (False) -> flat p "Bool"
   | TUnion (s, t) -> CUnion (ctc_of_typ p s, ctc_of_typ p t)
-  | TObject (fields, _, _) ->
+  | TObject (fields, _) ->
       let typ_of_prop p = begin match p with
         | PPresent typ
         | PMaybe typ -> typ

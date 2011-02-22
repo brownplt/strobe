@@ -50,6 +50,7 @@ rule token = parse
    | "False" { FALSE }
    | "Undef" { UNDEF }
    | "Null" { NULL }
+   | "_" { UNDERSCORE }
    | "*" { STAR }
    | ":" { COLON }
    | ";" { SEMI }

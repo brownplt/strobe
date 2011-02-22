@@ -128,23 +128,20 @@ let rec tc_exp (env : Env.env) exp = match exp with
       let mk_field (name, exp) =
         ((RegLang_syntax.String name,
           RegLang.fsm_of_regex (RegLang_syntax.String name)),
-         tc_exp env exp) in
+         PPresent (tc_exp env exp)) in
       Env.check_typ p env (mk_object_typ (map mk_field fields) None
                              (TSyn "Object"))
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (un_null (tc_exp env obj)), 
       simpl_typ env (tc_exp env field) with
-      | TObject (fs, proto, (_, rest_fsm)), TRegex (_, field_fsm) -> 
-          if RegLang.overlap field_fsm rest_fsm then
-            error p (sprintf "Missed lookup and no proto implemented")
-          else
-            let merge_prop ((_, fsm), prop) t =
-              if RegLang.overlap fsm field_fsm
-              then match prop with 
-                | PPresent typ -> Env.typ_union env typ t
-                | PMaybe typ -> Env.typ_union env typ t
-                | PAbsent -> t 
-              else t in
+      | TObject (fs, proto), TRegex (_, field_fsm) -> 
+          let merge_prop ((_, fsm), prop) t =
+            if RegLang.overlap fsm field_fsm
+            then match prop with 
+              | PPresent typ -> Env.typ_union env typ t
+              | PMaybe typ -> Env.typ_union env typ t
+              | PAbsent -> t 
+            else t in
             List.fold_right merge_prop fs TBot
       | TObject _, typ -> 
           error p (sprintf "Got %s rather than a regex in lookup"
@@ -158,24 +155,21 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EUpdate (p, obj, field, value) -> begin
       match simpl_typ env (tc_exp env obj), 
         tc_exp env field, tc_exp env value with
-        | ((TObject (fs, proto, (_, rest_fsm))) as tobj), 
+        | ((TObject (fs, proto)) as tobj), 
             ((TRegex (re, field_fsm)) as tfld), typ ->
-            if RegLang.overlap rest_fsm field_fsm then
-              error p (sprintf "Updating non-existent field")
-            else
-              let okfield ((_, fsm), prop) = 
-                if RegLang.overlap fsm field_fsm
-                then match prop with
-                  | PPresent s
-                  | PMaybe s -> if Env.subtype env typ s then true
-                    else error p (sprintf "%s not a subtype of %s in %s[%s = %s]" 
-                                    (string_of_typ typ) (string_of_typ s) 
-                                    (string_of_typ tobj) (string_of_typ tfld)
-                                    (string_of_typ typ))
-                  | PAbsent -> error p (sprintf "Assigning to absent field")
-                else true in
-                if List.for_all okfield fs then tobj
-                else error p "Shouldn't happen --- unknown error in update"
+            let okfield ((_, fsm), prop) = 
+              if RegLang.overlap fsm field_fsm
+              then match prop with
+                | PPresent s
+                | PMaybe s -> if Env.subtype env typ s then true
+                  else error p (sprintf "%s not subtype of %s in %s[%s = %s]"
+                                  (string_of_typ typ) (string_of_typ s) 
+                                  (string_of_typ tobj) (string_of_typ tfld)
+                                  (string_of_typ typ))
+                | PAbsent -> error p (sprintf "Assigning to absent field")
+              else true in
+              if List.for_all okfield fs then tobj
+              else error p "Shouldn't happen --- unknown error in update"
         | obj, fld, typ ->
             error p (sprintf "Bad update: %s[%s = %s]"
                        (string_of_typ obj) (string_of_typ fld) 
