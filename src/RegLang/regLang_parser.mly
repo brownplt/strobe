@@ -7,8 +7,8 @@ open RegLang_syntax
 
 %token <string> STRING
 %token <char> CHAR
-%token LPAREN RPAREN LBRACK RBRACK CARET STAR UNDERSCORE PIPE DOT LBRACE RBRACE
-       COMMA LTCOLON LTSLASHCOLON SEMI EOF
+%token LPAREN RPAREN STAR PIPE DOT 
+       LTCOLON LTSLASHCOLON SEMI EOF
 
 %start regex_tests
 %start regex

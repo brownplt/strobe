@@ -366,7 +366,7 @@ let rec tc_def env def = match def with
             let bind_arg env x t = Env.bind_id x t env in
             let env = List.fold_left2 bind_arg env (cexp.constr_args) arg_typs
             in
-            let env = Env.clear_labels env in           
+            let _ = Env.clear_labels env in           
               begin match result_typ with
                   TObject _ -> failwith "No constructing yet"
                 | _ -> raise (Typ_error (

@@ -23,12 +23,7 @@ rule token = parse
    | "//"[^ '\r' '\n']* [ '\r' '\n' ] { new_line lexbuf; token lexbuf }
    | "(" { LPAREN }
    | ")" { RPAREN }
-   | "{" { LBRACE }
-   | "}" { RBRACE }
-   | "[" { LBRACK }
-   | "]" { RBRACK }
    | "|" { PIPE }
-   | "," { COMMA }
    | "*" { STAR }
    | "." { DOT }
    | "<:" { LTCOLON }
