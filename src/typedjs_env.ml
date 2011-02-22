@@ -165,7 +165,13 @@ module Env = struct
         typ_intersect env (normalize_typ env s) (normalize_typ env t)
     | TRegex _ -> typ
     | TObject (fs, proto) ->
-        TObject (map (second2 (normalize_prop env)) fs, proto)
+        let fsms = (map snd2 (map fst2 fs)) in
+          if List.exists (fun fsm1 -> List.exists
+                            (fun fsm2 -> RegLang.overlap fsm1 fsm2) 
+                            fsms) fsms then
+            raise (Not_wf_typ "overlapping fields")
+          else
+            TObject (map (second2 (normalize_prop env)) fs, proto)
     | TArrow (args, result) ->
         TArrow (map (normalize_typ env) args,
                 normalize_typ env result)
@@ -432,3 +438,6 @@ let rec unify subst s t : typ IdMap.t = match s, t with
 
 let unify_typ (s : typ) (t : typ) : typ IdMap.t = 
   unify IdMap.empty s t
+
+
+      
