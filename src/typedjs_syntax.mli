@@ -59,6 +59,11 @@ and prop =
   | PMaybe of typ
   | PAbsent
 
+and  func_info = {
+  func_typ : typ;
+  func_owned: IdSet.t;
+}
+
 val typ_bool : typ
 
 val mk_object_typ : (field * typ) list -> typ option -> typ -> typ
@@ -100,7 +105,7 @@ type exp =
   | EInfixOp of pos * id * exp * exp
   | EIf of pos * exp * exp * exp
   | EApp of pos * exp * exp list
-  | EFunc of pos * id list * typ * exp
+  | EFunc of pos * id list * func_info * exp
       (* [Typedjs_fromExpr.from_exprjs] ensures that the argument names are
          unique. *)
   | ELet of pos * id * exp * exp
@@ -178,4 +183,6 @@ module Pretty : sig
 end
 
 val string_of_typ : typ -> string
+
+val assigned_free_vars : exp -> IdSet.t
 

@@ -250,8 +250,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
                         (string_of_typ s)) in
         List.iter tc_bind binds;
         tc_exp env body
-  | EFunc (p, args, fn_typ, body) -> 
-      let expected_typ = Env.check_typ p env fn_typ in
+  | EFunc (p, args, func_info, body) -> 
+      let expected_typ = Env.check_typ p env func_info.func_typ in
       begin match Env.bind_typ env expected_typ with
           (env, TArrow (arg_typs, result_typ)) ->
             if not (List.length arg_typs = List.length args) then
@@ -262,11 +262,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
             let env = List.fold_left2 bind_arg env args arg_typs in
             let env = Env.clear_labels env in
             let body_typ = tc_exp env body in
-              if Env.subtype env body_typ result_typ then 
-                expected_typ
-              else raise 
-                (Typ_error
-                   (p,
+            if Env.subtype env body_typ result_typ then 
+              expected_typ
+            else raise 
+              (Typ_error
+                 (p,
                     sprintf "function body has type\n%s\n, but the \
                              return type is\n%s" (string_of_typ body_typ)
                       (string_of_typ result_typ)))
@@ -366,7 +366,7 @@ let rec tc_def env def = match def with
             let bind_arg env x t = Env.bind_id x t env in
             let env = List.fold_left2 bind_arg env (cexp.constr_args) arg_typs
             in
-            let env = Env.clear_labels env in           
+            let _ = Env.clear_labels env in           
               begin match result_typ with
                   TObject _ -> failwith "No constructing yet"
                 | _ -> raise (Typ_error (

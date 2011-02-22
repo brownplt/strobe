@@ -66,6 +66,11 @@ and prop =
   | PMaybe of typ
   | PAbsent
 
+and  func_info = {
+  func_typ : typ;
+  func_owned: IdSet.t;
+}
+
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
 let mk_object_typ (fs : (field * typ) list) (star : typ option) proto : typ =
@@ -120,7 +125,7 @@ type exp
   | EInfixOp of pos * id * exp * exp
   | EIf of pos * exp * exp * exp
   | EApp of pos * exp * exp list
-  | EFunc of pos * id list * typ * exp
+  | EFunc of pos * id list * func_info * exp
   | ELet of pos * id * exp * exp
   | ERec of (id * typ * exp) list * exp
   | ESeq of pos * exp * exp
@@ -287,7 +292,7 @@ module Pretty = struct
     | EApp (_, f, args) -> parens (horz (exp f :: map exp args))
     | EFunc (_, args, t, body) ->
         parens (vert [ horz [ text "fun"; parens (horz (map text args)); 
-                              text ":"; typ t ];
+                              text ":"; typ t.func_typ ];
                        exp body])
     | ELet (_, x, bound, body) ->
         parens (vert [ horz [ text "let";
@@ -366,4 +371,45 @@ end
 
 let string_of_typ = FormatExt.to_string Pretty.p_typ
 
+let assigned_free_vars (e : exp) = 
+  let rec exp : exp -> IdSet.t = function
+    | EConst _ -> IdSet.empty
+    | EBot _ -> IdSet.empty
+    | EAssertTyp (_, _, e) -> exp e
+    | EArray (_, es) -> IdSetExt.unions (map exp es)
+    | EEmptyArray _ -> IdSet.empty
+    | EObject (_, fs) -> IdSetExt.unions (map (fun (_, e) -> exp e) fs)
+    | EId _ -> IdSet.empty
+    | EBracket (_, e1, e2) -> IdSet.union (exp e1) (exp e2)
+    | EUpdate (_, e1, e2, e3) -> IdSetExt.unions [ exp e1; exp e2; exp e3 ]
+    | ENew (_, _, es) -> IdSetExt.unions (map exp es)
+    | EPrefixOp (_, _, e) -> exp e
+    | EInfixOp (_, _, e1, e2) -> IdSet.union (exp e1) (exp e2)
+    | EIf (_, e1, e2, e3) -> IdSetExt.unions [ exp e1; exp e2; exp e3 ]
+    | EApp (_, e, es) -> IdSetExt.unions (map exp (e :: es))
+    | EFunc (_, args, _, e) -> fold_right IdSet.remove args (exp e)
+    | ELet (_, x, e1, e2) ->  IdSet.union (exp e1) (IdSet.remove x (exp e2))
+    | ERec (binds, e) ->
+      let (xs, es) = 
+        fold_right (fun (x, _, e) (xs, es) -> (x::xs, e::es))
+          binds ([], []) in
+      fold_right IdSet.remove xs (IdSetExt.unions (map exp (e :: es)))
+    | ESeq (_, e1, e2) -> IdSet.union (exp e1) (exp e2)
+    | ELabel (_, _, _, e) -> exp e
+    | EBreak (_, _, e) -> exp e
+    | ETryCatch (_, e1, x, e2) -> IdSet.union (exp e1) (IdSet.remove x (exp e2))
+    | ETryFinally (_, e1, e2) -> IdSet.union (exp e1) (exp e2)
+    | EThrow (_, e) -> exp e
+    | ETypecast (_, _, e) -> exp e
+    | ERef (_, _, e) -> exp e
+    | EDeref (_, e) -> exp e
+    | ESetRef (_, EId (_, x), e) -> IdSet.add x (exp e)
+    | ESetRef (_, e1, e2) -> IdSet.union (exp e1) (exp e2)
+    | ESubsumption (_, _, e) -> exp e
+    | EDowncast (_, _, e) -> exp e
+    | ETypAbs (_, _, _, e) -> exp e
+    | ETypApp (_, e, _) -> exp e
+    | EForInIdx _ -> IdSet.empty
+    | ECheat _ -> IdSet.empty
+  in exp e
 

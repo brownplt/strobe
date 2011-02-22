@@ -125,7 +125,7 @@ let rec exp (env : env) expr = match expr with
   | WhileExpr (a, e1, e2) ->
       let loop_typ = TArrow ([], TPrim Undef) in
         ERec ([("%loop", loop_typ,
-                EFunc (a, [], loop_typ,
+                EFunc (a, [], { func_typ = loop_typ; func_owned = IdSet.empty },
                        EIf (a, exp env e1, 
                             ESeq (a, exp env e2, 
                                   EApp (a, EId (a, "%loop"), [])),
@@ -134,7 +134,7 @@ let rec exp (env : env) expr = match expr with
   | DoWhileExpr (a, body_e, test_e) ->
       let loop_typ = TArrow ([], TPrim Undef) in
         ERec ([("%loop", loop_typ,
-                EFunc (a, [], loop_typ,
+                EFunc (a, [], { func_typ = loop_typ; func_owned = IdSet.empty },
                        ESeq (a, exp env body_e, 
                              EIf (a, exp env test_e, 
                                   EApp (a, EId (a, "%loop"), []),
@@ -183,9 +183,10 @@ let rec exp (env : env) expr = match expr with
       raise (Not_well_formed (p, "function is missing a type annotation"))
   | ForInExpr (p, x, objExpr, body) -> begin match exp env objExpr with
       | EDeref (_, EId (_, obj)) ->
-          let loop_typ = TArrow ([TField; TField], TPrim Undef) in
+          let loop_typ =TArrow ([TField; TField], TPrim Undef) in
             ERec ([("%loop", loop_typ,
-                    EFunc (p, [obj; x], loop_typ,
+                    EFunc (p, [obj; x], { func_typ = loop_typ;
+                                          func_owned = IdSet.empty },
                            ESeq (p, exp env body, 
                                  EApp (p, EId (p, "%loop"),
                                        [ EId (p, obj); EId (p, x) ]))))],
@@ -237,7 +238,8 @@ and match_func env expr = match expr with
                 raise (Not_well_formed (
                          a, sprintf "given %d args but %d arg types"
                            (List.length args) (List.length arg_typs)));
-              Some (typ, EFunc (a, args, typ, 
+              Some (typ, EFunc (a, args, { func_typ = typ;
+                                           func_owned = IdSet.empty }, 
                                 fold_left mutable_arg
                                   (ELabel (a', "%return", r, exp env' body))
                                   args))
