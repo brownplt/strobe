@@ -175,3 +175,5 @@ end
 
 val string_of_typ : typ -> string
 
+val assigned_free_vars : exp -> IdSet.t
+
