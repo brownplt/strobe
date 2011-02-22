@@ -165,7 +165,7 @@ module Env = struct
         typ_intersect env (normalize_typ env s) (normalize_typ env t)
     | TRegex _ -> typ
     | TObject (fs, proto, rest) ->
-        TObject (map (second2 (normalize_typ env)) fs, proto, rest)
+        TObject (map (second2 (normalize_prop env)) fs, proto, rest)
     | TArrow (args, result) ->
         TArrow (map (normalize_typ env) args,
                 normalize_typ env result)
@@ -186,7 +186,10 @@ module Env = struct
     | TSyn x ->
       if IdMap.mem x env.typ_syns then typ
       else raise (Not_wf_typ (x ^ " is not a type"))
-
+  and normalize_prop env prop = match prop with
+    | PPresent typ -> PPresent (normalize_typ env typ)
+    | PMaybe typ -> PMaybe (normalize_typ env typ)
+    | PAbsent -> PAbsent
   let check_typ p env t = 
     try normalize_typ env t
     with Not_wf_typ s -> raise (Typ_error (p, s))
@@ -266,8 +269,8 @@ module Env = struct
     let ci = IdMap.find cname env.typ_syns in
     match ci with
       | TRef (TObject (fs, _, _)) ->
-        let add_field env (x, t) = begin match x with
-          | (RegLang_syntax.String s, _) -> bind_id s (TRef t) env 
+        let add_field env ((x : field), (p : prop)) = begin match x, p with
+          | ((RegLang_syntax.String s, _), PPresent t) -> bind_id s (TRef t) env
           | _ -> raise (Not_wf_typ (cname ^ " field was a regex in global"))
         end in
         List.fold_left add_field env fs
@@ -346,7 +349,11 @@ let rec typ_subst x s typ = match typ with
   | TArrow (t2s, t3)  ->
       TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
   | TObject (fs, proto, rest) -> 
-      TObject (map (second2 (typ_subst x s)) fs, proto, rest)
+      let prop_subst p = match p with
+        | PPresent typ -> PPresent (typ_subst x s typ)
+        | PMaybe typ -> PMaybe (typ_subst x s typ)
+        | PAbsent -> PAbsent in
+      TObject (map (second2 prop_subst) fs, proto, rest)
   | TRef t -> TRef (typ_subst x s t)
   | TSource t -> TSource (typ_subst x s t)
   | TSink t -> TSink (typ_subst x s t)
@@ -363,6 +370,7 @@ let rec typ_subst x s typ = match typ with
       typ
     else 
       failwith "TODO: capture-free substitution"
+
 
 let typ_unfold typ = match typ with
     | TRec (x, t) -> typ_subst x typ t
@@ -400,8 +408,12 @@ let rec unify subst s t : typ IdMap.t = match s, t with
   | TArrow (s2s, s3), TArrow (t2s, t3) ->
       List.fold_left2 unify subst (s3 :: s2s) (t3 :: t2s)
   | TObject (fs1, p1, _), TObject (fs2, p2, _) ->
-      let f subst (x, s) (y, t) = 
-        if x = y then unify subst s t
+      let f subst (x, p1) (y, p2) = 
+        if x = y then
+          match p1, p2 with
+            | PPresent s, PPresent t -> unify subst s t
+            | PMaybe s, PMaybe t -> unify subst s t
+            | PAbsent, PAbsent -> subst
         else failwith "cannot unify objects with distinct field names" in
       let subst' = List.fold_left2 f subst fs1 fs2 in
         unify subst' p1 p2

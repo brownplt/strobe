@@ -42,7 +42,7 @@ type typ =
   | TUnion of typ * typ
   | TIntersect of typ * typ
   | TArrow of typ list * typ      
-  | TObject of (field * typ) list * typ * field
+  | TObject of (field * prop) list * typ * field
   | TRegex of field
   | TRef of typ
   | TSource of typ
@@ -54,6 +54,10 @@ type typ =
   | TField
   | TRec of id * typ 
   | TSyn of id (** type synonym *)
+and prop = 
+  | PPresent of typ
+  | PMaybe of typ
+  | PAbsent
 
 val typ_bool : typ
 

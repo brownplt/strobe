@@ -49,7 +49,7 @@ type typ =
       (* The list holds everything that's typed.
          The second type is the prototype
          The final field is a description of what's absent. *)
-  | TObject of (field * typ) list * typ * field
+  | TObject of (field * prop) list * typ * field
   | TRegex of field
   | TRef of typ
   | TSource of typ
@@ -61,20 +61,27 @@ type typ =
   | TField
   | TRec of id * typ 
   | TSyn of id (** type synonym *)
+and prop = 
+  | PPresent of typ
+  | PMaybe of typ
+  | PAbsent
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
 let mk_object_typ (fs : (field * typ) list) (star : typ option) proto : typ =
+  let to_prop ((_, fsm) as fld, typ) =
+    if RegLang.is_finite fsm then (fld, PPresent typ) else (fld, PMaybe typ) in
   let union (re1, _) re2 = RegLang_syntax.Alt (re1, re2) in
   let union_re = List.fold_right union (map fst2 fs) RegLang_syntax.Empty in
   let rest_fsm = RegLang.negate (RegLang.fsm_of_regex union_re) in
     match star with
       | Some typ ->
-          TRef (TObject (((union_re, rest_fsm), typ)::fs, proto,
+          TRef (TObject (((union_re, rest_fsm), PMaybe typ)::(map to_prop fs), 
+                         proto,
                          (RegLang_syntax.Empty, 
                           RegLang.fsm_of_regex RegLang_syntax.Empty)))
       | None ->
-          TRef (TObject (fs, proto, (union_re, rest_fsm)))
+          TRef (TObject (map to_prop fs, proto, (union_re, rest_fsm)))
 
 
 type env_decl =
@@ -243,7 +250,7 @@ module Pretty = struct
               text "->";
               typ r_typ ]
     | TObject (fs, proto, _) ->
-        let f (k, t) = horz [ fld k; text ":"; typ t ] in
+        let f (k, p) = horz [ fld k; text ":"; prop p ] in
           braces (horz ([text "proto:"; typ proto]@
                           (intersperse (text ",") (map f fs))))
     | TRef s -> horz [ text "ref"; parens (typ s) ]
@@ -255,6 +262,10 @@ module Pretty = struct
     | TSyn (name) -> text name
     | TField -> text "field"
     | TRec (x, t) -> horz [ text x; text "."; typ t ]
+  and prop p = match p with
+    | PPresent t -> typ t
+    | PMaybe t -> typ t
+    | PAbsent -> text "_"
 
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c

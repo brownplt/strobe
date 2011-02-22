@@ -10,6 +10,7 @@ val fsm_of_regex : regex -> fsm
 val intersect : fsm -> fsm -> fsm
 val negate : fsm -> fsm
 val nullable : fsm -> bool 
+val is_finite : fsm -> bool
 val overlap : fsm -> fsm -> bool
 val contains : fsm -> fsm -> bool
 

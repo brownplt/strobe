@@ -390,6 +390,18 @@ let nullable (dfa : dfa) : bool =
   let overlap dfa1 dfa2 =
     nullable (intersect dfa1 dfa2)
 
+  let is_finite dfa =
+    let rec f visited current =
+      if StSet.mem current visited then false
+      else 
+        let edges = StMap.find current dfa.edges in
+        let next_states = (edges.other_chars :: 
+                             AugCharMapExt.values edges.on_char) in
+          List.for_all (f (StSet.add current visited)) next_states in
+      f StSet.empty dfa.start
+            
+            
+
 let contains (dfa1 : dfa) (dfa2 : dfa) : bool = 
   let dfa2' = negate dfa2 in
   let dfa3 = intersect dfa1 dfa2' in
