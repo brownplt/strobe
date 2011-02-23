@@ -3,6 +3,10 @@ open Prelude
 module CharSet : Set.S
   with type elt = Char.t
 
+module CharSetExt : SetExt.S 
+  with type elt = Char.t
+  and type t = CharSet.t
+
 type regex =
   | InSet of CharSet.t
   | NotInSet of CharSet.t
