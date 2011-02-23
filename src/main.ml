@@ -98,8 +98,10 @@ let action_expr () : unit =
     Exprjs.Pretty.p_expr e std_formatter
 
 let get_typedjs () =
-  Typedjs_fromExpr.from_exprjs (get_env ())
-    (from_javascript (parse_javascript (get_cin ()) (get_cin_name ())))
+  let (prog, _) = unique_ids 
+    (Typedjs_fromExpr.from_exprjs (get_env ())
+       (from_javascript (parse_javascript (get_cin ()) (get_cin_name ())))) 
+  in prog
 
 let action_pretypecheck () : unit = 
   let typedjs = get_typedjs () in

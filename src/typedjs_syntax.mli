@@ -186,3 +186,5 @@ val string_of_typ : typ -> string
 
 val assigned_free_vars : exp -> IdSet.t
 
+val unique_ids : def -> def * (id, id) Hashtbl.t
+

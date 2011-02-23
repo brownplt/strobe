@@ -406,3 +406,81 @@ let assigned_free_vars (e : exp) =
     | ECheat _ -> IdSet.empty
   in exp e
 
+let unique_ids (prog : def) : def * (string, string) Hashtbl.t = 
+  let module H = Hashtbl in
+  let ht : (string, string) H.t = H.create 200 in
+  let name : id -> id =
+    let next = ref 0 in
+    fun old_name ->
+      let new_name = "#" ^ (string_of_int !next) in
+      H.add ht new_name old_name;
+      incr next; 
+      new_name in
+  let find x env = 
+    if IdMap.mem x env then IdMap.find x env
+    else x (* assume global *) in
+  let rec exp (env : id IdMap.t) = function
+    | EConst (p, c) -> EConst (p, c)
+    | EBot p -> EBot p
+    | EAssertTyp (p, t, e) -> EAssertTyp (p, t, exp env e)
+    | EArray (p, es) -> EArray (p, map (exp env) es)
+    | EEmptyArray (p, t) -> EEmptyArray (p, t)
+    | EObject (p, flds) -> EObject (p, map (second2 (exp env)) flds)
+    | EId (p, x) -> EId (p, find x env)
+    | EBracket (p, e1, e2) -> EBracket (p, exp env e1, exp env e2)
+    | EUpdate (p, e1, e2, e3) -> EUpdate (p, exp env e1, exp env e2, exp env e3)
+    | ENew (p, x, es) -> ENew (p, find x env, map (exp env) es)
+    | EPrefixOp (p, op, e) -> EPrefixOp (p, op, exp env e)
+    | EInfixOp (p, op, e1, e2) -> EInfixOp (p, op, exp env e1, exp env e2)
+    | EIf (p, e1, e2, e3) -> EIf (p, exp env e1, exp env e2, exp env e3)
+    | EApp (p, e, es) -> EApp (p, exp env e, map (exp env) es)
+    | EFunc (p, xs, fi, e) ->
+      let xs' = map name xs in
+      EFunc (p, xs', fi, exp (List.fold_right2 IdMap.add xs xs' env) e)
+    | ELet (p, x, e1, e2) ->
+      let x' = name x in
+      ELet (p, x', exp env e1, exp (IdMap.add x x' env) e2)
+    | ERec (binds, body) ->
+      let (xs, xs') =
+        fold_right 
+          (fun (x, _, _) (xs, xs') -> (x::xs, (name x)::xs'))
+          binds ([], []) in
+      let env = List.fold_right2 IdMap.add xs xs' env in
+      ERec (map (fun (x, t, e) -> (find x env, t, exp env e)) binds,
+            exp env body)
+    | ESeq (p, e1, e2) -> ESeq (p, exp env e1, exp env e2)
+    | ELabel (p, x, t, e) -> ELabel (p, x, t, exp env e)
+    | EBreak (p, x, e) -> EBreak (p, x, exp env e)
+    | ETryCatch (p, e1, x, e2) ->
+      let x' = name x in
+      ETryCatch (p, exp env e1, x', exp env e2)
+    | ETryFinally (p, e1, e2) -> ETryFinally (p, exp env e1, exp env e2)
+    | EThrow (p, e) -> EThrow (p, exp env e)
+    | ETypecast (p, s, e) -> ETypecast (p, s, exp env e)
+    | ERef (p, k, e) -> ERef (p, k, exp env e)
+    | EDeref (p, e) -> EDeref (p, exp env e)
+    | ESetRef (p, e1, e2) -> ESetRef (p, exp env e1, exp env e2)
+    | ESubsumption (p, t, e) -> ESubsumption (p, t, exp env e)
+    | EDowncast (p, t, e) -> EDowncast (p, t, exp env e)
+    | ETypAbs (p, x, t, e) -> ETypAbs (p, x, t, exp env e)
+    | ETypApp (p, e, t) -> ETypApp (p, exp env e, t)
+    | EForInIdx p -> EForInIdx p
+    | ECheat (p, t, e) -> ECheat (p, t, e)
+  and def (env : id IdMap.t) = function
+    | DEnd -> DEnd
+    | DExp (e, d) -> DExp (exp env e, def env d)
+    | DLet (p, x, e, d) ->
+      let x' = name x in
+      DLet (p, x', exp env e, def (IdMap.add x x' env) d)
+    | DRec (binds, body) ->
+      let (xs, xs') = 
+        fold_right
+          (fun (x, _, _) (xs, xs')-> (x::xs, (name x):: xs'))
+          binds ([], []) in
+      let env = List.fold_right2 IdMap.add xs xs' env in
+      DRec (map (fun (x, t, e) -> (find x env, t, exp env e)) binds,
+            def env body) 
+    | DConstructor (cexp, d) -> DConstructor (cexp, def env d)
+    | DExternalMethod (p, x, y, e, d) -> 
+      DExternalMethod (p, x, y, e, def env d) in
+  (def IdMap.empty prog, ht)
