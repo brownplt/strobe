@@ -5,6 +5,8 @@ open Format
 open Typedjs_dyn
 open Typedjs_tc_util
 
+let consumed_owned_vars  = ref IdSet.empty
+
 let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
 
 let error_on_unreachable = ref true
@@ -245,6 +247,16 @@ let rec tc_exp (env : Env.env) exp = match exp with
         List.iter tc_bind binds;
         tc_exp env body
   | EFunc (p, args, func_info, body) -> 
+    begin
+      let misowned_vars = IdSet.inter !consumed_owned_vars 
+        func_info.func_owned in
+      if (not (IdSet.is_empty misowned_vars)) then
+        raise (Typ_error (p, sprintf "identifier %s is already owned"
+          (IdSet.choose misowned_vars)))
+      else
+        consumed_owned_vars := IdSet.union !consumed_owned_vars
+          func_info.func_owned;
+    end;
       let expected_typ = Env.check_typ p env func_info.func_typ in
       begin match Env.bind_typ env expected_typ with
           (env, TArrow (arg_typs, result_typ)) ->
