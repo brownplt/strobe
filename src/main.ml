@@ -165,8 +165,10 @@ let action_regex () : unit =
   let run_test (pos, re1, re2, should_succeed) = 
     let fsm1 = RegLang.fsm_of_regex re1 in
     let fsm2 = RegLang.fsm_of_regex re2 in
-    if RegLang.contains fsm1 fsm2 != should_succeed then
-      failwith (sprintf "regex test failed at %s" (string_of_position pos)) in
+      match RegLang.counterexample fsm1 fsm2, should_succeed with
+        | None, false -> eprintf "(Failed) Found no overlap, but expected to\n"; ()
+        | Some str, true -> eprintf "(Failed) Found overlap: %s\n" str; () 
+        | _, _ -> () in
   List.iter run_test tests
   
 

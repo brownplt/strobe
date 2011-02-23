@@ -53,6 +53,10 @@ module AugChar = struct
 
   open FormatExt
 
+  let char_of_ac c = match c with
+    | Char ch -> ch
+    | Accept -> '#'
+
   let pp t = match t with
     | Char ch -> fun fmt -> Format.pp_print_char fmt ch
     | Accept -> text "#"
@@ -289,11 +293,11 @@ let tables_of_regex (re : regex) =
     else
       aux.first_pos in
 
-  for i = 0 to max_pos  do
+(**  for i = 0 to max_pos  do
     printf "position %d (%s) followed by%s\n" i
       (FormatExt.to_string Leaf.pp (sym_tbl.(i)))
-      (FormatExt.to_string (IntSetExt.p_set FormatExt.int) follow_tbl.(i));
-  done;
+      (FormatExt.to_string (IntSetExt.p_set FormatExt.int) follow_tbl.(i)); 
+     done;*)
   (first_state, follow_tbl, sym_tbl)
 
  (* Page 141, Figure 3.44 *)
@@ -337,13 +341,11 @@ let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
                match leaf with
                  | LeafNotIn chs -> 
                      if not (AugCharSet.mem AugChar.Accept chs) then
-                       (printf "Accepting...\n";
-                        accept := StSet.add next_st_name !accept);
+                        accept := StSet.add next_st_name !accept;
                      (map, Some (chs, next_st_name))
                  | LeafIn chs -> 
                      if (AugCharSet.mem AugChar.Accept chs) then
-                       (printf "Accepting...\n";
-                        accept := StSet.add next_st_name !accept);
+                        accept := StSet.add next_st_name !accept;
                      ((AugCharSet.fold 
                          (fun ch map' -> 
                             AugCharMap.add ch next_st_name map') chs map), rest))
@@ -353,7 +355,7 @@ let make_dfa (first_state : IntSet.t) (follow : follow_tbl) sym  =
         | Some (other_chs, next_st), LeafIn chs -> 
             { on_char = AugCharSet.fold 
                 (fun ch map' -> 
-                   AugCharMap.add ch next_st map') chs out_map;
+                   AugCharMap.add ch err_st map') chs out_map;
               other_chars = next_st }
         | _ -> failwith "FATAL: not my expected partition in edges_from_st"
       in
@@ -425,6 +427,20 @@ let nullable (dfa : dfa) : bool =
     f StSet.empty (StSet.singleton dfa.start)
   with Not_found -> false (* choose failed above *)
 
+let find_word dfa =
+  let rec f (chs : string) visited state =
+    if StSet.mem state dfa.accept then
+      Some chs
+    else if StSet.mem state visited then None
+    else let check_edge char state' found = match found with
+      | Some chs -> Some chs
+      | None -> f (chs ^ (Char.escaped (AugChar.char_of_ac char))) 
+          (StSet.add state visited) state' in
+    let edges = StMap.find state dfa.edges in
+    let addedmap = AugCharMap.add (AugChar.Char 'z') 
+      edges.other_chars edges.on_char in
+      AugCharMap.fold check_edge addedmap None in
+    f "" StSet.empty dfa.start
 
   let overlap dfa1 dfa2 =
     nullable (intersect dfa1 dfa2)
@@ -446,10 +462,18 @@ let nullable (dfa : dfa) : bool =
 let contains (dfa1 : dfa) (dfa2 : dfa) : bool = 
   let dfa2' = negate dfa2 in
   let dfa3 = intersect dfa1 dfa2' in
-  printf "DFAs:\n%s\n%s\n%s\n\n\n%!" (FormatExt.to_string DFA.pp dfa1)
+(*  printf "DFAs:\n%s\n%s\n%s\n\n\n%!" (FormatExt.to_string DFA.pp dfa1)
     (FormatExt.to_string DFA.pp dfa2')
-    (FormatExt.to_string DFA.pp dfa3);
+    (FormatExt.to_string DFA.pp dfa3); *)
   not (nullable dfa3)
+
+let counterexample dfa1 dfa2 =
+  let dfa2' = negate dfa2 in
+  let dfa3 = intersect dfa1 dfa2' in
+(*  printf "DFAs:\n%s\n%s\n%s\n\n\n%!" (FormatExt.to_string DFA.pp dfa1)
+    (FormatExt.to_string DFA.pp dfa2')
+    (FormatExt.to_string DFA.pp dfa3); *)
+  find_word dfa3
 
 let is_empty dfa = not (nullable dfa)
         
@@ -461,24 +485,3 @@ let dfa_of_regex (re : regex) : dfa =
 type fsm = dfa
 let fsm_of_regex = dfa_of_regex
 
-
-(**      let on_char_map =
-        AugCharSet.fold
-          (fun ch on_char_map ->
-            let next_state =
-              IntSet.fold
-                (fun i s -> IntSet.union follow.(i) s)
-                (IntSet.filter 
-                   (fun i -> Leaf.subset (Leaf.one ch) sym.(i)) state)
-                IntSet.empty in
-            let next_st =
-              try snd2 (List.find (fun (n, k) -> IntSet.equal n next_state)
-                          !state_names)
-              with Not_found ->
-                let abbrev = next_st () in
-                state_names := (next_state, abbrev) :: !state_names;
-                more_unmarked_states := 
-                  (next_state, abbrev) :: !more_unmarked_states;
-                abbrev in
-            AugCharMap.add ch next_st on_char_map)
-          incl_chs AugCharMap.empty in *)
