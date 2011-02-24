@@ -294,6 +294,7 @@ let rec cps (def : def) : cpsexp = match def with
                                      EFunc (p,
                                             cexp.constr_args, 
                                             { func_typ = TTop; 
+                                              func_loop = false;
                                               func_owned = IdSet.empty }, 
                                             cexp.constr_exp))], 
              (* add setting the prototype as a plain expression: *)

@@ -62,6 +62,7 @@ and prop =
 and  func_info = {
   func_typ : typ;
   func_owned: IdSet.t;
+  func_loop : bool;
 }
 
 val typ_bool : typ
