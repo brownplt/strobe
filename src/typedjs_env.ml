@@ -165,14 +165,28 @@ module Env = struct
         typ_intersect env (normalize_typ env s) (normalize_typ env t)
     | TRegex _ -> typ
     | TObject (fs, proto) ->
-        let fsms = (map snd2 (map fst2 fs)) in
-          if List.exists (fun fsm1 -> List.exists
-                            (fun fsm2 -> fsm1 != fsm2 &&
-                               RegLang.overlap fsm1 fsm2)
-                            fsms) fsms then
-            raise (Not_wf_typ "overlapping fields")
-          else
-            TObject (map (second2 (normalize_prop env)) fs, proto)
+        let the_fsms = map snd2 (map fst2 fs) in
+        let rec f fsms = match fsms with
+          | [] -> None
+          | fsm1::rest1 ->
+              let rec g fsms2 = match fsms2 with
+                | [] -> None
+                | fsm2::rest2 when fsm1 != fsm2 ->
+                    begin match RegLang.overlap_example fsm1 fsm2 with
+                      | Some chs -> Some chs
+                      | None -> g rest2
+                    end 
+                | _ -> None in
+                match g the_fsms with
+                  | Some str -> Some str
+                  | None -> f rest1 in
+          begin match f the_fsms with
+            | Some s -> 
+                raise (Not_wf_typ 
+                         (sprintf "The string %s may inhabit multiple fields" s))
+            | None ->
+                TObject (map (second2 (normalize_prop env)) fs, proto)
+          end
     | TArrow (args, result) ->
         TArrow (map (normalize_typ env) args,
                 normalize_typ env result)

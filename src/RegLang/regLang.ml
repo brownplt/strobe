@@ -427,6 +427,14 @@ let nullable (dfa : dfa) : bool =
     f StSet.empty (StSet.singleton dfa.start)
   with Not_found -> false (* choose failed above *)
 
+(* Note --- if you write a regex that uses all the ASCII characters,
+   you will go into an infinite loop here *)
+let char_not_in (chars : AugChar.t list) = 
+  let find_new_char aug current =
+    Char.chr (max (Char.code current) 
+                ((1 + (Char.code (AugChar.char_of_ac aug))) mod 255)) in
+      List.fold_right find_new_char chars 'a'
+
 let find_word dfa =
   let rec f (chs : string) visited state =
     if StSet.mem state dfa.accept then
@@ -437,13 +445,17 @@ let find_word dfa =
       | None -> f (chs ^ (Char.escaped (AugChar.char_of_ac char))) 
           (StSet.add state visited) state' in
     let edges = StMap.find state dfa.edges in
-    let addedmap = AugCharMap.add (AugChar.Char 'z') 
+    let addedmap = AugCharMap.add 
+      (AugChar.Char (char_not_in (AugCharMapExt.keys edges.on_char)))
       edges.other_chars edges.on_char in
       AugCharMap.fold check_edge addedmap None in
     f "" StSet.empty dfa.start
 
   let overlap dfa1 dfa2 =
     nullable (intersect dfa1 dfa2)
+
+  let overlap_example dfa1 dfa2 =
+    find_word (intersect dfa1 dfa2) 
 
   let is_finite dfa =
     let rec f visited current =
