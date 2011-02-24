@@ -101,7 +101,7 @@ let get_typedjs () =
   let (prog, _) = unique_ids 
     (Typedjs_fromExpr.from_exprjs (get_env ())
        (from_javascript (parse_javascript (get_cin ()) (get_cin_name ())))) 
-  in prog
+  in Sb_owned.owned_inference prog
 
 let action_pretypecheck () : unit = 
   let typedjs = get_typedjs () in
