@@ -36,14 +36,14 @@ let rec typ_subst x s typ = match typ with
   | TField -> TField
   | TForall (y, t1, t2) -> 
       if x = y then 
-        TForall (y, typ_subst x s t1, t2)
+        failwith "TODO: capture free substitution"
       else 
-        failwith "TODO: capture-free substitution"
+        TForall (y, typ_subst x s t1, typ_subst x s t2)
   | TRec (y, t) ->
     if x = y then
-      typ
+      failwith "TODO: capture free substitution"
     else 
-      failwith "TODO: capture-free substitution"
+      TRec (y, typ_subst x s t)
   | TApp (t1, t2) -> TApp (typ_subst x s t1, typ_subst x s t2)
 
 module Env = struct
@@ -403,10 +403,9 @@ let typ_unfold typ = match typ with
 
 let rec simpl_typ env typ = 
   let typ = match typ with
+    | TSyn x -> IdMap.find x env.Env.typ_syns (* normalization => success *)
     | TApp (t1, t2) ->
         begin match simpl_typ env t1, simpl_typ env t2 with
-          | TSyn x, t2' ->
-              simpl_typ env (TApp (IdMap.find x env.Env.typ_syns, t2'))
           | TForall (x, s, t), t2' ->
               if Env.subtype env t2' s then
                 typ_subst x t2' t
@@ -416,7 +415,6 @@ let rec simpl_typ env typ =
                             (string_of_typ s) (string_of_typ t)))
           | _ -> raise (Not_wf_typ (sprintf "Expected a quantified type in TApp"))
         end
-    | TSyn x -> IdMap.find x env.Env.typ_syns (* normalization => success *)
     | _ -> typ
   in typ_unfold typ
 
@@ -445,6 +443,10 @@ let rec unify subst s t : typ IdMap.t = match s, t with
       unify (unify subst s1 t1) s2 t2
   | TArrow (s2s, s3), TArrow (t2s, t3) ->
       List.fold_left2 unify subst (s3 :: s2s) (t3 :: t2s)
+  | TApp (s1, s2), TApp (t1, t2) -> 
+      unify (unify subst s1 t1) s2 t2
+  | TSyn x1, TSyn x2 -> if x1 = x2 then subst else
+      failwith (sprintf "No unifying distinct TSyns: %s %s" x1 x2)
   | TObject (fs1, p1), TObject (fs2, p2) ->
       let f subst (x, p1) (y, p2) = 
         if x = y then
@@ -463,7 +465,7 @@ let rec unify subst s t : typ IdMap.t = match s, t with
   | TBot, TBot -> subst
   | TForall _, TForall _ -> failwith "cannot unify quantified types"
   | _ -> failwith ("unification failure" ^ 
-                   (Typedjs_syntax.string_of_typ s) ^ " " ^ 
+                   (Typedjs_syntax.string_of_typ s) ^ " = " ^ 
                    (Typedjs_syntax.string_of_typ t))
 
 
