@@ -12,7 +12,9 @@ end
 module TPSet = Set.Make (TypPair)
 module TPSetExt = SetExt.Make (TPSet)
 
-let rec typ_subst x s typ = match typ with
+let rec typ_subst x s typ = 
+(* printf "Substing: %s %s %s\n\n" x (string_of_typ s) (string_of_typ typ);*)
+match typ with
   | TPrim _ -> typ
   | TRegex _ -> typ
   | TId y -> if x = y then s else typ
@@ -27,7 +29,7 @@ let rec typ_subst x s typ = match typ with
         | PPresent typ -> PPresent (typ_subst x s typ)
         | PMaybe typ -> PMaybe (typ_subst x s typ)
         | PAbsent -> PAbsent in
-      TObject (map (second2 prop_subst) fs, proto)
+      TObject (map (second2 prop_subst) fs, typ_subst x s proto)
   | TRef t -> TRef (typ_subst x s t)
   | TSource t -> TSource (typ_subst x s t)
   | TSink t -> TSink (typ_subst x s t)
@@ -36,7 +38,7 @@ let rec typ_subst x s typ = match typ with
   | TField -> TField
   | TForall (y, t1, t2) -> 
       if x = y then 
-        failwith "TODO: capture free substitution"
+        typ
       else 
         TForall (y, typ_subst x s t1, typ_subst x s t2)
   | TRec (y, t) ->
@@ -107,8 +109,8 @@ module Env = struct
   exception Not_subtype
 
   let rec subt env cache s t = 
-(**    printf "Subtyping: %s \n<: \n%s\n\n" 
-       (string_of_typ s) (string_of_typ t);*)
+(*    printf "Subtyping: %s \n<: \n%s\n\n" 
+       (string_of_typ s) (string_of_typ t); *)
     if TPSet.mem (s, t) cache then
       cache
     else if s = t then
@@ -129,10 +131,10 @@ module Env = struct
             else raise Not_subtype
         | TRegex _, TPrim Str -> cache
         | TId x, TId y -> if x = y then cache else raise Not_subtype
-        | TId x, t ->
+        | TId x, t -> begin try
           let s = IdMap.find x env.typ_ids in (* S-TVar *)
-            printf "Looking up id %s, got %s" x (string_of_typ s);
             subtype cache s t (* S-Trans *)
+          with Not_found -> failwith (sprintf "failed looking up %s" x) end
         | TIntersect (s1, s2), _ -> 
           begin 
             try subtype cache s1 t
@@ -187,7 +189,7 @@ module Env = struct
               else
                 raise (Not_wf_typ 
                          (sprintf "Couldn't perform the typ_app: %s and %s" 
-                            (string_of_typ s) (string_of_typ t)))
+                            (string_of_typ t2) (string_of_typ s)))
           | _ -> raise (Not_wf_typ (sprintf "Expected a quantified type in TApp"))
         end
     | _ -> raise (Not_wf_typ ("Can only apply TApp"))
@@ -205,6 +207,7 @@ module Env = struct
       let _ = subt env TPSet.empty s t in
       true
     with Not_subtype -> false
+      | Not_found -> failwith "not found in subtype!!!"
 
   let typ_union cs s t = match subtype cs s t, subtype cs t s with
       true, true -> s (* t = s *)
@@ -273,9 +276,11 @@ module Env = struct
     | PPresent typ -> PPresent (normalize_typ env typ)
     | PMaybe typ -> PMaybe (normalize_typ env typ)
     | PAbsent -> PAbsent
+
   let check_typ p env t = 
     try normalize_typ env t
     with Not_wf_typ s -> raise (Typ_error (p, s))
+      | Not_found -> failwith "Not found in check_typ!!!"
 
 
 
@@ -393,7 +398,6 @@ let parse_env (cin : in_channel) (name : string) : env_decl list =
                       (string_of_position 
                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
 
-
 let extend_global_env env lst =
   let add env decl = match decl with
     | EnvBind (x, typ) ->
@@ -443,55 +447,60 @@ let rec simpl_typ env typ =
 let apply_subst subst typ = IdMap.fold typ_subst subst typ
 
  (* TODO: occurs check *)
-let rec unify subst s t : typ IdMap.t = match s, t with
+let rec unify (subst : typ IdMap.t option) (s : typ) (t : typ)  = 
+  match s, t with
   | TPrim s, TPrim t -> 
       if s = t then subst 
-      else failwith ("cannot unify differently typed primitives")
+      else None 
   | TId x, TId y -> 
       if x = y then subst 
-      else failwith ("cannot unify bound variables " ^ x ^ " and " ^ y)
+      else None
   | TId x, t -> 
-      if IdMap.mem x subst then
-        begin
-          let s = IdMap.find x subst in
-            IdMap.add x (apply_subst subst (TUnion (s, t))) subst
-        end
-      else
-        IdMap.add x (apply_subst subst t) subst
+      begin match subst with
+        | None -> None
+        | Some subst' -> 
+            if IdMap.mem x subst' then
+              begin
+                let s = IdMap.find x subst' in
+                  Some (IdMap.add x (apply_subst subst' (TUnion (s, t))) subst')
+              end
+            else
+              Some (IdMap.add x (apply_subst subst' t) subst')
+            end
   | s, TId y -> unify subst (TId y) s
   | TUnion (s1, s2), TUnion (t1, t2) -> unify (unify subst s1 t1) s2 t2
   | TIntersect (s1, s2), TIntersect (t1, t2) -> 
       unify (unify subst s1 t1) s2 t2
   | TArrow (s2s, s3), TArrow (t2s, t3) ->
-      List.fold_left2 unify subst (s3 :: s2s) (t3 :: t2s)
+      if List.length s2s != List.length t2s then None 
+      else List.fold_left2 unify subst (s3 :: s2s) (t3 :: t2s)
   | TApp (s1, s2), TApp (t1, t2) -> 
       unify (unify subst s1 t1) s2 t2
-  | TSyn x1, TSyn x2 -> if x1 = x2 then subst else
-      failwith (sprintf "No unifying distinct TSyns: %s %s" x1 x2)
+  | TSyn x1, TSyn x2 -> if x1 = x2 then subst else None
   | TObject (fs1, p1), TObject (fs2, p2) ->
-      let f subst (x, p1) (y, p2) = 
-        if x = y then
-          match p1, p2 with
-            | PPresent s, PPresent t -> unify subst s t
-            | PMaybe s, PMaybe t -> unify subst s t
-            | PAbsent, PAbsent -> subst
-            | _ -> failwith "cannot unify different property kinds"
-        else failwith "cannot unify objects with distinct field names" in
-      let subst' = List.fold_left2 f subst fs1 fs2 in
-        unify subst' p1 p2
+      if List.length fs1 != List.length fs2 then None
+      else
+        let f subst (x, p1) (y, p2) = 
+          if x = y then
+            match p1, p2 with
+              | PPresent s, PPresent t -> unify subst s t
+              | PMaybe s, PMaybe t -> unify subst s t
+              | PAbsent, PAbsent -> subst
+              | _ -> None
+          else None in
+        let subst' = List.fold_left2 f subst fs1 fs2 in
+          unify subst' p1 p2
   | TRef s, TRef t -> unify subst s t
   | TSource s, TSource t -> unify subst s t
   | TSink s, TSink t -> unify subst s t
   | TTop, TTop -> subst
   | TBot, TBot -> subst
-  | TForall _, TForall _ -> failwith "cannot unify quantified types"
-  | _ -> failwith ("unification failure" ^ 
-                   (Typedjs_syntax.string_of_typ s) ^ " = " ^ 
-                   (Typedjs_syntax.string_of_typ t))
+  | TForall _, TForall _ -> None
+  | _ -> None
 
 
-let unify_typ (s : typ) (t : typ) : typ IdMap.t = 
-  unify IdMap.empty s t
+let unify_typ (s : typ) (t : typ) : typ IdMap.t option = 
+  unify (Some IdMap.empty) s t
 
 let rec fields env obj fsm = match simpl_typ env obj, fsm with
   | _, fsm when RegLang.is_empty fsm -> TBot

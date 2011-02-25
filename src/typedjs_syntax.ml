@@ -80,9 +80,16 @@ let mk_object_typ (fs : (field * prop) list) (star : typ option) proto : typ =
   let rest_fsm = RegLang.negate (RegLang.fsm_of_regex union_re) in
     match star with
       | Some typ ->
-          TRef (TObject (((union_re, rest_fsm), PMaybe typ)::fs, proto))
+          TObject (((union_re, rest_fsm), PMaybe typ)::fs, proto)
       | None ->
-          TRef (TObject (((union_re, rest_fsm), PAbsent)::fs, proto))
+          TObject (((union_re, rest_fsm), PAbsent)::fs, proto)
+
+let rec remove_this op = match op with
+  | TArrow (a::aa, r) -> TArrow (aa, r)
+  | TIntersect (t1, t2) -> TIntersect (remove_this t1, remove_this t2)
+  | TForall (x, s, t) -> TForall (x, s, (remove_this t))
+  | _ -> failwith "Removing this from something non-operatory"
+
 
 type env_decl =
   | EnvClass of constr * constr option * typ

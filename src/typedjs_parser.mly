@@ -61,13 +61,13 @@ arg_typ
   | regex { TRegex ($1, RegLang.fsm_of_regex $1) }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | arg_typ INTERSECTION arg_typ { TIntersect ($1, $3) }
-  | LBRACE fields RBRACE { mk_object_typ $2 None (TSyn "Object") }
+  | LBRACE fields RBRACE { TRef (mk_object_typ $2 None (TSyn "Object")) }
   | LBRACE STAR COLON arg_typ SEMI fields RBRACE 
-      { mk_object_typ $6 (Some $4) (TSyn "Object") }
+      { TRef (mk_object_typ $6 (Some $4) (TSyn "Object")) }
   | LBRACE PROTO COLON arg_typ SEMI fields RBRACE
-      { mk_object_typ $6 None $4 }
+      { TRef (mk_object_typ $6 None $4) }
   | LBRACE PROTO COLON arg_typ COMMA STAR COLON arg_typ SEMI fields RBRACE
-      { mk_object_typ $10 (Some $8) $4 }
+      { TRef (mk_object_typ $10 (Some $8) $4) }
   | LPAREN typ RPAREN { $2 }
   | TID { TId $1 }
   | ID { TSyn $1 }
@@ -108,12 +108,6 @@ checked :
   | CHECKED { true }
   | { false }
 
-op_typ :
-  | args ARROW typ { TArrow ($1, $3) }
-  | LBRACK typ RBRACK args ARROW typ { TArrow ($2::$4, $6) }
-  | FORALL ID LTCOLON typ DOT op_typ { TForall ($2, $4, $6) }
-  | FORALL ID DOT op_typ { TForall ($2, TTop, $4) }
-
 env_decl :
   | CLASS checked any_id PROTOTYPE any_id arg_typ
     { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
@@ -129,7 +123,7 @@ env_decl :
         EnvClass ($3, None (* root *), TForall ($5, TTop, $7)) }
   | VAL ID COLON typ { EnvBind ($2, $4) }
   | ID COLON typ { EnvBind ($1, TRef $3) }
-  | OPERATOR STRING COLON op_typ { EnvBind ($2, $4) }
+  | OPERATOR STRING COLON typ { EnvBind ($2, remove_this $4) }
 
 env_decls
   : { [] }

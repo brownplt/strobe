@@ -26,12 +26,7 @@ let array_field =
   (array_fields_re, RegLang.fsm_of_regex array_fields_re)
 
 let mk_array_typ p env tarr =
-  let proto = Env.check_typ p env (TApp (TSyn "Array", tarr)) in
-  let length = RegLang_syntax.String "length" in
-  let lprop = (length, RegLang.fsm_of_regex length) in
-    mk_object_typ [(array_field, PMaybe tarr); (lprop, PPresent (TPrim Int))] 
-      None proto
-
+  Env.check_typ p env (TApp (TSyn "Array", tarr))
 
 let error_on_unreachable = ref true
 
@@ -247,29 +242,33 @@ let rec tc_exp (env : Env.env) exp = match exp with
                                 arguments, but %d arguments given"
                                   (List.length expected_typs) (List.length
                                   args)))
-           | TIntersect (t1, t2) -> begin try
-                   let r1 = check_app t1 in begin try
-                     let r2 = check_app t2 in
-                       Env.typ_intersect env r1 r2
-                     with Typ_error _ -> r1 end
-                   with Typ_error _ -> check_app t2 end
-           | _ -> failwith ("Expected an arrow or intersection in EApp, got: " ^
-                                (string_of_typ tfun))
-        end in
-    begin match un_null (tc_exp env f) with
-      | TForall (x, _, TArrow (expected_typ, result_typ)) ->
-          let subst = unify_typ (TArrow (expected_typ, result_typ))
-            (TArrow (map (tc_exp env) args, result_typ)) in
-            begin try
-              let u = IdMap.find x subst in (* TODO: needless recomputation *)
-                tc_exp env (EApp (p, ETypApp (p, f, u), args))
-            with Not_found ->
-              let t = TArrow (expected_typ, result_typ) in
-              error p (sprintf "could not determine \'%s in the function type \
-                                %s" x (string_of_typ t))
-            end
-      | t -> check_app t
-    end
+           | TIntersect (t1, t2) -> begin try 
+               let r1 = check_app t1 in begin try
+                   let r2 = check_app t2 in
+                     Env.typ_intersect env r1 r2
+                 with Typ_error _ -> r1 end
+             with Typ_error _ -> check_app t2 end
+           | TForall (x, max_typ, (TArrow (expected_typ, result_typ) as ft)) ->
+               let subst = unify_typ ft 
+                 (TArrow (map (tc_exp env) args, result_typ)) in
+                 begin match subst with 
+                   | None -> error p (sprintf "Unification failure")
+                   | Some subst -> 
+                       begin try
+                         let u = IdMap.find x subst in
+                           if Env.subtype env u max_typ then
+                             check_app (Env.app_typ env (TApp (tfun, u)))
+                           else
+                             error p "Unified, but to the wrong type"
+                       with Not_found ->
+                         error p (sprintf "could not determine \'%s in %s" 
+                                    x (string_of_typ ft))
+                       end
+                 end
+             | _ -> failwith ("Expected an arrow or intersection in EApp, got: " ^
+                              (string_of_typ tfun))
+        end in (match (un_null (tc_exp env f)) with
+                  | t -> check_app t)
   | ERec (binds, body) -> 
       let f env (x, t, e) =
         Env.bind_id x (Env.check_typ (Exp.pos e) env t) env in
@@ -353,7 +352,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
         begin match tc_exp env e with
           | TForall (x, s, t) ->
               if Env.subtype env u s then
-                typ_subst x u t
+                (printf "Substing \nc";
+                typ_subst x u t)
               else 
                 error p (sprintf "expected an argument of type %s, got %s"
                            (string_of_typ s) (string_of_typ u))

@@ -33,7 +33,7 @@ star :
 cat :
   | star { $1 }
   | star cat { Concat ($1, $2) }
-  | atom PIPE atom { Alt($1, $3) }
+  | cat PIPE cat { Alt($1, $3) }
   | LBRACK chardescs RBRACK { $2 }
 
 chardescs :

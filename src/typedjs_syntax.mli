@@ -70,6 +70,8 @@ val typ_bool : typ
 
 val mk_object_typ : (field * prop) list -> typ option -> typ -> typ
 
+val remove_this : typ -> typ
+
 type env_decl =
   | EnvClass of constr * constr option * typ
   | EnvBind of id * typ
