@@ -69,6 +69,7 @@ and prop =
 and  func_info = {
   func_typ : typ;
   func_owned: IdSet.t;
+  func_loop : bool;
 }
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
