@@ -9,6 +9,30 @@ let consumed_owned_vars  = ref IdSet.empty
 
 let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
 
+let array_fields_re = 
+  let open RegLang_syntax in
+    Alt 
+      (Star 
+         (InSet 
+            (CharSetExt.from_list ['0'; '1'; '2'; '3'; '4'; 
+                                   '5'; '6'; '7'; '8'; '9' ])),
+       Alt 
+         (String "NaN",
+          Alt 
+            (String "+Infinity",
+            (String "-Infinity"))))
+      
+let array_field = 
+  (array_fields_re, RegLang.fsm_of_regex array_fields_re)
+
+let mk_array_typ p env tarr =
+  let proto = Env.check_typ p env (TApp (TSyn "Array", tarr)) in
+  let length = RegLang_syntax.String "length" in
+  let lprop = (length, RegLang.fsm_of_regex length) in
+    mk_object_typ [(array_field, PMaybe tarr); (lprop, PPresent (TPrim Int))] 
+      None proto
+
+
 let error_on_unreachable = ref true
 
 let disable_unreachable_check () =
@@ -57,7 +81,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
         | t1::ts ->
             (** just assume the first type is the top one for now *)
             if List.for_all (fun t -> Env.subtype env t t1) ts then
-              Env.check_typ p2 env (TApp (TSyn "Array", t1))
+              mk_array_typ p2 env t1
             else
               error p2 "Bad array subtypes"
         | [] -> failwith "FATAL pattern miss in array checking"
