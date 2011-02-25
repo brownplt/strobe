@@ -8,7 +8,8 @@ open RegLang_syntax
 %token <string> STRING
 %token <char> CHAR
 %token LPAREN RPAREN STAR PIPE DOT BANG
-       LTCOLON LTSLASHCOLON SEMI EOF
+       LTCOLON LTSLASHCOLON SEMI EOF LBRACK RBRACK
+       HYPHEN CARET
 
 %start regex_tests
 %start regex
@@ -22,7 +23,6 @@ open RegLang_syntax
 atom :
   | STRING { String $1 }
   | CHAR { InSet (CharSet.singleton $1) }
-  | BANG CHAR { NotInSet (CharSet.singleton $2) }
   | LPAREN cat RPAREN { $2 }
   | DOT { NotInSet CharSet.empty }
 
@@ -34,6 +34,18 @@ cat :
   | star { $1 }
   | star cat { Concat ($1, $2) }
   | atom PIPE atom { Alt($1, $3) }
+  | LBRACK chardescs RBRACK { $2 }
+
+chardescs :
+  | chardesc { $1 }
+  | chardesc chardescs { Alt($1, $2) }
+
+chardesc :
+  | CHAR HYPHEN CHAR { InSet (build_range $1 $3) }
+  | CHAR { InSet (CharSet.singleton $1) }
+  | CARET chardesc { match $2 with
+                       | InSet chs -> NotInSet chs
+                       | _ -> failwith ("Multiple negation?") }
 
 regex :
   | cat EOF { $1 }

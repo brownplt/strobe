@@ -15,3 +15,5 @@ type regex =
   | Empty
   | String of string
   | Concat of regex * regex
+
+val build_range : char -> char -> CharSet.t
