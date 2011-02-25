@@ -287,8 +287,10 @@ module Pretty = struct
         parens (vert [ horz [ text "if"; exp e1 ]; exp e2; exp e3 ])
     | EApp (_, f, args) -> parens (horz (exp f :: map exp args))
     | EFunc (_, args, t, body) ->
-        parens (vert [ horz [ text "fun"; parens (horz (map text args)); 
-                              text ":"; typ t.func_typ ];
+      parens (vert [ horz [ text "fun"; parens (horz (map text args)); 
+                            text ":"; typ t.func_typ;
+                            IdSetExt.p_set text t.func_owned;
+                          ];
                        exp body])
     | ELet (_, x, bound, body) ->
         parens (vert [ horz [ text "let";

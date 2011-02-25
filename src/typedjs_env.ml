@@ -295,6 +295,10 @@ module Env = struct
     | RT.Object -> typ_union env (mk_object_typ [] None (TSyn "Object")) typ
     | RT.Undefined -> typ_union env (TPrim Undef) typ
 
+  let rtany = 
+    RTSetExt.from_list
+    [ RT.Num; RT.Str; RT.Bool; RT.Function; RT.Object; RT.Undefined ]
+
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
     | TBot -> TBot (* might change if we allow arbitrary casts *)
     | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
@@ -317,7 +321,7 @@ module Env = struct
     | TForall _ -> typ
     | TField -> List.fold_left (basic_static cs) TBot (RTSetExt.to_list rt)
     | TTop -> 
-        if RTSet.equal rt Typedjs_lattice.rtany then
+        if RTSet.equal rt rtany then
           TTop
         else (* TODO: no arrow type that is the supertype of all arrows *)
           List.fold_left (basic_static2 cs) TBot (RTSetExt.to_list rt)
@@ -404,7 +408,7 @@ let extend_global_env env lst =
         { env with Env.typ_syns = IdMap.add x t env.Env.typ_syns }
   in List.fold_left add env lst
 
-module L = Typedjs_lattice
+(*
 
 let df_func_of_typ syns (t : typ) : L.av list -> L.av = match t with
   | TArrow (_, r_typ) ->
@@ -422,7 +426,7 @@ let cf_env_of_tc_env tc_env =
 let operator_env_of_tc_env tc_env =
   let fn x t env = IdMap.add x (df_func_of_typ (Env.syns tc_env) t) env in
     IdMap.fold fn (Env.id_env tc_env) IdMap.empty
-  
+*)
 
 let typ_unfold typ = match typ with
     | TRec (x, t) -> typ_subst x typ t
