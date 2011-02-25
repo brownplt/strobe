@@ -38,6 +38,10 @@ let error_on_unreachable = ref true
 let disable_unreachable_check () =
   error_on_unreachable := false
 
+let is_flows_enabled = ref true
+
+let disable_flows () = is_flows_enabled := false
+
 let rec skip n l = if n == 0 then l else (skip (n-1) (List.tl l))
 let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 
@@ -293,7 +297,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
     end;
       let expected_typ = Env.check_typ p env func_info.func_typ in
       begin match Env.bind_typ env expected_typ with
-          (env, TArrow (arg_typs, result_typ)) ->
+        | (env, TArrow (arg_typs, result_typ)) ->
             if not (List.length arg_typs = List.length args) then
               error p 
                 (sprintf "given %d argument names, but %d argument types"
@@ -301,6 +305,11 @@ let rec tc_exp (env : Env.env) exp = match exp with
             let bind_arg env x t = Env.bind_id x t env in
             let env = List.fold_left2 bind_arg env args arg_typs in
             let env = Env.clear_labels env in
+            let body = 
+              if !is_flows_enabled then
+                Sb_semicfa.semicfa (func_info.func_owned) env body 
+              else 
+                body in
             let body_typ = tc_exp env body in
             if Env.subtype env body_typ result_typ then 
               expected_typ

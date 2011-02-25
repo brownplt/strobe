@@ -11,13 +11,9 @@ open Typedjs_env
 open Exprjs_syntax
 open Format
 open FormatExt
-open Typedjs_cf
-open Typedjs_cftc
 open Lexing
 open Typedjs_dyn
 open RegLang
-
-module Lat = Typedjs_lattice
 
 let string_of_cin cin =
   let buf = Buffer.create 5000 in
@@ -74,18 +70,12 @@ end
 
 open Input
 
-let (set_no_cf, get_no_cf) = 
-  mk_flag "-noflows" "disable flow analysis (debugging and benchmarking)" false
-
 let (set_print_contracts, get_print_contracts) =
   mk_flag "-contracts" "insert contracts (prints to stdout)" false
 
 let (set_simpl_cps, get_simpl_cps) =
   mk_flag "-simplcps" "use simplified, but slower CPS (broken)" false
 
-let get_cps exp = match get_simpl_cps () with
-  | true -> Typedjs_cps.simpl_cps exp
-  | false -> Typedjs_cps.cps exp
 
 let action_pretty () : unit = 
   let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
@@ -107,44 +97,11 @@ let action_pretypecheck () : unit =
   let typedjs = get_typedjs () in
     Typedjs_syntax.Pretty.p_def typedjs std_formatter
 
-let annotate_exp exp = 
-  if get_no_cf () then
-    exp
-  else 
-    let cpstypedjs = get_cps exp in
-  let cf_env =
-    Lat.bind "%end" (Lat.singleton RT.Function)
-      (Lat.bind "%global" (Lat.singleton RT.Object)
-         (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
-            (cf_env_of_tc_env (get_env ())))) in
-    set_op_env (get_env ());
-    typed_cfa (Env.syns (get_env ())) cf_env cpstypedjs;
-    insert_typecasts exp
-
 let action_tc () : unit = 
-  let _ = Typedjs_tc.typecheck (get_env ()) (annotate_exp (get_typedjs ())) in
+  let _ = Typedjs_tc.typecheck (get_env ()) (get_typedjs ()) in
     if get_print_contracts () then
       let tr_map = mk_contract_transformers !contracts in
         transform_exprs tr_map (get_cin ()) stdout
-
-let action_cps () : unit =
-  let typedjs = get_typedjs () in
-  let cps = get_cps typedjs in
-    Typedjs_cps.p_cpsexp cps std_formatter
-
-let action_df () : unit =
-  let typedjs = get_typedjs () in
-  let cpstypedjs = Typedjs_cps.cps typedjs in
-  let env =
-    Lat.bind "%end" (Lat.singleton RT.Function)
-      (Lat.bind "%global" (Lat.singleton RT.Object)
-         (Lat.bind "%uncaught-exception" (Lat.singleton RT.Function)
-            (cf_env_of_tc_env (get_env ())))) in
-    set_op_env (get_env ());
-    typed_cfa (Env.syns (get_env ())) env cpstypedjs;
-    let annotated_exp = insert_typecasts typedjs in
-      Typedjs_syntax.Pretty.p_def annotated_exp std_formatter ;
-      printf "Dataflow analysis successful.\n"
 
 let action_regex () : unit =
   let lexbuf = from_string (get_cin ()) in
@@ -198,17 +155,15 @@ let main () : unit =
        "simplify JavaScript to exprjs");
       ("-pretc", Arg.Unit (set_action action_pretypecheck),
        "basic well-formedness checks before type-checking and flow-analysis");
-      ("-cps", Arg.Unit (set_action action_cps),
-       "convert program to CPS");
-      ("-df", Arg.Unit (set_action action_df),
-       "convert program to CPS, then apply flow analysis");
       ("-disable-unreachable", Arg.Unit Typedjs_tc.disable_unreachable_check,
        "do not signal an error on unreachable code");
+      ("-noflows", Arg.Unit Typedjs_tc.disable_flows,
+       "disable flow analysis (benchmarks and debugging)");
       ("-regex", Arg.Unit (set_action action_regex),
        "regular expression containment tests");
       set_simpl_cps;
       set_print_contracts;
-      set_no_cf;
+
     ]
     (fun s -> set_cin (open_in s) s)
     "Usage: jst [options] [file]\noptions are:\n";;
