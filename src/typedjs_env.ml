@@ -46,6 +46,7 @@ let rec typ_subst x s typ = match typ with
       TRec (y, typ_subst x s t)
   | TApp (t1, t2) -> TApp (typ_subst x s t1, typ_subst x s t2)
 
+
 module Env = struct
 
   type class_info = {
@@ -114,6 +115,10 @@ module Env = struct
       let subtype = subt env in
       let cache = TPSet.add (s, t) cache in
       match s, t with
+        | TApp _, _ ->
+            subtype cache (app_typ env s) t
+        | s, TApp _ ->
+            subtype cache s (app_typ env t)
         | TSyn x, _ -> subt env cache (IdMap.find x env.typ_syns) t
         | _, TSyn y -> subt env cache s (IdMap.find y env.typ_syns)
         | TPrim Int, TPrim Num -> cache
@@ -165,7 +170,22 @@ module Env = struct
     | _, [] -> cache (* can have many extra fields, doesn't matter *)
     | (x, s) :: fs1', (y, t) :: fs2' -> raise Not_subtype
 
-  let subtypes env ss ts = 
+  and app_typ env t = match t with
+    | TApp (t1, t2) ->
+        begin match t1 with
+          | TSyn x -> app_typ env (TApp (IdMap.find x env.typ_syns, t2))
+          | TForall (x, s, t) ->
+              if subtype env t2 s then
+                typ_subst x t2 t
+              else
+                raise (Not_wf_typ 
+                         (sprintf "Couldn't perform the typ_app: %s and %s" 
+                            (string_of_typ s) (string_of_typ t)))
+          | _ -> raise (Not_wf_typ (sprintf "Expected a quantified type in TApp"))
+        end
+    | _ -> raise (Not_wf_typ ("Can only apply TApp"))
+
+  and subtypes env ss ts = 
     try 
       let _ = List.fold_left2 (subt env) TPSet.empty ss ts in
       true
@@ -173,7 +193,7 @@ module Env = struct
       | Invalid_argument _ -> false (* unequal lengths *)
       | Not_subtype -> false
 
-  let subtype env s t = 
+  and subtype env s t = 
     try
       let _ = subt env TPSet.empty s t in
       true
@@ -249,6 +269,8 @@ module Env = struct
   let check_typ p env t = 
     try normalize_typ env t
     with Not_wf_typ s -> raise (Typ_error (p, s))
+
+
 
   let basic_static env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env (TPrim Num) typ
@@ -335,7 +357,7 @@ module Env = struct
         raise (Not_wf_typ (cname ^ " global must be an object"))
 
   let rec bind_typ env typ : env * typ = match typ with
-    | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) t
+    | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) (typ_subst x s t)
     | typ -> (env, typ)
 
   let syns env = env.typ_syns
@@ -395,8 +417,6 @@ let operator_env_of_tc_env tc_env =
     IdMap.fold fn (Env.id_env tc_env) IdMap.empty
   
 
-
-
 let typ_unfold typ = match typ with
     | TRec (x, t) -> typ_subst x typ t
     | _ -> typ
@@ -404,17 +424,7 @@ let typ_unfold typ = match typ with
 let rec simpl_typ env typ = 
   let typ = match typ with
     | TSyn x -> IdMap.find x env.Env.typ_syns (* normalization => success *)
-    | TApp (t1, t2) ->
-        begin match simpl_typ env t1, simpl_typ env t2 with
-          | TForall (x, s, t), t2' ->
-              if Env.subtype env t2' s then
-                typ_subst x t2' t
-              else
-                raise (Not_wf_typ 
-                         (sprintf "Couldn't perform the typ_app: %s and %s" 
-                            (string_of_typ s) (string_of_typ t)))
-          | _ -> raise (Not_wf_typ (sprintf "Expected a quantified type in TApp"))
-        end
+    | TApp _ -> Env.app_typ env typ
     | _ -> typ
   in typ_unfold typ
 

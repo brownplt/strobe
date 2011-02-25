@@ -49,6 +49,8 @@ module Env : sig
       [false]. *)
   val subtypes : env -> typ list -> typ list -> bool
 
+  val app_typ : env -> typ -> typ
+
   val typ_union : env -> typ -> typ -> typ
 
   val typ_intersect : env -> typ -> typ -> typ
