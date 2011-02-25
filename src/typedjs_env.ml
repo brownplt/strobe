@@ -107,6 +107,8 @@ module Env = struct
   exception Not_subtype
 
   let rec subt env cache s t = 
+(**    printf "Subtyping: %s \n<: \n%s\n\n" 
+       (string_of_typ s) (string_of_typ t);*)
     if TPSet.mem (s, t) cache then
       cache
     else if s = t then
@@ -117,10 +119,10 @@ module Env = struct
       match s, t with
         | TApp _, _ ->
             subtype cache (app_typ env s) t
-        | s, TApp _ ->
+        | _, TApp _ ->
             subtype cache s (app_typ env t)
-        | TSyn x, _ -> subt env cache (IdMap.find x env.typ_syns) t
-        | _, TSyn y -> subt env cache s (IdMap.find y env.typ_syns)
+        | TSyn x, _ -> subtype cache (IdMap.find x env.typ_syns) t
+        | _, TSyn y -> subtype cache s (IdMap.find y env.typ_syns)
         | TPrim Int, TPrim Num -> cache
         | TRegex (_, fsm1), TRegex (_, fsm2) ->
             if RegLang.contains fsm1 fsm2 then cache 
@@ -129,6 +131,7 @@ module Env = struct
         | TId x, TId y -> if x = y then cache else raise Not_subtype
         | TId x, t ->
           let s = IdMap.find x env.typ_ids in (* S-TVar *)
+            printf "Looking up id %s, got %s" x (string_of_typ s);
             subtype cache s t (* S-Trans *)
         | TIntersect (s1, s2), _ -> 
           begin 
@@ -149,10 +152,7 @@ module Env = struct
             with Invalid_argument _ -> raise Not_subtype (* unequal lengths *)
           end
         | TObject (fs1, p1), TObject (fs2, p2) -> 
-            begin
-              try subtype_fields env cache fs1 fs2
-              with Not_subtype -> subtype cache p1 p2
-            end
+            subtype (subtype_fields env cache fs1 fs2) p1 p2
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
         | TSource s, TSource t -> subtype cache s t
         | TSink s, TSink t -> subtype cache t s
@@ -166,9 +166,16 @@ module Env = struct
      fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
   and subtype_fields env cache fs1 fs2 = match fs1, fs2 with
     | [], [] -> cache
-    | [], _ -> raise Not_subtype (* fs1 is missing some things fs2 has *)
-    | _, [] -> cache (* can have many extra fields, doesn't matter *)
-    | (x, s) :: fs1', (y, t) :: fs2' -> raise Not_subtype
+    | (x, s) :: fs1', (y, t) :: fs2' ->
+        if x != y then raise Not_subtype
+        else begin match s, t with
+          | PMaybe s, PMaybe t
+          | PPresent s, PPresent t -> 
+              subtype_fields env (subt env cache s t) fs1' fs2'
+          | PAbsent, PAbsent -> subtype_fields env cache fs1' fs2'
+          | _, _ -> raise Not_subtype
+        end
+    | _, _ -> raise Not_subtype 
 
   and app_typ env t = match t with
     | TApp (t1, t2) ->
