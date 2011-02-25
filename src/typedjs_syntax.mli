@@ -54,6 +54,7 @@ type typ =
   | TField
   | TRec of id * typ 
   | TSyn of id (** type synonym *)
+  | TApp of typ * typ
 and prop = 
   | PPresent of typ
   | PMaybe of typ

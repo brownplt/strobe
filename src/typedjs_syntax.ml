@@ -60,6 +60,7 @@ type typ =
   | TField
   | TRec of id * typ 
   | TSyn of id (** type synonym *)
+  | TApp of typ * typ (** A forall to be substituted on normalization *)
 and prop = 
   | PPresent of typ
   | PMaybe of typ
@@ -227,6 +228,7 @@ module Pretty = struct
        | Null -> "Null"
        | Undef -> "Undef"
       end
+    | TApp (t1, t2) -> horz [typ t1; text "<"; typ t2; text ">"]
     | TRegex (regex, fsm) -> text "TODO: pp regexes"
     | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
     | TIntersect (t1, t2) -> horz [typ t1; text "&"; typ t2]

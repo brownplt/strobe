@@ -173,7 +173,7 @@ let rec rt_of_typ syns (t : Typedjs_syntax.typ) : RTSet.t =
     | Typedjs_syntax.TField -> rtany
     | Typedjs_syntax.TRec (_, t) -> rt t
     | Typedjs_syntax.TSyn x -> rt (IdMap.find x syns)
-
+    | Typedjs_syntax.TApp (t1, t2) -> rtany
 
 let runtime syns t : av = ASet (rt_of_typ syns t)
 

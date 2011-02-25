@@ -8,7 +8,7 @@ open Typedjs_syntax
 %token <string> ID TID STRING REGEX
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
-       PROTOTYPE PROTO CLASS UPCAST DOWNCAST FORALL LTCOLON IS
+       PROTOTYPE PROTO CLASS UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
        CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI UNDERSCORE
        
 
@@ -71,6 +71,7 @@ arg_typ
   | LPAREN typ RPAREN { $2 }
   | TID { TId $1 }
   | ID { TSyn $1 }
+  | ID LANGLE typ RANGLE { TApp (TSyn $1, $3) }
 
 typ 
   : arg_typ { $1 }
@@ -114,7 +115,7 @@ op_typ :
   | FORALL ID DOT op_typ { TForall ($2, TTop, $4) }
 
 env_decl :
-  | CLASS checked any_id PROTOTYPE any_id arg_typ (* will disappear *)
+  | CLASS checked any_id PROTOTYPE any_id arg_typ
     { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
       EnvClass
         ( $3 (* name *) , 
@@ -123,6 +124,9 @@ env_decl :
   | CLASS checked any_id arg_typ
       { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
         EnvClass ($3, None (* root *), $4) }
+  | CLASS checked any_id LANGLE ID RANGLE arg_typ
+      { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
+        EnvClass ($3, None (* root *), TForall ($5, TTop, $7)) }
   | VAL ID COLON typ { EnvBind ($2, $4) }
   | ID COLON typ { EnvBind ($1, TRef $3) }
   | OPERATOR STRING COLON op_typ { EnvBind ($2, $4) }

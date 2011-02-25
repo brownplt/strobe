@@ -12,6 +12,40 @@ end
 module TPSet = Set.Make (TypPair)
 module TPSetExt = SetExt.Make (TPSet)
 
+let rec typ_subst x s typ = match typ with
+  | TPrim _ -> typ
+  | TRegex _ -> typ
+  | TId y -> if x = y then s else typ
+  | TSyn x -> typ
+  | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
+  | TIntersect (t1, t2) ->
+      TIntersect (typ_subst x s t1, typ_subst x s t2)
+  | TArrow (t2s, t3)  ->
+      TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
+  | TObject (fs, proto) -> 
+      let prop_subst p = match p with
+        | PPresent typ -> PPresent (typ_subst x s typ)
+        | PMaybe typ -> PMaybe (typ_subst x s typ)
+        | PAbsent -> PAbsent in
+      TObject (map (second2 prop_subst) fs, proto)
+  | TRef t -> TRef (typ_subst x s t)
+  | TSource t -> TSource (typ_subst x s t)
+  | TSink t -> TSink (typ_subst x s t)
+  | TTop -> TTop
+  | TBot -> TBot
+  | TField -> TField
+  | TForall (y, t1, t2) -> 
+      if x = y then 
+        TForall (y, typ_subst x s t1, t2)
+      else 
+        failwith "TODO: capture-free substitution"
+  | TRec (y, t) ->
+    if x = y then
+      typ
+    else 
+      failwith "TODO: capture-free substitution"
+  | TApp (t1, t2) -> TApp (typ_subst x s t1, typ_subst x s t2)
+
 module Env = struct
 
   type class_info = {
@@ -159,6 +193,7 @@ module Env = struct
 
   let rec normalize_typ env typ = match typ with
     | TPrim _ -> typ
+    | TApp (t1, t2) -> TApp (normalize_typ env t1, normalize_typ env t2)
     | TUnion (s, t) -> 
         typ_union env (normalize_typ env s) (normalize_typ env t)
     | TIntersect (s, t) -> 
@@ -260,7 +295,7 @@ module Env = struct
     | TId _ -> typ
     | TRec (x, t) -> TRec (x, static cs rt t)
     | TSyn _ -> typ
-
+    | TApp _ -> typ
 
   let new_root_class env class_name = 
     if IdMap.mem class_name env.classes then
@@ -360,46 +395,27 @@ let operator_env_of_tc_env tc_env =
     IdMap.fold fn (Env.id_env tc_env) IdMap.empty
   
 
-let rec typ_subst x s typ = match typ with
-  | TPrim _ -> typ
-  | TRegex _ -> typ
-  | TId y -> if x = y then s else typ
-  | TSyn x -> typ
-  | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
-  | TIntersect (t1, t2) ->
-      TIntersect (typ_subst x s t1, typ_subst x s t2)
-  | TArrow (t2s, t3)  ->
-      TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
-  | TObject (fs, proto) -> 
-      let prop_subst p = match p with
-        | PPresent typ -> PPresent (typ_subst x s typ)
-        | PMaybe typ -> PMaybe (typ_subst x s typ)
-        | PAbsent -> PAbsent in
-      TObject (map (second2 prop_subst) fs, proto)
-  | TRef t -> TRef (typ_subst x s t)
-  | TSource t -> TSource (typ_subst x s t)
-  | TSink t -> TSink (typ_subst x s t)
-  | TTop -> TTop
-  | TBot -> TBot
-  | TField -> TField
-  | TForall (y, t1, t2) -> 
-      if x = y then 
-        TForall (y, typ_subst x s t1, t2)
-      else 
-        failwith "TODO: capture-free substitution"
-  | TRec (y, t) ->
-    if x = y then
-      typ
-    else 
-      failwith "TODO: capture-free substitution"
 
 
 let typ_unfold typ = match typ with
     | TRec (x, t) -> typ_subst x typ t
     | _ -> typ
 
-let simpl_typ env typ = 
+let rec simpl_typ env typ = 
   let typ = match typ with
+    | TApp (t1, t2) ->
+        begin match simpl_typ env t1, simpl_typ env t2 with
+          | TSyn x, t2' ->
+              simpl_typ env (TApp (IdMap.find x env.Env.typ_syns, t2'))
+          | TForall (x, s, t), t2' ->
+              if Env.subtype env t2' s then
+                typ_subst x t2' t
+              else
+                raise (Not_wf_typ 
+                         (sprintf "Couldn't perform the typ_app: %s and %s" 
+                            (string_of_typ s) (string_of_typ t)))
+          | _ -> raise (Not_wf_typ (sprintf "Expected a quantified type in TApp"))
+        end
     | TSyn x -> IdMap.find x env.Env.typ_syns (* normalization => success *)
     | _ -> typ
   in typ_unfold typ

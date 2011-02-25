@@ -48,6 +48,22 @@ let rec tc_exp (env : Env.env) exp = match exp with
           TBot
       | _ -> tc_exp env e2
     end
+  | ERef (p1, RefCell, EEmptyArray (p2, elt_typ)) -> 
+      Env.check_typ p2 env (TApp (TSyn "Array", elt_typ))
+  | ERef (p1, RefCell, EArray (p2, [])) -> 
+      raise (Typ_error (p2, "an empty array literal requires a type annotation"))
+  | ERef (p1, RefCell, EArray (p2, es)) ->
+      begin match map (tc_exp env) es with
+        | t1::ts ->
+            (** just assume the first type is the top one for now *)
+            if List.for_all (fun t -> Env.subtype env t t1) ts then
+              Env.check_typ p2 env (TApp (TSyn "Array", t1))
+            else
+              error p2 "Bad array subtypes"
+        | [] -> failwith "FATAL pattern miss in array checking"
+      end
+  | EEmptyArray (p, _)
+  | EArray (p, _) -> error p ("Array outside of a ref -- desugaring problem")
   | ERef (p, k, e) ->
       let t = tc_exp env e in
         begin match k with
@@ -113,12 +129,6 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ETypecast (p, rt, e) -> 
       let t = tc_exp env e in
         Env.static env rt t
-  | EEmptyArray (p, elt_typ) -> 
-      error p "Don't know what to do with arrays yet"
-  | EArray (p, []) -> 
-      raise (Typ_error (p, "an empty array literal requires a type annotation"))
-  | EArray (p, e :: es) -> 
-      error p "Don't know what to do with arrays yet"
   | EIf (p, e1, e2, e3) ->
       let c = tc_exp env e1 in
         if Env.subtype env c typ_bool then
@@ -150,25 +160,25 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | EUpdate (p, obj, field, value) -> begin
       match simpl_typ env (tc_exp env obj), 
         tc_exp env field, tc_exp env value with
-        | ((TObject (fs, proto)) as tobj), 
+          | ((TObject (fs, proto)) as tobj), 
             ((TRegex (re, field_fsm)) as tfld), typ ->
-            let okfield ((_, fsm), prop) = 
-              if RegLang.overlap fsm field_fsm
-              then match prop with
-                | PPresent s
-                | PMaybe s -> if Env.subtype env typ s then true
-                  else error p (sprintf "%s not subtype of %s in %s[%s = %s]"
-                                  (string_of_typ typ) (string_of_typ s) 
-                                  (string_of_typ tobj) (string_of_typ tfld)
-                                  (string_of_typ typ))
-                | PAbsent -> error p (sprintf "Assigning to absent field")
-              else true in
-              if List.for_all okfield fs then tobj
-              else error p "Shouldn't happen --- unknown error in update"
-        | obj, fld, typ ->
-            error p (sprintf "Bad update: %s[%s = %s]"
-                       (string_of_typ obj) (string_of_typ fld) 
-                       (string_of_typ typ))
+              let okfield ((_, fsm), prop) = 
+                if RegLang.overlap fsm field_fsm
+                then match prop with
+                  | PPresent s
+                  | PMaybe s -> if Env.subtype env typ s then true
+                    else error p (sprintf "%s not subtype of %s in %s[%s = %s]"
+                                    (string_of_typ typ) (string_of_typ s) 
+                                    (string_of_typ tobj) (string_of_typ tfld)
+                                    (string_of_typ typ))
+                  | PAbsent -> error p (sprintf "Assigning to absent field")
+                else true in
+                if List.for_all okfield fs then tobj
+                else error p "Shouldn't happen --- unknown error in update"
+          | obj, fld, typ ->
+              error p (sprintf "Bad update: %s[%s = %s]"
+                         (string_of_typ obj) (string_of_typ fld) 
+                         (string_of_typ typ))
     end
   | ENew (p, cid, args) -> error p "New doesn't work yet (constrs)"
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))

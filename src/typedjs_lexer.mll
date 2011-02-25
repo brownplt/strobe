@@ -40,6 +40,8 @@ rule token = parse
    | "}" { RBRACE }
    | "[" { LBRACK }
    | "]" { RBRACK }
+   | "<" { LANGLE }
+   | ">" { RANGLE }
    | "," { COMMA }
    | "Any" { ANY }
    | "Int" { INT }
