@@ -259,7 +259,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
                            if Env.subtype env u max_typ then
                              check_app (Env.app_typ env (TApp (tfun, u)))
                            else
-                             error p "Unified, but to the wrong type"
+                             error p (sprintf "Unified, but to %s, which is not a subtype of %s" (string_of_typ u) (string_of_typ max_typ))
                        with Not_found ->
                          error p (sprintf "could not determine \'%s in %s" 
                                     x (string_of_typ ft))
