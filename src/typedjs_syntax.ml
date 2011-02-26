@@ -65,6 +65,7 @@ and prop =
   | PPresent of typ
   | PMaybe of typ
   | PAbsent
+(** PMissed?  PSkull? *)
 
 and  func_info = {
   func_typ : typ;
@@ -75,14 +76,17 @@ and  func_info = {
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
 let mk_object_typ (fs : (field * prop) list) (star : typ option) proto : typ =
-  let union (re1, _) re2 = RegLang_syntax.Alt (re1, re2) in
+  let union (re1, _) re2 = if re2 = RegLang_syntax.Empty then re1 else 
+    RegLang_syntax.Alt (re1, re2) in
   let union_re = List.fold_right union (map fst2 fs) RegLang_syntax.Empty in
   let rest_fsm = RegLang.negate (RegLang.fsm_of_regex union_re) in
     match star with
       | Some typ ->
-          TObject (((union_re, rest_fsm), PMaybe typ)::fs, proto)
+          TObject (((RegLang_syntax.Negate union_re, rest_fsm), 
+                    PMaybe typ)::fs, proto)
       | None ->
-          TObject (((union_re, rest_fsm), PAbsent)::fs, proto)
+          TObject (((RegLang_syntax.Negate union_re, rest_fsm), 
+                    PAbsent)::fs, proto)
 
 let rec remove_this op = match op with
   | TArrow (a::aa, r) -> TArrow (aa, r)
@@ -222,7 +226,7 @@ module Pretty = struct
   open FormatExt
 
   let fld field = match field with
-    | _ -> text "REGEX"
+    | (re, fsm) -> squish [text "/"; RegLang_syntax.Pretty.p_re re; text "/"]
 
   let rec typ t  = match t with
     | TTop -> text "Any"
@@ -237,7 +241,7 @@ module Pretty = struct
        | Undef -> "Undef"
       end
     | TApp (t1, t2) -> horz [typ t1; text "<"; typ t2; text ">"]
-    | TRegex (regex, fsm) -> text "TODO: pp regexes"
+    | TRegex (regex, fsm) -> RegLang_syntax.Pretty.p_re regex
     | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
     | TIntersect (t1, t2) -> horz [typ t1; text "&"; typ t2]
     | TArrow (tt::arg_typs, r_typ) ->
@@ -259,7 +263,7 @@ module Pretty = struct
               typ r_typ ]
     | TObject (fs, proto) ->
         let f (k, p) = horz [ fld k; text ":"; prop p ] in
-          braces (horz ([text "proto:"; typ proto]@
+          braces (horz ([text "proto:"; typ proto; text ";"]@
                           (intersperse (text ",") (map f fs))))
     | TRef s -> horz [ text "ref"; parens (typ s) ]
     | TSource s -> horz [ text "source"; parens (typ s) ]

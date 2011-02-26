@@ -493,7 +493,6 @@ let dfa_of_regex (re : regex) : dfa =
   let (first_state, follow_tbl, symbol_tbl) = tables_of_regex re in
   make_dfa first_state follow_tbl symbol_tbl
 
-
 type fsm = dfa
 let fsm_of_regex = dfa_of_regex
 

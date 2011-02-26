@@ -15,5 +15,17 @@ type regex =
   | Empty
   | String of string
   | Concat of regex * regex
+  | Negate of regex
 
 val build_range : char -> char -> CharSet.t
+
+module Pretty : sig
+
+  open Format
+  open FormatExt
+
+  val p_re : regex -> printer
+  val string_of_re : regex -> string
+
+end
+
