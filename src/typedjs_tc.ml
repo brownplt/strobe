@@ -9,22 +9,6 @@ let consumed_owned_vars  = ref IdSet.empty
 
 let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
 
-let array_fields_re = 
-  let open RegLang_syntax in
-    Alt 
-      (Star 
-         (InSet 
-            (CharSetExt.from_list ['0'; '1'; '2'; '3'; '4'; 
-                                   '5'; '6'; '7'; '8'; '9' ])),
-       Alt 
-         (String "NaN",
-          Alt 
-            (String "+Infinity",
-            (String "-Infinity"))))
-      
-let array_field = 
-  (array_fields_re, RegLang.fsm_of_regex array_fields_re)
-
 let mk_array_typ p env tarr =
   Env.check_typ p env (TApp (TSyn "Array", tarr))
 
@@ -72,7 +56,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | _ -> tc_exp env e2
     end
   | ERef (p1, RefCell, EEmptyArray (p2, elt_typ)) -> 
-      Env.check_typ p2 env (TApp (TSyn "Array", elt_typ))
+      mk_array_typ p2 env elt_typ
   | ERef (p1, RefCell, EArray (p2, [])) -> 
       raise (Typ_error (p2, "an empty array literal requires a type annotation"))
   | ERef (p1, RefCell, EArray (p2, es)) ->
@@ -101,7 +85,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
                                  (string_of_typ t)))
     end 
-  | ESetRef (p, e1, e2) -> begin match tc_exp env e1, tc_exp env e2 with
+  | ESetRef (p, e1, e2) -> begin match simpl_typ env (tc_exp env e1), tc_exp env e2 with
       | TRef s, t
       | TSink s, t ->
           if Env.subtype env t s then 
@@ -182,7 +166,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
     end
   | EUpdate (p, obj, field, value) -> begin
       match simpl_typ env (tc_exp env obj), 
-        tc_exp env field, tc_exp env value with
+        simpl_typ env (tc_exp env field), tc_exp env value with
           | ((TObject (fs, proto)) as tobj), 
             ((TRegex (re, field_fsm)) as tfld), typ ->
               let okfield ((_, fsm), prop) = 
