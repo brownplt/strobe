@@ -108,6 +108,10 @@ module Env = struct
 
   exception Not_subtype
 
+  let rec bind_typ env typ : env * typ = match typ with
+    | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) (typ_subst x s t)
+    | typ -> (env, typ)
+
   let rec subt env cache s t = 
 (*    printf "Subtyping: %s \n<: \n%s\n\n" 
        (string_of_typ s) (string_of_typ t); *)
@@ -135,6 +139,10 @@ module Env = struct
           let s = IdMap.find x env.typ_ids in (* S-TVar *)
             subtype cache s t (* S-Trans *)
           with Not_found -> failwith (sprintf "failed looking up %s" x) end
+        | t, TId y -> begin try
+          let s = IdMap.find y env.typ_ids in (* S-TVar *)
+            subtype cache t s (* S-Trans *)
+          with Not_found -> failwith (sprintf "failed looking up %s" y) end
         | TIntersect (s1, s2), _ -> 
           begin 
             try subtype cache s1 t
@@ -160,6 +168,10 @@ module Env = struct
         | TSink s, TSink t -> subtype cache t s
         | TRef s, TSource t -> subtype cache s t
         | TRef s, TSink t -> subtype cache t s
+        | TForall (x1, s1, t1), TForall (x2, s2, t2) -> 
+            let (env', typ') = bind_typ env s in
+            let (env'', typ'') = bind_typ env t in
+              subt env cache typ' typ''
         | _, TTop -> cache
         | TBot, _ -> cache
         | _ -> raise Not_subtype
@@ -371,10 +383,6 @@ module Env = struct
         List.fold_left add_field env fs
       | _ -> 
         raise (Not_wf_typ (cname ^ " global must be an object"))
-
-  let rec bind_typ env typ : env * typ = match typ with
-    | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) (typ_subst x s t)
-    | typ -> (env, typ)
 
   let syns env = env.typ_syns
 
