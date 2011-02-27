@@ -241,7 +241,8 @@ module Pretty = struct
        | Undef -> "Undef"
       end
     | TApp (t1, t2) -> horz [typ t1; text "<"; typ t2; text ">"]
-    | TRegex (regex, fsm) -> RegLang_syntax.Pretty.p_re regex
+    | TRegex (regex, fsm) -> 
+        squish [text "/"; RegLang_syntax.Pretty.p_re regex; text "/"]
     | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
     | TIntersect (t1, t2) -> horz [typ t1; text "&"; typ t2]
     | TArrow (tt::arg_typs, r_typ) ->
@@ -379,6 +380,7 @@ module Pretty = struct
 end
 
 let string_of_typ = FormatExt.to_string Pretty.p_typ
+let string_of_exp = FormatExt.to_string Pretty.p_exp
 
 let assigned_free_vars (e : exp) = 
   let rec exp : exp -> IdSet.t = function

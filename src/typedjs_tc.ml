@@ -62,11 +62,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
   | ERef (p1, RefCell, EArray (p2, es)) ->
       begin match map (tc_exp env) es with
         | t1::ts ->
-            (** just assume the first type is the top one for now *)
-            if List.for_all (fun t -> Env.subtype env t t1) ts then
-              mk_array_typ p2 env t1
-            else
-              error p2 "Bad array subtypes"
+            let tarr = List.fold_right (Env.typ_union env) ts t1 in
+              mk_array_typ p2 env tarr
         | [] -> failwith "FATAL pattern miss in array checking"
       end
   | EEmptyArray (p, _)
@@ -233,8 +230,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
                  with Typ_error _ -> r1 end
              with Typ_error _ -> check_app t2 end
            | TForall (x, max_typ, (TArrow (expected_typ, result_typ) as ft)) ->
-               let subst = unify_typ ft 
-                 (TArrow (map (tc_exp env) args, result_typ)) in
+               let tfun' = TArrow (map (tc_exp env) args, result_typ) in
+               let subst = unify_typ ft tfun' in
                  begin match subst with 
                    | None -> error p (sprintf "Unification failure")
                    | Some subst -> 
@@ -336,8 +333,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
         begin match tc_exp env e with
           | TForall (x, s, t) ->
               if Env.subtype env u s then
-                (printf "Substing \nc";
-                typ_subst x u t)
+                typ_subst x u t
               else 
                 error p (sprintf "expected an argument of type %s, got %s"
                            (string_of_typ s) (string_of_typ u))

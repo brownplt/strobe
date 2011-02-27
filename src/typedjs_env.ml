@@ -191,7 +191,7 @@ module Env = struct
         end
     | _, _ -> raise Not_subtype 
 
-  and app_typ env t = match t with
+  and app_typ env (t : typ) = match t with
     | TApp (t1, t2) ->
         begin match t1 with
           | TSyn x -> app_typ env (TApp (IdMap.find x env.typ_syns, t2))
@@ -519,20 +519,20 @@ let rec fields env obj fsm = match simpl_typ env obj, fsm with
           missing overlaps in the cases where we know the field must
           be present.  merge_prop iterates over fields and builds a
           type and a more restricted fsm to use on prototype lookup *)
-      let merge_prop ((_, fsm), prop) (fsm', typ) =
-        if RegLang.overlap fsm fsm' 
-        then match prop with
-            (** If the property is present, we subtract the fsm *)
-          | PPresent s -> 
-              let fsm'' = RegLang.subtract fsm' fsm in
-              let typ' = Env.typ_union env s typ in
-                (fsm'', typ')
-                  (** If the property is possibly present, we can't 
-                      subtract the fsm, but we must include the type *)
-          | PMaybe s ->
-              (fsm', Env.typ_union env s typ)
-          | PAbsent -> (fsm', typ)
-        else (fsm', typ) in
+      let merge_prop ((re, fsm), prop) (fsm', typ) =
+        match RegLang.overlap_example fsm fsm' with
+           | None -> (fsm', typ) 
+           | Some str -> match prop with
+                 (** If the property is present, we subtract the fsm *)
+               | PPresent s -> 
+                   let fsm'' = RegLang.subtract fsm' fsm in
+                   let typ' = Env.typ_union env s typ in
+                     (fsm'', typ')
+                 (** If the property is possibly present, we can't 
+                     subtract the fsm, but we must include the type *)
+               | PMaybe s ->
+                   (fsm', Env.typ_union env s typ)
+               | PAbsent -> (fsm', typ) in
       let (proto_fsm, top_typ) = List.fold_right merge_prop fs (fsm, TBot) in
         Env.typ_union env top_typ (fields env proto proto_fsm)
   | TPrim Null, _ -> TPrim Undef
