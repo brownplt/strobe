@@ -535,8 +535,11 @@ let rec fields p env obj fsm = match simpl_typ env obj, fsm with
                    (fsm', Env.typ_union env s typ)
                | PAbsent -> (fsm', typ) 
                | PErr -> 
-                   raise (Typ_error (p, sprintf "Looked up bad property %s"
-                                       (RegLang_syntax.Pretty.string_of_re re)))
+                   raise 
+                     (Typ_error 
+                        (p, sprintf "Looked up bad property %s, the overlap was %s"
+                           (RegLang_syntax.Pretty.string_of_re re)
+                        str))
       in
       let (proto_fsm, top_typ) = List.fold_right merge_prop fs (fsm, TBot) in
         Env.typ_union env top_typ (fields p env proto proto_fsm)
