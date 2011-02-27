@@ -53,6 +53,7 @@ rule token = parse
    | "Undef" { UNDEF }
    | "Null" { NULL }
    | "_" { UNDERSCORE }
+   | "BAD" { BAD }
    | "*" { STAR }
    | ":" { COLON }
    | ";" { SEMI }

@@ -151,7 +151,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
     begin match simpl_typ env (un_null (tc_exp env obj)), 
       simpl_typ env (tc_exp env field) with
       | ((TObject (fs, proto)) as tobj), TRegex (_, field_fsm) -> 
-          fields env tobj field_fsm
+          fields p env tobj field_fsm
       | TObject _, typ -> 
           error p (sprintf "Got %s rather than a regex in lookup"
                      (string_of_typ typ))
@@ -175,6 +175,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
                                     (string_of_typ typ) (string_of_typ s) 
                                     (string_of_typ tobj) (string_of_typ tfld)
                                     (string_of_typ typ))
+                  | PErr -> error p "Assigning to error field"
                   | PAbsent -> error p (sprintf "Assigning to absent field")
                 else true in
                 if List.for_all okfield fs then tobj

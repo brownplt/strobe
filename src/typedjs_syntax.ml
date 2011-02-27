@@ -65,7 +65,7 @@ and prop =
   | PPresent of typ
   | PMaybe of typ
   | PAbsent
-(** PMissed?  PSkull? *)
+  | PErr
 
 and  func_info = {
   func_typ : typ;
@@ -75,15 +75,15 @@ and  func_info = {
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
-let mk_object_typ (fs : (field * prop) list) (star : typ option) proto : typ =
+let mk_object_typ (fs : (field * prop) list) (star : prop option) proto : typ =
   let union (re1, _) re2 = if re2 = RegLang_syntax.Empty then re1 else 
     RegLang_syntax.Alt (re1, re2) in
   let union_re = List.fold_right union (map fst2 fs) RegLang_syntax.Empty in
   let rest_fsm = RegLang.negate (RegLang.fsm_of_regex union_re) in
     match star with
-      | Some typ ->
+      | Some prop ->
           TObject (((RegLang_syntax.Negate union_re, rest_fsm), 
-                    PMaybe typ)::fs, proto)
+                    prop)::fs, proto)
       | None ->
           TObject (((RegLang_syntax.Negate union_re, rest_fsm), 
                     PAbsent)::fs, proto)
@@ -279,6 +279,7 @@ module Pretty = struct
     | PPresent t -> typ t
     | PMaybe t -> typ t
     | PAbsent -> text "_"
+    | PErr -> text "BAD"
 
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c

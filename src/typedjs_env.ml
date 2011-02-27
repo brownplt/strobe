@@ -28,7 +28,8 @@ match typ with
       let prop_subst p = match p with
         | PPresent typ -> PPresent (typ_subst x s typ)
         | PMaybe typ -> PMaybe (typ_subst x s typ)
-        | PAbsent -> PAbsent in
+        | PAbsent -> PAbsent 
+        | PErr -> PErr in
       TObject (map (second2 prop_subst) fs, typ_subst x s proto)
   | TRef t -> TRef (typ_subst x s t)
   | TSource t -> TSource (typ_subst x s t)
@@ -186,7 +187,8 @@ module Env = struct
           | PMaybe s, PMaybe t
           | PPresent s, PPresent t -> 
               subtype_fields env (subt env cache s t) fs1' fs2'
-          | PAbsent, PAbsent -> subtype_fields env cache fs1' fs2'
+          | PAbsent, PAbsent 
+          | PErr, PErr -> subtype_fields env cache fs1' fs2'
           | _, _ -> raise Not_subtype
         end
     | _, _ -> raise Not_subtype 
@@ -288,13 +290,12 @@ module Env = struct
     | PPresent typ -> PPresent (normalize_typ env typ)
     | PMaybe typ -> PMaybe (normalize_typ env typ)
     | PAbsent -> PAbsent
+    | PErr -> PErr
 
   let check_typ p env t = 
     try normalize_typ env t
     with Not_wf_typ s -> raise (Typ_error (p, s))
       | Not_found -> failwith "Not found in check_typ!!!"
-
-
 
   let basic_static env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env (TPrim Num) typ
@@ -510,7 +511,7 @@ let rec unify (subst : typ IdMap.t option) (s : typ) (t : typ)  =
 let unify_typ (s : typ) (t : typ) : typ IdMap.t option = 
   unify (Some IdMap.empty) s t
 
-let rec fields env obj fsm = match simpl_typ env obj, fsm with
+let rec fields p env obj fsm = match simpl_typ env obj, fsm with
   | _, fsm when RegLang.is_empty fsm -> TBot
   | TRef (TObject (fs, proto)), _ 
   | TObject (fs, proto), _ ->
@@ -532,9 +533,13 @@ let rec fields env obj fsm = match simpl_typ env obj, fsm with
                      subtract the fsm, but we must include the type *)
                | PMaybe s ->
                    (fsm', Env.typ_union env s typ)
-               | PAbsent -> (fsm', typ) in
+               | PAbsent -> (fsm', typ) 
+               | PErr -> 
+                   raise (Typ_error (p, sprintf "Looked up bad property %s"
+                                       (RegLang_syntax.Pretty.string_of_re re)))
+      in
       let (proto_fsm, top_typ) = List.fold_right merge_prop fs (fsm, TBot) in
-        Env.typ_union env top_typ (fields env proto proto_fsm)
+        Env.typ_union env top_typ (fields p env proto proto_fsm)
   | TPrim Null, _ -> TPrim Undef
   | _, _ -> failwith ("Bad fields invocation" ^ (string_of_typ obj))
 

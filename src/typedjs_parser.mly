@@ -9,7 +9,7 @@ open Typedjs_syntax
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE PROTO CLASS UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
-       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI UNDERSCORE
+       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI UNDERSCORE BAD
        
 
 %right UNION INTERSECTION
@@ -30,17 +30,23 @@ args
   | arg_typ { [$1] }
   | arg_typ STAR args { $1 :: $3 }
 
+prop
+  : typ { PPresent $1 }
+  | UNDERSCORE { PAbsent }
+  | BAD { PErr }
+
 field
-  : regex COLON typ { let fsm = RegLang.fsm_of_regex $1 in
-                        (($1, fsm), 
-                         if RegLang.is_finite fsm
-                         then PPresent $3
-                         else PMaybe $3) }
-  | ID COLON typ 
+  : regex COLON prop { let fsm = RegLang.fsm_of_regex $1 in
+                         (($1, fsm), 
+                          match $3 with
+                            | PPresent t -> 
+                                if RegLang.is_finite fsm
+                                then PPresent t
+                                else PMaybe t
+                            | p -> p) }
+  | ID COLON prop
       { let re = RegLang_syntax.String $1 in
-        ((re, RegLang.fsm_of_regex re), PPresent $3) }
-  | regex COLON UNDERSCORE { let fsm = RegLang.fsm_of_regex $1 in
-                               (($1, fsm), PAbsent) }
+        ((re, RegLang.fsm_of_regex re), $3) }
 
 fields
   : { [] }
@@ -62,11 +68,11 @@ arg_typ
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | arg_typ INTERSECTION arg_typ { TIntersect ($1, $3) }
   | LBRACE fields RBRACE { TRef (mk_object_typ $2 None (TSyn "Object")) }
-  | LBRACE STAR COLON arg_typ SEMI fields RBRACE 
+  | LBRACE STAR COLON prop SEMI fields RBRACE 
       { TRef (mk_object_typ $6 (Some $4) (TSyn "Object")) }
   | LBRACE PROTO COLON arg_typ SEMI fields RBRACE
       { TRef (mk_object_typ $6 None $4) }
-  | LBRACE PROTO COLON arg_typ COMMA STAR COLON arg_typ SEMI fields RBRACE
+  | LBRACE PROTO COLON arg_typ COMMA STAR COLON prop SEMI fields RBRACE
       { TRef (mk_object_typ $10 (Some $8) $4) }
   | LPAREN typ RPAREN { $2 }
   | TID { TId $1 }

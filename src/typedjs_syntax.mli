@@ -59,6 +59,7 @@ and prop =
   | PPresent of typ
   | PMaybe of typ
   | PAbsent
+  | PErr
 
 and  func_info = {
   func_typ : typ;
@@ -68,7 +69,7 @@ and  func_info = {
 
 val typ_bool : typ
 
-val mk_object_typ : (field * prop) list -> typ option -> typ -> typ
+val mk_object_typ : (field * prop) list -> prop option -> typ -> typ
 
 val remove_this : typ -> typ
 
