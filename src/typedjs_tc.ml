@@ -232,7 +232,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
              with Typ_error _ -> check_app t2 end
            | TForall (x, max_typ, (TArrow (expected_typ, result_typ) as ft)) ->
                let tfun' = TArrow (map (tc_exp env) args, result_typ) in
-               let subst = unify_typ ft tfun' in
+               let subst = unify_typ env ft tfun' in
                  begin match subst with 
                    | None -> error p (sprintf "Unification failure")
                    | Some subst -> 

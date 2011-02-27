@@ -456,7 +456,7 @@ let rec simpl_typ env typ =
 let apply_subst subst typ = IdMap.fold typ_subst subst typ
 
  (* TODO: occurs check *)
-let rec unify (subst : typ IdMap.t option) (s : typ) (t : typ)  = 
+let rec unify env (subst : typ IdMap.t option) (s : typ) (t : typ)  = 
   match s, t with
   | TPrim s, TPrim t -> 
       if s = t then subst 
@@ -471,20 +471,21 @@ let rec unify (subst : typ IdMap.t option) (s : typ) (t : typ)  =
             if IdMap.mem x subst' then
               begin
                 let s = IdMap.find x subst' in
-                  Some (IdMap.add x (apply_subst subst' (TUnion (s, t))) subst')
+                  Some (IdMap.add x (apply_subst subst' 
+                                       (Env.typ_union env s t)) subst')
               end
             else
               Some (IdMap.add x (apply_subst subst' t) subst')
             end
-  | s, TId y -> unify subst (TId y) s
-  | TUnion (s1, s2), TUnion (t1, t2) -> unify (unify subst s1 t1) s2 t2
+  | s, TId y -> unify env subst (TId y) s
+  | TUnion (s1, s2), TUnion (t1, t2) -> unify env (unify env subst s1 t1) s2 t2
   | TIntersect (s1, s2), TIntersect (t1, t2) -> 
-      unify (unify subst s1 t1) s2 t2
+      unify env (unify env subst s1 t1) s2 t2
   | TArrow (s2s, s3), TArrow (t2s, t3) ->
       if List.length s2s != List.length t2s then None 
-      else List.fold_left2 unify subst (s3 :: s2s) (t3 :: t2s)
+      else List.fold_left2 (unify env) subst (s3 :: s2s) (t3 :: t2s)
   | TApp (s1, s2), TApp (t1, t2) -> 
-      unify (unify subst s1 t1) s2 t2
+      unify env (unify env subst s1 t1) s2 t2
   | TSyn x1, TSyn x2 -> if x1 = x2 then subst else None
   | TObject (fs1, p1), TObject (fs2, p2) ->
       if List.length fs1 != List.length fs2 then None
@@ -492,24 +493,24 @@ let rec unify (subst : typ IdMap.t option) (s : typ) (t : typ)  =
         let f subst (x, p1) (y, p2) = 
           if x = y then
             match p1, p2 with
-              | PPresent s, PPresent t -> unify subst s t
-              | PMaybe s, PMaybe t -> unify subst s t
+              | PPresent s, PPresent t -> unify env subst s t
+              | PMaybe s, PMaybe t -> unify env subst s t
               | PAbsent, PAbsent -> subst
               | _ -> None
           else None in
         let subst' = List.fold_left2 f subst fs1 fs2 in
-          unify subst' p1 p2
-  | TRef s, TRef t -> unify subst s t
-  | TSource s, TSource t -> unify subst s t
-  | TSink s, TSink t -> unify subst s t
+          unify env subst' p1 p2
+  | TRef s, TRef t -> unify env subst s t
+  | TSource s, TSource t -> unify env subst s t
+  | TSink s, TSink t -> unify env subst s t
   | TTop, TTop -> subst
   | TBot, TBot -> subst
   | TForall _, TForall _ -> None
   | _ -> None
 
 
-let unify_typ (s : typ) (t : typ) : typ IdMap.t option = 
-  unify (Some IdMap.empty) s t
+let unify_typ env (s : typ) (t : typ) : typ IdMap.t option = 
+  unify env (Some IdMap.empty) s t
 
 let rec fields p env obj fsm = match simpl_typ env obj, fsm with
   | _, fsm when RegLang.is_empty fsm -> TBot
@@ -542,7 +543,11 @@ let rec fields p env obj fsm = match simpl_typ env obj, fsm with
                         str))
       in
       let (proto_fsm, top_typ) = List.fold_right merge_prop fs (fsm, TBot) in
-        Env.typ_union env top_typ (fields p env proto proto_fsm)
-  | TPrim Null, _ -> TPrim Undef
+        begin match simpl_typ env proto with
+          | TRef (TObject _ as tproto) -> 
+              Env.typ_union env top_typ (fields p env tproto proto_fsm)
+          | TPrim Null -> TPrim Undef
+          | _ -> raise (Typ_error (p, sprintf "Bad type for proto: %s" 
+                                     (string_of_typ proto)))
+        end
   | _, _ -> failwith ("Bad fields invocation" ^ (string_of_typ obj))
-

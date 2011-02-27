@@ -76,7 +76,7 @@ val typ_unfold :  typ -> typ
 
 val simpl_typ : Env.env -> typ -> typ
 
-val unify_typ : typ -> typ -> typ IdMap.t option
+val unify_typ : Env.env -> typ -> typ -> typ IdMap.t option
 
 val fields : pos -> Env.env -> typ -> RegLang.fsm -> typ
 

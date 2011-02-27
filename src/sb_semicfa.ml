@@ -433,6 +433,8 @@ let semicfa owned_ids typ_env exp =
   (* TBot is the wrong type *)
   let env = Env.bind "#ret" (Absval.Val (ExternalLambda Typedjs_syntax.TBot)) 
     env in
+  let env = Env.bind "#exn" (Absval.Val (ExternalLambda Typedjs_syntax.TBot)) 
+    env in
   flow env Heap.empty cpsexp;
   Annotate.a_exp exp
 
