@@ -185,8 +185,9 @@ end = struct
 
   let lookup x env = 
     try IdMap.find x env.binds
-    with Not_found -> 
-      raise (Invalid_argument (x ^ " not found in abstract environment"))
+    (* Let the type-checker report unbound identifier errors. It can distinguish
+       free variables from free labels, etc. *)
+    with Not_found -> Absval.any
 
   let bind x v env = { env with binds = IdMap.add x v env.binds }
 
