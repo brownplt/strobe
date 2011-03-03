@@ -546,7 +546,8 @@ let rec fields p env obj fsm = match simpl_typ env obj, fsm with
         begin match simpl_typ env proto with
           | TRef (TObject _ as tproto) -> 
               Env.typ_union env top_typ (fields p env tproto proto_fsm)
-          | TPrim Null -> TPrim Undef
+          | TPrim Null -> if RegLang.is_empty proto_fsm then
+              top_typ else Env.typ_union env top_typ (TPrim Undef)
           | _ -> raise (Typ_error (p, sprintf "Bad type for proto: %s" 
                                      (string_of_typ proto)))
         end
