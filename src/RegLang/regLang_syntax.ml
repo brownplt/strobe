@@ -13,6 +13,8 @@ type regex =
   | Concat of regex * regex
   | Negate of regex (** can't construct from this, just for convenience *)
 
+let any_str = Star (NotInSet CharSet.empty)
+
 let build_range first last =
   let ascii_first, ascii_last = Char.code first, Char.code last in
     if not (ascii_last > ascii_first) then

@@ -17,6 +17,8 @@ type regex =
   | Concat of regex * regex
   | Negate of regex
 
+val any_str : regex
+
 val build_range : char -> char -> CharSet.t
 
 module Pretty : sig
