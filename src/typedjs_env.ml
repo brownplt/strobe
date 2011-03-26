@@ -1,5 +1,6 @@
 open Prelude
 open Typedjs_syntax
+open RegLang_syntax
 
 exception Not_wf_typ of string
 
@@ -196,7 +197,9 @@ module Env = struct
   and app_typ env (t : typ) = match t with
     | TApp (t1, t2) ->
         begin match t1 with
-          | TSyn x -> app_typ env (TApp (IdMap.find x env.typ_syns, t2))
+          | TSyn x -> 
+              let typ = normalize_typ env (IdMap.find x env.typ_syns) in
+                app_typ env (TApp (typ, t2))
           | TForall (x, s, t) ->
               if subtype env t2 s then
                 typ_subst x t2 t
@@ -223,19 +226,19 @@ module Env = struct
     with Not_subtype -> false
       | Not_found -> failwith "not found in subtype!!!"
 
-  let typ_union cs s t = match subtype cs s t, subtype cs t s with
+  and typ_union cs s t = match subtype cs s t, subtype cs t s with
       true, true -> s (* t = s *)
     | true, false -> t (* s <: t *)
     | false, true -> s (* t <: s *)
     | false, false -> TUnion (s, t)
 
-  let typ_intersect cs s t = match subtype cs s t, subtype cs t s with
+  and typ_intersect cs s t = match subtype cs s t, subtype cs t s with
     | true, true -> s
     | true, false -> s (* s <: t *)
     | false, true -> t
     | false, false -> TIntersect (s, t)
 
-  let rec normalize_typ env typ = match typ with
+  and normalize_typ env typ = match typ with
     | TPrim _ -> typ
     | TApp (t1, t2) -> TApp (normalize_typ env t1, normalize_typ env t2)
     | TUnion (s, t) -> 
@@ -299,7 +302,7 @@ module Env = struct
 
   let basic_static env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env (TPrim Num) typ
-    | RT.Str -> typ_union env (TPrim Str) typ
+    | RT.Re _ -> typ_union env (TRegex any_fld) typ
     | RT.Bool -> typ_union env typ_bool typ
     | RT.Function -> typ_union env TField typ
     | RT.Object -> typ_union env TField typ
@@ -307,7 +310,7 @@ module Env = struct
 
   let basic_static2 env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env (TPrim Num) typ
-    | RT.Str -> typ_union env (TPrim Str) typ
+    | RT.Re _ -> typ_union env (TRegex any_fld) typ
     | RT.Bool -> typ_union env typ_bool typ
     | RT.Function -> typ_union env (mk_object_typ [] None (TSyn "Function")) typ
     | RT.Object -> typ_union env (mk_object_typ [] None (TSyn "Object")) typ
@@ -315,13 +318,25 @@ module Env = struct
 
   let rtany = 
     RTSetExt.from_list
-    [ RT.Num; RT.Str; RT.Bool; RT.Function; RT.Object; RT.Undefined ]
+    [ RT.Num; RT.Re any_str; RT.Bool; RT.Function; RT.Object; RT.Undefined ]
+
+  let is_re rt = match rt with RT.Re _ -> true | _ -> false
+
+  let match_re rts = if RTSet.cardinal rts = 1 then
+      match RTSet.choose rts with
+        | RT.Re re -> Some re
+        | _ -> None
+    else None
 
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
     | TBot -> TBot (* might change if we allow arbitrary casts *)
     | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
-    | TPrim (Str)
-    | TRegex _ -> if RTSet.mem RT.Str rt then typ else TBot
+    | TPrim Str
+    | TRegex _ -> if RTSet.exists is_re rt then 
+        match match_re rt with
+          | Some re -> TRegex (re, RegLang.fsm_of_regex re)
+          | None -> typ
+      else TBot
     | TPrim (Num) 
     | TPrim (Int) -> if RTSet.mem RT.Num rt then typ else TBot
     | TPrim (True)
@@ -330,7 +345,8 @@ module Env = struct
     | TPrim (Undef) -> 
         if RTSet.mem RT.Undefined rt then typ else TBot
           (* any other app will be an object from a constructor *)
-    | TObject _ -> if RTSet.mem RT.Object rt then typ else TBot
+    | TRef (TObject _) -> if RTSet.mem RT.Object rt then typ else TBot
+    | TObject _ -> failwith "Static got a functional object"
     | TRef t -> TRef t
     | TSource t -> TSource t
     | TSink t -> TSink t
@@ -344,7 +360,8 @@ module Env = struct
         else (* TODO: no arrow type that is the supertype of all arrows *)
           List.fold_left (basic_static2 cs) TBot (RTSetExt.to_list rt)
     | TId _ -> typ
-    | TRec (x, t) -> TRec (x, static cs rt t)
+    | TRec (x, t) -> let t' = TRec (x, static cs rt t) in
+                     (match t' with TRec (_, TBot) -> TBot | typ -> typ)
     | TSyn _ -> typ
     | TApp _ -> typ
 
@@ -447,7 +464,8 @@ let typ_unfold typ = match typ with
 
 let rec simpl_typ env typ = 
   let typ = match typ with
-    | TSyn x -> IdMap.find x env.Env.typ_syns (* normalization => success *)
+    | TSyn x -> Env.normalize_typ env (IdMap.find x env.Env.typ_syns)
+        (* normalization => success *)
     | TApp _ -> Env.app_typ env typ
     | _ -> typ
   in typ_unfold typ

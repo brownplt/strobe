@@ -111,6 +111,9 @@ let rec exp (env : env) expr = match expr with
               EUpdate (p, EDeref (p, EId (p, "%obj")), 
                        to_string p (exp env e2), 
                        exp env e3)))
+  | AppExpr (a, BracketExpr (a2, e1, 
+                             ConstExpr (a3, JavaScript_syntax.CString "charAt")), [arg]) ->
+      EInfixOp (a, "charAt", exp env e1, exp env arg)
   | AppExpr (a, ((BracketExpr (a2, e1, e2)) as f), args) ->
       EApp (a, exp env f, (exp env e1)::(map (exp env) args))
   | AppExpr (a, f, args) -> 

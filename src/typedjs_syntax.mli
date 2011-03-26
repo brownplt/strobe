@@ -1,11 +1,12 @@
 open Prelude
+open RegLang_syntax
 
 exception Typ_error of pos * string
 
 module RT : sig
   type t =
     | Num
-    | Str
+    | Re of regex
     | Bool
     | Function
     | Object
@@ -68,6 +69,8 @@ and  func_info = {
 }
 
 val typ_bool : typ
+
+val any_fld : field
 
 val mk_object_typ : (field * prop) list -> prop option -> typ -> typ
 

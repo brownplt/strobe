@@ -1,11 +1,12 @@
 open Prelude
+open RegLang_syntax
 
 exception Typ_error of pos * string
 
 module RT = struct
   type t =
     | Num
-    | Str
+    | Re of regex
     | Bool
     | Function
     | Object
@@ -17,7 +18,7 @@ module RT = struct
 
   let pp v = match v with
     | Num -> text "number"
-    | Str -> text "string"
+    | Re re -> text ("string:" ^ (Pretty.string_of_re re))
     | Bool -> text "boolean"
     | Function -> text "function"
     | Object -> text "object"
@@ -74,6 +75,9 @@ and  func_info = {
 }
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
+
+let any_fld = (RegLang_syntax.any_str,
+               RegLang.fsm_of_regex RegLang_syntax.any_str)
 
 let mk_object_typ (fs : (field * prop) list) (star : prop option) proto : typ =
   let union (re1, _) re2 = if re2 = RegLang_syntax.Empty then re1 else 

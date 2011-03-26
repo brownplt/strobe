@@ -1,6 +1,7 @@
 open Prelude
 open Sb_semicps
 open Typedjs_syntax
+open RegLang_syntax
 
 module H = Hashtbl
 module J = JavaScript_syntax
@@ -59,16 +60,23 @@ type heap = Heap.t
 
 let rtany = 
   RTSetExt.from_list
-    [ RT.Num; RT.Str; RT.Bool; RT.Function; RT.Object; RT.Undefined ]
+    [ RT.Num; RT.Re any_str; RT.Bool; RT.Function; RT.Object; RT.Undefined ]
 
 module Absval : sig
   type t = 
     | Set of RTSet.t
     | Deref of Loc.t * RTSet.t
     | Ref of Loc.t
+        (* This value contains the string at the given location *)
+    | LocStrAt of Loc.t * strpos
+        (* This value represents a test against a constant string *)
+    | LocStrAtIs of Loc.t * strpos * string
     | LocTypeof of Loc.t
     | LocTypeIs of Loc.t * RTSet.t
     | Val of cpsval
+  and strpos =
+    | Start
+    | End
 
   val any : t
   val compare : t -> t -> int
@@ -76,6 +84,7 @@ module Absval : sig
   val to_set : t -> RTSet.t
   val mk_type_is : loc -> string -> t
   val mk_type_is_not : loc -> string -> t
+  val mk_startswith : loc -> strpos -> string -> RT.t
         
 end = struct
   
@@ -83,9 +92,16 @@ end = struct
     | Set of RTSet.t
     | Deref of Loc.t * RTSet.t
     | Ref of Loc.t
+        (* This value contains the string at the given location *)
+    | LocStrAt of Loc.t * strpos
+        (* This value represents a test against a constant string *)
+    | LocStrAtIs of Loc.t * strpos * string
     | LocTypeof of Loc.t
     | LocTypeIs of Loc.t * RTSet.t
     | Val of cpsval
+  and strpos =
+    | Start
+    | End
 
   let any = Set rtany
 
@@ -99,7 +115,9 @@ end = struct
     | Set set -> set
     | Deref (_, v) -> v
     | Ref _ -> rtany
-    | LocTypeof _ -> RTSet.singleton RT.Str
+    | LocStrAt _ -> RTSet.singleton (RT.Re any_str)
+    | LocStrAtIs _ -> RTSet.singleton RT.Bool
+    | LocTypeof _ -> RTSet.singleton (RT.Re any_str)
     | LocTypeIs _ -> RTSet.singleton RT.Bool
     | Val v -> match v with
         (* [lookup] should ensure that this does not occur *)
@@ -110,7 +128,7 @@ end = struct
           let open JavaScript_syntax in
           match c with
             | CBool _ -> RTSet.singleton RT.Bool
-            | CString _ -> RTSet.singleton RT.Str
+            | CString _ -> RTSet.singleton (RT.Re any_str)
             | CNull
             | CRegexp _ -> RTSet.singleton RT.Object
             | CNum _ 
@@ -131,7 +149,7 @@ end = struct
     | _ -> union (Set (to_set v1)) (Set (to_set v2))
 
   let tag_of_string = function
-    | "string" -> RT.Str
+    | "string" -> RT.Re any_str
     | "number" -> RT.Num
     | "boolean" -> RT.Bool
     | "function" ->  RT.Function
@@ -150,6 +168,14 @@ end = struct
       LocTypeIs (x, RTSet.remove (tag_of_string s) rtany)
     with Invalid_argument "tag_of_string" ->
       Set (RTSet.singleton RT.Bool)
+
+  let mk_startswith x posn str = match posn with
+    | Start -> 
+      RT.Re (RegLang_syntax.Concat
+               (RegLang_syntax.String str, RegLang_syntax.any_str))
+    | End -> 
+      RT.Re (RegLang_syntax.Concat
+               (RegLang_syntax.any_str, RegLang_syntax.String str))
 
 end
 
@@ -201,7 +227,7 @@ end = struct
       | TUnion (t1, t2) -> RTSet.union (rt t1) (rt t2)
       | TIntersect (t1, t2) -> RTSet.union (rt t1) (rt t2)
       | TPrim (s) -> begin match s with
-          | Str ->  RTSet.singleton RT.Str
+          | Str ->  RTSet.singleton (RT.Re any_str)
           | Num
           | Int -> RTSet.singleton RT.Num
           | True
@@ -209,7 +235,7 @@ end = struct
           | Null -> RTSet.singleton RT.Object
           | Undef -> RTSet.singleton RT.Undefined
       end
-      | TRegex _ -> RTSet.singleton RT.Str
+      | TRegex (re, fsm) -> RTSet.singleton (RT.Re re)
       | TObject _ -> RTSet.singleton RT.Object
       | TRef t -> rt t
       | TSource t -> rt t
@@ -250,12 +276,18 @@ let calc_op1 node env heap (op : op1) v = match op, v with
   | Op1Prefix "prefix:typeof", Absval.Deref (loc, _) ->
     (Absval.LocTypeof loc, heap)
   | Op1Prefix "%ToBoolean", Absval.LocTypeIs _ -> (v, heap)
+  | Op1Prefix "%ToBoolean", Absval.LocStrAtIs _ -> (v, heap)
   | _ -> (Absval.Set rtany, heap)
 
 let calc_op2 x node env heap op v1 v2 = 
   let open Absval in
   let open JavaScript_syntax in
   match op, v1, v2 with
+    | Op2Infix "charAt", Absval.Deref (loc, _), Val (Const (CInt 0)) ->
+      (LocStrAt (loc, Start), heap)
+        (** Insert something sensible here --- convert ending string to re *)
+    | Op2Infix "===", LocStrAt (loc, posn), Val (Const (CString str)) ->
+      (LocStrAtIs (loc, posn, str), heap)
     | Op2Infix "==", LocTypeof loc, Val (Const (CString str)) (* subtyping! *)
     | Op2Infix "===", LocTypeof loc, Val (Const (CString str))
     | Op2Infix "==", Val (Const (CString str)), LocTypeof loc
@@ -269,7 +301,7 @@ let calc_op2 x node env heap op v1 v2 =
     | SetRef, Ref l, v ->
       (v, if Env.is_owned x env then Heap.set_ref l (to_set v) heap else heap)
     | Op2Infix "+", _, _ -> 
-      (Set (RTSetExt.from_list [ RT.Num; RT.Str ]), heap)
+      (Set (RTSetExt.from_list [ RT.Num; RT.Re any_str ]), heap)
     | Op2Infix op, v1, v2 -> (Set rtany, heap)
 (* TODO: reintroduce
       begin 
@@ -320,6 +352,9 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         let false_set = RTSet.diff (Heap.deref loc heap) true_set in
         (Heap.set_ref loc true_set heap, Heap.set_ref loc false_set heap,
          true, true_set, false_set)
+      | Absval.LocStrAtIs (loc, posn, str) ->
+        let true_set = RTSet.singleton (Absval.mk_startswith loc posn str) in
+        (Heap.set_ref loc true_set heap, heap, true, true_set, RTSet.empty)
       | _ -> 
         (heap, heap, false, RTSet.empty, RTSet.empty) in
     flow env heap2 true_cont;

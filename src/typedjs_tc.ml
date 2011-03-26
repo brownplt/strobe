@@ -27,6 +27,7 @@ let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 let error p s = raise (Typ_error (p, s))
 
 let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
+let string_of_exp = FormatExt.to_string Typedjs_syntax.Pretty.p_exp
 
 let un_null t = match t with
   | TUnion (TPrim (Undef), t') -> t'
@@ -132,7 +133,7 @@ let rec tc_exp (env : Env.env) exp = match exp with
         TBot
   | ETypecast (p, rt, e) -> 
       let t = tc_exp env e in
-        Env.static env rt t
+      Env.static env rt t
   | EIf (p, e1, e2, e3) ->
       let c = tc_exp env e1 in
         if Env.subtype env c typ_bool then
@@ -152,6 +153,8 @@ let rec tc_exp (env : Env.env) exp = match exp with
       simpl_typ env (tc_exp env field) with
       | ((TObject (fs, proto)) as tobj), TRegex (_, field_fsm) -> 
           fields p env tobj field_fsm
+      | ((TObject (fs, proto)) as tobj), TPrim Str ->
+          fields p env tobj (snd2 any_fld)
       | TObject _, typ -> 
           error p (sprintf "Got %s rather than a regex in lookup"
                      (string_of_typ typ))
