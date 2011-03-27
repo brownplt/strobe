@@ -14,6 +14,7 @@ open FormatExt
 open Lexing
 open Typedjs_dyn
 open RegLang
+open RegLang_generate
 
 let string_of_cin cin =
   let buf = Buffer.create 5000 in
@@ -35,10 +36,17 @@ module Input : sig
   val get_env : unit -> Env.env
   val load_env : string -> unit
   val set_global_object : string -> unit
+  val set_re_test_depth : int -> unit
+  val get_re_test_depth : unit -> int
+  val set_re_test_count : int -> unit
+  val get_re_test_count : unit -> int
 end = struct
 
   let env = ref Env.empty_env
   let global_object = ref None
+
+  let re_test_depth = ref None
+  let re_test_count = ref None
 
   let c = ref None
   let str = ref None
@@ -62,9 +70,21 @@ end = struct
     | None -> global_object := Some cname
     | Some _ -> failwith "jst: global object already specified"
 
+  let set_re_test_depth i = re_test_depth := Some i
+  let set_re_test_count i = re_test_count := Some i
+
+
   let get_env () = match !global_object with
     | None -> Env.set_global_object !env "Global"
     | Some c -> Env.set_global_object !env c
+
+  let get_re_test_depth () = match !re_test_depth with
+    | None -> 3
+    | Some i -> i
+
+  let get_re_test_count () = match !re_test_count with
+    | None -> 100
+    | Some i -> i
 
 end
 
@@ -102,6 +122,15 @@ let action_tc () : unit =
     if get_print_contracts () then
       let tr_map = mk_contract_transformers !contracts in
         transform_exprs tr_map (get_cin ()) stdout
+
+let action_reglang () : unit =
+  let depth = get_re_test_depth () in
+  let count = get_re_test_count () in
+  let res = random_res depth count in
+  List.iter (fun re -> 
+    printf "%s\n" (RegLang_syntax.Pretty.string_of_re re))
+    res
+  
 
 let action_regex () : unit =
   let lexbuf = from_string (get_cin ()) in
@@ -161,6 +190,11 @@ let main () : unit =
        "disable flow analysis (benchmarks and debugging)");
       ("-regex", Arg.Unit (set_action action_regex),
        "regular expression containment tests");
+      ("-regex-depth", Arg.Int (fun i -> set_re_test_depth i),
+       "set the depth of the res to generate (use with regex-generate)");
+      ("-regex-generate", Arg.Int (fun i -> set_re_test_count i;
+        (set_action action_reglang) ()),
+       "generate <count> random regular expressions");
       set_simpl_cps;
       set_print_contracts;
 
