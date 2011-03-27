@@ -25,16 +25,19 @@ atom :
   | CHAR { InSet (CharSet.singleton $1) }
   | LPAREN cat RPAREN { $2 }
   | DOT { NotInSet CharSet.empty }
+  | LBRACK chardescs RBRACK { $2 }
 
 star :
   | atom { $1 }
   | atom STAR { Star $1 }
 
+alt :
+  | cat PIPE cat { Alt($1, $3) }
+
 cat :
   | star { $1 }
   | star cat { Concat ($1, $2) }
-  | cat PIPE cat { Alt($1, $3) }
-  | LBRACK chardescs RBRACK { $2 }
+  | alt { $1 }
 
 chardescs :
   | chardesc { $1 }

@@ -8,7 +8,7 @@ let max_string_length = 10
 let random_char () = Char.chr ((Random.int 26) + 97)
 
 let random_string () = 
-  let len = Random.int max_string_length in
+  let len = 1 + (Random.int max_string_length) in
   let rec f chars_left = match chars_left with
     | 0 -> ""
     | n -> (Char.escaped (random_char ())) ^ (f (n - 1)) in
@@ -34,4 +34,3 @@ let random_res depth how_many =
     | 0 -> []
     | n -> (generate depth)::(f (how_many' - 1)) in
   f how_many
-    
