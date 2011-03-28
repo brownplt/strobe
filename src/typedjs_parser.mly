@@ -10,6 +10,7 @@ open Typedjs_syntax
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE PROTO CLASS UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
        CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI UNDERSCORE BAD
+       HASHBRACE
        
 
 %right UNION INTERSECTION
@@ -68,6 +69,7 @@ arg_typ
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | arg_typ INTERSECTION arg_typ { TIntersect ($1, $3) }
   | LBRACE fields RBRACE { TRef (mk_object_typ $2 None (TSyn "Object")) }
+  | HASHBRACE fields RBRACE { TSource (mk_object_typ $2 None (TSyn "Object")) }
   | LBRACE STAR COLON prop SEMI fields RBRACE 
       { TRef (mk_object_typ $6 (Some $4) (TSyn "Object")) }
   | LBRACE PROTO COLON arg_typ SEMI fields RBRACE

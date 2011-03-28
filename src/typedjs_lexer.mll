@@ -36,6 +36,7 @@ rule token = parse
    | "->" { ARROW }
    | "(" { LPAREN }
    | ")" { RPAREN }
+   | "#{" { HASHBRACE }
    | "{" { LBRACE }
    | "}" { RBRACE }
    | "[" { LBRACK }
