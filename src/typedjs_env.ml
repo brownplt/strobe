@@ -114,7 +114,7 @@ module Env = struct
     | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) (typ_subst x s t)
     | typ -> (env, typ)
 
-  let rec subt env cache s t = 
+  let rec subt env (cache : TPSet.t) s t : TPSet.t= 
 (*    printf "Subtyping: %s \n<: \n%s\n\n" 
        (string_of_typ s) (string_of_typ t); *)
     if TPSet.mem (s, t) cache then
@@ -164,7 +164,7 @@ module Env = struct
             with Invalid_argument _ -> raise Not_subtype (* unequal lengths *)
           end
         | TObject (fs1, p1), TObject (fs2, p2) -> 
-            subtype (subtype_fields env cache fs1 fs2) p1 p2
+            subtype (subtype_object env cache fs1 fs2) p1 p2
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
         | TSource s, TSource t -> subtype cache s t
         | TSink s, TSink t -> subtype cache t s
@@ -178,6 +178,57 @@ module Env = struct
         | TBot, _ -> cache
         | _ -> raise Not_subtype
 
+  (* S-Object, "Algorithmic Subtyping of Objects" from the paper *)
+  and subtype_object env cache fs1 fs2 = 
+    let all_fields fs = List.fold_right 
+      (fun ((rei, fsmi), fi) l' -> match fi with
+        | PAbsent -> l'
+        | _ -> RegLang.union l' fsmi)
+      fs (RegLang.fsm_of_regex RegLang_syntax.Empty) in
+    let l = all_fields fs1 in
+    let m = all_fields fs2 in
+    (* Check for containment of union_i(L_i) < union_j(M_j) *)
+    match RegLang.counterexample l m with
+      | Some str -> raise Not_subtype
+      | None ->
+        (* forall i,j, if L_i overlaps M_j, F_i <: G_j *)
+        (List.fold_right
+           (fun ((_, l_i), f_i) cache ->
+             List.fold_right
+               (fun ((_, m_j), g_j) cache ->
+                match RegLang.overlap l_i m_j with
+                  | true -> subtype_prop env cache f_i g_j
+                  | false -> cache)
+               fs2 cache)
+           fs1
+          (* forall j, if M_j - union_i(L_i) isn't empty, it is maybe or err *)
+           (List.fold_right
+              (fun ((_, m_j), g_j) cache ->
+                match RegLang.counterexample m_j l with
+                  | None -> cache
+                  | Some str -> match g_j with
+                      | PPresent _ -> raise Not_subtype
+                      | PMaybe _ 
+                      | PAbsent
+                      | PErr _ -> cache)
+              fs2 cache))
+
+  (* subtype_prop encodes this lattice:
+          PErr
+           |
+        PMaybe T
+       /        \
+    PPresent  PAbsent
+  *)
+  and subtype_prop env cache p1 p2 = match p1, p2 with
+    | PPresent s, PPresent t
+    | PPresent s, PMaybe t
+    | PMaybe s, PMaybe t -> subt env cache s t
+    | PAbsent, PAbsent
+    | PAbsent, PMaybe _ -> cache
+    | _, PErr -> cache
+    | _ -> raise Not_subtype
+    
   (* assumes fs1 and fs2 are ordered 
      fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
   and subtype_fields env cache fs1 fs2 = match fs1, fs2 with

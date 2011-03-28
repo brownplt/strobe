@@ -85,7 +85,10 @@ let mk_object_typ (fs : (field * prop) list) (star : prop option) proto : typ =
   let union_re = List.fold_right union (map fst2 fs) RegLang_syntax.Empty in
   let rest_fsm = RegLang.negate (RegLang.fsm_of_regex union_re) in
     match star with
-      | Some prop ->
+      | Some (PPresent t) ->
+          TObject (((RegLang_syntax.Negate union_re, rest_fsm), 
+                    PMaybe t)::fs, proto)
+      | Some prop -> 
           TObject (((RegLang_syntax.Negate union_re, rest_fsm), 
                     prop)::fs, proto)
       | None ->
@@ -281,7 +284,7 @@ module Pretty = struct
     | TRec (x, t) -> horz [ text x; text "."; typ t ]
   and prop p = match p with
     | PPresent t -> typ t
-    | PMaybe t -> typ t
+    | PMaybe t -> horz [ text "maybe"; typ t ]
     | PAbsent -> text "_"
     | PErr -> text "BAD"
 
@@ -292,7 +295,7 @@ module Pretty = struct
         parens (vert [ text "assert-typ"; parens (typ t); exp e ])
     | EEmptyArray _ -> text "[ ]"
     | EArray (_, es) -> brackets (horz (map exp es))
-    | EObject (_, ps) -> brackets (vert (map prop ps))
+    | EObject (_, ps) -> brackets (vert (map fld ps))
     | EId (_, x) -> text x
     | EBracket (_, e1, e2) -> squish [ exp e1; brackets (exp e2) ]
     | EUpdate (_, e1, e2, e3) -> 
@@ -343,7 +346,7 @@ module Pretty = struct
     | EForInIdx _ -> text "for-in-idx"
     | ECheat (_, t, e) -> parens (horz [ text "cheat"; typ t; exp e ])
 
-  and prop (s, e) =
+  and fld (s, e) =
     parens (horz [ text s; text ":"; exp e ])
 
   and bind (x, e) = 
@@ -380,13 +383,15 @@ module Pretty = struct
 
   let p_exp = exp
 
+  let p_prop = prop
+
   let pp_typ ppf t = p_typ t ppf
    
 end
 
 let string_of_typ = FormatExt.to_string Pretty.p_typ
 let string_of_exp = FormatExt.to_string Pretty.p_exp
-
+let string_of_prop = FormatExt.to_string Pretty.p_prop
 let assigned_free_vars (e : exp) = 
   let rec exp : exp -> IdSet.t = function
     | EConst _ -> IdSet.empty

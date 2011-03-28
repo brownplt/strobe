@@ -72,6 +72,7 @@ arg_typ
   | HASHBRACE fields RBRACE { TSource (mk_object_typ $2 None (TSyn "Object")) }
   | LBRACE STAR COLON prop SEMI fields RBRACE 
       { TRef (mk_object_typ $6 (Some $4) (TSyn "Object")) }
+  | HASHBRACE STAR COLON prop SEMI fields RBRACE { TSource (mk_object_typ $6 (Some $4) (TSyn "Object")) }
   | LBRACE PROTO COLON arg_typ SEMI fields RBRACE
       { TRef (mk_object_typ $6 None $4) }
   | LBRACE PROTO COLON arg_typ COMMA STAR COLON prop SEMI fields RBRACE

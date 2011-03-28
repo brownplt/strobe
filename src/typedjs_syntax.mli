@@ -183,6 +183,7 @@ module Pretty : sig
   open FormatExt
 
   val p_typ : typ -> printer
+  val p_prop : prop -> printer
   val p_exp : exp -> printer
   val p_def : def -> printer
 
@@ -192,6 +193,7 @@ end
 
 val string_of_typ : typ -> string
 val string_of_exp : exp -> string
+val string_of_prop : prop -> string
 
 val assigned_free_vars : exp -> IdSet.t
 
