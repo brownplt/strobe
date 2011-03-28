@@ -215,6 +215,15 @@ module DFA = struct
       [ horz [ text "Start: "; St.pp t.start ];
         horz [ text "Accept: "; StSetExt.p_set St.pp t.accept ];
         StMapExt.p_map St.pp p_edge t.edges ]
+      
+  let states_of_dfa {edges=es; start=s; accept=acc} =
+    let add_edge k {on_char=chst; other_chars=st} sts =
+      StSet.add st (StSet.union sts 
+                      (StSetExt.from_list (map snd2 (AugCharMap.bindings chst))))
+    in StMap.fold add_edge es StSet.empty
+    
+  let states dfa = StSet.cardinal (states_of_dfa dfa)
+
 end
 
 let tables_of_regex (re : regex) =
@@ -401,6 +410,31 @@ let intersect dfa1 dfa2 =
         dfa1.accept
         StSet.empty }
 
+(* same as intersect, aside from accepting states *)
+let union dfa1 dfa2 =
+  let f state1 (edges1 : edge_list) edgemap1 =
+    let g state2 (edges2 : edge_list) edgemap2 =
+      StMap.add (J (state1, state2)) (cross_edge_list edges1 edges2) edgemap2 in
+    StMap.fold g dfa2.edges edgemap1 in
+  { edges = StMap.fold f dfa1.edges StMap.empty;
+    start = J (dfa1.start, dfa2.start);
+    accept =
+      StSet.fold 
+        (fun s1 accepts1 ->
+          StSet.fold
+            (fun s2 accepts1' -> StSet.add (J (s1, s2)) accepts1')
+            (DFA.states_of_dfa dfa2)
+            accepts1)
+        dfa1.accept
+        (StSet.fold
+           (fun s2 accepts2 ->
+             StSet.fold
+               (fun s1 accepts2' -> StSet.add (J (s1, s2)) accepts2')
+               (DFA.states_of_dfa dfa1)
+               accepts2)
+           dfa2.accept
+           StSet.empty) }
+
 let negate dfa = 
   { edges = dfa.edges;
     start = dfa.start;
@@ -458,14 +492,16 @@ let find_word dfa =
     find_word (intersect dfa1 dfa2) 
 
   let is_finite dfa =
-    let rec f visited current =
-      if StSet.mem current visited then false
+    let rec f pumpable visited current =
+      if pumpable && StSet.mem current dfa.accept then false
+      else if StSet.mem current visited && pumpable then true
       else 
+        let pumpable = StSet.mem current visited && (not pumpable) in
         let edges = StMap.find current dfa.edges in
         let next_states = (edges.other_chars :: 
                              AugCharMapExt.values edges.on_char) in
-          List.for_all (f (StSet.add current visited)) next_states in
-      f StSet.empty dfa.start
+          List.for_all (f pumpable (StSet.add current visited)) next_states in
+      f false StSet.empty dfa.start
             
   let subtract dfa1 dfa2 =
     let dfa2' = negate dfa2 in
@@ -474,6 +510,8 @@ let find_word dfa =
 let contains (dfa1 : dfa) (dfa2 : dfa) : bool = 
   let dfa2' = negate dfa2 in
   let dfa3 = intersect dfa1 dfa2' in
+  printf "DFA1 size: %d\n" (DFA.states dfa2');
+  printf "DFA2 size: %d\n" (DFA.states dfa3);
 (*  printf "DFAs:\n%s\n%s\n%s\n\n\n%!" (FormatExt.to_string DFA.pp dfa1)
     (FormatExt.to_string DFA.pp dfa2')
     (FormatExt.to_string DFA.pp dfa3); *)
@@ -482,6 +520,8 @@ let contains (dfa1 : dfa) (dfa2 : dfa) : bool =
 let counterexample dfa1 dfa2 =
   let dfa2' = negate dfa2 in
   let dfa3 = intersect dfa1 dfa2' in
+  printf "DFA1 size: %d\n" (DFA.states dfa2');
+  printf "DFA2 size: %d\n" (DFA.states dfa3);
 (*  printf "DFAs:\n%s\n%s\n%s\n\n\n%!" (FormatExt.to_string DFA.pp dfa1)
     (FormatExt.to_string DFA.pp dfa2')
     (FormatExt.to_string DFA.pp dfa3); *)
