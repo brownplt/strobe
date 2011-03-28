@@ -510,8 +510,8 @@ let find_word dfa =
 let contains (dfa1 : dfa) (dfa2 : dfa) : bool = 
   let dfa2' = negate dfa2 in
   let dfa3 = intersect dfa1 dfa2' in
-  printf "DFA1 size: %d\n" (DFA.states dfa2');
-  printf "DFA2 size: %d\n" (DFA.states dfa3);
+(*  printf "DFA1 size: %d\n" (DFA.states dfa2');
+    printf "DFA2 size: %d\n" (DFA.states dfa3); *)
 (*  printf "DFAs:\n%s\n%s\n%s\n\n\n%!" (FormatExt.to_string DFA.pp dfa1)
     (FormatExt.to_string DFA.pp dfa2')
     (FormatExt.to_string DFA.pp dfa3); *)
@@ -520,8 +520,8 @@ let contains (dfa1 : dfa) (dfa2 : dfa) : bool =
 let counterexample dfa1 dfa2 =
   let dfa2' = negate dfa2 in
   let dfa3 = intersect dfa1 dfa2' in
-  printf "DFA1 size: %d\n" (DFA.states dfa2');
-  printf "DFA2 size: %d\n" (DFA.states dfa3);
+(*  printf "DFA1 size: %d\n" (DFA.states dfa2');
+    printf "DFA2 size: %d\n" (DFA.states dfa3); *)
 (*  printf "DFAs:\n%s\n%s\n%s\n\n\n%!" (FormatExt.to_string DFA.pp dfa1)
     (FormatExt.to_string DFA.pp dfa2')
     (FormatExt.to_string DFA.pp dfa3); *)

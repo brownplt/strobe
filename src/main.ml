@@ -135,7 +135,6 @@ let action_reglang () : unit =
   
 
 let action_regex () : unit =
-  printf "Regexing\n";
   let lexbuf = from_string (get_cin ()) in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = get_cin_name () };
   let tests = 
@@ -154,7 +153,7 @@ let action_regex () : unit =
   let run_test (pos, re1, re2, should_succeed) = 
     let fsm1 = RegLang.fsm_of_regex re1 in
     let fsm2 = RegLang.fsm_of_regex re2 in
-    eprintf "Testing: %s <: %s\n" (RegLang_syntax.Pretty.string_of_re re1) 
+    printf "Testing: %s <: %s\n%!" (RegLang_syntax.Pretty.string_of_re re1) 
       (RegLang_syntax.Pretty.string_of_re re2);
       match RegLang.counterexample fsm1 fsm2, should_succeed with
         | None, false -> eprintf "(Failed) Found no overlap, but expected to\n"; ()
