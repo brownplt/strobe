@@ -4,6 +4,8 @@ open RegLang_syntax
 
 exception Not_wf_typ of string
 
+let string_of_re = RegLang_syntax.Pretty.string_of_re
+
 (* Necessary for equi-recursive subtyping. *)
 module TypPair = struct
   type t = typ * typ
@@ -12,6 +14,14 @@ end
 
 module TPSet = Set.Make (TypPair)
 module TPSetExt = SetExt.Make (TPSet)
+
+module ObjLang = struct
+  type t = typ * RegLang.fsm
+  let compare = Pervasives.compare
+end
+
+module OLSet = Set.Make (ObjLang)
+module OLSetExt = SetExt.Make (OLSet)
 
 let rec typ_subst x s typ = 
 (* printf "Substing: %s %s %s\n\n" x (string_of_typ s) (string_of_typ typ);*)
@@ -114,9 +124,18 @@ module Env = struct
     | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) (typ_subst x s t)
     | typ -> (env, typ)
 
+  let rec app_typ env (t : typ) = match t with
+    | TApp (t1, t2) ->
+        begin match t1 with
+          | TSyn x -> 
+              let typ = IdMap.find x env.typ_syns in
+                app_typ env (TApp (typ, t2))
+          | TForall (x, s, t) -> typ_subst x t2 t
+          | _ -> raise (Not_wf_typ (sprintf "Expected a quantified type in TApp"))
+        end
+    | _ -> raise (Not_wf_typ ("Can only apply TApp"))
+
   let rec subt env (cache : TPSet.t) s t : TPSet.t= 
-(*    printf "Subtyping: %s \n<: \n%s\n\n" 
-       (string_of_typ s) (string_of_typ t); *)
     if TPSet.mem (s, t) cache then
       cache
     else if s = t then
@@ -164,7 +183,7 @@ module Env = struct
             with Invalid_argument _ -> raise Not_subtype (* unequal lengths *)
           end
         | TObject (fs1, p1), TObject (fs2, p2) -> 
-            subtype (subtype_object env cache fs1 fs2) p1 p2
+            subtype (subtype_object' env cache fs1 fs2) p1 p2
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
         | TSource s, TSource t -> subtype cache s t
         | TSink s, TSink t -> subtype cache t s
@@ -178,16 +197,46 @@ module Env = struct
         | TBot, _ -> cache
         | _ -> raise Not_subtype
 
+  and subtype_object' env cache fs1 fs2 =
+    let rec check_prop (((re2, m_j), g_j) as p2) (p2s, fs, cache) =
+      match fs with
+        | [] -> (p2::p2s, fs, cache)
+        | (((re1, l_i), f_i) as p1)::rest -> 
+          match RegLang.overlap l_i m_j with 
+            | true -> 
+              let cache' = subtype_prop env cache f_i g_j in
+              let p2' = ((re1, RegLang.subtract m_j l_i), g_j) in
+              let p2'', fs1', cache'' = check_prop p2' (p2s, rest, cache') in
+              p2'', ((re1, RegLang.subtract l_i m_j), f_i)::fs1', cache''
+            | false -> 
+              let p2', fs1', cache' = check_prop p2 (p2s, rest, cache) in
+              p2', p1::fs1', cache' in
+    let (fs2', fs1', cache') = 
+      List.fold_right check_prop fs2 ([], fs1, cache) in
+    if List.for_all (fun ((_, fsm), _) -> RegLang.is_empty fsm) fs1' then
+      if List.for_all (fun ((_, fsm), g_j) -> 
+        (match g_j with 
+          | PPresent _ -> false
+          | _ -> true) || RegLang.is_empty fsm) fs2' then
+        cache
+      else raise Not_subtype
+    else raise Not_subtype
+
+    
+
+
   (* S-Object, "Algorithmic Subtyping of Objects" from the paper *)
   and subtype_object env cache fs1 fs2 = 
+    printf "Subtyping objects\n%!";
     let all_fields fs = List.fold_right 
       (fun ((rei, fsmi), fi) l' -> match fi with
         | PAbsent -> l'
-        | _ -> RegLang.union l' fsmi)
+        | _ -> printf "Unioning...\n%!"; RegLang.union l' fsmi)
       fs (RegLang.fsm_of_regex RegLang_syntax.Empty) in
     let l = all_fields fs1 in
     let m = all_fields fs2 in
     (* Check for containment of union_i(L_i) < union_j(M_j) *)
+    printf "Counterexampling...\n%!";
     match RegLang.counterexample l m with
       | Some str -> raise Not_subtype
       | None ->
@@ -196,6 +245,7 @@ module Env = struct
            (fun ((_, l_i), f_i) cache ->
              List.fold_right
                (fun ((_, m_j), g_j) cache ->
+                 printf "Overlapping...\n";
                 match RegLang.overlap l_i m_j with
                   | true -> subtype_prop env cache f_i g_j
                   | false -> cache)
@@ -204,6 +254,7 @@ module Env = struct
           (* forall j, if M_j - union_i(L_i) isn't empty, it is maybe or err *)
            (List.fold_right
               (fun ((_, m_j), g_j) cache ->
+                printf "Internal counterexampling...\n%!";
                 match RegLang.counterexample m_j l with
                   | None -> cache
                   | Some str -> match g_j with
@@ -229,39 +280,6 @@ module Env = struct
     | _, PErr -> cache
     | _ -> raise Not_subtype
     
-  (* assumes fs1 and fs2 are ordered 
-     fs1 <: fs2 if fs1 has everything fs2 does, and maybe more *)
-  and subtype_fields env cache fs1 fs2 = match fs1, fs2 with
-    | [], [] -> cache
-    | (x, s) :: fs1', (y, t) :: fs2' ->
-        if x != y then raise Not_subtype
-        else begin match s, t with
-          | PMaybe s, PMaybe t
-          | PPresent s, PPresent t -> 
-              subtype_fields env (subt env cache s t) fs1' fs2'
-          | PAbsent, PAbsent 
-          | PErr, PErr -> subtype_fields env cache fs1' fs2'
-          | _, _ -> raise Not_subtype
-        end
-    | _, _ -> raise Not_subtype 
-
-  and app_typ env (t : typ) = match t with
-    | TApp (t1, t2) ->
-        begin match t1 with
-          | TSyn x -> 
-              let typ = normalize_typ env (IdMap.find x env.typ_syns) in
-                app_typ env (TApp (typ, t2))
-          | TForall (x, s, t) ->
-              if subtype env t2 s then
-                typ_subst x t2 t
-              else
-                raise (Not_wf_typ 
-                         (sprintf "Couldn't perform the typ_app: %s and %s" 
-                            (string_of_typ t2) (string_of_typ s)))
-          | _ -> raise (Not_wf_typ (sprintf "Expected a quantified type in TApp"))
-        end
-    | _ -> raise (Not_wf_typ ("Can only apply TApp"))
-
   and subtypes env ss ts = 
     try 
       let _ = List.fold_left2 (subt env) TPSet.empty ss ts in
@@ -581,43 +599,50 @@ let rec unify env (subst : typ IdMap.t option) (s : typ) (t : typ)  =
 let unify_typ env (s : typ) (t : typ) : typ IdMap.t option = 
   unify env (Some IdMap.empty) s t
 
-let rec fields p env obj fsm = match simpl_typ env obj, fsm with
-  | _, fsm when RegLang.is_empty fsm -> TBot
-  | TRef (TObject (fs, proto)), _ 
-  | TObject (fs, proto), _ ->
-      (** Since the fsms in fs are disjoint, we can safely subtract
-          them from the fsm in the regex without worrying about
-          missing overlaps in the cases where we know the field must
-          be present.  merge_prop iterates over fields and builds a
-          type and a more restricted fsm to use on prototype lookup *)
-      let merge_prop ((re, fsm), prop) (fsm', typ) =
-        match RegLang.overlap_example fsm fsm' with
-           | None -> (fsm', typ) 
-           | Some str -> match prop with
-                 (** If the property is present, we subtract the fsm *)
-               | PPresent s -> 
-                   let fsm'' = RegLang.subtract fsm' fsm in
-                   let typ' = Env.typ_union env s typ in
-                     (fsm'', typ')
-                 (** If the property is possibly present, we can't 
-                     subtract the fsm, but we must include the type *)
-               | PMaybe s ->
-                   (fsm', Env.typ_union env s typ)
-               | PAbsent -> (fsm', typ) 
-               | PErr -> 
-                   raise 
-                     (Typ_error 
-                        (p, sprintf "Looked up bad property %s, the overlap was %s"
+let rec fields p env obj fsm = 
+  let rec fields p env cache obj fsm =
+    if OLSet.mem (obj, fsm) cache then TBot
+    else 
+      let cache = OLSet.add (obj, fsm) cache in
+      match obj, fsm with
+        | _, fsm when RegLang.is_empty fsm -> TBot
+        | TRec (x, t), _ -> 
+          fields p env cache (typ_subst x obj t) fsm
+        | TObject (fs, proto), _ ->
+             (** Since the fsms in fs are disjoint, we can safely subtract
+                 them from the fsm in the regex without worrying about
+                 missing overlaps in the cases where we know the field must
+                 be present.  merge_prop iterates over fields and builds a
+                 type and a more restricted fsm to use on prototype lookup *)
+          let merge_prop ((re, fsm), prop) (fsm', typ) =
+            match RegLang.overlap_example fsm fsm' with
+              | None -> (fsm', typ) 
+              | Some str -> match prop with
+                     (** If the property is present, we subtract the fsm *)
+                  | PPresent s -> 
+                    let fsm'' = RegLang.subtract fsm' fsm in
+                    let typ' = Env.typ_union env s typ in
+                    (fsm'', typ')
+                     (** If the property is possibly present, we can't 
+                         subtract the fsm, but we must include the type *)
+                  | PMaybe s ->
+                    (fsm', Env.typ_union env s typ)
+                  | PAbsent -> (fsm', typ) 
+                  | PErr -> 
+                    raise 
+                      (Typ_error 
+                         (p, sprintf "Looked up bad property %s, the overlap was %s"
                            (RegLang_syntax.Pretty.string_of_re re)
-                        str))
-      in
-      let (proto_fsm, top_typ) = List.fold_right merge_prop fs (fsm, TBot) in
-        begin match simpl_typ env proto with
-          | TRef (TObject _ as tproto) -> 
-              Env.typ_union env top_typ (fields p env tproto proto_fsm)
-          | TPrim Null -> if RegLang.is_empty proto_fsm then
-              top_typ else Env.typ_union env top_typ (TPrim Undef)
-          | _ -> raise (Typ_error (p, sprintf "Bad type for proto: %s" 
-                                     (string_of_typ proto)))
-        end
-  | _, _ -> failwith ("Bad fields invocation" ^ (string_of_typ obj))
+                           str))
+          in
+          let (proto_fsm, top_typ) = List.fold_right merge_prop fs (fsm, TBot) in
+          begin match simpl_typ env proto with
+            | TRef (TObject _ as tproto) -> 
+              Env.typ_union env top_typ (fields p env cache tproto proto_fsm)
+            | TPrim Null -> if RegLang.is_empty proto_fsm then
+                top_typ else Env.typ_union env top_typ (TPrim Undef)
+            | _ -> raise (Typ_error (p, sprintf "Bad type for proto: %s" 
+              (string_of_typ proto)))
+          end
+        | _, _ -> failwith ("Bad fields invocation" ^ (string_of_typ obj))
+  in fields p env OLSet.empty obj fsm

@@ -485,9 +485,6 @@ let find_word dfa =
       AugCharMap.fold check_edge addedmap None in
     f "" StSet.empty dfa.start
 
-  let overlap dfa1 dfa2 =
-    nullable (intersect dfa1 dfa2)
-
   let overlap_example dfa1 dfa2 =
     find_word (intersect dfa1 dfa2) 
 
@@ -503,9 +500,6 @@ let find_word dfa =
           List.for_all (f pumpable (StSet.add current visited)) next_states in
       f false StSet.empty dfa.start
             
-  let subtract dfa1 dfa2 =
-    let dfa2' = negate dfa2 in
-      intersect dfa1 dfa2'
 
 let contains (dfa1 : dfa) (dfa2 : dfa) : bool = 
   let dfa2' = negate dfa2 in
@@ -532,6 +526,19 @@ let is_empty dfa = not (nullable dfa)
 let dfa_of_regex (re : regex) : dfa = 
   let (first_state, follow_tbl, symbol_tbl) = tables_of_regex re in
   make_dfa first_state follow_tbl symbol_tbl
+
+  let subtract dfa1 dfa2 =
+    if is_empty dfa1 then dfa_of_regex RegLang_syntax.Empty
+    else if is_empty dfa2 then dfa1
+    else
+      let dfa2' = negate dfa2 in
+      intersect dfa1 dfa2'
+
+  let overlap dfa1 dfa2 =
+    if is_empty dfa1 or is_empty dfa2 then false
+    else
+      nullable (intersect dfa1 dfa2)
+
 
 type fsm = dfa
 let fsm_of_regex = dfa_of_regex
