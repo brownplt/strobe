@@ -74,7 +74,7 @@ let rec f (acc : IdSet.t * IdSet.t) (exp : exp) : (IdSet.t * IdSet.t) * exp =
     let (all1, enclosing_local) = acc in
     let ((all2, internal_local), e) = f (all1, IdSet.empty) e in
     ((all2, enclosing_local),
-     EFunc (p, xs, { fi with func_owned = IdSet.diff internal_local all2 }, e))
+     EFunc (p, xs, { fi with func_owned = IdSet.diff internal_local all1 }, e))
   | ELet (p, x, e1, e2) ->
     let (acc, e1) = f acc e1 in
     let (acc, e2) = f acc e2 in

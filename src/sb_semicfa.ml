@@ -298,8 +298,6 @@ let calc_op2 x node env heap op v1 v2 =
     | Op2Infix "!=", Val (Const (CString str)), LocTypeof loc
     | Op2Infix "!==",  Val (Const (CString str)), LocTypeof loc ->
       (mk_type_is_not loc str, heap)
-    | SetRef, Ref l, v ->
-      (v, if Env.is_owned x env then Heap.set_ref l (to_set v) heap else heap)
     | Op2Infix "+", _, _ -> 
       (Set (RTSetExt.from_list [ RT.Num; RT.Re any_str ]), heap)
     | Op2Infix op, v1, v2 -> (Set rtany, heap)
@@ -335,6 +333,14 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
     let (v, heap) = match bindexp with
       | Let v -> (lookup v node env, heap)
       | Op1 (op, v) -> calc_op1 node env heap op (lookup v node env)
+      | Op2 (SetRef, ((Id (_, x)) as v1), v2) ->
+        begin match (lookup v1 node env), (lookup v2 node env) with
+          | Absval.Ref l, v ->
+            (v, if Env.is_owned x env 
+              then Heap.set_ref l (Absval.to_set v) heap 
+              else heap)
+          | _, v -> (Absval.Set (Absval.to_set v), heap)
+        end
       | Op2 (op, v1, v2) -> calc_op2 x node env heap op
         (lookup v1 node env) (lookup v2 node env)
       | Object _ -> (Absval.Set (RTSet.singleton RT.Object), heap)
@@ -422,7 +428,8 @@ module Annotate = struct
           | Absval.Ref loc ->
             ETypecast (p, Heap.deref loc heap, exp)
           | _ -> exp
-      with Not_found -> exp 
+      with Not_found -> 
+        exp 
     end
     | EId (p, x) -> begin 
       try 
