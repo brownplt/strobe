@@ -1,4 +1,4 @@
 #!/bin/bash
 pushd ../obj
-ocamldebug main.d.byte  -env ../data/env $@
+ocamldebug main.d.byte  -env ../data/javascript.env $@
 popd

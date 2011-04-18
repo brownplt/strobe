@@ -69,7 +69,7 @@ val simpl_typ : Env.env -> typ -> typ
 
 val unify_typ : Env.env -> typ -> typ -> typ IdMap.t option
 
-val fields : pos -> Env.env -> typ -> RegLang.fsm -> typ
+val fields : pos -> Env.env -> typ -> Sb_strPat.t -> typ
 
 (*
 val operator_env_of_tc_env : Env.env 

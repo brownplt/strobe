@@ -142,18 +142,16 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
           error p ("expected condition to have type Bool, but got a " ^ 
                     (string_of_typ c))
   | EObject (p, fields) ->
-      let mk_field (name, exp) =
-        ((RegLang_syntax.String name,
-          RegLang.fsm_of_regex (RegLang_syntax.String name)),
-         PPresent (tc_exp env exp)) in
+      let mk_field (name, exp) = 
+	(Sb_strPat.singleton name, PPresent (tc_exp env exp)) in
       mk_object_typ (map mk_field fields) None (TSyn "Object")
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (un_null (tc_exp env obj)), 
       simpl_typ env (tc_exp env field) with
-      | ((TObject (fs, proto)) as tobj), TRegex (_, field_fsm) -> 
-          fields p env tobj field_fsm
+      | ((TObject (fs, proto)) as tobj), TRegex idx_pat -> 
+          fields p env tobj idx_pat
       | ((TObject (fs, proto)) as tobj), TPrim Str ->
-          fields p env tobj (snd2 any_fld)
+          fields p env tobj Sb_strPat.all
       | TObject _, typ -> 
           error p (sprintf "Got %s rather than a regex in lookup"
                      (string_of_typ typ))
@@ -166,10 +164,9 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
   | EUpdate (p, obj, field, value) -> begin
       match simpl_typ env (tc_exp env obj), 
         simpl_typ env (tc_exp env field), tc_exp env value with
-          | ((TObject (fs, proto)) as tobj), 
-            ((TRegex (re, field_fsm)) as tfld), typ ->
-              let okfield ((_, fsm), prop) = 
-                if RegLang.overlap fsm field_fsm
+          | (TObject (fs, proto) as tobj), (TRegex idx_pat as tfld), typ ->
+              let okfield (fld_pat, prop) = 
+                if Sb_strPat.is_overlapped fld_pat idx_pat
                 then match prop with
                   | PPresent s
                   | PMaybe s -> if Env.subtype env typ s then true

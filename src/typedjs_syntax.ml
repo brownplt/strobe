@@ -1,12 +1,11 @@
 open Prelude
-open RegLang_syntax
 
 exception Typ_error of pos * string
 
 module RT = struct
   type t =
     | Num
-    | Re of regex
+    | Re of Sb_strPat.t
     | Bool
     | Function
     | Object
@@ -18,7 +17,7 @@ module RT = struct
 
   let pp v = match v with
     | Num -> text "number"
-    | Re re -> text ("string:" ^ (Pretty.string_of_re re))
+    | Re pat -> text ("string:" ^ (Sb_strPat.pretty pat))
     | Bool -> text "boolean"
     | Function -> text "function"
     | Object -> text "object"
@@ -40,7 +39,7 @@ type prim =
   | Undef
   | Null
 
-type field = RegLang.regex * RegLang.fsm
+type field = Sb_strPat.t
 
 type typ = 
   | TPrim of prim
@@ -83,8 +82,7 @@ type writ_field =
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
-let any_fld = (RegLang_syntax.any_str,
-               RegLang.fsm_of_regex RegLang_syntax.any_str)
+let any_fld = Sb_strPat.all
 
 (*let mk_object_typ (flds : (field * writ_field) list) (star : writ_field)
     proto : typ =
@@ -92,20 +90,12 @@ let any_fld = (RegLang_syntax.any_str,
 
 
 let mk_object_typ (fs : (field * prop) list) (star : prop option) proto : typ =
-  let union (re1, _) re2 = if re2 = RegLang_syntax.Empty then re1 else 
-    RegLang_syntax.Alt (re1, re2) in
-  let union_re = List.fold_right union (map fst2 fs) RegLang_syntax.Empty in
-  let rest_fsm = RegLang.negate (RegLang.fsm_of_regex union_re) in
-    match star with
-      | Some (PPresent t) ->
-          TObject (((RegLang_syntax.Negate union_re, rest_fsm), 
-                    PMaybe t)::fs, proto)
-      | Some prop -> 
-          TObject (((RegLang_syntax.Negate union_re, rest_fsm), 
-                    prop)::fs, proto)
-      | None ->
-          TObject (((RegLang_syntax.Negate union_re, rest_fsm), 
-                    PAbsent)::fs, proto)
+  let module P = Sb_strPat in
+  let star_pat = P.negate (List.fold_right P.union (map fst2 fs) P.empty) in
+  match star with
+    | Some (PPresent t) -> TObject ((star_pat, PMaybe t)::fs, proto)
+    | Some prop -> TObject ((star_pat, prop)::fs, proto)
+    | None -> TObject ((star_pat, PAbsent)::fs, proto)
 
 let rec remove_this op = match op with
   | TArrow (a::aa, r) -> TArrow (aa, r)
@@ -237,9 +227,6 @@ module Pretty = struct
   open Format
   open FormatExt
 
-  let fld field = match field with
-    | (re, fsm) -> squish [text "/"; RegLang_syntax.Pretty.p_re re; text "/"]
-
   let rec typ t  = match t with
     | TTop -> text "Any"
     | TBot -> text "DoesNotReturn"
@@ -253,8 +240,8 @@ module Pretty = struct
        | Undef -> "Undef"
       end
     | TApp (t1, t2) -> horz [typ t1; text "<"; typ t2; text ">"]
-    | TRegex (regex, fsm) -> 
-        squish [text "/"; RegLang_syntax.Pretty.p_re regex; text "/"]
+    | TRegex pat -> 
+        squish [text "/"; text (Sb_strPat.pretty pat); text "/"]
     | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
     | TIntersect (t1, t2) -> horz [typ t1; text "&"; typ t2]
     | TArrow (tt::arg_typs, r_typ) ->
@@ -275,7 +262,7 @@ module Pretty = struct
               text "->";
               typ r_typ ]
     | TObject (fs, proto) ->
-        let f (k, p) = horz [ fld k; text ":"; prop p ] in
+        let f (k, p) = horz [ text (Sb_strPat.pretty k); text ":"; prop p ] in
           braces (horz ([text "proto:"; typ proto; text ";"]@
                           (intersperse (text ",") (map f fs))))
     | TRef s -> horz [ text "ref"; parens (typ s) ]

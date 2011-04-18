@@ -24,7 +24,7 @@ open Typedjs_syntax
 %%
 
 regex :
-  | REGEX { RegLang.parse_regex $startpos $1 }
+  | REGEX { Sb_strPat.parse $startpos $1 }
   
 args
   :  { [] }
@@ -37,17 +37,16 @@ prop
   | BAD { PErr }
 
 field
-  : regex COLON prop { let fsm = RegLang.fsm_of_regex $1 in
-                         (($1, fsm), 
-                          match $3 with
-                            | PPresent t -> 
-                                if RegLang.is_finite fsm
-                                then PPresent t
-                                else PMaybe t
-                            | p -> p) }
+  : regex COLON prop 
+  { let pat = $1 in
+    (pat, match $3 with
+      | PPresent t -> 
+        if Sb_strPat.is_finite pat
+        then PPresent t
+        else PMaybe t
+      | p -> p) }
   | ID COLON prop
-      { let re = RegLang_syntax.String $1 in
-        ((re, RegLang.fsm_of_regex re), $3) }
+      { (Sb_strPat.singleton $1, $3) }
 
 fields
   : { [] }
@@ -65,7 +64,7 @@ arg_typ
   | FALSE { TPrim False }
   | UNDEF { TPrim Undef }
   | NULL { TPrim Null }
-  | regex { TRegex ($1, RegLang.fsm_of_regex $1) }
+  | regex { TRegex $1 }
   | arg_typ UNION arg_typ { TUnion ($1, $3) }
   | arg_typ INTERSECTION arg_typ { TIntersect ($1, $3) }
   | LBRACE fields RBRACE { TRef (mk_object_typ $2 None (TSyn "Object")) }

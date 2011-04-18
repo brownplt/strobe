@@ -1,7 +1,8 @@
 open Prelude
 open Sb_semicps
 open Typedjs_syntax
-open RegLang_syntax
+
+let any_str = Sb_strPat.all
 
 module H = Hashtbl
 module J = JavaScript_syntax
@@ -170,12 +171,11 @@ end = struct
       Set (RTSet.singleton RT.Bool)
 
   let mk_startswith x posn str = match posn with
-    | Start -> 
-      RT.Re (RegLang_syntax.Concat
-               (RegLang_syntax.String str, RegLang_syntax.any_str))
+    | Start ->
+      RT.Re (Sb_strPat.concat (Sb_strPat.singleton str) Sb_strPat.all)
     | End -> 
-      RT.Re (RegLang_syntax.Concat
-               (RegLang_syntax.any_str, RegLang_syntax.String str))
+      RT.Re (Sb_strPat.concat Sb_strPat.all (Sb_strPat.singleton str))
+
 
 end
 
@@ -235,7 +235,7 @@ end = struct
           | Null -> RTSet.singleton RT.Object
           | Undef -> RTSet.singleton RT.Undefined
       end
-      | TRegex (re, fsm) -> RTSet.singleton (RT.Re re)
+      | TRegex pat -> RTSet.singleton (RT.Re pat)
       | TObject _ -> RTSet.singleton RT.Object
       | TRef t -> rt t
       | TSource t -> rt t
