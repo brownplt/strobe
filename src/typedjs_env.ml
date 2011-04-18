@@ -206,45 +206,6 @@ module Env = struct
       else raise Not_subtype
     else raise Not_subtype
 
-  (* S-Object, "Algorithmic Subtyping of Objects" from the paper *)
-  and subtype_object env cache fs1 fs2 = 
-    printf "Subtyping objects\n%!";
-    let all_fields fs = List.fold_right 
-      (fun ((rei, fsmi), fi) l' -> match fi with
-        | PAbsent -> l'
-        | _ -> printf "Unioning...\n%!"; RegLang.union l' fsmi)
-      fs (RegLang.fsm_of_regex RegLang_syntax.Empty) in
-    let l = all_fields fs1 in
-    let m = all_fields fs2 in
-    (* Check for containment of union_i(L_i) < union_j(M_j) *)
-    printf "Counterexampling...\n%!";
-    match RegLang.counterexample l m with
-      | Some str -> raise Not_subtype
-      | None ->
-        (* forall i,j, if L_i overlaps M_j, F_i <: G_j *)
-        (List.fold_right
-           (fun ((_, l_i), f_i) cache ->
-             List.fold_right
-               (fun ((_, m_j), g_j) cache ->
-                 printf "Overlapping...\n";
-                match RegLang.overlap l_i m_j with
-                  | true -> subtype_prop env cache f_i g_j
-                  | false -> cache)
-               fs2 cache)
-           fs1
-          (* forall j, if M_j - union_i(L_i) isn't empty, it is maybe or err *)
-           (List.fold_right
-              (fun ((_, m_j), g_j) cache ->
-                printf "Internal counterexampling...\n%!";
-                match RegLang.counterexample m_j l with
-                  | None -> cache
-                  | Some str -> match g_j with
-                      | PPresent _ -> raise Not_subtype
-                      | PMaybe _ 
-                      | PAbsent
-                      | PErr _ -> cache)
-              fs2 cache))
-
   (* subtype_prop encodes this lattice:
           PErr
            |

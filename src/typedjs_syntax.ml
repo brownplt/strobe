@@ -67,16 +67,29 @@ type typ =
   | TRec of id * typ 
   | TSyn of id (** type synonym *)
   | TApp of typ * typ (** A forall to be substituted on normalization *)
+
 and prop = 
   | PPresent of typ
   | PMaybe of typ
   | PAbsent
   | PErr
 
+type writ_field =
+  | WFNone of typ (** field written without a maybe / absent annotation *)
+  | WFPresent of typ
+  | WFMaybe of typ
+  | WFAbsent
+  | WFSkull
+
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
 let any_fld = (RegLang_syntax.any_str,
                RegLang.fsm_of_regex RegLang_syntax.any_str)
+
+(*let mk_object_typ (flds : (field * writ_field) list) (star : writ_field)
+    proto : typ =
+*)
+
 
 let mk_object_typ (fs : (field * prop) list) (star : prop option) proto : typ =
   let union (re1, _) re2 = if re2 = RegLang_syntax.Empty then re1 else 
