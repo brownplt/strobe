@@ -50,6 +50,11 @@ type typ =
       (* The list holds everything that's typed.
          The second type is the prototype *)
   | TObject of (field * prop) list * typ
+  (* | TSimpleObject of (field * prop) list *)
+    (** If [obj] has type [TSimpleObject ((x, t)::rest)] then, [obj.x]
+	gauranteed to produce a [t]-typed value. However, the type does not
+	specify the field's position on the prototype chain. Therefore, setting
+	[obj.x] might create a new field. *)
   | TRegex of field
   | TRef of typ
   | TSource of typ
@@ -157,24 +162,6 @@ type exp
   | ETypApp of pos * exp * typ
   | EForInIdx of pos
   | ECheat of pos * typ * exp
-
-type constr_exp = { 
-  constr_pos : pos;
-  constr_name : id;
-  constr_typ : typ;
-  constr_args : id list;
-  constr_inits : (id * exp) list;
-  constr_exp : exp;
-  constr_prototype : exp
-}
-
-type def =
-    DEnd
-  | DExp of exp * def
-  | DLet of pos * id * exp * def
-  | DRec of (id * typ * exp) list * def
-  | DConstructor of constr_exp * def
-  | DExternalMethod of pos * id * id * exp * def
 
 (******************************************************************************)
 
@@ -355,30 +342,6 @@ module Pretty = struct
   and rec_bind (x, t, e) = 
     parens (horz [text x; text ":"; typ t; exp e])
 
-  let constr (c : constr_exp) =
-    parens (vert [ sep [ text "define-constructor"; text c.constr_name; 
-                         parens (horz (map text c.constr_args));
-                         text ":"; typ c.constr_typ ];
-                   exp c.constr_exp ])
-      
-
-  let rec p_def (d : def) = match d with
-    | DEnd -> fun fmt -> pp_print_newline fmt () 
-      | DExp (e, d') -> vert [ exp e; p_def d' ]
-      | DConstructor (c, d') -> vert [ constr c; p_def d' ]
-      | DExternalMethod (p, cname, fname, e, d) -> 
-          vert [ sep [ text (cname ^ ".prototype." ^ fname ^ " = ");
-                       exp e; ];
-                 p_def d ]
-      | DLet  (_, x, e, d') ->
-          vert [ parens (vert [ horz [ text "define"; text x ]; exp e ]);
-                 p_def d' ]
-      | DRec (binds, d') ->
-          let p_bind (x, t, e) = brackets (horz [ text x; exp e ]) in
-            vert [ parens (vert [ text "define-rec"; 
-                                  parens (vert (map p_bind binds)) ]);
-                   p_def d' ]
-
   let p_typ = typ
 
   let p_exp = exp
@@ -434,7 +397,7 @@ let assigned_free_vars (e : exp) =
     | ECheat _ -> IdSet.empty
   in exp e
 
-let unique_ids (prog : def) : def * (string, string) Hashtbl.t = 
+let unique_ids (prog : exp) : exp * (string, string) Hashtbl.t = 
   let module H = Hashtbl in
   let ht : (string, string) H.t = H.create 200 in
   let name : id -> id =
@@ -494,21 +457,4 @@ let unique_ids (prog : def) : def * (string, string) Hashtbl.t =
     | ETypApp (p, e, t) -> ETypApp (p, exp env e, t)
     | EForInIdx p -> EForInIdx p
     | ECheat (p, t, e) -> ECheat (p, t, e)
-  and def (env : id IdMap.t) = function
-    | DEnd -> DEnd
-    | DExp (e, d) -> DExp (exp env e, def env d)
-    | DLet (p, x, e, d) ->
-      let x' = name x in
-      DLet (p, x', exp env e, def (IdMap.add x x' env) d)
-    | DRec (binds, body) ->
-      let (xs, xs') = 
-        fold_right
-          (fun (x, _, _) (xs, xs')-> (x::xs, (name x):: xs'))
-          binds ([], []) in
-      let env = List.fold_right2 IdMap.add xs xs' env in
-      DRec (map (fun (x, t, e) -> (find x env, t, exp env e)) binds,
-            def env body) 
-    | DConstructor (cexp, d) -> DConstructor (cexp, def env d)
-    | DExternalMethod (p, x, y, e, d) -> 
-      DExternalMethod (p, x, y, e, def env d) in
-  (def IdMap.empty prog, ht)
+  in (exp IdMap.empty prog, ht)

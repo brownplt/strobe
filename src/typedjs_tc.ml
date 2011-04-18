@@ -42,7 +42,7 @@ let un_ref t = match t with
   | TSink s -> s
   | _ -> failwith ("un_ref got " ^ string_of_typ t)
  
-let rec tc_exp (env : Env.env) exp = match exp with
+let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
   | EConst (_, c) -> tc_const c
   | EBot _ -> TBot
   | EId (p, x) -> begin
@@ -365,51 +365,8 @@ and tc_exp_ret env e =
     else 
       t
 
-let rec tc_def env def = match def with
-    DEnd -> ()
-  | DExp (e, d) -> 
-      let _ = tc_exp env e in
-        tc_def env d
-  | DLet (p, x, e1, d2) -> tc_def (Env.bind_id x (tc_exp env e1) env) d2
-  | DRec (binds, d) ->
-      let f env (x, t, e) = 
-        Env.bind_id x (Env.check_typ (Exp.pos e) env t) env in
-      let env = fold_left f env binds in
-      let tc_bind (x, t, e) =
-        let s = tc_exp env e in
-          if Env.subtype env s t then ()
-          else (* this should not happen; rec-annotation is a copy of the
-                  function's type annotation. *)
-            failwith (sprintf "%s is declared to have type %s, but the bound \
-                             expression has type %s" x (string_of_typ t)
-                        (string_of_typ s)) in
-        List.iter tc_bind binds;
-        tc_def env d
-  | DConstructor (cexp, d) -> let p = cexp.constr_pos in 
-      begin match cexp.constr_typ with
-          TArrow (arg_typs, result_typ) -> 
-            if List.length arg_typs = List.length (cexp.constr_args) then ()
-            else raise (
-              Typ_error (p,
-                         "given " ^ (string_of_int (List.length 
-                                                      (cexp.constr_args))) 
-                         ^ " arg names but "
-                         ^ (string_of_int (List.length arg_typs)) 
-                         ^ " arg types"));            
-            let bind_arg env x t = Env.bind_id x t env in
-            let env = List.fold_left2 bind_arg env (cexp.constr_args) arg_typs
-            in
-            let _ = Env.clear_labels env in           
-              begin match result_typ with
-                  TObject _ -> failwith "No constructing yet"
-                | _ -> raise (Typ_error (
-                                p, "constructor's ret type must be obj"))
-              end
-        | _ -> raise (Typ_error (p, "expected arrow type on constructor"))
-      end
-  | DExternalMethod (p, cname, mid, me, d) -> 
-       error p "Can't do external methods yet (constrs"
-
-let typecheck = tc_def
+let typecheck env exp =
+  let _ = tc_exp env exp in
+  ()
 
 

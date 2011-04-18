@@ -222,9 +222,6 @@ module Env = struct
       else raise Not_subtype
     else raise Not_subtype
 
-    
-
-
   (* S-Object, "Algorithmic Subtyping of Objects" from the paper *)
   and subtype_object env cache fs1 fs2 = 
     printf "Subtyping objects\n%!";

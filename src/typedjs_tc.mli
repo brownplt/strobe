@@ -11,4 +11,4 @@ val disable_flows : unit -> unit
 
 val tc_exp : Env.env -> exp -> typ
 
-val typecheck : Env.env -> def -> unit
+val typecheck : Env.env -> exp -> unit

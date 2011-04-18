@@ -141,30 +141,6 @@ let rec f (acc : IdSet.t * IdSet.t) (exp : exp) : (IdSet.t * IdSet.t) * exp =
     let (acc, e) = f acc e in
     (acc, ECheat (p, t, e))
 
-and def (acc : IdSet.t * IdSet.t) (d : def) : (IdSet.t * IdSet.t) * def =
-  match d with
-    | DEnd -> (acc, d)
-    | DExp (e, d) -> 
-      let (acc, e) = f acc e in
-      let (acc, d) = def acc d in
-      (acc, DExp (e, d))
-  | DLet (p, x, e, d) -> 
-    let (acc, e) = f acc e in
-    let (acc, d) = def acc d in
-    (acc, DLet (p, x, e, d))
-  | DRec (binds, body) ->
-    let (acc, binds) = fold_map
-      (fun acc (x, t, e) -> let (acc, e) = f acc e in (acc, (x, t, e)))
-      binds acc in
-    let (acc, body) = def acc body in
-    (acc, DRec (binds, body))
-  | DConstructor (constr, d) ->
-    let (acc, d) = def acc d in (* nothing owned inside constructors *)
-    (acc, DConstructor (constr, d))
-  | DExternalMethod (p, x, y, e, d) ->
-    let (acc, d) = def acc d in (* nothing owned in external methods *)
-    (acc, DExternalMethod (p, x, y, e, d))
-
-let  owned_inference (prog : def) = 
-  let (_, prog) = def (IdSet.empty, IdSet.empty) prog in
+let  owned_inference (prog : exp) = 
+  let (_, prog) = f (IdSet.empty, IdSet.empty) prog in
   prog

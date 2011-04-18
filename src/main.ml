@@ -114,7 +114,7 @@ let get_typedjs () =
 
 let action_pretypecheck () : unit = 
   let typedjs = get_typedjs () in
-    Typedjs_syntax.Pretty.p_def typedjs std_formatter
+    Typedjs_syntax.Pretty.p_exp typedjs std_formatter
 
 let action_tc () : unit = 
   let _ = Typedjs_tc.typecheck (get_env ()) (get_typedjs ()) in
