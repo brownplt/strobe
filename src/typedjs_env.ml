@@ -71,8 +71,6 @@ module Env = struct
   type env = {
     id_typs : typ IdMap.t; 
     lbl_typs : typ IdMap.t;
-    classes : class_info IdMap.t;
-    subclasses : id IdMap.t; (* direct subclasses *)
     typ_ids: typ IdMap.t; (* bounded type variables *)
     typ_syns : typ IdMap.t; (* type synonyms *)
   }
@@ -81,8 +79,6 @@ module Env = struct
   let empty_env = { 
     id_typs = IdMap.empty;
     lbl_typs = IdMap.empty;
-    classes = IdMap.empty;
-    subclasses = IdMap.empty;
     typ_ids = IdMap.empty;
     typ_syns = IdMap.empty;
   }
@@ -96,18 +92,6 @@ module Env = struct
   let lookup_id x env = IdMap.find x env.id_typs
 
   let lookup_lbl x env = IdMap.find x env.lbl_typs
-
-  let rec field_typ env cname fname = try
-    let ci = IdMap.find cname env.classes in
-      if IdMap.mem fname ci.fields then
-        Some (IdMap.find fname ci.fields)
-      else begin match ci.sup with
-        | None -> None
-        | Some cname' -> field_typ env cname' fname
-      end
-  with Not_found -> raise (Not_wf_typ ("undefined class: " ^ cname))
-
-  let is_class env cname = IdMap.mem cname env.classes
 
   let id_env env = env.id_typs
 
@@ -430,30 +414,6 @@ module Env = struct
                      (match t' with TRec (_, TBot) -> TBot | typ -> typ)
     | TSyn _ -> typ
     | TApp _ -> typ
-
-  let new_root_class env class_name = 
-    if IdMap.mem class_name env.classes then
-      raise (Invalid_argument ("class already exists: " ^ class_name))
-    else 
-      let c = IdMap.add class_name 
-        { fields = IdMap.empty; sup = None } env.classes in
-        { env with
-            classes = c
-        }
-
-  let new_subclass env sub_name sup_name =
-    { env with
-        classes = IdMap.add sub_name
-        { fields = IdMap.empty; sup = Some sup_name } env.classes;
-        subclasses = IdMap.add sub_name sup_name env.subclasses }
-
-  let add_method c_name m_name m_typ env =
-    let ci = IdMap.find c_name env.classes in
-      if IdMap.mem m_name ci.fields then
-        raise (Invalid_argument ("method already exists: " ^ m_name))
-      else 
-        let ci' = { ci with fields = IdMap.add m_name m_typ ci.fields } in
-          { env with classes = IdMap.add c_name ci' env.classes }
 
   let rec set_global_object env cname =
     let ci = IdMap.find cname env.typ_syns in

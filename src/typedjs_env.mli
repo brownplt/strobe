@@ -17,10 +17,6 @@ module Env : sig
 
   val lookup_lbl : id -> env -> typ
 
-  val field_typ : env -> constr -> id -> typ option
-
-  val is_class : env -> id -> bool
-
   (** JavaScript cannot perform a labelled jump across a function. *)
   val clear_labels : env -> env
 
@@ -28,11 +24,6 @@ module Env : sig
 
   val dom : env -> IdSet.t
 
-  (** A new class with no methods. *)
-  val new_root_class : env -> id -> env
-
-  (** Adds a method to a class. *)
-  val add_method : id -> id -> typ -> env -> env
 
   (** [set_global_object env class_name] adds all the fields of [class_name]
       to the environment. *)
