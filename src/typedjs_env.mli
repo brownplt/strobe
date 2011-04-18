@@ -29,7 +29,7 @@ module Env : sig
       to the environment. *)
   val set_global_object : env -> string -> env
 
-  val check_typ : pos -> env -> typ -> typ
+  val check_typ : pos -> env -> writ_typ -> typ
 
   (** [subtype end typ1 typ2] assumes that [typ1] and [typ2] are in normal form.
       The [env] is needed for bounded quantification. *)

@@ -345,10 +345,11 @@ module Env = struct
     | PAbsent -> PAbsent
     | PErr -> PErr
 
-  let check_typ p env t = 
-    try normalize_typ env t
-    with Not_wf_typ s -> raise (Typ_error (p, s))
-      | Not_found -> failwith "Not found in check_typ!!!"
+  let check_typ p env (wt : writ_typ) : typ = match wt with
+    | WrittenTyp t ->
+      try normalize_typ env t with 
+	| Not_wf_typ s -> raise (Typ_error (p, s))
+	| Not_found -> failwith "Not found in check_typ!!!"
 
   let basic_static env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env (TPrim Num) typ

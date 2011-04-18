@@ -73,12 +73,6 @@ and prop =
   | PAbsent
   | PErr
 
-and  func_info = {
-  func_typ : typ;
-  func_owned: IdSet.t;
-  func_loop : bool;
-}
-
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
 let any_fld = (RegLang_syntax.any_str,
@@ -126,14 +120,25 @@ type ref_kind =
   | SourceCell
   | SinkCell
 
+(** A type written by a programmer. This type may be incorrect and needs
+    to be checked. *)
+type writ_typ = WrittenTyp of typ
+
+type func_info = {
+  func_typ : writ_typ;
+  func_owned: IdSet.t;
+  func_loop : bool;
+}
+
+
 (** Typed JavaScript expressions. Additional well-formedness criteria are
     inline. *)
 type exp
   = EConst of pos * JavaScript_syntax.const
   | EBot of pos
-  | EAssertTyp of pos * typ * exp
+  | EAssertTyp of pos * writ_typ * exp
   | EArray of pos * exp list
-  | EEmptyArray of pos * typ
+  | EEmptyArray of pos * writ_typ
   | EObject of pos * (string * exp) list
   | EId of pos * id
   | EBracket of pos * exp * exp
@@ -145,9 +150,9 @@ type exp
   | EApp of pos * exp * exp list
   | EFunc of pos * id list * func_info * exp
   | ELet of pos * id * exp * exp
-  | ERec of (id * typ * exp) list * exp
+  | ERec of (id * writ_typ * exp) list * exp
   | ESeq of pos * exp * exp
-  | ELabel of pos * id * typ * exp 
+  | ELabel of pos * id * writ_typ * exp 
   | EBreak of pos * id * exp
   | ETryCatch of pos * exp * id * exp
   | ETryFinally of pos * exp * exp
@@ -156,12 +161,12 @@ type exp
   | ERef of pos * ref_kind * exp
   | EDeref of pos * exp
   | ESetRef of pos * exp * exp
-  | ESubsumption of pos * typ * exp
-  | EDowncast of pos * typ * exp
-  | ETypAbs of pos * id * typ * exp 
+  | ESubsumption of pos * writ_typ * exp
+  | EDowncast of pos * writ_typ * exp
+  | ETypAbs of pos * id * writ_typ * exp 
   | ETypApp of pos * exp * typ
   | EForInIdx of pos
-  | ECheat of pos * typ * exp
+  | ECheat of pos * writ_typ * exp
 
 (******************************************************************************)
 
@@ -275,11 +280,14 @@ module Pretty = struct
     | PAbsent -> text "_"
     | PErr -> text "BAD"
 
+  let writ_typ wt = match wt with
+    | WrittenTyp t -> typ t
+
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
     | EBot _ -> text "bot"
     | EAssertTyp (_, t, e) ->
-        parens (vert [ text "assert-typ"; parens (typ t); exp e ])
+        parens (vert [ text "assert-typ"; parens (writ_typ t); exp e ])
     | EEmptyArray _ -> text "[ ]"
     | EArray (_, es) -> brackets (horz (map exp es))
     | EObject (_, ps) -> brackets (vert (map fld ps))
@@ -295,7 +303,7 @@ module Pretty = struct
     | EApp (_, f, args) -> parens (horz (exp f :: map exp args))
     | EFunc (_, args, t, body) ->
       parens (vert [ horz [ text "fun"; parens (horz (map text args)); 
-                            text ":"; typ t.func_typ;
+                            text ":"; writ_typ t.func_typ;
                             IdSetExt.p_set text t.func_owned;
                           ];
                        exp body])
@@ -324,14 +332,14 @@ module Pretty = struct
     | EDeref (_, e) -> parens (horz [ text "deref"; exp e ])
     | ESetRef (_, e1, e2) -> parens (horz [ text "set-ref!"; exp e1; exp e2 ])
     | ESubsumption (_, t, e) ->
-        parens (vert [ text "upcast"; parens (typ t); exp e ])
+        parens (vert [ text "upcast"; parens (writ_typ t); exp e ])
     | EDowncast (_, t, e) ->
-        parens (vert [ text "downcast"; parens (typ t); exp e ])
+        parens (vert [ text "downcast"; parens (writ_typ t); exp e ])
     | ETypApp (_, e, t) -> parens (horz [ text "typ-app"; exp e; typ t ])
     | ETypAbs (_, x, t, e) -> 
-        parens (horz [ text "typ-abs"; text x; text "<:"; typ t; exp e ])
+        parens (horz [ text "typ-abs"; text x; text "<:"; writ_typ t; exp e ])
     | EForInIdx _ -> text "for-in-idx"
-    | ECheat (_, t, e) -> parens (horz [ text "cheat"; typ t; exp e ])
+    | ECheat (_, t, e) -> parens (horz [ text "cheat"; writ_typ t; exp e ])
 
   and fld (s, e) =
     parens (horz [ text s; text ":"; exp e ])
@@ -340,7 +348,7 @@ module Pretty = struct
     parens (horz [text x; exp e])
 
   and rec_bind (x, t, e) = 
-    parens (horz [text x; text ":"; typ t; exp e])
+    parens (horz [text x; text ":"; writ_typ t; exp e])
 
   let p_typ = typ
 

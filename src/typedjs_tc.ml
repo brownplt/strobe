@@ -10,7 +10,7 @@ let consumed_owned_vars  = ref IdSet.empty
 let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
 
 let mk_array_typ p env tarr =
-  Env.check_typ p env (TApp (TSyn "Array", tarr))
+  TApp (TSyn "Array", tarr)
 
 let error_on_unreachable = ref true
 
@@ -57,7 +57,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       | _ -> tc_exp env e2
     end
   | ERef (p1, RefCell, EEmptyArray (p2, elt_typ)) -> 
-      mk_array_typ p2 env elt_typ
+      mk_array_typ p2 env (Env.check_typ p2 env elt_typ)
   | ERef (p1, RefCell, EArray (p2, [])) -> 
       raise (Typ_error (p2, "an empty array literal requires a type annotation"))
   | ERef (p1, RefCell, EArray (p2, es)) ->
@@ -98,9 +98,9 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
                    (p, sprintf "cannot write to LHS (type %s)" 
                       (string_of_typ s)))
     end
-  | ELabel (p, l, t, e) -> 
-      let t = Env.check_typ p env t in
-      let s = tc_exp (Env.bind_lbl l (Env.check_typ p env t) env) e in
+  | ELabel (p, l, wt, e) -> 
+      let t = Env.check_typ p env wt in
+      let s = tc_exp (Env.bind_lbl l t env) e in
         if Env.subtype env s t then t
         else raise (Typ_error (p, "label type mismatch"))
   | EBreak (p, l, e) ->
@@ -146,8 +146,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
         ((RegLang_syntax.String name,
           RegLang.fsm_of_regex (RegLang_syntax.String name)),
          PPresent (tc_exp env exp)) in
-      Env.check_typ p env (mk_object_typ (map mk_field fields) None
-                             (TSyn "Object"))
+      mk_object_typ (map mk_field fields) None (TSyn "Object")
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (un_null (tc_exp env obj)), 
       simpl_typ env (tc_exp env field) with
@@ -255,10 +254,11 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
         end in (match (un_null (tc_exp env f)) with
                   | t -> check_app t)
   | ERec (binds, body) -> 
-      let f env (x, t, e) =
-        Env.bind_id x (Env.check_typ (Exp.pos e) env t) env in
+      let f env (x, wt, e) =
+        Env.bind_id x (Env.check_typ (Exp.pos e) env wt) env in
       let env = fold_left f env binds in
-      let tc_bind (x, t, e)=
+      let tc_bind (x, wt, e) =
+	let t = Env.check_typ (Exp.pos e) env wt in
         let s = tc_exp env e in
           if Env.subtype env s t then ()
           else (* this should not happen; rec-annotation is a copy of the
@@ -333,8 +333,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       let env = Env.bind_typ_id x t env in
       TForall (x, t, tc_exp env e)
   | ETypApp (p, e, u) ->
-      let u = Env.check_typ p env u in
-        begin match tc_exp env e with
+    begin match tc_exp env e with
           | TForall (x, s, t) ->
               if Env.subtype env u s then
                 typ_subst x u t
@@ -346,7 +345,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
                          (string_of_typ t))
         end
   | EForInIdx _ -> TField
-  | ECheat (p, t, _) -> t
+  | ECheat (p, t, _) -> Env.check_typ p env t
 
 and tc_exps env es = map (tc_exp env) es
 
