@@ -2,7 +2,7 @@
 
 for file in ../tests/regex/*.txt
 do
-    echo -ne "\r\e[KTest ../tests/gadgets/$file ... "
+    echo "Test ../tests/gadgets/$file ... "
     ../obj/main.d.byte -regex $file
 done
 

@@ -152,12 +152,12 @@ let action_regex () : unit =
   let run_test (pos, re1, re2, should_succeed) = 
     let fsm1 = RegLang.fsm_of_regex re1 in
     let fsm2 = RegLang.fsm_of_regex re2 in
-    printf "Testing: %s <: %s\n%!" (RegLang_syntax.Pretty.string_of_re re1) 
+    printf "Testing: %s <: %s ...\n%!" (RegLang_syntax.Pretty.string_of_re re1) 
       (RegLang_syntax.Pretty.string_of_re re2);
       match RegLang.counterexample fsm1 fsm2, should_succeed with
-        | None, false -> eprintf "(Failed) Found no overlap, but expected to\n"; ()
-        | Some str, true -> eprintf "(Failed) Found overlap: %s\n" str; () 
-        | _, _ -> eprintf "Done\n%!"; () in
+        | None, false -> printf "(Failed) expected overlap\n"; ()
+        | Some str, true ->eprintf "(Failed) Found overlap: %s\n" str; () 
+        | _, _ -> () in
   List.iter run_test tests
   
 
