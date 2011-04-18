@@ -2,7 +2,6 @@ open JavaScript
 open Exprjs
 open Prelude
 open Printf
-open Typedjs_types
 open Typedjs_tc
 open Format
 open Typedjs_syntax
