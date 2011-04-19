@@ -107,6 +107,7 @@ let rec remove_this op = match op with
 type env_decl =
   | EnvClass of constr * constr option * typ
   | EnvBind of id * typ
+  | EnvType of id * typ
 
 type annotation =
     ATyp of typ

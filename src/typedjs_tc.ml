@@ -9,8 +9,20 @@ let consumed_owned_vars  = ref IdSet.empty
 
 let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
 
-let mk_array_typ p env tarr =
-  TApp (TSyn "Array", tarr)
+let array_idx_pat = 
+  Sb_strPat.parse Lexing.dummy_pos
+    "(([0-9])*|(\"+Infinity\"|(\"-Infinity\"|\"NaN\")))"
+
+
+let mk_array_typ p env elt_typ =
+  TRef (mk_object_typ 
+	  [ (array_idx_pat, PMaybe elt_typ);
+	    (Sb_strPat.singleton "length", PPresent (TPrim Int)) ]
+	  None
+	  (TSyn "Array_proto"))
+	  
+
+(*   TApp (TSyn "Array", tarr) *)
 
 let error_on_unreachable = ref true
 
@@ -238,7 +250,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
                        begin try
                          let u = IdMap.find x subst in
                            if Env.subtype env u max_typ then
-                             check_app (Env.app_typ env (TApp (tfun, u)))
+                             check_app (typ_subst x u ft)
                            else
                              error p (sprintf "Unified, but to %s, which is not a subtype of %s" (string_of_typ u) (string_of_typ max_typ))
                        with Not_found ->
@@ -338,8 +350,9 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
                 error p (sprintf "expected an argument of type %s, got %s"
                            (string_of_typ s) (string_of_typ u))
           | t ->
-              error p (sprintf "expected a quantified type (got %s)"
-                         (string_of_typ t))
+              error p (sprintf "expected forall-type in type application, got:\
+                                \n%s\nargument has type:\n%s"
+			 (string_of_typ t) (string_of_typ u))
         end
   | EForInIdx _ -> TField
   | ECheat (p, t, _) -> Env.check_typ p env t

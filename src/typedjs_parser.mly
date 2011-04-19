@@ -10,7 +10,7 @@ open Typedjs_syntax
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        PROTOTYPE PROTO CLASS UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
        CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI UNDERSCORE BAD
-       HASHBRACE
+       HASHBRACE EQUALS TYPE
        
 
 %right UNION INTERSECTION
@@ -47,6 +47,9 @@ field
       | p -> p) }
   | ID COLON prop
       { (Sb_strPat.singleton $1, $3) }
+  | STRING COLON prop
+      { (Sb_strPat.singleton $1, $3) }
+
 
 fields
   : { [] }
@@ -117,6 +120,7 @@ checked :
   | { false }
 
 env_decl :
+  | TYPE any_id EQUALS typ { EnvType ($2, $4) }
   | CLASS checked any_id PROTOTYPE any_id arg_typ
     { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
       EnvClass

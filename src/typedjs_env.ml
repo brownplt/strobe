@@ -114,7 +114,17 @@ module Env = struct
     | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) (typ_subst x s t)
     | typ -> (env, typ)
 
-  let rec app_typ env (t : typ) = match t with
+  let un_syn env (t : typ) = match t with
+    | TSyn x -> begin match IdMap.find x env.typ_syns with
+	| TSyn y -> 
+	  (* cheap hack to prevent inf. loops *)
+	  raise (Not_wf_typ (sprintf "%s is an alias of %s, which is also an \
+                                       alias" x y))
+	| t -> t
+    end
+    | t -> t
+
+(*  let rec app_typ env (t : typ) = match t with
     | TApp (t1, t2) ->
         begin match t1 with
           | TSyn x -> 
@@ -123,7 +133,7 @@ module Env = struct
           | TForall (x, s, t) -> typ_subst x t2 t
           | _ -> raise (Not_wf_typ (sprintf "Expected a quantified type in TApp"))
         end
-    | _ -> raise (Not_wf_typ ("Can only apply TApp"))
+    | _ -> raise (Not_wf_typ ("Can only apply TApp")) *)
 
   let rec subt env (cache : TPSet.t) s t : TPSet.t= 
     if TPSet.mem (s, t) cache then
@@ -135,10 +145,8 @@ module Env = struct
       let subtype = subt env in
       let cache = TPSet.add (s, t) cache in
       match s, t with
-        | TApp _, _ ->
-            subtype cache (app_typ env s) t
-        | _, TApp _ ->
-            subtype cache s (app_typ env t)
+        | TApp _, _ -> subtype cache (normalize_typ env s) t
+        | _, TApp _ -> subtype cache s (normalize_typ env t)
         | TSyn x, _ -> subtype cache (IdMap.find x env.typ_syns) t
         | _, TSyn y -> subtype cache s (IdMap.find y env.typ_syns)
         | TPrim Int, TPrim Num -> cache
@@ -266,7 +274,12 @@ module Env = struct
 
   and normalize_typ env typ = match typ with
     | TPrim _ -> typ
-    | TApp (t1, t2) -> TApp (normalize_typ env t1, normalize_typ env t2)
+    | TApp (s, t) -> begin match un_syn env (normalize_typ env s) with
+        | TForall (x, TTop, u) -> typ_subst x (normalize_typ env t) u
+	| s' -> raise
+	  (Not_wf_typ (sprintf "%s in type-application position"
+			 (string_of_typ s')))
+    end
     | TUnion (s, t) -> 
         typ_union env (normalize_typ env s) (normalize_typ env t)
     | TIntersect (s, t) -> 
@@ -428,6 +441,11 @@ let extend_global_env env lst =
         raise (Not_wf_typ ("the type " ^ x ^ " is already defined"))
       else
         { env with Env.typ_syns = IdMap.add x t env.Env.typ_syns }
+    | EnvType (x, t) ->
+      if IdMap.mem x env.Env.typ_syns then
+	raise (Not_wf_typ (sprintf "the type %s is already defined" x))
+      else
+	{ env with Env.typ_syns = IdMap.add x t env.Env.typ_syns }
   in List.fold_left add env lst
 
 (*
@@ -454,13 +472,7 @@ let typ_unfold typ = match typ with
     | TRec (x, t) -> typ_subst x typ t
     | _ -> typ
 
-let rec simpl_typ env typ = 
-  let typ = match typ with
-    | TSyn x -> Env.normalize_typ env (IdMap.find x env.Env.typ_syns)
-        (* normalization => success *)
-    | TApp _ -> Env.app_typ env typ
-    | _ -> typ
-  in typ_unfold typ
+let rec simpl_typ env typ = typ_unfold (Env.un_syn env typ)
 
 
 let apply_subst subst typ = IdMap.fold typ_subst subst typ

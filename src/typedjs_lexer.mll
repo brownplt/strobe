@@ -61,6 +61,7 @@ rule token = parse
    | "+" { UNION }
    | "&" { INTERSECTION }
    | "." { DOT }
+   | "=" { EQUALS }
    | "constructor" { CONSTRUCTOR }
    | "prototype" { PROTOTYPE }
    | "proto" { PROTO }
@@ -73,6 +74,7 @@ rule token = parse
    | "val" { VAL }
    | "forall" { FORALL }
    | "checked" { CHECKED }
+   | "type" { TYPE }
    | "<:" { LTCOLON }
    | "rec" { REC }
    | eof { EOF }
