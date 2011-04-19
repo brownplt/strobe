@@ -227,10 +227,9 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
                      else true in
                      let arg_typ, expected_typ = List.find find_typ_err typ_pairs in
                        raise (Typ_error 
-                         (p, sprintf "argument %d has type %s, but the \
-                                    function expects an argument of type %s" 
-                            !arg_ix (string_of_typ arg_typ)
-                                    (string_of_typ expected_typ)))
+                         (p, sprintf "argument %d: expected %s, but received %s"
+                            !arg_ix (string_of_typ expected_typ)
+                                    (string_of_typ arg_typ)))
                  else raise (Typ_error 
                                (p, sprintf "arity-mismatch: the function expects %d \
                                 arguments, but %d arguments given"
