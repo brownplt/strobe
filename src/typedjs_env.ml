@@ -14,6 +14,21 @@ end
 module TPSet = Set.Make (TypPair)
 module TPSetExt = SetExt.Make (TPSet)
 
+module List = struct
+  include List
+
+  let rec tails (lst : 'a list) : 'a list list = match lst with
+    | [] -> [ [] ]
+    | _ :: lst' -> lst :: (tails lst')
+
+  let iter_pairs (f : 'a -> 'a -> unit) (lst : 'a list) : unit =
+    let g lst = match lst with
+      | x :: rest -> iter (f x) rest
+      | _ -> () in
+    iter g (tails lst)
+
+end
+
 let rec typ_subst x s typ = 
 (* printf "Substing: %s %s %s\n\n" x (string_of_typ s) (string_of_typ typ);*)
 match typ with
@@ -258,12 +273,15 @@ module Env = struct
         typ_intersect env (normalize_typ env s) (normalize_typ env t)
     | TRegex _ -> typ
     | TObject (fs, proto) ->
-      let rec check_overlap acc_pat (pat, _) = 
-	match P.example (P.intersect acc_pat pat) with
-	  | None -> P.union acc_pat pat
-	  | Some str -> 
-	    raise (Not_wf_typ (sprintf "the string %s is overlapped" str)) in
-      let _ = List.fold_left check_overlap P.empty fs in
+      let check_overlap (pat1, _) (pat2, _) =  
+	match P.example (P.intersect pat1 pat2) with
+	  | None -> ()
+	  | Some str ->
+	    raise (Not_wf_typ 
+		     (sprintf "%s and %s are overlapped. E.g.,\n%s\n\
+                               is in both patterns." 
+			(P.pretty pat1) (P.pretty pat2) str)) in
+      let _ = List.iter_pairs check_overlap fs in
       TObject (map (second2 (normalize_prop env)) fs, normalize_typ env proto)
     | TArrow (args, result) ->
         TArrow (map (normalize_typ env) args,
