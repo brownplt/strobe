@@ -1,4 +1,4 @@
 #!/bin/bash
 pushd ../obj
-ocamldebug main.d.byte  -env ../data/javascript.env $@
+ocamldebug -I LambdaJS -I RegLang main.d.byte -env ../data/javascript.env $@
 popd
