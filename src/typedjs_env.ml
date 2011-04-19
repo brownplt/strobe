@@ -7,8 +7,13 @@ module P = Sb_strPat
 
 (* Necessary for equi-recursive subtyping. *)
 module TypPair = struct
+
   type t = typ * typ
-  let compare = Pervasives.compare
+
+  let compare (s1, s2) (t1, t2) = match Typ.compare s1 t1 with
+    | 0 -> Typ.compare s2 t2
+    | n -> n
+
 end
 
 module TPSet = Set.Make (TypPair)
@@ -29,13 +34,24 @@ module List = struct
 
 end
 
+let normalized_syns : (id, typ) Hashtbl.t = Hashtbl.create 200
+
+let unlazy t = match t with
+  | TLazy lz -> begin match Lazy.force lz with
+      | TLazy _ -> failwith "lazy-lazy"
+      | t' -> t'
+  end 
+  | _ -> t
+
+
 let rec typ_subst x s typ = 
 (* printf "Substing: %s %s %s\n\n" x (string_of_typ s) (string_of_typ typ);*)
 match typ with
+  | TLazy lz -> TLazy (lazy (typ_subst x s (Lazy.force lz)))
   | TPrim _ -> typ
   | TRegex _ -> typ
   | TId y -> if x = y then s else typ
-  | TSyn x -> typ
+(*  | TSyn x -> typ *)
   | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
   | TIntersect (t1, t2) ->
       TIntersect (typ_subst x s t1, typ_subst x s t2)
@@ -135,20 +151,101 @@ module Env = struct
         end
     | _ -> raise (Not_wf_typ ("Can only apply TApp")) *)
 
-  let rec subt env (cache : TPSet.t) s t : TPSet.t= 
-    if TPSet.mem (s, t) cache then
+  let lazy_eq s t = match (s, t) with
+    | TLazy l1, TLazy l2 -> l1 == l2
+    | _ -> false
+
+
+  let rec normalize_typ env typ = match typ with
+    | TPrim _ -> typ
+    | TApp (s, t) ->
+      begin match unlazy (normalize_typ env s) with
+        | TForall (x, TTop, u) -> 
+	  TLazy (lazy (typ_subst x (normalize_typ env t) u))
+	| s' -> raise
+	  (Not_wf_typ (sprintf "%s in type-application position"
+			 (string_of_typ s')))
+      end
+    | TUnion (s, t) -> 
+      TUnion (normalize_typ env s, normalize_typ env t)
+    | TIntersect (s, t) -> 
+      TIntersect(normalize_typ env s, normalize_typ env t)
+    | TRegex _ -> typ
+    | TObject (fs, proto) ->
+      let check_overlap (pat1, _) (pat2, _) =  
+	match P.example (P.intersect pat1 pat2) with
+	  | None -> ()
+	  | Some str ->
+	    raise (Not_wf_typ 
+		     (sprintf "%s and %s are overlapped. E.g.,\n%s\n\
+                               is in both patterns." 
+			(P.pretty pat1) (P.pretty pat2) str)) in
+      let _ = List.iter_pairs check_overlap fs in
+      TObject (map (second2 (normalize_prop env)) fs, normalize_typ env proto)
+    | TArrow (args, result) ->
+        TArrow (map (normalize_typ env) args,
+                normalize_typ env result)
+    | TRef t -> TRef (normalize_typ env t)
+    | TSource t -> TSource (normalize_typ env t)
+    | TSink t -> TSink (normalize_typ env t)
+    | TTop -> TTop
+    | TBot -> TBot
+    | TField -> TField
+    | TId x ->
+        if IdMap.mem x env.typ_ids then typ
+        else raise (Not_wf_typ ("the type variable " ^ x ^ " is unbound"))
+    | TForall (x, s, t) -> 
+        let s = normalize_typ env s in
+          TForall (x, s, normalize_typ (bind_typ_id x s env) t)
+    | TRec (x, t) ->
+(*
+      TRec (x, normalize_typ (bind_typ_id x typ env) t) 
+*)
+      let t' = normalize_typ (bind_typ_id x typ env) t in
+      let rec lazy_t = TLazy (lazy (typ_subst x lazy_t t')) in
+      lazy_t 
+
+    | TSyn x ->
+      begin 
+	try
+	  Hashtbl.find normalized_syns x
+	with Not_found ->
+	  let t = TLazy (lazy (normalize_typ env (un_syn env typ))) in
+	  Hashtbl.add normalized_syns x t;
+	  t
+      end
+(*       if IdMap.mem x env.typ_syns then typ
+      else raise (Not_wf_typ (x ^ " is not a type")) *)
+    | TLazy _ -> typ
+
+  and normalize_prop env prop = match prop with
+    | PPresent typ -> PPresent (normalize_typ env typ)
+    | PMaybe typ -> PMaybe (normalize_typ env typ)
+    | PAbsent -> PAbsent
+    | PErr -> PErr
+
+  type cache = (typ * typ) list
+
+  let empty_cache = []
+
+
+  let rec subt env (cache : cache) s t : cache =
+(*    printf "%d " (TPSet.cardinal cache); *)
+    if lazy_eq s t then
+      cache
+    else if List.exists (fun (u1, u2) -> s == u1 && t == u2) cache then
       cache
     (* workaround for equal: functional value, due to lazy *)
-    else if try s = t with Invalid_argument _ -> false then
+    else if s == t then
       cache
     else
       let subtype = subt env in
-      let cache = TPSet.add (s, t) cache in
-      match s, t with
-        | TApp _, _ -> subtype cache (normalize_typ env s) t
-        | _, TApp _ -> subtype cache s (normalize_typ env t)
-        | TSyn x, _ -> subtype cache (IdMap.find x env.typ_syns) t
-        | _, TSyn y -> subtype cache s (IdMap.find y env.typ_syns)
+      let cache = (s, t) :: cache in
+      match unlazy s, unlazy t with
+        | TApp _, _ 
+        | _, TApp _ 
+        | TSyn _, _ 
+        | _, TSyn _ -> failwith "FATAL: TSyn / TApp in <:"
         | TPrim Int, TPrim Num -> cache
         | TRegex pat1, TRegex pat2 ->
             if P.contains pat1 pat2 then cache 
@@ -205,7 +302,7 @@ module Env = struct
         | _ -> raise Not_subtype
 
   and subtype_field env cache ((pat1, fld1) : field * prop) 
-      ((pat2, fld2) : field * prop) : TPSet.t = 
+      ((pat2, fld2) : field * prop) : cache = 
     if P.is_empty (P.intersect pat1 pat2) then
       cache
     else
@@ -218,9 +315,9 @@ module Env = struct
 	| (_, PErr) -> cache (* This case will go soon. *)
 	| _ -> raise Not_subtype
 
-  and subtype_object' env (cache : TPSet.t)
+  and subtype_object' env (cache : cache)
     (flds1 : (field * prop) list)
-    (flds2 : (field * prop) list) : TPSet.t
+    (flds2 : (field * prop) list) : cache
       =
     (* TODO: check for containment *)
     let g cache' fld1 = 
@@ -228,14 +325,6 @@ module Env = struct
 	cache' flds2 in
     fold_left g cache flds1
 
-
-  (* subtype_prop encodes this lattice:
-          PErr
-           |
-        PMaybe T
-       /        \
-    PPresent  PAbsent
-  *)
   and subtype_prop env cache p1 p2 = match p1, p2 with
     | PPresent s, PPresent t
     | PPresent s, PMaybe t
@@ -245,82 +334,32 @@ module Env = struct
     | _, PErr -> cache
     | _ -> raise Not_subtype
     
-  and subtypes env ss ts = 
-    try 
-      let _ = List.fold_left2 (subt env) TPSet.empty ss ts in
-      true
-    with 
-      | Invalid_argument _ -> false (* unequal lengths *)
-      | Not_subtype -> false
-
-  and subtype env s t = 
+  let subtype env s t = 
     try
-      let _ = subt env TPSet.empty s t in
+      let _ = subt env empty_cache s t in
       true
     with Not_subtype -> false
       | Not_found -> failwith "not found in subtype!!!"
 
-  and typ_union cs s t = match subtype cs s t, subtype cs t s with
+  let typ_union cs s t = match subtype cs s t, subtype cs t s with
       true, true -> s (* t = s *)
     | true, false -> t (* s <: t *)
     | false, true -> s (* t <: s *)
     | false, false -> TUnion (s, t)
 
-  and typ_intersect cs s t = match subtype cs s t, subtype cs t s with
+  let  typ_intersect cs s t = match subtype cs s t, subtype cs t s with
     | true, true -> s
     | true, false -> s (* s <: t *)
     | false, true -> t
     | false, false -> TIntersect (s, t)
 
-  and normalize_typ env typ = match typ with
-    | TPrim _ -> typ
-    | TApp (s, t) -> begin match un_syn env (normalize_typ env s) with
-        | TForall (x, TTop, u) -> typ_subst x (normalize_typ env t) u
-	| s' -> raise
-	  (Not_wf_typ (sprintf "%s in type-application position"
-			 (string_of_typ s')))
-    end
-    | TUnion (s, t) -> 
-        typ_union env (normalize_typ env s) (normalize_typ env t)
-    | TIntersect (s, t) -> 
-        typ_intersect env (normalize_typ env s) (normalize_typ env t)
-    | TRegex _ -> typ
-    | TObject (fs, proto) ->
-      let check_overlap (pat1, _) (pat2, _) =  
-	match P.example (P.intersect pat1 pat2) with
-	  | None -> ()
-	  | Some str ->
-	    raise (Not_wf_typ 
-		     (sprintf "%s and %s are overlapped. E.g.,\n%s\n\
-                               is in both patterns." 
-			(P.pretty pat1) (P.pretty pat2) str)) in
-      let _ = List.iter_pairs check_overlap fs in
-      TObject (map (second2 (normalize_prop env)) fs, normalize_typ env proto)
-    | TArrow (args, result) ->
-        TArrow (map (normalize_typ env) args,
-                normalize_typ env result)
-    | TRef t -> TRef (normalize_typ env t)
-    | TSource t -> TSource (normalize_typ env t)
-    | TSink t -> TSink (normalize_typ env t)
-    | TTop -> TTop
-    | TBot -> TBot
-    | TField -> TField
-    | TId x ->
-        if IdMap.mem x env.typ_ids then typ
-        else raise (Not_wf_typ ("the type variable " ^ x ^ " is unbound"))
-    | TForall (x, s, t) -> 
-        let s = normalize_typ env s in
-          TForall (x, s, normalize_typ (bind_typ_id x s env) t)
-    | TRec (x, t) ->
-      TRec (x, normalize_typ (bind_typ_id x typ env) t)
-    | TSyn x ->
-      if IdMap.mem x env.typ_syns then typ
-      else raise (Not_wf_typ (x ^ " is not a type"))
-  and normalize_prop env prop = match prop with
-    | PPresent typ -> PPresent (normalize_typ env typ)
-    | PMaybe typ -> PMaybe (normalize_typ env typ)
-    | PAbsent -> PAbsent
-    | PErr -> PErr
+  let subtypes env ss ts = 
+    try 
+      let _ = List.fold_left2 (subt env) empty_cache ss ts in
+      true
+    with 
+      | Invalid_argument _ -> false (* unequal lengths *)
+      | Not_subtype -> false
 
   let check_typ p env (wt : writ_typ) : typ = match wt with
     | WrittenTyp t ->
@@ -357,6 +396,7 @@ module Env = struct
     else None
 
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
+    | TLazy lz -> static cs rt (Lazy.force lz)
     | TBot -> TBot (* might change if we allow arbitrary casts *)
     | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
     | TPrim Str
@@ -472,7 +512,7 @@ let typ_unfold typ = match typ with
     | TRec (x, t) -> typ_subst x typ t
     | _ -> typ
 
-let rec simpl_typ env typ = typ_unfold (Env.un_syn env typ)
+let rec simpl_typ env typ = unlazy (typ_unfold (Env.un_syn env typ))
 
 
 let apply_subst subst typ = IdMap.fold typ_subst subst typ
@@ -551,7 +591,9 @@ let rec fields_helper env flds idx_pat =  match flds with
     else
       fields_helper env flds' idx_pat
 
-let rec fields p env obj_typ idx_pat = match typ_unfold obj_typ with
+let rec fields p env obj_typ idx_pat = match unlazy (typ_unfold obj_typ) with
+  | TObject (flds, TLazy pr) ->
+    fields p env (TObject (flds, unlazy (TLazy pr))) idx_pat    
   | TObject (flds, TPrim Null) -> 
     let (fld_typ, rest_pat) = fields_helper env flds idx_pat in
     fld_typ
