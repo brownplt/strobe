@@ -71,16 +71,17 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
   | ERef (p1, RefCell, EEmptyArray (p2, elt_typ)) -> 
       mk_array_typ p2 env (Env.check_typ p2 env elt_typ)
   | ERef (p1, RefCell, EArray (p2, [])) -> 
-      raise (Typ_error (p2, "an empty array literal requires a type annotation"))
+    raise (Typ_error (p2, "an empty array literal requires a type annotation"))
   | ERef (p1, RefCell, EArray (p2, es)) ->
       begin match map (tc_exp env) es with
         | t1::ts ->
             let tarr = List.fold_right (Env.typ_union env) ts t1 in
               mk_array_typ p2 env tarr
-        | [] -> failwith "FATAL pattern miss in array checking"
+        | [] -> failwith "desugar bug: unexpected empty array"
       end
   | EEmptyArray (p, _)
-  | EArray (p, _) -> error p ("Array outside of a ref -- desugaring problem")
+  | EArray (p, _) -> failwith (sprintf "desugar bug: array outside a ref at %s" 
+				 (string_of_position p))
   | ERef (p, k, e) ->
       let t = tc_exp env e in
         begin match k with
