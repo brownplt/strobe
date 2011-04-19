@@ -6,6 +6,15 @@ do
     ../obj/main.d.byte -regex $file
 done
 
+for file in ../tests/typable/*.js
+do
+  echo -en "\r\e[KTest $file ... "
+  result=`../tc -tc $file 2>&1`
+  if [ $? -ne 0 ]; then
+      echo -e "$file: aborted with exit code $?; output was:\n$result\n"
+  fi
+done
+
 for file in ../tests/not-well-formed/*.js
 do
   echo -en "\r\e[KTest $file ... "
@@ -46,14 +55,6 @@ do
   fi
 done
 
-for file in ../tests/typable/*.js
-do
-  echo -en "\r\e[KTest $file ... "
-  result=`../tc -tc $file 2>&1`
-  if [ $? -ne 0 ]; then
-      echo -e "$file: aborted with exit code $?; output was:\n$result\n"
-  fi
-done
 
 for file in ../tests/browser/*.js
 do
