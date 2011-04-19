@@ -235,31 +235,45 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
                                 arguments, but %d arguments given"
                                   (List.length expected_typs) (List.length
                                   args)))
-           | TIntersect (t1, t2) -> begin try 
-               let r1 = check_app t1 in begin try
-                   let r2 = check_app t2 in
+           | TIntersect (t1, t2) -> 
+	     begin 
+	       try 
+		 let r1 = check_app t1 in 
+		 begin 
+		   try
+                     let r2 = check_app t2 in
                      Env.typ_intersect env r1 r2
-                 with Typ_error _ -> r1 end
-             with Typ_error _ -> check_app t2 end
+                   with Typ_error _ -> r1 
+		 end
+               with Typ_error _ -> check_app t2 
+	     end
            | TForall (x, max_typ, (TArrow (expected_typ, result_typ) as ft)) ->
-               let tfun' = TArrow (map (tc_exp env) args, result_typ) in
-               let subst = unify_typ env ft tfun' in
-                 begin match subst with 
-                   | None -> error p (sprintf "Unification failure")
-                   | Some subst -> 
-                       begin try
+             let tfun' = TArrow (map (tc_exp env) args, result_typ) in
+             let subst = unify_typ env ft tfun' in
+             begin match subst with 
+               | None -> error p (sprintf "unification failure\n: %s\n~ %s\n%s"
+				    (string_of_typ ft)
+				    (string_of_typ tfun')
+				    (string_of_exp exp))
+               | Some subst -> 
+                 begin try
                          let u = IdMap.find x subst in
-                           if Env.subtype env u max_typ then
-                             check_app (typ_subst x u ft)
-                           else
-                             error p (sprintf "Unified, but to %s, which is not a subtype of %s" (string_of_typ u) (string_of_typ max_typ))
-                       with Not_found ->
-                         error p (sprintf "could not determine \'%s in %s" 
-                                    x (string_of_typ ft))
-                       end
+                         if Env.subtype env u max_typ then
+                           check_app (typ_subst x u ft)
+                         else
+                           error p (sprintf "Unified, but to %s, which is not \
+                                             a subtype of %s; type is %s\n%s"
+				      (string_of_typ u)
+				      (string_of_typ max_typ)
+				      (string_of_typ tfun)
+				      (string_of_exp exp))
+                   with Not_found ->
+                     error p (sprintf "could not determine \'%s in %s" 
+                                x (string_of_typ ft))
                  end
-             | _ -> failwith ("Expected an arrow or intersection in EApp, got: " ^
-                              (string_of_typ tfun))
+             end
+           | _ -> failwith ("Expected an arrow or intersection in EApp, got: " ^
+                               (string_of_typ tfun))
         end in (match (un_null (tc_exp env f)) with
                   | t -> check_app t)
   | ERec (binds, body) -> 

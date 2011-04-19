@@ -51,7 +51,7 @@ match typ with
   | TPrim _ -> typ
   | TRegex _ -> typ
   | TId y -> if x = y then s else typ
-(*  | TSyn x -> typ *)
+  | TSyn x -> failwith (sprintf "typ_subst %s %s %s" x (string_of_typ s) (string_of_typ typ))
   | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
   | TIntersect (t1, t2) ->
       TIntersect (typ_subst x s t1, typ_subst x s t2)
