@@ -246,7 +246,10 @@ module Env = struct
         | _, TApp _ 
         | TSyn _, _ 
         | _, TSyn _ -> failwith "FATAL: TSyn / TApp in <:"
-        | TPrim Int, TPrim Num -> cache
+	| TPrim p1, TPrim p2 -> begin match (p1, p2) with
+	    | (Int, Num) -> cache
+	    | _ ->  if p1 = p2 then cache else raise Not_subtype
+	end
         | TRegex pat1, TRegex pat2 ->
             if P.contains pat1 pat2 then cache 
             else raise Not_subtype
