@@ -20,11 +20,11 @@ let parse_annotation (pos, end_p) str =
       Typedjs_parser.typ_ann Typedjs_lexer.token lexbuf
     with
       |  Failure "lexing: empty token" ->
-           failwith (sprintf "lexical error parsing type at %s"
+           failwith (sprintf "error lexing annotation at %s"
                        (string_of_position
                           (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
       |  Typedjs_parser.Error ->
-           failwith (sprintf "parse error parsing type at %s"
+           failwith (sprintf "error parsing annotation at %s"
                        (string_of_position
                           (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
 
@@ -63,6 +63,19 @@ type env = bool IdMap.t
 let to_string  p e = EPrefixOp (p, "%ToString",  e)
 let to_object  p e = EPrefixOp (p, "%ToObject",  e)
 let to_boolean p e = EPrefixOp (p, "%ToBoolean", e)
+
+(** [object_and_function expr] is used on the expression in function
+    position, [AppExpr (expr, _)]. It returns two expressions, [(this,
+    func)], where [this] computes the implicit [this] argument and
+    [func] is the function. The returned [func] may have a free
+    variable, [%this].
+*)
+let rec object_and_function p (expr : expr) : expr * expr = match expr with
+  | BracketExpr (p, e1, e2) -> (e1, BracketExpr (p, IdExpr (p, "%this"), e2))
+  | HintExpr (p, str, e) -> 
+    let (this, func) = object_and_function p e in
+    (this, HintExpr (p, str, func))
+  | expr -> (IdExpr (p, "%global"), expr)
 
 let rec exp (env : env) expr = match expr with
   | ConstExpr (a, c) -> EConst (a, c)
@@ -111,13 +124,14 @@ let rec exp (env : env) expr = match expr with
               EUpdate (p, EDeref (p, EId (p, "%obj")), 
                        to_string p (exp env e2), 
                        exp env e3)))
+  (* TODO: What is this hack below? *)
   | AppExpr (a, BracketExpr (a2, e1, 
                              ConstExpr (a3, JavaScript_syntax.CString "charAt")), [arg]) ->
       EInfixOp (a, "charAt", exp env e1, exp env arg)
-  | AppExpr (a, ((BracketExpr (a2, e1, e2)) as f), args) ->
-      EApp (a, exp env f, (exp env e1)::(map (exp env) args))
-  | AppExpr (a, f, args) -> 
-      EApp (a, exp env f, EDeref (a, EId (a, "%global"))::(map (exp env) args))
+  | AppExpr (p, obj_and_func, args) ->
+    let (obj, func) = object_and_function p obj_and_func in
+    ELet (p, "%this", exp env obj,
+	  EApp (p, exp env func, (EId (p, "%this")) :: (map (exp env) args)))
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdMap.add x true env) e2)
   | TryCatchExpr (a, body, x, catch) ->
