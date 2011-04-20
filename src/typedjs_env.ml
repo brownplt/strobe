@@ -77,7 +77,7 @@ module Env = struct
   }
 
   type env = {
-    id_typs : typ IdMap.t; 
+    id_typs : typ IdMap.t; (* type of term identifiers *)
     lbl_typs : typ IdMap.t;
     typ_ids: typ IdMap.t; (* bounded type variables *)
     typ_syns : typ IdMap.t; (* type synonyms *)

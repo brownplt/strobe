@@ -62,8 +62,6 @@ rule token = parse
    | "." { DOT }
    | "=" { EQUALS }
    | "constructor" { CONSTRUCTOR }
-   | "prototype" { PROTOTYPE }
-   | "class" { CLASS }
    | "upcast" { UPCAST }
    | "downcast" { DOWNCAST }
    | "operator" { OPERATOR }
@@ -71,7 +69,6 @@ rule token = parse
    | "cheat" { CHEAT }
    | "val" { VAL }
    | "forall" { FORALL }
-   | "checked" { CHECKED }
    | "type" { TYPE }
    | "<:" { LTCOLON }
    | "rec" { REC }

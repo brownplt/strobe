@@ -351,17 +351,17 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       TForall (x, t, tc_exp env e)
   | ETypApp (p, e, u) ->
     begin match tc_exp env e with
-          | TForall (x, s, t) ->
-              if Env.subtype env u s then
-                typ_subst x u t
-              else 
-                error p (sprintf "expected an argument of type %s, got %s"
-                           (string_of_typ s) (string_of_typ u))
-          | t ->
-              error p (sprintf "expected forall-type in type application, got:\
+      | TForall (x, s, t) ->
+        if Env.subtype env u s then
+          typ_subst x u t
+        else 
+          error p (sprintf "expected an argument of type %s, got %s"
+                     (string_of_typ s) (string_of_typ u))
+      | t ->
+        error p (sprintf "expected forall-type in type application, got:\
                                 \n%s\nargument has type:\n%s"
-			 (string_of_typ t) (string_of_typ u))
-        end
+		   (string_of_typ t) (string_of_typ u))
+    end
   | EForInIdx _ -> TField
   | ECheat (p, t, _) -> t
 
