@@ -13,3 +13,5 @@ TAGS
 src/LambdaJS
 obj
 *~
+.#*
+\#*
