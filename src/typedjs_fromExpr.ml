@@ -95,7 +95,7 @@ let rec exp (env : env) expr = match expr with
       if List.length ps != List.length (nub (map (fun (_, p, _) -> p) ps)) then
         raise (Not_well_formed (a, "repeated field names"));
       ERef (a, RefCell, EObject (a, map (fun (_, x, e) ->  x, exp env e) ps))
-  | ThisExpr a -> EId (a, "this")
+  | ThisExpr a -> EDeref (a, EId (a, "this"))
   | VarExpr (a, x) -> begin try
       if IdMap.find x env then
         EDeref (a, EId (a, x))
