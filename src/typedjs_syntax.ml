@@ -66,7 +66,6 @@ type typ =
   | TRec of id * typ 
   | TSyn of id (** type synonym *)
   | TApp of typ * typ (** A forall to be substituted on normalization *)
-  | TLazy of typ Lazy.t
 
 and prop = 
   | PPresent of typ
@@ -177,14 +176,6 @@ type exp
 
 module Typ = struct
 
-  type t = typ
-
-
-  let rec compare (s : typ) (t : typ) = 
-    try
-      Pervasives.compare s t 
-    with Out_of_memory -> failwith "COMPARE FAIL"
-
   let rec match_func_typ (typ : typ) : (typ list * typ) option = match typ with
     | TForall (_, _, t) -> match_func_typ t
     | TArrow (args, ret) -> Some (args, ret)
@@ -238,7 +229,6 @@ module Pretty = struct
   open FormatExt
 
   let rec typ t  = match t with
-    | TLazy _ -> text "..."
     | TTop -> text "Any"
     | TBot -> text "DoesNotReturn"
     | TPrim p -> text begin match p with

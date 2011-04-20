@@ -223,7 +223,6 @@ end = struct
     let open Typedjs_syntax in
     let rt = rt_of_typ syns in
     match t with
-      | TLazy lz -> rt_of_typ syns (Lazy.force lz)
       | TArrow _ -> RTSet.singleton RT.Function
       | TUnion (t1, t2) -> RTSet.union (rt t1) (rt t2)
       | TIntersect (t1, t2) -> RTSet.union (rt t1) (rt t2)
