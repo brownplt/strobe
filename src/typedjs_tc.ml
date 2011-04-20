@@ -180,7 +180,6 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
                          (string_of_typ obj) (string_of_typ fld) 
                          (string_of_typ typ))
     end
-  | ENew (p, cid, args) -> error p "New doesn't work yet (constrs)"
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
   | EInfixOp (p, "+", e1, e2) -> 
     begin match (tc_exp env e1, tc_exp env e2) with

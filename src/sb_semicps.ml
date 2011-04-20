@@ -188,16 +188,6 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
     cps_exp e throw (Jmp l)
   | EThrow (_, e) ->
     cps_exp e throw (Jmp throw)
-  | ENew (_, constr, args) ->
-    let k' = mk_name "app-cont"
-    and obj = new_name () in
-    Bind (new_node (), obj, Object [],
-          Bind (new_node (),
-                k', Let (Lambda ([new_name ()], ret k (mk_id obj))),
-                cps_exp_list args throw
-                  (fun argvs ->
-                    App (new_node (), mk_id constr,
-                         mk_id k' :: mk_id throw :: mk_id obj :: argvs))))
   | ESubsumption (_, _, e) -> cps_exp e throw k
   | EDowncast (_, _, e) -> cps_exp e throw k
   | ETypecast (_, _, e) -> cps_exp e throw k

@@ -51,9 +51,6 @@ let rec f (acc : IdSet.t * IdSet.t) (exp : exp) : (IdSet.t * IdSet.t) * exp =
     let (acc, e2) = f acc e2 in
     let (acc, e3) = f acc e3 in
     (acc, EUpdate (p, e1, e2, e3))
-  | ENew (p, x, es) ->
-    let (acc, es) = fold_map f es acc in
-    (acc, ENew (p, x, es))
   | EPrefixOp (p, x, e) ->
     let (acc, e) = f acc e in
     (acc, EPrefixOp (p, x, e))

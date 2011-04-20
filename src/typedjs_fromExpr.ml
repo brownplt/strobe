@@ -107,9 +107,14 @@ let rec exp (env : env) expr = match expr with
   | BracketExpr (a, e1, e2) -> 
       EBracket (a, EDeref (a, to_object a (exp env e1)),
                 to_string a (exp env e2))
-  | NewExpr (a, VarExpr (_, x), args) -> ENew (a, x, map (exp env) args)
-  | NewExpr (p, _, _) ->
-      raise (Not_well_formed (p, "new expressions much name the constructor"))
+  | NewExpr (p, constr, args) ->
+    (** TODO: prototypes won't work unless functions are objects *)
+    ELet (p, "%newobj", ERef (p, RefCell, EObject (p, [])), (* wrong! *)
+	  ESeq 
+	    (p, 
+	     EApp (p, exp env constr,
+		   (EId (p, "%newobj")) :: (map (exp env) args)),
+	     EId (p, "%newobj")))
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
   | InfixExpr (p, "&&", e1, e2) -> 
       EIf (p, exp env e1, exp env e2, EConst (p, S.CBool false))

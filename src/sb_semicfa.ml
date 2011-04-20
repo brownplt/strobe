@@ -438,7 +438,6 @@ module Annotate = struct
     end
     | EBracket (p, e1, e2) -> EBracket (p, a_exp e1, a_exp e2)
     | EUpdate (p, e1, e2, e3) -> EUpdate (p, a_exp e1, a_exp e2, a_exp e3)
-    | ENew (p, c_id, es) -> ENew (p, c_id, map a_exp es)
     | EPrefixOp (p, op, e) -> EPrefixOp (p, op, a_exp e)
     | EInfixOp (p, op, e1, e2) -> EInfixOp (p, op, a_exp e1, a_exp e2)
     | EIf (p, e1, e2, e3) -> EIf (p, a_exp e1, a_exp e2, a_exp e3)

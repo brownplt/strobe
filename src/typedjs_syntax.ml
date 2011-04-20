@@ -107,7 +107,6 @@ type exp
   | EId of pos * id
   | EBracket of pos * exp * exp
   | EUpdate of pos * exp * exp * exp
-  | ENew of pos * id * exp list
   | EPrefixOp of pos * id * exp
   | EInfixOp of pos * id * exp * exp
   | EIf of pos * exp * exp * exp
@@ -234,7 +233,6 @@ module Exp = struct
     | EId (p, _) -> p
     | EBracket (p, _, _) -> p
     | EUpdate (p, _, _, _) -> p
-    | ENew (p, _, _) -> p
     | EPrefixOp (p, _, _) -> p
     | EInfixOp (p, _, _, _) -> p
     | EIf (p, _, _, _) -> p
@@ -333,8 +331,6 @@ module Pretty = struct
     | EUpdate (_, e1, e2, e3) -> 
         squish [ exp e1; 
                  brackets (squish [ exp e2; text ":="; exp e3])]
-    | ENew (_, c_id, args) ->
-        parens (horz (text "new" :: text c_id :: map exp args))
     | EIf (_, e1, e2, e3) ->
         parens (vert [ horz [ text "if"; exp e1 ]; exp e2; exp e3 ])
     | EApp (_, f, args) -> parens (horz (text "app" :: exp f :: map exp args))
@@ -410,7 +406,6 @@ let assigned_free_vars (e : exp) =
     | EId _ -> IdSet.empty
     | EBracket (_, e1, e2) -> IdSet.union (exp e1) (exp e2)
     | EUpdate (_, e1, e2, e3) -> IdSetExt.unions [ exp e1; exp e2; exp e3 ]
-    | ENew (_, _, es) -> IdSetExt.unions (map exp es)
     | EPrefixOp (_, _, e) -> exp e
     | EInfixOp (_, _, e1, e2) -> IdSet.union (exp e1) (exp e2)
     | EIf (_, e1, e2, e3) -> IdSetExt.unions [ exp e1; exp e2; exp e3 ]
@@ -463,7 +458,6 @@ let unique_ids (prog : exp) : exp * (string, string) Hashtbl.t =
     | EId (p, x) -> EId (p, find x env)
     | EBracket (p, e1, e2) -> EBracket (p, exp env e1, exp env e2)
     | EUpdate (p, e1, e2, e3) -> EUpdate (p, exp env e1, exp env e2, exp env e3)
-    | ENew (p, x, es) -> ENew (p, find x env, map (exp env) es)
     | EPrefixOp (p, op, e) -> EPrefixOp (p, op, exp env e)
     | EInfixOp (p, op, e1, e2) -> EInfixOp (p, op, exp env e1, exp env e2)
     | EIf (p, e1, e2, e3) -> EIf (p, exp env e1, exp env e2, exp env e3)
