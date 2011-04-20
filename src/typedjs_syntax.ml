@@ -320,7 +320,7 @@ module Pretty = struct
         parens (horz (text "new" :: text c_id :: map exp args))
     | EIf (_, e1, e2, e3) ->
         parens (vert [ horz [ text "if"; exp e1 ]; exp e2; exp e3 ])
-    | EApp (_, f, args) -> parens (horz (exp f :: map exp args))
+    | EApp (_, f, args) -> parens (horz (text "app" :: exp f :: map exp args))
     | EFunc (_, args, t, body) ->
       parens (vert [ horz [ text "fun"; parens (horz (map text args)); 
                             text ":"; typ t.func_typ;
