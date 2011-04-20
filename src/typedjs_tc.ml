@@ -159,8 +159,6 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       simpl_typ env (tc_exp env field) with
       | ((TObject (fs, proto)) as tobj), TRegex idx_pat -> 
           fields p env tobj idx_pat
-      | ((TObject (fs, proto)) as tobj), TPrim Str ->
-          fields p env tobj Sb_strPat.all
       | TObject _, typ -> 
           error p (sprintf "Got %s rather than a regex in lookup"
                      (string_of_typ typ))
@@ -196,12 +194,14 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
   | ENew (p, cid, args) -> error p "New doesn't work yet (constrs)"
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
   | EInfixOp (p, "+", e1, e2) -> 
-      let t1 = tc_exp env e1 in
-      let t2 = tc_exp env e2 in
-        if (t1 = (TPrim Str) || t2 = (TPrim Str)) then
-          TPrim Str 
-        else 
-          tc_exp env (EApp (p, EId (p, "+"), [e1; e2]))
+    begin match (tc_exp env e1, tc_exp env e2) with
+      | TRegex _, _
+      | _, TRegex _ -> 
+	TRegex Sb_strPat.all
+      | t1, t2 -> 
+	tc_exp env (EApp (p, EId (p, "+"), [ ECheat (p, t1, e1); 
+					     ECheat (p, t2, e2) ]))
+    end
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> 
       let rec check_app tfun =

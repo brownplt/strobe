@@ -33,7 +33,6 @@ type constr = string
 type prim =
   | Num
   | Int
-  | Str
   | True
   | False
   | Undef
@@ -245,7 +244,6 @@ module Pretty = struct
        | Int -> "Int"
        | True -> "True"
        | False -> "False"
-       | Str -> "Str"
        | Null -> "Null"
        | Undef -> "Undef"
       end

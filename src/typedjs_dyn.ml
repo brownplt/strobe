@@ -55,7 +55,7 @@ let rec ctc_of_typ p (typ : typ) = match typ with
   | TArrow (args, result) -> 
       CArrow (map (ctc_of_typ p) args, ctc_of_typ p result)
   | TPrim (Int) -> flat p "Int"
-  | TPrim (Str) -> flat p "Str"
+(*  | TPrim (Str) -> flat p "Str" *)
   | TPrim (Undef) -> flat p "Undef"
   | TPrim (True) 
   | TPrim (False) -> flat p "Bool"

@@ -127,7 +127,6 @@ module Env = struct
         | TRegex pat1, TRegex pat2 ->
             if P.contains pat1 pat2 then cache 
             else raise Not_subtype
-        | TRegex _, TPrim Str -> cache
         | TId x, TId y -> if x = y then cache else raise Not_subtype
         | TId x, t -> begin try
           let s = IdMap.find x env.typ_ids in (* S-TVar *)
@@ -302,7 +301,6 @@ module Env = struct
   let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
     | TBot -> TBot (* might change if we allow arbitrary casts *)
     | TArrow _ -> if RTSet.mem RT.Function rt then typ else TBot
-    | TPrim Str
     | TRegex _ -> if RTSet.exists is_re rt then 
         match match_re rt with
           | Some re -> TRegex re

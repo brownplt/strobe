@@ -227,7 +227,6 @@ end = struct
       | TUnion (t1, t2) -> RTSet.union (rt t1) (rt t2)
       | TIntersect (t1, t2) -> RTSet.union (rt t1) (rt t2)
       | TPrim (s) -> begin match s with
-          | Str ->  RTSet.singleton (RT.Re any_str)
           | Num
           | Int -> RTSet.singleton RT.Num
           | True

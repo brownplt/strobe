@@ -56,7 +56,7 @@ arg_typ
   : ANY { W.Top }
   | INT { W.Prim Int }
   | NUM { W.Prim Num }
-  | STR { W.Prim Str }
+  | STR { W.Str }
   | BOOL { W.Bool }
   | TRUE { W.Prim True }
   | FALSE { W.Prim False }
