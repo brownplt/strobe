@@ -64,8 +64,8 @@ let is_empty lst = match lst with
 
 type env = bool IdMap.t
 
-let to_string  p e = e (* EPrefixOp (p, "%ToString",  e) *)
-let to_object  p e = e (* EPrefixOp (p, "%ToObject",  e) *)
+let to_string  p e = EPrefixOp (p, "%ToString",  e) 
+let to_object  p e = EPrefixOp (p, "%ToObject",  e) 
 let to_boolean p e = EPrefixOp (p, "%ToBoolean", e)
 
 (** [object_and_function expr] is used on the expression in function
