@@ -4,6 +4,13 @@ var foo = function(obj)
 };
 
 var bar = function(obj2)
-  /*: (rec a . { x : Num, y : Num, proto: { move : ['a] -> Num } }) -> Num */ {
+  /*: { x : Num, 
+        y : Num, 
+        proto: {{ 
+          move : 
+            [ (rec a . #{ x: Num, y: Num, proto: {{ move : ['a] -> Num }} }) ] 
+            -> Num 
+        }}
+      } -> Num */ {
   return foo(obj2);
 };
