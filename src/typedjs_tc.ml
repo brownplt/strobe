@@ -198,80 +198,78 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       | TRegex _, _
       | _, TRegex _ -> 
 	TRegex Sb_strPat.all
-      | t1, t2 -> 
+      | t1, t2 ->
 	tc_exp env (EApp (p, EId (p, "+"), [ ECheat (p, t1, e1); 
 					     ECheat (p, t2, e2) ]))
     end
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> 
-      let rec check_app tfun =
-        begin match tfun with 
-           | TArrow (expected_typs, result_typ) ->
-               let arg_typs' = map (tc_exp_ret env) args in
-               let arg_typs = 
-                 fill (List.length expected_typs - List.length args) 
-                   (TPrim Undef) arg_typs' in
-                 if Env.subtypes env arg_typs expected_typs 
-                 then result_typ 
-                 else if List.length args = List.length expected_typs  
-                 then
-                   let typ_pairs = List.combine arg_typs expected_typs in
-                   let arg_ix = ref 1 in
-                   let find_typ_err (arg_typ, expected_typ) = 
-                     if Env.subtype env arg_typ expected_typ 
-                     then (incr arg_ix; false)
-                     else true in
-                     let arg_typ, expected_typ = List.find find_typ_err typ_pairs in
-                       raise (Typ_error 
-                         (p, sprintf "argument %d: expected %s, but received %s"
-                            !arg_ix (string_of_typ expected_typ)
-                                    (string_of_typ arg_typ)))
-                 else raise (Typ_error 
-                               (p, sprintf "arity-mismatch: the function expects %d \
+    let arg_typs = map (tc_exp_ret env) args in
+    let assumed_arg_exps = 
+      List.map2 (fun e t -> ECheat (p, t, e)) args arg_typs in
+    let rec check_app tfun =
+      begin match tfun with 
+        | TArrow (expected_typs, result_typ) ->
+          let arg_typs = 
+            fill (List.length expected_typs - List.length args) 
+              (TPrim Undef) arg_typs in
+          if Env.subtypes env arg_typs expected_typs 
+          then result_typ 
+          else if List.length args = List.length expected_typs  
+          then
+            let typ_pairs = List.combine arg_typs expected_typs in
+            let arg_ix = ref 1 in
+            let find_typ_err (arg_typ, expected_typ) = 
+              if Env.subtype env arg_typ expected_typ 
+              then (incr arg_ix; false)
+              else true in
+            let arg_typ, expected_typ = List.find find_typ_err typ_pairs in
+            raise (Typ_error 
+                     (p, sprintf "argument %d: expected %s, but received %s"
+                       !arg_ix (string_of_typ expected_typ)
+                       (string_of_typ arg_typ)))
+          else raise (Typ_error 
+                        (p, sprintf "arity-mismatch: the function expects %d \
                                 arguments, but %d arguments given"
-                                  (List.length expected_typs) (List.length
-                                  args)))
-           | TIntersect (t1, t2) -> 
-	     begin 
-	       try 
-		 let r1 = check_app t1 in 
-		 begin 
-		   try
-                     let r2 = check_app t2 in
+                          (List.length expected_typs) (List.length args)))
+        | TIntersect (t1, t2) -> 
+	  begin 
+	    try 
+	      let r1 = check_app t1 in 
+	      begin 
+		try
+                  let r2 = check_app t2 in
                      Env.typ_intersect env r1 r2
-                   with Typ_error _ -> r1 
-		 end
-               with Typ_error _ -> check_app t2 
-	     end
-           | TForall (x, max_typ, (TArrow (expected_typ, result_typ) as ft)) ->
-             let tfun' = TArrow (map (tc_exp env) args, result_typ) in
-             let subst = unify_typ env ft tfun' in
-             begin match subst with 
-               | None -> error p (sprintf "unification failure\n: %s\n~ %s\n%s"
-				    (string_of_typ ft)
-				    (string_of_typ tfun')
-				    (string_of_exp exp))
-               | Some subst -> 
-                 begin try
-                         let u = IdMap.find x subst in
-                         if Env.subtype env u max_typ then
-                           check_app (typ_subst x u ft)
-                         else
-                           error p (sprintf "Unified, but to %s, which is not \
-                                             a subtype of %s; type is %s\n%s"
-				      (string_of_typ u)
-				      (string_of_typ max_typ)
-				      (string_of_typ tfun)
-				      (string_of_exp exp))
-                   with Not_found ->
-                     error p (sprintf "could not determine \'%s in %s" 
-                                x (string_of_typ ft))
-                 end
-             end
-           | _ -> failwith ("Expected an arrow or intersection in EApp, got: " ^
-                               (string_of_typ tfun))
-        end in (match (un_null (tc_exp env f)) with
-                  | t -> check_app t)
+                with Typ_error _ -> r1 
+	      end
+            with Typ_error _ -> check_app t2 
+	  end
+	| (TForall _) as quant_typ -> 
+	  begin match Typ.forall_arrow quant_typ with
+	    | None -> 
+	      error p (sprintf "expected function, got %s"
+			 (string_of_typ quant_typ))
+	    | Some (typ_vars, (TArrow (_, r) as arrow_typ)) ->
+	      let assoc =
+		typ_assoc env arrow_typ (TArrow (arg_typs, r)) in
+	      let guess_typ_app exp typ_var = 
+		try
+		  let guessed_typ = IdMap.find typ_var assoc in
+		  ETypApp (p, exp, guessed_typ) 
+		with Not_found -> begin
+		  printf "  %s\n~ %s\n" (string_of_typ quant_typ)
+		    (string_of_typ (TArrow (arg_typs, r)));
+		  error p (sprintf "$$$ could not instantiate") end in
+	      let guessed_exp = 
+		fold_left guess_typ_app (ECheat (p, quant_typ, f)) 
+		  typ_vars in
+	      tc_exp env (EApp (p, guessed_exp, assumed_arg_exps))
+	    | Some _ -> failwith "expected TArrow from forall_arrow"
+	  end
+	| not_func_typ ->
+	  error p (sprintf "expected function, got %s" 
+		     (string_of_typ not_func_typ))
+      end in check_app (un_null (tc_exp env f)) 
   | ERec (binds, body) -> 
       let f env (x, t, e) =
         Env.bind_id x t env in

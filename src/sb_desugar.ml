@@ -50,7 +50,7 @@ let rec typ (writ_typ : W.t) : typ = match writ_typ with
   | W.Bool -> TUnion (TPrim True, TPrim False)
   | W.Union (t1, t2) -> TUnion (typ t1, typ t2)
   | W.Inter (t1, t2) -> TIntersect (typ t1, typ t2)
-  | W.Arrow (None, args, r) -> TArrow (TTop :: (map typ args), typ r)
+  | W.Arrow (None, args, r) -> TArrow (map typ args, typ r)
   | W.Arrow (Some this, args, r) -> TArrow ((typ this):: (map typ args), typ r)
   | W.Object flds -> object_typ flds
   | W.Pat pat -> TRegex pat

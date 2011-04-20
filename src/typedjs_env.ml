@@ -29,6 +29,12 @@ module List = struct
       | _ -> () in
     iter g (tails lst)
 
+  let rec map2_noerr (f : 'a -> 'b -> 'c) (xs : 'a list) (ys : 'b list) =
+    match (xs, ys) with
+      | [], _ -> []
+      | _, [] -> []
+      | x :: xs', y :: ys' -> (f x y) :: map2_noerr f xs' ys'
+
 end
 
 let rec typ_subst x s typ = 
@@ -415,6 +421,54 @@ let simpl_typ = Env.simpl_typ
 
 let apply_subst subst typ = IdMap.fold typ_subst subst typ
 
+let assoc_merge = IdMap.merge (fun x opt_s opt_t -> match opt_s, opt_t with
+  | Some (TId y), Some (TId z) -> 
+    if x = y then opt_t else opt_s
+  | Some (TId _), Some t 
+  | Some t, Some (TId _) -> Some t
+  | Some t, _
+  | _, Some t ->
+    Some t
+  | None, None -> None)
+
+let rec typ_assoc (env : Env.env) (typ1 : typ) (typ2 : typ) = 
+  match (typ1, typ2) with
+    | TId x, _ -> IdMap.singleton x typ2
+    | TApp (s1, s2), TApp (t1, t2)
+    | TIntersect (s1, s2), TIntersect (t1, t2)
+    | TUnion (s1, s2), TUnion (t1, t2) -> 
+      assoc_merge (typ_assoc env s1 t1) (typ_assoc env s2 t2)
+
+    | TApp (s1, s2), t
+    | t, TApp (s1, s2) ->
+      typ_assoc env (simpl_typ env (TApp (s1, s2))) t
+
+    | TObject (flds1, proto1), TObject (flds2, proto2) ->
+      List.fold_left assoc_merge
+	(typ_assoc env proto1 proto2)
+	(List.map2_noerr (fld_assoc env) flds1 flds2)
+    | TSource s, TSource t
+    | TSink s, TSink t
+    | TRef s, TRef t ->
+      typ_assoc env s t
+    | TArrow (args1, r1), TArrow (args2, r2) ->
+      List.fold_left assoc_merge
+	(typ_assoc env r1 r2)
+	(List.map2_noerr (typ_assoc env) args1 args2)
+    | TRec (x, s), TRec (y, t) ->
+      (* could do better here, renaming*)
+      typ_assoc env s t
+    | TForall (x, s1, s2), TForall (y, t1, t2) ->
+      (* also here *)
+      assoc_merge (typ_assoc env s1 t1) (typ_assoc env s2 t2)
+    | _ -> IdMap.empty
+
+and fld_assoc env (_, fld1) (_, fld2) = match (fld1, fld2) with
+  | PPresent s, PPresent t
+  | PMaybe s, PMaybe t ->
+    typ_assoc env s t
+  | _ -> IdMap.empty
+
  (* TODO: occurs check *)
 let rec unify env (subst : typ IdMap.t option) (s : typ) (t : typ)  = 
   match s, t with
@@ -446,6 +500,10 @@ let rec unify env (subst : typ IdMap.t option) (s : typ) (t : typ)  =
       else List.fold_left2 (unify env) subst (s3 :: s2s) (t3 :: t2s)
   | TApp (s1, s2), TApp (t1, t2) -> 
       unify env (unify env subst s1 t1) s2 t2
+  | TApp (u, s), t
+  | t, TApp (u, s) ->
+    unify env subst t (simpl_typ env (TApp (u, s)))
+  
   | TObject (fs1, p1), TObject (fs2, p2) ->
       if List.length fs1 != List.length fs2 then None
       else

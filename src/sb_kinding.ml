@@ -32,7 +32,9 @@ let rec simpl_equiv (typ1 : typ) (typ2 : typ) : bool =
     | TRegex pat1, TRegex pat2 ->
       P.is_equal pat1 pat2
     | TObject (flds1, proto1), TObject (flds2, proto2) ->
-      simpl_equiv proto1 proto2
+      List.length flds1 = List.length flds2
+      && List.for_all2 simpl_equiv_fld flds1 flds2
+      && simpl_equiv proto1 proto2
     | _, _ -> false
 
 and simpl_equiv_fld (pat1, fld1) (pat2, fld2) = 

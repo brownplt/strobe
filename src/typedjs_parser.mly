@@ -74,7 +74,7 @@ arg_typ
 
 typ 
   : arg_typ { $1 }
-  | args ARROW typ { W.Arrow (None, $1, $3) }
+  | args ARROW typ { W.Arrow (Some W.Top, $1, $3) }
   | LBRACK typ RBRACK args ARROW typ { W.Arrow (Some $2, $4, $6) }
   | FORALL ID LTCOLON typ DOT typ { W.Forall ($2, $4, $6) }
   | FORALL ID DOT typ { W.Forall ($2, W.Top, $4) }

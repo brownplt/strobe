@@ -167,7 +167,7 @@ module WritTyp = struct
   let rec remove_this op = match op with
     | Arrow (_, aa, r) -> Arrow (None, aa, r)
     | Inter (t1, t2) -> Inter (remove_this t1, remove_this t2)
-    | Forall (x, s, t) -> Forall (x, s, (remove_this t))
+    | Forall (x, s, t) -> Forall (x, s, remove_this t)
     | _ -> failwith "remove_this : illegal argument"
 
 end
@@ -189,6 +189,14 @@ type annotation =
 
 
 module Typ = struct
+
+  let rec forall_arrow (typ : typ) : (id list * typ) option = match typ with
+    | TArrow _ -> Some ([], typ)
+    | TForall (x, _, typ') -> begin match forall_arrow typ' with
+	| None -> None
+	| Some (xs, t) -> Some (x :: xs, t)
+    end
+    | _ -> None
 
   let rec match_func_typ (typ : typ) : (typ list * typ) option = match typ with
     | TForall (_, _, t) -> match_func_typ t
