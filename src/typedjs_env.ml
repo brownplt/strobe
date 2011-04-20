@@ -55,6 +55,9 @@ match typ with
   | TTop -> TTop
   | TBot -> TBot
   | TField -> TField
+  (* omg this stuff is NOT capture free ... *)
+  | TLambda (y, k, t) ->
+    TLambda (y, k, typ_subst x s t)
   | TForall (y, t1, t2) -> 
       if x = y then 
         typ
@@ -175,6 +178,10 @@ module Env = struct
               subt env cache typ' typ''
         | _, TTop -> cache
         | TBot, _ -> cache
+	| TLambda (x, KStar, s), TLambda (y, KStar, t) ->
+	  let env = bind_typ_id x TTop env in
+	  let env = bind_typ_id y TTop env in
+	  subt env cache s t
         | _ -> raise Not_subtype
 
   and subtype_field env cache ((pat1, fld1) : field * prop) 
@@ -257,11 +264,12 @@ module Env = struct
     | TTop _
     | TBot _
     | TField _
+    | TLambda _
     | TForall _ -> typ
     | TRec (x, t) -> simpl_typ env (typ_subst x typ t)
     | TId x -> simpl_typ env (IdMap.find x env.typ_ids)
     | TApp (t1, t2) -> begin match simpl_typ env t1 with
-	| TForall (x, TTop, u) -> 
+	| TLambda (x, KStar, u) -> 
 	  simpl_typ env (typ_subst x t2 u)
 	| _ -> raise
 	  (Not_wf_typ (sprintf "%s in type-application position"
@@ -331,6 +339,7 @@ module Env = struct
     | TId _ -> typ
     | TRec (x, t) -> let t' = TRec (x, static cs rt t) in
                      (match t' with TRec (_, TBot) -> TBot | typ -> typ)
+    | TLambda _ -> failwith "TLambda in static"
     | TApp _ -> typ
 
   let rec set_global_object env cname =

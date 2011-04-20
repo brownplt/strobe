@@ -104,6 +104,8 @@ any_id :
   | NUM { "Num" }
 
 env_decl :
+  | TYPE any_id LANGLE ID RANGLE EQUALS typ 
+      { EnvType (($startpos, $endpos), $2, W.Lambda ($4, $7)) }
   | TYPE any_id EQUALS typ { EnvType (($startpos, $endpos), $2, $4) }
   | VAL ID COLON typ { EnvBind (($startpos, $endpos), $2, $4) }
   | ID COLON typ { EnvBind (($startpos, $endpos), $1, W.Ref $3) }

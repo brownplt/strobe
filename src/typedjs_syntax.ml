@@ -41,6 +41,10 @@ type prim =
 type field = Sb_strPat.t
 type pat = Sb_strPat.t
 
+type kind = 
+  | KStar
+  | KArrow of kind * kind
+
 type typ = 
   | TPrim of prim
   | TUnion of typ * typ
@@ -64,7 +68,8 @@ type typ =
   | TId of id
   | TField
   | TRec of id * typ 
-  | TApp of typ * typ (** A forall to be substituted on normalization *)
+  | TLambda of id * kind * typ
+  | TApp of typ * typ (** type operator application *)
 
 and prop = 
   | PPresent of typ
@@ -149,6 +154,7 @@ module WritTyp = struct
     | Forall of id * t * t
     | Rec of id * t
     | Syn of id
+    | Lambda of id * t
     | App of t * t
        
   and f = 
@@ -246,7 +252,9 @@ module Pretty = struct
        | False -> "False"
        | Null -> "Null"
        | Undef -> "Undef"
-      end
+    end
+    | TLambda (x, k, t) -> 
+      horz [ text "Lambda "; text x; typ t ]
     | TApp (t1, t2) -> horz [typ t1; text "<"; typ t2; text ">"]
     | TRegex pat -> 
         squish [text "/"; text (Sb_strPat.pretty pat); text "/"]
