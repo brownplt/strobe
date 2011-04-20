@@ -61,7 +61,6 @@ rule token = parse
    | "&" { INTERSECTION }
    | "." { DOT }
    | "=" { EQUALS }
-   | "constructor" { CONSTRUCTOR }
    | "upcast" { UPCAST }
    | "downcast" { DOWNCAST }
    | "operator" { OPERATOR }

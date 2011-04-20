@@ -177,7 +177,6 @@ type env_decl =
 
 type annotation =
   | ATyp of WritTyp.t
-  | AConstructor of WritTyp.t
   | AUpcast of WritTyp.t
   | ADowncast of WritTyp.t
   | ATypAbs of id * WritTyp.t
