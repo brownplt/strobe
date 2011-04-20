@@ -2,7 +2,7 @@ open JavaScript
 open Exprjs
 open Prelude
 open Printf
-open Typedjs_tc
+open Sb_typing
 open Format
 open Typedjs_syntax
 open Typedjs_fromExpr
@@ -117,7 +117,7 @@ let action_pretypecheck () : unit =
     Typedjs_syntax.Pretty.p_exp typedjs std_formatter
 
 let action_tc () : unit = 
-  let _ = Typedjs_tc.typecheck (get_env ()) (get_typedjs ()) in
+  let _ = typecheck (get_env ()) (get_typedjs ()) in
     if get_print_contracts () then
       let tr_map = mk_contract_transformers !contracts in
         transform_exprs tr_map (get_cin ()) stdout
@@ -187,9 +187,9 @@ let main () : unit =
        "simplify JavaScript to exprjs");
       ("-pretc", Arg.Unit (set_action action_pretypecheck),
        "basic well-formedness checks before type-checking and flow-analysis");
-      ("-disable-unreachable", Arg.Unit Typedjs_tc.disable_unreachable_check,
+      ("-disable-unreachable", Arg.Unit disable_unreachable_check,
        "do not signal an error on unreachable code");
-      ("-noflows", Arg.Unit Typedjs_tc.disable_flows,
+      ("-noflows", Arg.Unit disable_flows,
        "disable flow analysis (benchmarks and debugging)");
       ("-regex", Arg.Unit (set_action action_regex),
        "regular expression containment tests");
