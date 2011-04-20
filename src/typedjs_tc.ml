@@ -88,7 +88,6 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
   | EDeref (p, e) -> begin match simpl_typ env (tc_exp env e) with
       | TRef t -> t
       | TSource t -> t
-      | TField -> TField
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
                                  (string_of_typ t)))
     end 
@@ -347,7 +346,6 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
                                 \n%s\nargument has type:\n%s"
 		   (string_of_typ t) (string_of_typ u))
     end
-  | EForInIdx _ -> TField
   | ECheat (p, t, _) -> t
 
 and tc_exps env es = map (tc_exp env) es

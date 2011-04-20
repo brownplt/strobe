@@ -6,8 +6,7 @@ module P = Sb_strPat
 let rec simpl_equiv (typ1 : typ) (typ2 : typ) : bool =
   match (typ1, typ2) with
     | TTop, TTop
-    | TBot, TBot
-    | TField, TField -> 
+    | TBot, TBot ->
       true
     | TPrim p1, TPrim p2 ->
       p1 = p2

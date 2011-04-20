@@ -68,7 +68,6 @@ type typ =
   | TBot
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TId of id
-  | TField
   | TRec of id * typ 
   | TLambda of id * kind * typ
   | TApp of typ * typ (** type operator application *)
@@ -130,7 +129,6 @@ type exp
   | EDowncast of pos * typ * exp
   | ETypAbs of pos * id * typ * exp 
   | ETypApp of pos * exp * typ
-  | EForInIdx of pos
   | ECheat of pos * typ * exp
 
 (******************************************************************************)
@@ -259,7 +257,6 @@ module Exp = struct
     | EEmptyArray (p, _) -> p
     | ETypApp (p, _, _) -> p
     | ETypAbs (p, _, _, _) -> p
-    | EForInIdx p -> p
     | ECheat (p, _, _) -> p
 end
 
@@ -314,7 +311,6 @@ module Pretty = struct
     | TForall (x, s, t) -> 
         horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
     | TId x -> text x
-    | TField -> text "field"
     | TRec (x, t) -> horz [ text x; text "."; typ t ]
 
   and field  (k, p) = horz [ text (Sb_strPat.pretty k); text ":"; prop p ]
@@ -379,7 +375,6 @@ module Pretty = struct
     | ETypApp (_, e, t) -> parens (horz [ text "typ-app"; exp e; typ t ])
     | ETypAbs (_, x, t, e) -> 
         parens (horz [ text "typ-abs"; text x; text "<:"; typ t; exp e ])
-    | EForInIdx _ -> text "for-in-idx"
     | ECheat (_, t, e) -> parens (horz [ text "cheat"; typ t; exp e ])
 
   and fld (s, e) =
@@ -442,7 +437,6 @@ let assigned_free_vars (e : exp) =
     | EDowncast (_, _, e) -> exp e
     | ETypAbs (_, _, _, e) -> exp e
     | ETypApp (_, e, _) -> exp e
-    | EForInIdx _ -> IdSet.empty
     | ECheat _ -> IdSet.empty
   in exp e
 
@@ -504,6 +498,5 @@ let unique_ids (prog : exp) : exp * (string, string) Hashtbl.t =
     | EDowncast (p, t, e) -> EDowncast (p, t, exp env e)
     | ETypAbs (p, x, t, e) -> ETypAbs (p, x, t, exp env e)
     | ETypApp (p, e, t) -> ETypApp (p, exp env e, t)
-    | EForInIdx p -> EForInIdx p
     | ECheat (p, t, e) -> ECheat (p, t, e)
   in (exp IdMap.empty prog, ht)

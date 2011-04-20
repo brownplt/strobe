@@ -244,7 +244,6 @@ end = struct
       | TBot -> RTSet.empty
       | TForall _ -> rtany
       | TId x -> rt_of_typ syns (IdMap.find x syns)
-      | TField -> rtany
       | TRec (_, t) -> rt t
       | TApp (t1, t2) -> rtany
 
@@ -462,7 +461,6 @@ module Annotate = struct
     | ETypAbs (p, x, t, e) -> ETypAbs (p, x, t, a_exp e)
     | ETypApp (p, e, t) -> ETypApp (p, a_exp e, t)
     | ECheat (p, t, e) -> ECheat (p, t, a_exp e)
-    | EForInIdx _ -> exp
       
   and a_bind (i, t, e) = (i, t, a_exp e)
 

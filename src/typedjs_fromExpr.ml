@@ -207,22 +207,17 @@ let rec exp (env : env) expr = match expr with
       raise (Not_well_formed (p, "function is missing a type annotation"))
   | FuncStmtExpr (p, _, _, _) ->
       raise (Not_well_formed (p, "function is missing a type annotation"))
-  | ForInExpr (p, x, objExpr, body) -> begin match exp env objExpr with
-      | EDeref (_, EId (_, obj)) ->
-          let loop_typ = TArrow ([TField; TField], TPrim Undef) in
-            ERec ([("%loop", loop_typ,
-                    EFunc (p, [obj; x], { func_typ = loop_typ;
-                                          func_loop = true;
-                                          func_owned = IdSet.empty },
-                           ESeq (p, exp env body, 
-                                 EApp (p, EId (p, "%loop"),
-                                       [ EId (p, obj); EId (p, x) ]))))],
-                  EApp (p, EId (p, "%loop"), [EForInIdx p; EForInIdx p]))
-      | _ ->
-          raise (Not_well_formed (p, "for-in loops require a named object"))
-    end
-
-
+  | ForInExpr (p, x, obj, body) ->
+    let loop_typ = TArrow ([TRegex Sb_strPat.all], TPrim Undef) in
+    ERec ([("%loop", loop_typ,
+            EFunc (p, [x], { func_typ = loop_typ;
+                            func_loop = true;
+                            func_owned = IdSet.empty },
+		   (* TODO: not fully-faithful--stopping condition missing *)
+                   ESeq (p, exp env body, 
+                         EApp (p, EId (p, "%loop"), []))))],
+	  EApp (p, EId (p, "%loop"), 
+		[ ECheat (p, TRegex Sb_strPat.all, EId (p, x)) ]))
 
 and match_func env expr = match expr with
   | HintExpr (p, txt, FuncExpr (a, args, LabelledExpr (a', "%return", body))) ->

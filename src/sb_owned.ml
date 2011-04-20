@@ -136,7 +136,6 @@ let rec f (acc : IdSet.t * IdSet.t) (exp : exp) : (IdSet.t * IdSet.t) * exp =
   | ETypApp (p, e, t) ->
     let (acc, e) = f acc e in
     (acc, ETypApp (p, e, t))
-  | EForInIdx _ -> (acc, exp)
   | ECheat (p, t, e) ->
     let (acc, e) = f acc e in
     (acc, ECheat (p, t, e))

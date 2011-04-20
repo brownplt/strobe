@@ -62,7 +62,6 @@ let rec typ_subst x s typ = match typ with
   | TSink t -> TSink (typ_subst x s t)
   | TTop -> TTop
   | TBot -> TBot
-  | TField -> TField
   (* omg this stuff is NOT capture free ... *)
   | TLambda (y, k, t) ->
     TLambda (y, k, typ_subst x s t)
@@ -141,7 +140,6 @@ module Env = struct
     | TSink _
     | TTop _
     | TBot _
-    | TField _
     | TLambda _
     | TSimpleObject _
     | TForall _ -> typ
@@ -322,15 +320,7 @@ module Env = struct
     | false, true -> t
     | false, false -> TIntersect (s, t)
 
-  let basic_static env (typ : typ) (rt : RT.t) : typ = match rt with
-    | RT.Num -> typ_union env (TPrim Num) typ
-    | RT.Re _ -> typ_union env (TRegex any_fld) typ
-    | RT.Bool -> typ_union env typ_bool typ
-    | RT.Function -> typ_union env TField typ
-    | RT.Object -> typ_union env TField typ
-    | RT.Undefined -> typ_union env (TPrim Undef) typ
-
-  let basic_static2 env (typ : typ) (rt : RT.t) : typ = match rt with
+  let simpl_static env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env (TPrim Num) typ
     | RT.Re _ -> typ_union env (TRegex any_fld) typ
     | RT.Bool -> typ_union env typ_bool typ
@@ -376,12 +366,11 @@ module Env = struct
     | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
     | TIntersect (s, t) -> typ_intersect cs (static cs rt s) (static cs rt t)
     | TForall _ -> typ
-    | TField -> List.fold_left (basic_static cs) TBot (RTSetExt.to_list rt)
     | TTop -> 
         if RTSet.equal rt rtany then
           TTop
         else (* TODO: no arrow type that is the supertype of all arrows *)
-          List.fold_left (basic_static2 cs) TBot (RTSetExt.to_list rt)
+          List.fold_left (simpl_static cs) TBot (RTSetExt.to_list rt)
     | TId _ -> typ
     | TRec (x, t) -> let t' = TRec (x, static cs rt t) in
                      (match t' with TRec (_, TBot) -> TBot | typ -> typ)
