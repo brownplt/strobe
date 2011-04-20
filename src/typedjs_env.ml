@@ -35,11 +35,16 @@ module List = struct
       | _, [] -> []
       | x :: xs', y :: ys' -> (f x y) :: map2_noerr f xs' ys'
 
+  let rec filter_map (f : 'a -> 'b option) (xs : 'a list) : 'b list =
+    match xs with
+      | [] -> []
+      | x :: xs' -> match f x with
+	  | None -> filter_map f xs'
+	  | Some y -> y :: (filter_map f xs')
+	    
 end
 
-let rec typ_subst x s typ = 
-(* printf "Substing: %s %s %s\n\n" x (string_of_typ s) (string_of_typ typ);*)
-match typ with
+let rec typ_subst x s typ = match typ with
   | TPrim _ -> typ
   | TRegex _ -> typ
   | TId y -> if x = y then s else typ
@@ -48,12 +53,10 @@ match typ with
       TIntersect (typ_subst x s t1, typ_subst x s t2)
   | TArrow (t2s, t3)  ->
       TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
-  | TObject (fs, proto) -> 
-      let prop_subst p = match p with
-        | PPresent typ -> PPresent (typ_subst x s typ)
-        | PMaybe typ -> PMaybe (typ_subst x s typ)
-        | PAbsent -> PAbsent in
-      TObject (map (second2 prop_subst) fs, typ_subst x s proto)
+  | TObject (flds, proto) -> 
+      TObject (map (second2 (prop_subst x s)) flds, typ_subst x s proto)
+  | TSimpleObject flds ->
+    TSimpleObject (map (second2 (prop_subst x s)) flds)
   | TRef t -> TRef (typ_subst x s t)
   | TSource t -> TSource (typ_subst x s t)
   | TSink t -> TSink (typ_subst x s t)
@@ -74,6 +77,11 @@ match typ with
     else 
       TRec (y, typ_subst x s t)
   | TApp (t1, t2) -> TApp (typ_subst x s t1, typ_subst x s t2)
+
+and prop_subst x s p = match p with
+  | PPresent typ -> PPresent (typ_subst x s typ)
+  | PMaybe typ -> PMaybe (typ_subst x s typ)
+  | PAbsent -> PAbsent
 
 
 module Env = struct
@@ -121,6 +129,59 @@ module Env = struct
     | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) (typ_subst x s t)
     | typ -> (env, typ)
 
+
+  let rec simpl_typ env typ = match typ with
+    | TPrim _ 
+    | TUnion _
+    | TIntersect _
+    | TRegex _
+    | TArrow _
+    | TRef _
+    | TSource _
+    | TSink _
+    | TTop _
+    | TBot _
+    | TField _
+    | TLambda _
+    | TSimpleObject _
+    | TForall _ -> typ
+    | TRec (x, t) -> simpl_typ env (typ_subst x typ t)
+    | TId x -> simpl_typ env (IdMap.find x env.typ_ids)
+    | TApp (t1, t2) -> begin match simpl_typ env t1 with
+	| TLambda (x, KStar, u) -> 
+	  simpl_typ env (typ_subst x t2 u)
+	| _ -> raise
+	  (Not_wf_typ (sprintf "%s in type-application position"
+			 (string_of_typ t1)))
+    end
+    | TObject (fs, proto) ->
+      TObject (fs, simpl_typ env proto)
+
+
+  let get_fld idx (pat, prop) = 
+    let pat' = P.intersect pat idx in
+    if P.is_empty pat' then
+      None
+    else 
+      Some (pat', prop)
+
+  let rec flatten_obj_typ_helper env (idx : pat) (typ : typ) =
+    match simpl_typ env typ with
+      | TObject (flds, TSource proto)
+      | TObject (flds, TRef proto) ->
+	let proto_idx = 
+	  P.subtract idx (* idx - present patterns *)
+	  (fold_left P.union P.empty 
+	     (map fst2 (List.filter Typ.is_present flds))) in
+	(List.filter_map (get_fld idx) flds) @ 
+	  (flatten_obj_typ_helper env proto_idx proto)
+      | TObject (flds, TPrim Null) ->
+	List.filter_map (get_fld idx) flds
+      | _ -> failwith (sprintf "expected object type")
+
+  let flatten_obj_typ env obj_typ = 
+    TSimpleObject (flatten_obj_typ_helper env P.all obj_typ)
+
   let rec subt env (cache : TPSet.t) s t : TPSet.t= 
     if TPSet.mem (s, t) cache then
       cache
@@ -133,7 +194,7 @@ module Env = struct
       match simpl_typ env s, simpl_typ env t with
         | TPrim Int, TPrim Num -> cache
         | TRegex pat1, TRegex pat2 ->
-            if P.contains pat1 pat2 then cache 
+          if P.contains pat1 pat2 then cache 
             else raise Not_subtype
         | TId x, TId y -> if x = y then cache else raise Not_subtype
         | TId x, t -> begin try
@@ -157,12 +218,19 @@ module Env = struct
             try subtype cache s t1
             with Not_subtype -> subtype cache s t2
           end
-       | TArrow (args1, r1), TArrow (args2, r2) ->
+	| TArrow (args1, r1), TArrow (args2, r2) ->
           begin
             try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
             with Invalid_argument _ -> raise Not_subtype (* unequal lengths *)
           end
-        | TObject (fs1, p1), TObject (fs2, p2) -> 
+	| TSimpleObject flds1, TSimpleObject flds2 ->
+	  let f cache fld1 =
+	    fold_left (fun cache fld2 -> subtype_field env cache fld1 fld2)
+	      cache flds2 in
+	  fold_left f cache flds1
+	| TObject (flds, proto) as lhs, (TSimpleObject _ as rhs) ->
+	  subtype cache (flatten_obj_typ env lhs) rhs
+	| TObject (fs1, p1), TObject (fs2, p2) -> 
             subtype (subtype_object' env cache fs1 fs2) p1 p2
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
         | TSource s, TSource t -> subtype cache s t
@@ -254,32 +322,6 @@ module Env = struct
     | false, true -> t
     | false, false -> TIntersect (s, t)
 
-  and simpl_typ env typ = match typ with
-    | TPrim _ 
-    | TUnion _
-    | TIntersect _
-    | TRegex _
-    | TArrow _
-    | TRef _
-    | TSource _
-    | TSink _
-    | TTop _
-    | TBot _
-    | TField _
-    | TLambda _
-    | TForall _ -> typ
-    | TRec (x, t) -> simpl_typ env (typ_subst x typ t)
-    | TId x -> simpl_typ env (IdMap.find x env.typ_ids)
-    | TApp (t1, t2) -> begin match simpl_typ env t1 with
-	| TLambda (x, KStar, u) -> 
-	  simpl_typ env (typ_subst x t2 u)
-	| _ -> raise
-	  (Not_wf_typ (sprintf "%s in type-application position"
-			 (string_of_typ t1)))
-    end
-    | TObject (fs, proto) ->
-      TObject (fs, simpl_typ env proto)
-
   let basic_static env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env (TPrim Num) typ
     | RT.Re _ -> typ_union env (TRegex any_fld) typ
@@ -324,7 +366,9 @@ module Env = struct
     | TPrim (Undef) -> 
         if RTSet.mem RT.Undefined rt then typ else TBot
           (* any other app will be an object from a constructor *)
+    | TRef (TSimpleObject _)
     | TRef (TObject _) -> if RTSet.mem RT.Object rt then typ else TBot
+    | TSimpleObject _
     | TObject _ -> failwith "Static got a functional object"
     | TRef t -> TRef t
     | TSource t -> TSource t
@@ -482,6 +526,9 @@ let rec fields_helper env flds idx_pat =  match flds with
       fields_helper env flds' idx_pat
 
 let rec fields p env obj_typ idx_pat = match simpl_typ env obj_typ with
+  | TSimpleObject flds ->
+    let (fld_typ, rest_pat) = fields_helper env flds idx_pat in
+    fld_typ
   | TObject (flds, TPrim Null) -> 
     let (fld_typ, rest_pat) = fields_helper env flds idx_pat in
     fld_typ

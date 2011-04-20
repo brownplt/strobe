@@ -155,18 +155,9 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       (* TODO: everything else hsould be absent *)
       TObject (map mk_field fields, TId "Object")
   | EBracket (p, obj, field) -> 
-    begin match simpl_typ env (un_null (tc_exp env obj)), 
-      simpl_typ env (tc_exp env field) with
-      | ((TObject (fs, proto)) as tobj), TRegex idx_pat -> 
-          fields p env tobj idx_pat
-      | TObject _, typ -> 
-          error p (sprintf "Got %s rather than a regex in lookup"
-                     (string_of_typ typ))
-      | TField, TField -> TField
-      | TField, _ -> error p "expected a TField index"
-      | obj, field -> 
-          error p (sprintf "Got %s[%s] in object lookup."
-                     (string_of_typ obj) (string_of_typ field))
+    begin match simpl_typ env (tc_exp env field) with
+      | TRegex pat -> fields p env (un_null (tc_exp env obj)) pat
+      | idx_typ -> error p (sprintf "index has type %s" (string_of_typ idx_typ))
     end
   | EUpdate (p, obj, field, value) -> begin
       match simpl_typ env (tc_exp env obj), 

@@ -52,10 +52,11 @@ let rec typ (writ_typ : W.t) : typ = match writ_typ with
   | W.Inter (t1, t2) -> TIntersect (typ t1, typ t2)
   | W.Arrow (None, args, r) -> TArrow (map typ args, typ r)
   | W.Arrow (Some this, args, r) -> TArrow ((typ this):: (map typ args), typ r)
-  | W.Object flds -> object_typ flds
+  | W.Object flds -> object_typ false flds
+  | W.SimpleObject flds -> object_typ true flds
   | W.Pat pat -> TRegex pat
   | W.Ref t -> TRef (typ t)
-  | W.Source t -> TRef (typ t)
+  | W.Source t -> TSource (typ t)
   | W.Top -> TTop
   | W.Bot -> TBot
   | W.Syn x -> TId x
@@ -72,7 +73,7 @@ and fld (writ_fld : W.f) : pat * prop = match writ_fld with
   | W.Skull _ -> error "fld applied to Skull"
   | W.Star _ -> error "fld applied to Star"
 
-and object_typ (lst : W.f list) =
+and object_typ is_simple (lst : W.f list) =
   let flds = (* Present, Maybe, Absent, and Skull only *)
     let (stars, others) = List.partition is_star lst in
     match stars with
@@ -92,18 +93,25 @@ and object_typ (lst : W.f list) =
   List.iter_pairs assert_overlap (List.map pat_of flds);
   let flds = List.filter (fun f -> not (is_skull f)) flds in
   let (proto, non_proto_flds) = 
-    List.partition
-      (fun fld -> match P.singleton_string (pat_of fld) with
-	| Some "proto" -> true
-	| _ -> false)
-      flds in
+    if is_simple then
+      (None, flds)
+    else
+      let (proto, non_proto) = 
+	List.partition
+	  (fun fld -> match P.singleton_string (pat_of fld) with
+	    | Some "proto" -> true
+	    | _ -> false)
+	  flds in
+      (Some proto, non_proto) in
   match proto with
-    | [W.Present (_, proto_typ)] ->
+    | None -> TSimpleObject (map fld non_proto_flds)
+    | Some [W.Present (_, proto_typ)] ->
       TObject (map fld non_proto_flds, typ proto_typ)
-    | [] -> TObject (map fld non_proto_flds, TId "Object")
-    | [_] -> error "proto must be definitely present"
+    | Some [] -> TObject (map fld non_proto_flds, TId "Object")
+    | Some [_] -> error "proto must be definitely present"
+    | Some _ -> error "multiple proto fields found"
 
-    | _ -> error "multiple proto fields found"
+
 
 let desugar_typ (p : pos) (wt : W.t) : typ =
   try typ wt

@@ -236,6 +236,7 @@ end = struct
       end
       | TRegex pat -> RTSet.singleton (RT.Re pat)
       | TObject _ -> RTSet.singleton RT.Object
+      | TSimpleObject _ -> RTSet.singleton RT.Object
       | TRef t -> rt t
       | TSource t -> rt t
       | TSink t -> rt t

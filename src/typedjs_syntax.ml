@@ -2,6 +2,8 @@ open Prelude
 
 exception Typ_error of pos * string
 
+module P = Sb_strPat
+
 module RT = struct
   type t =
     | Num
@@ -53,7 +55,7 @@ type typ =
       (* The list holds everything that's typed.
          The second type is the prototype *)
   | TObject of (field * prop) list * typ
-  (* | TSimpleObject of (field * prop) list *)
+  | TSimpleObject of (field * prop) list
     (** If [obj] has type [TSimpleObject ((x, t)::rest)] then, [obj.x]
 	gauranteed to produce a [t]-typed value. However, the type does not
 	specify the field's position on the prototype chain. Therefore, setting
@@ -144,6 +146,7 @@ module WritTyp = struct
     | Inter of t * t
     | Arrow of t option * t list * t (** [Arrow (this, args, result)] *)
     | Object of f list
+    | SimpleObject of f list
     | Pat of field
     | Ref of t
     | Source of t
@@ -201,6 +204,22 @@ module Typ = struct
     | TForall (_, _, t) -> match_func_typ t
     | TArrow (args, ret) -> Some (args, ret)
     | _ -> None
+
+  let is_present (fld : (pat * prop)) = match fld with
+    | (_, PPresent _) -> true
+    | _ -> false
+
+
+
+  (** [obj_cover t] returns a pattern that matches the strings in the object's
+      domain. When [t] is a [TObject _], it excludes the prototype. *)
+  let obj_cover (typ : typ) = match typ with
+    | TObject (flds, _) ->
+      fold_left P.union P.empty (map fst2 flds)
+    | TSimpleObject flds ->
+      fold_left P.union P.empty (map fst2 flds)
+    | _ ->
+      raise (Invalid_argument "obj_cover requires an object type")
 
 end
 
@@ -285,9 +304,10 @@ module Pretty = struct
               text "->";
               typ r_typ ]
     | TObject (fs, proto) ->
-        let f (k, p) = horz [ text (Sb_strPat.pretty k); text ":"; prop p ] in
-          braces (horz ([text "proto:"; typ proto; text ";"]@
-                          (intersperse (text ",") (map f fs))))
+          braces (horz ([text "proto:"; typ proto; text ","] @
+                          (intersperse (text ",") (map field fs))))
+    | TSimpleObject flds ->
+      braces (braces (horz (intersperse (text ",") (map field flds))))
     | TRef s -> horz [ text "ref"; parens (typ s) ]
     | TSource s -> horz [ text "source"; parens (typ s) ]
     | TSink s -> horz [ text "sink"; parens (typ s) ]
@@ -296,6 +316,9 @@ module Pretty = struct
     | TId x -> text x
     | TField -> text "field"
     | TRec (x, t) -> horz [ text x; text "."; typ t ]
+
+  and field  (k, p) = horz [ text (Sb_strPat.pretty k); text ":"; prop p ]
+
   and prop p = match p with
     | PPresent t -> typ t
     | PMaybe t -> horz [ text "maybe"; typ t ]
