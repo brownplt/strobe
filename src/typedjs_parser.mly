@@ -11,7 +11,7 @@ module W = Typedjs_syntax.WritTyp
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
        CHEAT NULL TRUE FALSE REC INTERSECTION UNDERSCORE BAD
-       HASHBRACE EQUALS TYPE
+       HASHBRACE EQUALS TYPE QUES BANG
        
 
 %right UNION INTERSECTION
@@ -35,6 +35,8 @@ pat :
   | STRING { Sb_strPat.singleton $1 }
 
 field :
+  | pat COLON QUES typ { W.Maybe ($1, $4) }
+  | pat COLON BANG typ { W.Present ($1, $4) }
   | pat COLON typ
       { let pat = $1 in
 	if Sb_strPat.is_finite pat then

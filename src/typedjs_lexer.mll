@@ -71,6 +71,8 @@ rule token = parse
    | "forall" { FORALL }
    | "type" { TYPE }
    | "<:" { LTCOLON }
+   | "?" { QUES }
+   | "!" { BANG }
    | "rec" { REC }
    | eof { EOF }
    | ident as x { ID x }
