@@ -469,66 +469,6 @@ and fld_assoc env (_, fld1) (_, fld2) = match (fld1, fld2) with
     typ_assoc env s t
   | _ -> IdMap.empty
 
- (* TODO: occurs check *)
-let rec unify env (subst : typ IdMap.t option) (s : typ) (t : typ)  = 
-  match s, t with
-  | TPrim s, TPrim t -> 
-      if s = t then subst 
-      else None 
-  | TId x, TId y -> 
-      if x = y then subst 
-      else None
-  | TId x, t -> 
-      begin match subst with
-        | None -> None
-        | Some subst' -> 
-            if IdMap.mem x subst' then
-              begin
-                let s = IdMap.find x subst' in
-                  Some (IdMap.add x (apply_subst subst' 
-                                       (Env.typ_union env s t)) subst')
-              end
-            else
-              Some (IdMap.add x (apply_subst subst' t) subst')
-            end
-  | s, TId y -> unify env subst (TId y) s
-  | TUnion (s1, s2), TUnion (t1, t2) -> unify env (unify env subst s1 t1) s2 t2
-  | TIntersect (s1, s2), TIntersect (t1, t2) -> 
-      unify env (unify env subst s1 t1) s2 t2
-  | TArrow (s2s, s3), TArrow (t2s, t3) ->
-      if List.length s2s != List.length t2s then None 
-      else List.fold_left2 (unify env) subst (s3 :: s2s) (t3 :: t2s)
-  | TApp (s1, s2), TApp (t1, t2) -> 
-      unify env (unify env subst s1 t1) s2 t2
-  | TApp (u, s), t
-  | t, TApp (u, s) ->
-    unify env subst t (simpl_typ env (TApp (u, s)))
-  
-  | TObject (fs1, p1), TObject (fs2, p2) ->
-      if List.length fs1 != List.length fs2 then None
-      else
-        let f subst (x, p1) (y, p2) = 
-          if x = y then
-            match p1, p2 with
-              | PPresent s, PPresent t -> unify env subst s t
-              | PMaybe s, PMaybe t -> unify env subst s t
-              | PAbsent, PAbsent -> subst
-              | _ -> None
-          else None in
-        let subst' = List.fold_left2 f subst fs1 fs2 in
-          unify env subst' p1 p2
-  | TRef s, TRef t -> unify env subst s t
-  | TSource s, TSource t -> unify env subst s t
-  | TSink s, TSink t -> unify env subst s t
-  | TTop, TTop -> subst
-  | TBot, TBot -> subst
-  | TForall _, TForall _ -> None
-  | _ -> None
-
-
-let unify_typ env (s : typ) (t : typ) : typ IdMap.t option = 
-  unify env (Some IdMap.empty) s t
-
 let rec fields_helper env flds idx_pat =  match flds with
   | [] -> (TBot, idx_pat)
   | (pat, fld) :: flds' ->

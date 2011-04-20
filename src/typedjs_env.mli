@@ -60,8 +60,6 @@ val typ_subst : id -> typ -> typ -> typ
 
 val simpl_typ : Env.env -> typ -> typ
 
-val unify_typ : Env.env -> typ -> typ -> typ IdMap.t option
-
 val typ_assoc : Env.env -> typ -> typ -> typ IdMap.t
 
 val fields : pos -> Env.env -> typ -> Sb_strPat.t -> typ
