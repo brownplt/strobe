@@ -100,8 +100,9 @@ and object_typ (lst : W.f list) =
   match proto with
     | [W.Present (_, proto_typ)] ->
       TObject (map fld non_proto_flds, typ proto_typ)
+    | [] -> TObject (map fld non_proto_flds, TId "Object")
     | [_] -> error "proto must be definitely present"
-    | [] -> error "missing proto field"
+
     | _ -> error "multiple proto fields found"
 
 let desugar_typ (p : pos) (wt : W.t) : typ =
