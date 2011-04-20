@@ -5,6 +5,8 @@ exception Not_wf_typ of string
 
 module P = Sb_strPat
 
+let desugar_typ = Sb_desugar.desugar_typ
+
 (* Necessary for equi-recursive subtyping. *)
 module TypPair = struct
   type t = typ * typ
@@ -322,12 +324,6 @@ module Env = struct
     | PAbsent -> PAbsent
     | PErr -> PErr
 
-  let check_typ p env (wt : writ_typ) : typ = match wt with
-    | WrittenTyp t ->
-      try normalize_typ env t with 
-	| Not_wf_typ s -> raise (Typ_error (p, s))
-	| Not_found -> failwith "Not found in check_typ!!!"
-
   let basic_static env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env (TPrim Num) typ
     | RT.Re _ -> typ_union env (TRegex any_fld) typ
@@ -340,8 +336,8 @@ module Env = struct
     | RT.Num -> typ_union env (TPrim Num) typ
     | RT.Re _ -> typ_union env (TRegex any_fld) typ
     | RT.Bool -> typ_union env typ_bool typ
-    | RT.Function -> typ_union env (mk_object_typ [] None (TSyn "Function")) typ
-    | RT.Object -> typ_union env (mk_object_typ [] None (TSyn "Object")) typ
+    | RT.Function -> typ_union env (TObject ([], TSyn "Function")) typ 
+    | RT.Object -> typ_union env (TObject ([], TSyn "Object")) typ
     | RT.Undefined -> typ_union env (TPrim Undef) typ
 
   let rtany = 
@@ -431,21 +427,17 @@ let parse_env (cin : in_channel) (name : string) : env_decl list =
 
 let extend_global_env env lst =
   let add env decl = match decl with
-    | EnvBind (x, typ) ->
+    | EnvBind (p, x, typ) ->
       if IdMap.mem x env.Env.id_typs then
         raise (Not_wf_typ (x ^ " is already bound in the environment"))
       else
-        Env.bind_id x typ env
-    | EnvClass (x, _, t) ->
-      if IdMap.mem x env.Env.typ_syns then
-        raise (Not_wf_typ ("the type " ^ x ^ " is already defined"))
-      else
-        { env with Env.typ_syns = IdMap.add x t env.Env.typ_syns }
-    | EnvType (x, t) ->
+        Env.bind_id x (desugar_typ p typ) env
+    | EnvType (p, x, t) ->
       if IdMap.mem x env.Env.typ_syns then
 	raise (Not_wf_typ (sprintf "the type %s is already defined" x))
       else
-	{ env with Env.typ_syns = IdMap.add x t env.Env.typ_syns }
+	{ env with 
+	  Env.typ_syns = IdMap.add x (desugar_typ p t) env.Env.typ_syns }
   in List.fold_left add env lst
 
 (*

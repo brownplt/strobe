@@ -152,7 +152,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       let throw' = new_name () in
       ret k (Lambda (k' :: throw' :: args, cps_exp body throw' (Jmp k')))
     else
-      ret k (ExternalLambda (match fi.func_typ with | WrittenTyp t -> t))
+      ret k (ExternalLambda fi.func_typ)
   | ELet (_, x, e1, e2) ->
     cps' e1 throw
       (fun v1 ->
@@ -215,14 +215,14 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       cps_exp e1 throw k
   | EForInIdx p -> ret k (Const (JavaScript_syntax.CString "%forinidx"))
 
-and cps_bind ((name, _, e) : id * writ_typ * exp) = match e with
+and cps_bind ((name, _, e) : id * typ * exp) = match e with
   | EFunc (_, args, fi, body) ->
     if fi.func_loop then
       let k = new_name () in
       let throw = new_name () in
       (name, Lambda (k :: throw :: args, cps_exp body throw (Jmp k)))
     else 
-      (name, ExternalLambda (match fi.func_typ with | WrittenTyp t -> t))
+      (name, ExternalLambda fi.func_typ)
   | _ -> failwith "cps_bind : expected a function"
 
 and cps_exp_list exps throw (k : cpsval list -> cpsexp) = match exps with

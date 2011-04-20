@@ -2,14 +2,15 @@
 
 open Prelude
 open Typedjs_syntax
+module W = Typedjs_syntax.WritTyp
 
 %}
 
 %token <string> ID TID STRING REGEX
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF CONSTRUCTOR INT NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
-       PROTOTYPE PROTO CLASS UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
-       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION SEMI UNDERSCORE BAD
+       PROTOTYPE CLASS UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
+       CHECKED CHEAT NULL TRUE FALSE REC INTERSECTION UNDERSCORE BAD
        HASHBRACE EQUALS TYPE
        
 
@@ -23,33 +24,27 @@ open Typedjs_syntax
 
 %%
 
-regex :
-  | REGEX { Sb_strPat.parse $startpos $1 }
-  
 args
   :  { [] }
   | arg_typ { [$1] }
   | arg_typ STAR args { $1 :: $3 }
 
-prop
-  : typ { PPresent $1 }
-  | UNDERSCORE { PAbsent }
-  | BAD { PErr }
+pat :
+  | REGEX { Sb_strPat.parse $startpos $1 }
+  | ID { Sb_strPat.singleton $1 }
+  | STRING { Sb_strPat.singleton $1 }
 
-field
-  : regex COLON prop 
-  { let pat = $1 in
-    (pat, match $3 with
-      | PPresent t -> 
-        if Sb_strPat.is_finite pat
-        then PPresent t
-        else PMaybe t
-      | p -> p) }
-  | ID COLON prop
-      { (Sb_strPat.singleton $1, $3) }
-  | STRING COLON prop
-      { (Sb_strPat.singleton $1, $3) }
-
+field :
+  | pat COLON typ
+      { let pat = $1 in
+	if Sb_strPat.is_finite pat then
+	  W.Present (pat, $3)
+	else
+	  W.Maybe (pat, $3) }
+  | pat COLON UNDERSCORE { W.Absent $1 }
+  | pat COLON BAD { W.Skull $1 }
+  | STAR COLON typ { W.Star (Some $3) }
+  | STAR COLON UNDERSCORE { W.Star None }
 
 fields
   : { [] }
@@ -58,39 +53,32 @@ fields
   | COMMA { [] }
 
 arg_typ
-  : ANY { TTop }
-  | INT { TPrim Int }
-  | NUM { TPrim Num }
-  | STR { TPrim Str }
-  | BOOL { typ_bool }
-  | TRUE { TPrim True }
-  | FALSE { TPrim False }
-  | UNDEF { TPrim Undef }
-  | NULL { TPrim Null }
-  | regex { TRegex $1 }
-  | arg_typ UNION arg_typ { TUnion ($1, $3) }
-  | arg_typ INTERSECTION arg_typ { TIntersect ($1, $3) }
-  | LBRACE fields RBRACE { TRef (mk_object_typ $2 None (TSyn "Object")) }
-  | HASHBRACE fields RBRACE { TSource (mk_object_typ $2 None (TSyn "Object")) }
-  | LBRACE STAR COLON prop SEMI fields RBRACE 
-      { TRef (mk_object_typ $6 (Some $4) (TSyn "Object")) }
-  | HASHBRACE STAR COLON prop SEMI fields RBRACE { TSource (mk_object_typ $6 (Some $4) (TSyn "Object")) }
-  | LBRACE PROTO COLON arg_typ SEMI fields RBRACE
-      { TRef (mk_object_typ $6 None $4) }
-  | LBRACE PROTO COLON arg_typ COMMA STAR COLON prop SEMI fields RBRACE
-      { TRef (mk_object_typ $10 (Some $8) $4) }
+  : ANY { W.Top }
+  | INT { W.Prim Int }
+  | NUM { W.Prim Num }
+  | STR { W.Prim Str }
+  | BOOL { W.Bool }
+  | TRUE { W.Prim True }
+  | FALSE { W.Prim False }
+  | UNDEF { W.Prim Undef }
+  | NULL { W.Prim Null }
+  | REGEX { W.Pat (Sb_strPat.parse $startpos $1) }
+  | arg_typ UNION arg_typ { W.Union ($1, $3) }
+  | arg_typ INTERSECTION arg_typ { W.Inter ($1, $3) }
+  | LBRACE fields RBRACE { W.Ref (W.Object $2) }
+  | HASHBRACE fields RBRACE { W.Source (W.Object $2) }
   | LPAREN typ RPAREN { $2 }
-  | TID { TId $1 }
-  | ID { TSyn $1 }
-  | ID LANGLE typ RANGLE { TApp (TSyn $1, $3) }
+  | TID { W.Id $1 }
+  | ID { W.Syn $1 }
+  | ID LANGLE typ RANGLE { W.App (W.Syn $1, $3) }
 
 typ 
   : arg_typ { $1 }
-  | args ARROW typ { TArrow (TTop::$1, $3) }
-  | LBRACK typ RBRACK args ARROW typ { TArrow ($2::$4, $6) }
-  | FORALL ID LTCOLON typ DOT typ { TForall ($2, $4, $6) }
-  | FORALL ID DOT typ { TForall ($2, TTop, $4) }
-  | REC ID DOT typ { TRec ($2, $4) }
+  | args ARROW typ { W.Arrow (None, $1, $3) }
+  | LBRACK typ RBRACK args ARROW typ { W.Arrow (Some $2, $4, $6) }
+  | FORALL ID LTCOLON typ DOT typ { W.Forall ($2, $4, $6) }
+  | FORALL ID DOT typ { W.Forall ($2, W.Top, $4) }
+  | REC ID DOT typ { W.Rec ($2, $4) }
 
 
 annotation :
@@ -100,7 +88,7 @@ annotation :
   | DOWNCAST typ { ADowncast $2 }
   | CONSTRUCTOR typ { AConstructor $2 }
   | FORALL ID LTCOLON typ { ATypAbs ($2, $4) }
-  | FORALL ID { ATypAbs ($2, TTop) }
+  | FORALL ID { ATypAbs ($2, W.Top) }
   | LBRACK typ RBRACK { ATypApp $2 }
   | IS typ { AAssertTyp $2 }
 
@@ -115,27 +103,12 @@ any_id :
   | BOOL { "Bool" }
   | NUM { "Num" }
 
-checked :
-  | CHECKED { true }
-  | { false }
-
 env_decl :
-  | TYPE any_id EQUALS typ { EnvType ($2, $4) }
-  | CLASS checked any_id PROTOTYPE any_id arg_typ
-    { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
-      EnvClass
-        ( $3 (* name *) , 
-          Some $5 (* prototype type *),
-          $6 (* type *)) }
-  | CLASS checked any_id arg_typ
-      { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
-        EnvClass ($3, None (* root *), $4) }
-  | CLASS checked any_id LANGLE ID RANGLE arg_typ
-      { if $2 then Typedjs_dyn_supp.assume_instanceof_contract $3;
-        EnvClass ($3, None (* root *), TForall ($5, TTop, $7)) }
-  | VAL ID COLON typ { EnvBind ($2, $4) }
-  | ID COLON typ { EnvBind ($1, TRef $3) }
-  | OPERATOR STRING COLON typ { EnvBind ($2, remove_this $4) }
+  | TYPE any_id EQUALS typ { EnvType (($startpos, $endpos), $2, $4) }
+  | VAL ID COLON typ { EnvBind (($startpos, $endpos), $2, $4) }
+  | ID COLON typ { EnvBind (($startpos, $endpos), $1, W.Ref $3) }
+  | OPERATOR STRING COLON typ 
+      { EnvBind (($startpos, $endpos), $2, W.remove_this $4) }
 
 env_decls
   : { [] }

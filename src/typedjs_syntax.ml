@@ -40,6 +40,7 @@ type prim =
   | Null
 
 type field = Sb_strPat.t
+type pat = Sb_strPat.t
 
 type typ = 
   | TPrim of prim
@@ -73,63 +74,19 @@ and prop =
   | PAbsent
   | PErr
 
-type writ_field =
-  | WFNone of typ (** field written without a maybe / absent annotation *)
-  | WFPresent of typ
-  | WFMaybe of typ
-  | WFAbsent
-  | WFSkull
-
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
 let any_fld = Sb_strPat.all
 
-(*let mk_object_typ (flds : (field * writ_field) list) (star : writ_field)
-    proto : typ =
-*)
-
-
-let mk_object_typ (fs : (field * prop) list) (star : prop option) proto : typ =
-  let module P = Sb_strPat in
-  let star_pat = P.negate (List.fold_right P.union (map fst2 fs) P.empty) in
-  match star with
-    | Some (PPresent t) -> TObject ((star_pat, PMaybe t)::fs, proto)
-    | Some prop -> TObject ((star_pat, prop)::fs, proto)
-    | None -> TObject ((star_pat, PAbsent)::fs, proto)
-
-let rec remove_this op = match op with
-  | TArrow (a::aa, r) -> TArrow (aa, r)
-  | TIntersect (t1, t2) -> TIntersect (remove_this t1, remove_this t2)
-  | TForall (x, s, t) -> TForall (x, s, (remove_this t))
-  | _ -> failwith "Removing this from something non-operatory"
-
-
-type env_decl =
-  | EnvClass of constr * constr option * typ
-  | EnvBind of id * typ
-  | EnvType of id * typ
-
-type annotation =
-    ATyp of typ
-  | AConstructor of typ 
-  | AUpcast of typ
-  | ADowncast of typ
-  | ATypAbs of id * typ
-  | ATypApp of typ
-  | AAssertTyp of typ
-  | ACheat of typ
 
 type ref_kind =
   | RefCell
   | SourceCell
   | SinkCell
 
-(** A type written by a programmer. This type may be incorrect and needs
-    to be checked. *)
-type writ_typ = WrittenTyp of typ
 
 type func_info = {
-  func_typ : writ_typ;
+  func_typ : typ;
   func_owned: IdSet.t;
   func_loop : bool;
 }
@@ -140,9 +97,9 @@ type func_info = {
 type exp
   = EConst of pos * JavaScript_syntax.const
   | EBot of pos
-  | EAssertTyp of pos * writ_typ * exp
+  | EAssertTyp of pos * typ * exp
   | EArray of pos * exp list
-  | EEmptyArray of pos * writ_typ
+  | EEmptyArray of pos * typ
   | EObject of pos * (string * exp) list
   | EId of pos * id
   | EBracket of pos * exp * exp
@@ -154,9 +111,9 @@ type exp
   | EApp of pos * exp * exp list
   | EFunc of pos * id list * func_info * exp
   | ELet of pos * id * exp * exp
-  | ERec of (id * writ_typ * exp) list * exp
+  | ERec of (id * typ * exp) list * exp
   | ESeq of pos * exp * exp
-  | ELabel of pos * id * writ_typ * exp 
+  | ELabel of pos * id * typ * exp 
   | EBreak of pos * id * exp
   | ETryCatch of pos * exp * id * exp
   | ETryFinally of pos * exp * exp
@@ -165,14 +122,67 @@ type exp
   | ERef of pos * ref_kind * exp
   | EDeref of pos * exp
   | ESetRef of pos * exp * exp
-  | ESubsumption of pos * writ_typ * exp
-  | EDowncast of pos * writ_typ * exp
-  | ETypAbs of pos * id * writ_typ * exp 
+  | ESubsumption of pos * typ * exp
+  | EDowncast of pos * typ * exp
+  | ETypAbs of pos * id * typ * exp 
   | ETypApp of pos * exp * typ
   | EForInIdx of pos
-  | ECheat of pos * writ_typ * exp
+  | ECheat of pos * typ * exp
 
 (******************************************************************************)
+
+(** Types written by users. *)
+module WritTyp = struct
+
+  type t = 
+    | Str
+    | Bool
+    | Prim of prim
+    | Union of t * t
+    | Inter of t * t
+    | Arrow of t option * t list * t (** [Arrow (this, args, result)] *)
+    | Object of f list
+    | Pat of field
+    | Ref of t
+    | Source of t
+    | Top
+    | Bot
+    | Id of id
+    | Forall of id * t * t
+    | Rec of id * t
+    | Syn of id
+    | App of t * t
+       
+  and f = 
+    | Present of pat * t
+    | Maybe of pat * t
+    | Absent of pat
+    | Skull of pat
+    | Star of t option
+
+  let rec remove_this op = match op with
+    | Arrow (_, aa, r) -> Arrow (None, aa, r)
+    | Inter (t1, t2) -> Inter (remove_this t1, remove_this t2)
+    | Forall (x, s, t) -> Forall (x, s, (remove_this t))
+    | _ -> failwith "remove_this : illegal argument"
+
+end
+
+type env_decl =
+  | EnvBind of pos * id * WritTyp.t
+  | EnvType of pos * id * WritTyp.t
+
+type annotation =
+  | ATyp of WritTyp.t
+  | AConstructor of WritTyp.t
+  | AUpcast of WritTyp.t
+  | ADowncast of WritTyp.t
+  | ATypAbs of id * WritTyp.t
+  | ATypApp of WritTyp.t
+  | AAssertTyp of WritTyp.t
+  | ACheat of WritTyp.t
+
+
 
 module Typ = struct
 
@@ -281,14 +291,11 @@ module Pretty = struct
     | PAbsent -> text "_"
     | PErr -> text "BAD"
 
-  let writ_typ wt = match wt with
-    | WrittenTyp t -> typ t
-
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
     | EBot _ -> text "bot"
     | EAssertTyp (_, t, e) ->
-        parens (vert [ text "assert-typ"; parens (writ_typ t); exp e ])
+        parens (vert [ text "assert-typ"; parens (typ t); exp e ])
     | EEmptyArray _ -> text "[ ]"
     | EArray (_, es) -> brackets (horz (map exp es))
     | EObject (_, ps) -> brackets (vert (map fld ps))
@@ -304,7 +311,7 @@ module Pretty = struct
     | EApp (_, f, args) -> parens (horz (exp f :: map exp args))
     | EFunc (_, args, t, body) ->
       parens (vert [ horz [ text "fun"; parens (horz (map text args)); 
-                            text ":"; writ_typ t.func_typ;
+                            text ":"; typ t.func_typ;
                             IdSetExt.p_set text t.func_owned;
                           ];
                        exp body])
@@ -333,14 +340,14 @@ module Pretty = struct
     | EDeref (_, e) -> parens (horz [ text "deref"; exp e ])
     | ESetRef (_, e1, e2) -> parens (horz [ text "set-ref!"; exp e1; exp e2 ])
     | ESubsumption (_, t, e) ->
-        parens (vert [ text "upcast"; parens (writ_typ t); exp e ])
+        parens (vert [ text "upcast"; parens (typ t); exp e ])
     | EDowncast (_, t, e) ->
-        parens (vert [ text "downcast"; parens (writ_typ t); exp e ])
+        parens (vert [ text "downcast"; parens (typ t); exp e ])
     | ETypApp (_, e, t) -> parens (horz [ text "typ-app"; exp e; typ t ])
     | ETypAbs (_, x, t, e) -> 
-        parens (horz [ text "typ-abs"; text x; text "<:"; writ_typ t; exp e ])
+        parens (horz [ text "typ-abs"; text x; text "<:"; typ t; exp e ])
     | EForInIdx _ -> text "for-in-idx"
-    | ECheat (_, t, e) -> parens (horz [ text "cheat"; writ_typ t; exp e ])
+    | ECheat (_, t, e) -> parens (horz [ text "cheat"; typ t; exp e ])
 
   and fld (s, e) =
     parens (horz [ text s; text ":"; exp e ])
@@ -349,7 +356,7 @@ module Pretty = struct
     parens (horz [text x; exp e])
 
   and rec_bind (x, t, e) = 
-    parens (horz [text x; text ":"; writ_typ t; exp e])
+    parens (horz [text x; text ":"; typ t; exp e])
 
   let p_typ = typ
 

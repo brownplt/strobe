@@ -7,6 +7,10 @@ open Typedjs_tc_util
 module H = Hashtbl
 module S = JavaScript_syntax
 
+module Desugar = Sb_desugar
+
+let desugar_typ = Desugar.desugar_typ
+
 exception Not_well_formed of pos * string
 
 let error (p : pos) (s : string) : 'exn =
@@ -81,7 +85,7 @@ let rec exp (env : env) expr = match expr with
   | ConstExpr (a, c) -> EConst (a, c)
   | HintExpr (p, txt, ArrayExpr (p', [])) -> 
       begin match parse_annotation p txt with
-        | ATyp t -> ERef (p, RefCell, EEmptyArray (p, WrittenTyp t))
+        | ATyp t -> ERef (p, RefCell, EEmptyArray (p, desugar_typ p t))
         | _ -> 
             raise (Not_well_formed (p, "expected the type of array elements" ))
       end
@@ -140,8 +144,7 @@ let rec exp (env : env) expr = match expr with
       ETryFinally (a, exp env body, exp env finally)
   | ThrowExpr (a, e) -> EThrow (a, exp env e)
   | WhileExpr (a, e1, e2) ->
-      (* Type is not really written by user. *)
-      let loop_typ = WrittenTyp (TArrow ([], TPrim Undef)) in
+      let loop_typ = TArrow ([], TPrim Undef) in
         ERec ([("%loop", loop_typ,
                 EFunc (a, [], { func_typ = loop_typ;
 
@@ -153,7 +156,7 @@ let rec exp (env : env) expr = match expr with
                             EConst (a, S.CUndefined))))],
               EApp (a, EId (a, "%loop"), []))
   | DoWhileExpr (a, body_e, test_e) ->
-      let loop_typ = WrittenTyp (TArrow ([], TPrim Undef)) in
+      let loop_typ = TArrow ([], TPrim Undef) in
         ERec ([("%loop", loop_typ,
                 EFunc (a, [], { func_typ = loop_typ; 
                                 func_loop = true;
@@ -167,7 +170,7 @@ let rec exp (env : env) expr = match expr with
   | LabelledExpr (a, x, e) -> 
       (** We assume that this [LabelledExpr] is from a [LabelledStmt]. 
           Therefore, the return type is [ty_undef]. *)
-      ELabel (a, x, WrittenTyp (TPrim Undef), exp env e)
+      ELabel (a, x, TPrim Undef, exp env e)
   | BreakExpr (a, x, e) -> EBreak (a, x, exp env e)
   | SeqExpr 
       (p,
@@ -192,12 +195,12 @@ let rec exp (env : env) expr = match expr with
   | HintExpr (p, text, e) ->
       let e' = exp env e in
         begin match parse_annotation p text with
-	  | ACheat typ -> ECheat (p, WrittenTyp typ, e')
-          | AUpcast typ -> ESubsumption (p, WrittenTyp typ, e')
-          | ADowncast typ -> EDowncast (p, WrittenTyp typ, e')
-          | ATypAbs (x, t) -> ETypAbs (p, x, WrittenTyp t, e')
-          | ATypApp t -> ETypApp (p, e', t)
-          | AAssertTyp t -> EAssertTyp (p, WrittenTyp t, e')
+	  | ACheat typ -> ECheat (p, desugar_typ p typ, e')
+          | AUpcast typ -> ESubsumption (p, desugar_typ p typ, e')
+          | ADowncast typ -> EDowncast (p, desugar_typ p typ, e')
+          | ATypAbs (x, t) -> ETypAbs (p, x, desugar_typ p t, e')
+          | ATypApp t -> ETypApp (p, e', desugar_typ p t)
+          | AAssertTyp t -> EAssertTyp (p, desugar_typ p t, e')
           | _ -> error p "unexpected hint"
         end
   | FuncExpr (p, _, _) -> 
@@ -206,7 +209,7 @@ let rec exp (env : env) expr = match expr with
       raise (Not_well_formed (p, "function is missing a type annotation"))
   | ForInExpr (p, x, objExpr, body) -> begin match exp env objExpr with
       | EDeref (_, EId (_, obj)) ->
-          let loop_typ = WrittenTyp (TArrow ([TField; TField], TPrim Undef)) in
+          let loop_typ = TArrow ([TField; TField], TPrim Undef) in
             ERec ([("%loop", loop_typ,
                     EFunc (p, [obj; x], { func_typ = loop_typ;
                                           func_loop = true;
@@ -256,18 +259,19 @@ and match_func env expr = match expr with
         let mutable_arg exp id =
           ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) in
         let args = "this"::args in
+	let typ = desugar_typ p typ in
         begin match Typ.match_func_typ typ with
             Some (arg_typs, r) ->
               if List.length args != List.length arg_typs then
                 raise (Not_well_formed (
                          a, sprintf "given %d args but %d arg types"
                            (List.length args) (List.length arg_typs)));
-              Some (WrittenTyp typ,
-		    EFunc (a, args, { func_typ = WrittenTyp typ;
+              Some (typ,
+		    EFunc (a, args, { func_typ = typ;
                                       func_loop = false;
                                       func_owned = IdSet.empty }, 
                            fold_left mutable_arg
-                             (ELabel (a', "%return", WrittenTyp r, exp env' body))
+                             (ELabel (a', "%return", r, exp env' body))
                              args))
           | None -> raise (Not_well_formed (a, "expected a function type"))
         end
@@ -281,7 +285,7 @@ and exp_seq env e = match e with
 
 and func_exp env (_, x, expr) = 
   let e = exp env expr in
-    (x, WrittenTyp (typ_of_value e), e)
+    (x, typ_of_value e, e)
 
 and bind_func_ref (x, t, e) rest_exp = 
   let p = Exp.pos e in

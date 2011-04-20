@@ -1,6 +1,8 @@
 open Prelude
 open Typedjs_syntax
 
+exception Not_wf_typ of string
+
 module Env : sig
   
   type env
@@ -28,8 +30,6 @@ module Env : sig
   (** [set_global_object env class_name] adds all the fields of [class_name]
       to the environment. *)
   val set_global_object : env -> string -> env
-
-  val check_typ : pos -> env -> writ_typ -> typ
 
   (** [subtype end typ1 typ2] assumes that [typ1] and [typ2] are in normal form.
       The [env] is needed for bounded quantification. *)

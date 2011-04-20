@@ -57,14 +57,12 @@ rule token = parse
    | "BAD" { BAD }
    | "*" { STAR }
    | ":" { COLON }
-   | ";" { SEMI }
    | "+" { UNION }
    | "&" { INTERSECTION }
    | "." { DOT }
    | "=" { EQUALS }
    | "constructor" { CONSTRUCTOR }
    | "prototype" { PROTOTYPE }
-   | "proto" { PROTO }
    | "class" { CLASS }
    | "upcast" { UPCAST }
    | "downcast" { DOWNCAST }
