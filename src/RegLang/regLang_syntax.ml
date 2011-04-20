@@ -13,6 +13,13 @@ type regex =
   | Concat of regex * regex
   | Negate of regex (** can't construct from this, just for convenience *)
 
+let compare re1 re2 = match (re1, re2) with
+  | NotInSet s1, NotInSet s2
+  | InSet s1, InSet s2 -> 
+    CharSet.compare s1 s2
+  | _ ->
+    Pervasives.compare re1 re2
+
 let any_str = Star (NotInSet CharSet.empty)
 
 let build_range first last =

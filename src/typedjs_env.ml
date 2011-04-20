@@ -117,7 +117,7 @@ module Env = struct
     if TPSet.mem (s, t) cache then
       cache
     (* workaround for equal: functional value, due to lazy *)
-    else if try s = t with Invalid_argument _ -> false then
+    else if Sb_kinding.simpl_equiv s t then
       cache
     else
       let subtype = subt env in

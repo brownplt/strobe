@@ -17,6 +17,8 @@ type regex =
   | Concat of regex * regex
   | Negate of regex
 
+val compare : regex -> regex -> int
+
 val any_str : regex
 
 val build_range : char -> char -> CharSet.t

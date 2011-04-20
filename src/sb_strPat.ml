@@ -61,6 +61,12 @@ let is_overlapped pat1 pat2 =
 
 let contains pat1 pat2 = RegLang.contains (mach pat1) (mach pat2)
 
+let is_equal pat1 pat2 = match (pat1, pat2) with
+  | Dual (re1, mach1), Dual (re2, mach2) ->
+    RegLang_syntax.compare re1 re2 = 0 (* falsely says not equal negative *)
+  | _ ->
+    contains pat1 pat2 && contains pat2 pat1
+
 let example pat = RegLang.find_word (mach pat)
 
 let pretty pat = match pat with
