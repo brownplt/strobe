@@ -52,8 +52,7 @@ match typ with
       let prop_subst p = match p with
         | PPresent typ -> PPresent (typ_subst x s typ)
         | PMaybe typ -> PMaybe (typ_subst x s typ)
-        | PAbsent -> PAbsent 
-        | PErr -> PErr in
+        | PAbsent -> PAbsent in
       TObject (map (second2 prop_subst) fs, typ_subst x s proto)
   | TRef t -> TRef (typ_subst x s t)
   | TSource t -> TSource (typ_subst x s t)
@@ -201,7 +200,6 @@ module Env = struct
 	| (PPresent t1, PPresent t2) -> subt env cache t1 t2
 	| (PPresent t1, PMaybe t2) -> subt env cache t1 t2
 	| (PMaybe t1, PMaybe t2) -> subt env cache t1 t2
-	| (_, PErr) -> cache (* This case will go soon. *)
 	| _ -> raise Not_subtype
 
   and subtype_object' env (cache : TPSet.t)
@@ -216,8 +214,7 @@ module Env = struct
 
 
   (* subtype_prop encodes this lattice:
-          PErr
-           |
+
         PMaybe T
        /        \
     PPresent  PAbsent
@@ -228,7 +225,6 @@ module Env = struct
     | PMaybe s, PMaybe t -> subt env cache s t
     | PAbsent, PAbsent
     | PAbsent, PMaybe _ -> cache
-    | _, PErr -> cache
     | _ -> raise Not_subtype
     
   and subtypes env ss ts = 
@@ -482,7 +478,6 @@ let rec fields_helper env flds idx_pat =  match flds with
 	    fields_helper env flds' (P.subtract idx_pat pat) in
 	  (Env.typ_union env t fld_typ', rest_pat')
 	| PAbsent -> fields_helper env flds' idx_pat
-	| PErr -> failwith "lookup skull"
     else
       fields_helper env flds' idx_pat
 

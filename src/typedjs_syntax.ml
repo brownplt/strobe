@@ -75,7 +75,6 @@ and prop =
   | PPresent of typ
   | PMaybe of typ
   | PAbsent
-  | PErr
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
@@ -301,7 +300,6 @@ module Pretty = struct
     | PPresent t -> typ t
     | PMaybe t -> horz [ text "maybe"; typ t ]
     | PAbsent -> text "_"
-    | PErr -> text "BAD"
 
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c

@@ -181,7 +181,6 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
                                     (string_of_typ typ) (string_of_typ s) 
                                     (string_of_typ tobj) (string_of_typ tfld)
                                     (string_of_typ typ))
-                  | PErr -> error p "Assigning to error field"
                   | PAbsent -> error p (sprintf "Assigning to absent field")
                 else true in
                 if List.for_all okfield fs then tobj
@@ -380,5 +379,3 @@ and tc_exp_ret env e =
 let typecheck env exp =
   let _ = tc_exp env exp in
   ()
-
-
