@@ -65,7 +65,6 @@ type typ =
   | TId of id
   | TField
   | TRec of id * typ 
-  | TSyn of id (** type synonym *)
   | TApp of typ * typ (** A forall to be substituted on normalization *)
 
 and prop = 
@@ -282,7 +281,6 @@ module Pretty = struct
     | TForall (x, s, t) -> 
         horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
     | TId x -> text x
-    | TSyn (name) -> text name
     | TField -> text "field"
     | TRec (x, t) -> horz [ text x; text "."; typ t ]
   and prop p = match p with

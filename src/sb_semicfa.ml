@@ -243,17 +243,16 @@ end = struct
       | TTop -> rtany
       | TBot -> RTSet.empty
       | TForall _ -> rtany
-      | TId _ -> rtany (* TODO: should be empty!!! *)
+      | TId x -> rt_of_typ syns (IdMap.find x syns)
       | TField -> rtany
       | TRec (_, t) -> rt t
-      | TSyn x -> rt (IdMap.find x syns)
       | TApp (t1, t2) -> rtany
 
   let runtime syns t : Absval.t = Absval.Set (rt_of_typ syns t)
 
   let from_typ_env typ_env owned =
     { binds = 
-        IdMap.mapi (fun _ t -> runtime (TypEnv.syns typ_env) t) 
+        IdMap.mapi (fun _ t -> runtime (Typedjs_env.typid_env typ_env) t) 
           (TypEnv.id_env typ_env);
       owned = owned }
 

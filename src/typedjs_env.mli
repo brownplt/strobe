@@ -26,7 +26,6 @@ module Env : sig
 
   val dom : env -> IdSet.t
 
-
   (** [set_global_object env class_name] adds all the fields of [class_name]
       to the environment. *)
   val set_global_object : env -> string -> env
@@ -48,8 +47,6 @@ module Env : sig
 
   val bind_typ : env -> typ -> env * typ
 
-  val syns : env -> typ IdMap.t
-
 end
 
 
@@ -61,13 +58,13 @@ val extend_global_env : Env.env -> env_decl list -> Env.env
     for the type [s] in the type [t]. *)
 val typ_subst : id -> typ -> typ -> typ
 
-val typ_unfold :  typ -> typ
-
 val simpl_typ : Env.env -> typ -> typ
 
 val unify_typ : Env.env -> typ -> typ -> typ IdMap.t option
 
 val fields : pos -> Env.env -> typ -> Sb_strPat.t -> typ
+
+val typid_env : Env.env -> typ IdMap.t
 
 (*
 val operator_env_of_tc_env : Env.env 

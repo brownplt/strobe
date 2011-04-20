@@ -37,7 +37,6 @@ match typ with
   | TPrim _ -> typ
   | TRegex _ -> typ
   | TId y -> if x = y then s else typ
-  | TSyn x -> typ
   | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
   | TIntersect (t1, t2) ->
       TIntersect (typ_subst x s t1, typ_subst x s t2)
@@ -78,9 +77,8 @@ module Env = struct
 
   type env = {
     id_typs : typ IdMap.t; (* type of term identifiers *)
-    lbl_typs : typ IdMap.t;
+    lbl_typs : typ IdMap.t; (* types of labels *)
     typ_ids: typ IdMap.t; (* bounded type variables *)
-    typ_syns : typ IdMap.t; (* type synonyms *)
   }
 
 
@@ -88,7 +86,6 @@ module Env = struct
     id_typs = IdMap.empty;
     lbl_typs = IdMap.empty;
     typ_ids = IdMap.empty;
-    typ_syns = IdMap.empty;
   }
 
   let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
@@ -116,27 +113,6 @@ module Env = struct
     | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) (typ_subst x s t)
     | typ -> (env, typ)
 
-  let un_syn env (t : typ) = match t with
-    | TSyn x -> begin match IdMap.find x env.typ_syns with
-	| TSyn y -> 
-	  (* cheap hack to prevent inf. loops *)
-	  raise (Not_wf_typ (sprintf "%s is an alias of %s, which is also an \
-                                       alias" x y))
-	| t -> t
-    end
-    | t -> t
-
-(*  let rec app_typ env (t : typ) = match t with
-    | TApp (t1, t2) ->
-        begin match t1 with
-          | TSyn x -> 
-              let typ = IdMap.find x env.typ_syns in
-                app_typ env (TApp (typ, t2))
-          | TForall (x, s, t) -> typ_subst x t2 t
-          | _ -> raise (Not_wf_typ (sprintf "Expected a quantified type in TApp"))
-        end
-    | _ -> raise (Not_wf_typ ("Can only apply TApp")) *)
-
   let rec subt env (cache : TPSet.t) s t : TPSet.t= 
     if TPSet.mem (s, t) cache then
       cache
@@ -146,11 +122,7 @@ module Env = struct
     else
       let subtype = subt env in
       let cache = TPSet.add (s, t) cache in
-      match s, t with
-        | TApp _, _ -> subtype cache (normalize_typ env s) t
-        | _, TApp _ -> subtype cache s (normalize_typ env t)
-        | TSyn x, _ -> subtype cache (IdMap.find x env.typ_syns) t
-        | _, TSyn y -> subtype cache s (IdMap.find y env.typ_syns)
+      match simpl_typ env s, simpl_typ env t with
         | TPrim Int, TPrim Num -> cache
         | TRegex pat1, TRegex pat2 ->
             if P.contains pat1 pat2 then cache 
@@ -274,55 +246,30 @@ module Env = struct
     | false, true -> t
     | false, false -> TIntersect (s, t)
 
-  and normalize_typ env typ = match typ with
-    | TPrim _ -> typ
-    | TApp (s, t) -> begin match un_syn env (normalize_typ env s) with
-        | TForall (x, TTop, u) -> typ_subst x (normalize_typ env t) u
-	| s' -> raise
+  and simpl_typ env typ = match typ with
+    | TPrim _ 
+    | TUnion _
+    | TIntersect _
+    | TRegex _
+    | TArrow _
+    | TRef _
+    | TSource _
+    | TSink _
+    | TTop _
+    | TBot _
+    | TField _
+    | TForall _ -> typ
+    | TRec (x, t) -> simpl_typ env (typ_subst x typ t)
+    | TId x -> simpl_typ env (IdMap.find x env.typ_ids)
+    | TApp (t1, t2) -> begin match simpl_typ env t1 with
+	| TForall (x, TTop, u) -> 
+	  simpl_typ env (typ_subst x t2 u)
+	| _ -> raise
 	  (Not_wf_typ (sprintf "%s in type-application position"
-			 (string_of_typ s')))
+			 (string_of_typ t1)))
     end
-    | TUnion (s, t) -> 
-        typ_union env (normalize_typ env s) (normalize_typ env t)
-    | TIntersect (s, t) -> 
-        typ_intersect env (normalize_typ env s) (normalize_typ env t)
-    | TRegex _ -> typ
     | TObject (fs, proto) ->
-      let check_overlap (pat1, _) (pat2, _) =  
-	match P.example (P.intersect pat1 pat2) with
-	  | None -> ()
-	  | Some str ->
-	    raise (Not_wf_typ 
-		     (sprintf "%s and %s are overlapped. E.g.,\n%s\n\
-                               is in both patterns." 
-			(P.pretty pat1) (P.pretty pat2) str)) in
-      let _ = List.iter_pairs check_overlap fs in
-      TObject (map (second2 (normalize_prop env)) fs, normalize_typ env proto)
-    | TArrow (args, result) ->
-        TArrow (map (normalize_typ env) args,
-                normalize_typ env result)
-    | TRef t -> TRef (normalize_typ env t)
-    | TSource t -> TSource (normalize_typ env t)
-    | TSink t -> TSink (normalize_typ env t)
-    | TTop -> TTop
-    | TBot -> TBot
-    | TField -> TField
-    | TId x ->
-        if IdMap.mem x env.typ_ids then typ
-        else raise (Not_wf_typ ("the type variable " ^ x ^ " is unbound"))
-    | TForall (x, s, t) -> 
-        let s = normalize_typ env s in
-          TForall (x, s, normalize_typ (bind_typ_id x s env) t)
-    | TRec (x, t) ->
-      TRec (x, normalize_typ (bind_typ_id x typ env) t)
-    | TSyn x ->
-      if IdMap.mem x env.typ_syns then typ
-      else raise (Not_wf_typ (x ^ " is not a type"))
-  and normalize_prop env prop = match prop with
-    | PPresent typ -> PPresent (normalize_typ env typ)
-    | PMaybe typ -> PMaybe (normalize_typ env typ)
-    | PAbsent -> PAbsent
-    | PErr -> PErr
+      TObject (fs, simpl_typ env proto)
 
   let basic_static env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env (TPrim Num) typ
@@ -336,8 +283,8 @@ module Env = struct
     | RT.Num -> typ_union env (TPrim Num) typ
     | RT.Re _ -> typ_union env (TRegex any_fld) typ
     | RT.Bool -> typ_union env typ_bool typ
-    | RT.Function -> typ_union env (TObject ([], TSyn "Function")) typ 
-    | RT.Object -> typ_union env (TObject ([], TSyn "Object")) typ
+    | RT.Function -> typ_union env (TObject ([], TId "Function")) typ 
+    | RT.Object -> typ_union env (TObject ([], TId "Object")) typ
     | RT.Undefined -> typ_union env (TPrim Undef) typ
 
   let rtany = 
@@ -386,11 +333,10 @@ module Env = struct
     | TId _ -> typ
     | TRec (x, t) -> let t' = TRec (x, static cs rt t) in
                      (match t' with TRec (_, TBot) -> TBot | typ -> typ)
-    | TSyn _ -> typ
     | TApp _ -> typ
 
   let rec set_global_object env cname =
-    let ci = IdMap.find cname env.typ_syns in
+    let ci = IdMap.find cname env.typ_ids in
     match ci with
       | TRef (TObject (fs, _)) ->
         let add_field env ((x : field), (p : prop)) = 
@@ -402,8 +348,6 @@ module Env = struct
         List.fold_left add_field env fs
       | _ -> 
         raise (Not_wf_typ (cname ^ " global must be an object"))
-
-  let syns env = env.typ_syns
 
 end
 
@@ -433,11 +377,11 @@ let extend_global_env env lst =
       else
         Env.bind_id x (desugar_typ p typ) env
     | EnvType (p, x, t) ->
-      if IdMap.mem x env.Env.typ_syns then
+      if IdMap.mem x env.Env.typ_ids then
 	raise (Not_wf_typ (sprintf "the type %s is already defined" x))
       else
 	{ env with 
-	  Env.typ_syns = IdMap.add x (desugar_typ p t) env.Env.typ_syns }
+	  Env.typ_ids = IdMap.add x (desugar_typ p t) env.Env.typ_ids }
   in List.fold_left add env lst
 
 (*
@@ -460,12 +404,7 @@ let operator_env_of_tc_env tc_env =
     IdMap.fold fn (Env.id_env tc_env) IdMap.empty
 *)
 
-let typ_unfold typ = match typ with
-    | TRec (x, t) -> typ_subst x typ t
-    | _ -> typ
-
-let rec simpl_typ env typ = typ_unfold (Env.un_syn env typ)
-
+let simpl_typ = Env.simpl_typ
 
 let apply_subst subst typ = IdMap.fold typ_subst subst typ
 
@@ -500,7 +439,6 @@ let rec unify env (subst : typ IdMap.t option) (s : typ) (t : typ)  =
       else List.fold_left2 (unify env) subst (s3 :: s2s) (t3 :: t2s)
   | TApp (s1, s2), TApp (t1, t2) -> 
       unify env (unify env subst s1 t1) s2 t2
-  | TSyn x1, TSyn x2 -> if x1 = x2 then subst else None
   | TObject (fs1, p1), TObject (fs2, p2) ->
       if List.length fs1 != List.length fs2 then None
       else
@@ -543,12 +481,10 @@ let rec fields_helper env flds idx_pat =  match flds with
     else
       fields_helper env flds' idx_pat
 
-let rec fields p env obj_typ idx_pat = match typ_unfold obj_typ with
+let rec fields p env obj_typ idx_pat = match simpl_typ env obj_typ with
   | TObject (flds, TPrim Null) -> 
     let (fld_typ, rest_pat) = fields_helper env flds idx_pat in
     fld_typ
-  | TObject (flds, TSyn abbrev) ->
-    fields p env (TObject (flds, IdMap.find abbrev (Env.syns env))) idx_pat
   | TObject (flds, TRef proto)
   | TObject (flds, TSource proto) ->
     let (fld_typ, rest_pat) = fields_helper env flds idx_pat in
@@ -561,3 +497,5 @@ let rec fields p env obj_typ idx_pat = match typ_unfold obj_typ with
   | obj_typ -> 
     failwith (sprintf "fields expected object, received %s"
 		(string_of_typ obj_typ))
+
+let typid_env env = env.Env.typ_ids

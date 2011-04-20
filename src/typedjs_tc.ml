@@ -18,11 +18,8 @@ let mk_array_typ p env elt_typ =
   TRef (TObject
 	  ([(array_idx_pat, PMaybe elt_typ);
 	    (Sb_strPat.singleton "length", PPresent (TPrim Int))],
-	   (TSyn "Array_proto")))
+	   (TId "Array_proto")))
 	  
-
-(*   TApp (TSyn "Array", tarr) *)
-
 let error_on_unreachable = ref true
 
 let disable_unreachable_check () =
@@ -156,7 +153,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       let mk_field (name, exp) = 
 	(Sb_strPat.singleton name, PPresent (tc_exp env exp)) in
       (* TODO: everything else hsould be absent *)
-      TObject (map mk_field fields, TSyn "Object")
+      TObject (map mk_field fields, TId "Object")
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (un_null (tc_exp env obj)), 
       simpl_typ env (tc_exp env field) with
