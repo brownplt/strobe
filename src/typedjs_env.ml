@@ -62,8 +62,6 @@ let rec typ_subst x s typ = match typ with
       TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
   | TObject flds ->
       TObject (map (second2 (prop_subst x s)) flds)
-  | TSimpleObject flds ->
-    TSimpleObject (map (second2 (prop_subst x s)) flds)
   | TRef t -> TRef (typ_subst x s t)
   | TSource t -> TSource (typ_subst x s t)
   | TSink t -> TSink (typ_subst x s t)
@@ -146,7 +144,6 @@ module Env = struct
     | TTop _
     | TBot _
     | TLambda _
-    | TSimpleObject _
     | TObject _
     | TForall _ -> typ
     | TRec (x, t) -> simpl_typ env (typ_subst x typ t)
@@ -341,9 +338,7 @@ module Env = struct
     | TPrim (Undef) -> 
         if RTSet.mem RT.Undefined rt then typ else TBot
           (* any other app will be an object from a constructor *)
-    | TRef (TSimpleObject _)
     | TRef (TObject _) -> if RTSet.mem RT.Object rt then typ else TBot
-    | TSimpleObject _
     | TObject _ -> failwith "Static got a functional object"
     | TRef t -> TRef t
     | TSource t -> TSource t

@@ -59,11 +59,6 @@ type typ =
       (* The list holds everything that's typed.
          The second type is the prototype *)
   | TObject of (field * prop) list
-  | TSimpleObject of (field * prop) list
-    (** If [obj] has type [TSimpleObject ((x, t)::rest)] then, [obj.x]
-	gauranteed to produce a [t]-typed value. However, the type does not
-	specify the field's position on the prototype chain. Therefore, setting
-	[obj.x] might create a new field. *)
   | TRegex of field
   | TRef of typ
   | TSource of typ
@@ -216,8 +211,6 @@ module Typ = struct
   let obj_cover (typ : typ) = match typ with
     | TObject flds ->
       fold_left P.union P.empty (map fst2 flds)
-    | TSimpleObject flds ->
-      fold_left P.union P.empty (map fst2 flds)
     | _ ->
       raise (Invalid_argument "obj_cover requires an object type")
 
@@ -302,8 +295,6 @@ module Pretty = struct
               text "->";
               typ r_typ ]
     | TObject flds -> braces (vert (map field flds))
-    | TSimpleObject flds ->
-      braces (braces (vert (map field flds)))
     | TRef s -> horz [ text "Ref"; parens (typ s) ]
     | TSource s -> horz [ text "Src"; parens (typ s) ]
     | TSink s -> horz [ text "Snk"; parens (typ s) ]
