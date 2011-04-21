@@ -70,6 +70,8 @@ let rec typ_subst x s typ = match typ with
   (* omg this stuff is NOT capture free ... *)
   | TLambda (y, k, t) ->
     TLambda (y, k, typ_subst x s t)
+  | TFix (y, k, t) ->
+    TFix (y, k, typ_subst x s t)
   | TForall (y, t1, t2) -> 
       if x = y then 
         typ
@@ -146,6 +148,7 @@ module Env = struct
     | TLambda _
     | TObject _
     | TForall _ -> typ
+    | TFix (x, k, t) -> simpl_typ env (typ_subst x typ t)
     | TRec (x, t) -> simpl_typ env (typ_subst x typ t)
     | TId x -> simpl_typ env (IdMap.find x env.typ_ids)
     | TApp (t1, t2) -> begin match simpl_typ env t1 with
@@ -355,6 +358,7 @@ module Env = struct
     | TRec (x, t) -> let t' = TRec (x, static cs rt t) in
                      (match t' with TRec (_, TBot) -> TBot | typ -> typ)
     | TLambda _ -> failwith "TLambda in static"
+    | TFix _ -> failwith "TLambda in static"
     | TApp _ -> typ
 
   let rec set_global_object env cname =

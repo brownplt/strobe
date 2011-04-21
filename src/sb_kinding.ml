@@ -3,6 +3,7 @@ open Typedjs_syntax
 
 module P = Sb_strPat
 
+(** Decides if two types are syntactically equal. This helps subtyping. *)
 let rec simpl_equiv (typ1 : typ) (typ2 : typ) : bool =
   match (typ1, typ2) with
     | TTop, TTop
@@ -33,6 +34,9 @@ let rec simpl_equiv (typ1 : typ) (typ2 : typ) : bool =
     | TObject flds1, TObject flds2 ->
       List.length flds1 = List.length flds2
       && List.for_all2 simpl_equiv_fld flds1 flds2
+    | TLambda (x1, k1, t1), TFix (x2, k2, t2)
+    | TFix (x1, k1, t1), TFix (x2, k2, t2) ->
+      x1 = x2 && k1 = k2 && simpl_equiv t1 t2
     | _, _ -> false
 
 and simpl_equiv_fld (pat1, fld1) (pat2, fld2) = 

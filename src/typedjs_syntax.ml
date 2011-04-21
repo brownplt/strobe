@@ -68,8 +68,9 @@ type typ =
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TId of id
   | TRec of id * typ 
-  | TLambda of id * kind * typ
+  | TLambda of id * kind * typ (** type operator *)
   | TApp of typ * typ (** type operator application *)
+  | TFix of id * kind * typ (** recursive type operators *)
 
 and prop = 
   | PPresent of typ
@@ -259,6 +260,11 @@ module Pretty = struct
   open Format
   open FormatExt
 
+  let rec kind k = match k with
+    | KStar -> text "*"
+    | KArrow (KArrow _ as k1, k2) -> horz [parens (kind k1); text "=>"; kind k2]
+    | KArrow (k1, k2) -> horz [kind k1; text "=>"; kind k2]
+
   let rec typ t  = match t with
     | TTop -> text "Any"
     | TBot -> text "DoesNotReturn"
@@ -271,7 +277,9 @@ module Pretty = struct
        | Undef -> "Undef"
     end
     | TLambda (x, k, t) -> 
-      horz [ text "Lambda "; text x; typ t ]
+      horz [ text "Lambda "; text x; text "::"; kind k; typ t ]
+    | TFix (x, k, t) -> 
+      horz [ text "Fix "; text x; text "::"; kind k; typ t ]
     | TApp (t1, t2) -> horz [typ t1; text "<"; typ t2; text ">"]
     | TRegex pat -> 
         squish [text "/"; text (Sb_strPat.pretty pat); text "/"]
