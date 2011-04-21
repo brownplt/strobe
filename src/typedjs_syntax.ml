@@ -152,7 +152,8 @@ module WritTyp = struct
     | Forall of id * t * t
     | Rec of id * t
     | Syn of id
-    | Lambda of id * t
+    | Lambda of id * kind * t
+    | Fix of id * kind * t
     | App of t * t
        
   and f = 
@@ -395,6 +396,8 @@ end
 let string_of_typ = FormatExt.to_string Pretty.p_typ
 let string_of_exp = FormatExt.to_string Pretty.p_exp
 let string_of_prop = FormatExt.to_string Pretty.p_prop
+let string_of_kind = FormatExt.to_string Pretty.kind
+
 let assigned_free_vars (e : exp) = 
   let rec exp : exp -> IdSet.t = function
     | EConst _ -> IdSet.empty

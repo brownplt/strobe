@@ -62,8 +62,9 @@ let rec typ (writ_typ : W.t) : typ = match writ_typ with
   | W.Id x -> TId x
   | W.App (t1, t2) -> TApp (typ t1, typ t2)
   | W.Forall (x, s, t) -> TForall (x, typ s, typ t)
-  | W.Lambda (x, t) -> TLambda (x, KStar, typ t)
   | W.Rec (x, t) -> TRec (x, typ t)
+  | W.Lambda (x, k, t) -> TLambda (x, k, typ t)
+  | W.Fix (x, k, t) -> TFix (x, k, typ t)
 
 and fld (writ_fld : W.f) : pat * prop = match writ_fld with
   | W.Present (pat, t) -> (pat, PPresent (typ t))

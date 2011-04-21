@@ -11,10 +11,12 @@ module W = Typedjs_syntax.WritTyp
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
        CHEAT NULL TRUE FALSE REC INTERSECTION UNDERSCORE BAD
-       HASHBRACE EQUALS TYPE QUES BANG
+       HASHBRACE EQUALS TYPE QUES BANG TYPREC TYPLAMBDA THICKARROW
+       COLONCOLON
        
 
-%right UNION INTERSECTION
+%right UNION INTERSECTION THICKARROW 
+%left LANGLE
 
 %start typ_ann
 %start env
@@ -23,6 +25,11 @@ module W = Typedjs_syntax.WritTyp
 %type <Typedjs_syntax.env_decl list> env
 
 %%
+
+kind :
+  | STAR { KStar }
+  | LPAREN kind RPAREN { $2 }
+  | kind THICKARROW kind { KArrow ($1, $3) }
 
 args
   :  { [] }
@@ -72,7 +79,7 @@ arg_typ
   | LPAREN typ RPAREN { $2 }
   | TID { W.Id $1 }
   | ID { W.Syn $1 }
-  | ID LANGLE typ RANGLE { W.App (W.Syn $1, $3) }
+  | arg_typ LANGLE typ RANGLE { W.App ($1, $3) }
 
 typ 
   : arg_typ { $1 }
@@ -81,6 +88,8 @@ typ
   | FORALL ID LTCOLON typ DOT typ { W.Forall ($2, $4, $6) }
   | FORALL ID DOT typ { W.Forall ($2, W.Top, $4) }
   | REC ID DOT typ { W.Rec ($2, $4) }
+  | TYPLAMBDA ID COLONCOLON kind DOT typ { W.Lambda ($2, $4, $6) }
+  | TYPREC ID COLONCOLON kind DOT typ { W.Fix ($2, $4, $6) }
 
 
 annotation :
@@ -106,7 +115,7 @@ any_id :
 
 env_decl :
   | TYPE any_id LANGLE ID RANGLE EQUALS typ 
-      { EnvType (($startpos, $endpos), $2, W.Lambda ($4, $7)) }
+      { EnvType (($startpos, $endpos), $2, W.Lambda ($4, KStar, $7)) }
   | TYPE any_id EQUALS typ { EnvType (($startpos, $endpos), $2, $4) }
   | VAL ID COLON typ { EnvBind (($startpos, $endpos), $2, $4) }
   | ID COLON typ { EnvBind (($startpos, $endpos), $1, W.Ref $3) }

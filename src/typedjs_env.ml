@@ -90,6 +90,9 @@ and prop_subst x s p = match p with
   | PAbsent -> PAbsent
 
 
+
+
+
 module Env = struct
 
   type class_info = {
@@ -100,7 +103,7 @@ module Env = struct
   type env = {
     id_typs : typ IdMap.t; (* type of term identifiers *)
     lbl_typs : typ IdMap.t; (* types of labels *)
-    typ_ids: typ IdMap.t; (* bounded type variables *)
+    typ_ids: (typ * kind) IdMap.t; (* bounded type variables *)
   }
 
 
@@ -110,11 +113,19 @@ module Env = struct
     typ_ids = IdMap.empty;
   }
 
+  let kind_check env typ =
+    Sb_kinding.kind_check
+      (IdMap.map (fun (_, k) -> k) env.typ_ids)
+      typ
+
   let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
 
   let bind_lbl x t env = { env with lbl_typs = IdMap.add x t env.lbl_typs }
 
-  let bind_typ_id x t env = { env with typ_ids = IdMap.add x t env.typ_ids }
+  let bind_typ_id x t env = 
+    let k = kind_check env t in
+    { env with 
+      typ_ids = IdMap.add x (t, k) env.typ_ids }
 
   let lookup_id x env = IdMap.find x env.id_typs
 
@@ -150,7 +161,7 @@ module Env = struct
     | TForall _ -> typ
     | TFix (x, k, t) -> simpl_typ env (typ_subst x typ t)
     | TRec (x, t) -> simpl_typ env (typ_subst x typ t)
-    | TId x -> simpl_typ env (IdMap.find x env.typ_ids)
+    | TId x -> simpl_typ env (fst2 (IdMap.find x env.typ_ids))
     | TApp (t1, t2) -> begin match simpl_typ env t1 with
 	| TLambda (x, KStar, u) -> 
 	  simpl_typ env (typ_subst x t2 u)
@@ -183,6 +194,8 @@ module Env = struct
         | TRegex pat1, TRegex pat2 ->
           if P.contains pat1 pat2 then cache 
             else raise (Not_subtype (MismatchTyp (TRegex pat1, TRegex pat2)))
+
+      (* TId cases should be handled by simpl_typ 
         | TId x, TId y -> 
 	  if x = y then 
 	    cache 
@@ -196,6 +209,7 @@ module Env = struct
           let s = IdMap.find y env.typ_ids in (* S-TVar *)
             subtype cache t s (* S-Trans *)
           with Not_found -> failwith (sprintf "failed looking up %s" y) end
+      *)
         | TIntersect (s1, s2), _ -> 
           begin 
             try subtype cache s1 t
@@ -364,7 +378,7 @@ module Env = struct
   let rec set_global_object env cname =
     let ci = IdMap.find cname env.typ_ids in
     match ci with
-      | TRef (TObject fs) ->
+      | TRef (TObject fs), KStar ->
         let add_field env ((x : field), (p : prop)) = 
 	  begin match P.singleton_string x, p with
             | (Some s, PPresent t) -> bind_id s (TRef t) env
@@ -402,12 +416,14 @@ let extend_global_env env lst =
         raise (Not_wf_typ (x ^ " is already bound in the environment"))
       else
         Env.bind_id x (desugar_typ p typ) env
-    | EnvType (p, x, t) ->
+    | EnvType (p, x, writ_typ) ->
       if IdMap.mem x env.Env.typ_ids then
 	raise (Not_wf_typ (sprintf "the type %s is already defined" x))
       else
+	let t = desugar_typ p writ_typ in
+	let k = Env.kind_check env t in
 	{ env with 
-	  Env.typ_ids = IdMap.add x (desugar_typ p t) env.Env.typ_ids }
+	  Env.typ_ids = IdMap.add x (t, k) env.Env.typ_ids }
   in List.fold_left add env lst
 
 (*
@@ -536,4 +552,4 @@ let rec fields p env obj_typ idx_pat = match simpl_typ env obj_typ with
 	     (p, sprintf "expected object, received %s" 
 	       (string_of_typ obj_typ)))
 
-let typid_env env = env.Env.typ_ids
+let typid_env env = IdMap.map (fun (t, _) -> t) env.Env.typ_ids

@@ -46,5 +46,91 @@ and simpl_equiv_fld (pat1, fld1) (pat2, fld2) =
       | PMaybe t1, PMaybe t2 ->
 	simpl_equiv t1 t2
       | PAbsent, PAbsent -> true
+      | _ -> false
     end
-      
+
+exception Kind_error of string
+
+type kind_env = kind IdMap.t
+
+let kind_mismatch typ calculated_kind expected_kind = 
+  raise 
+    (Kind_error 
+       (sprintf "Expected kind %s, but got kind %s for type:\n%s"
+	  (string_of_kind expected_kind)
+	  (string_of_kind calculated_kind)
+	  (string_of_typ typ)))
+
+
+let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
+  | TTop
+  | TBot
+  | TRegex _
+  | TPrim _ -> KStar
+  | TUnion (t1, t2)
+  | TIntersect (t1, t2) ->
+    begin match kind_check env t1, kind_check env t2 with
+      | KStar, KStar -> KStar
+      | k1, KStar -> kind_mismatch t1 k1 KStar
+      | _, k2 -> kind_mismatch t2 k2 KStar
+    end
+  | TRef t
+  | TSource t
+  | TSink t ->
+    begin match kind_check env t with
+      | KStar -> KStar
+      | k -> kind_mismatch t k KStar
+    end
+  | TArrow (arg_typs, result_typ) ->
+    let assert_kind t = match kind_check env t with
+      | KStar -> ()
+      | k -> kind_mismatch t k KStar in
+    List.iter assert_kind (result_typ :: arg_typs);
+    KStar
+  | TObject flds ->
+    List.iter (assert_fld_kind env) flds;
+    KStar
+  | TId x -> 
+    begin 
+      try IdMap.find x env
+      with Not_found ->
+	raise (Kind_error (sprintf "type variable %s is unbound" x))
+    end
+  | TForall (x, t1, t2) ->
+    begin match kind_check env t1, kind_check (IdMap.add x KStar env) t2 with
+      | KStar, KStar -> KStar
+      | k1, KStar -> kind_mismatch t1 k1 KStar
+      | _, k2 -> kind_mismatch t2 k2 KStar
+    end
+  | TRec (x, t) ->
+    begin match kind_check (IdMap.add x KStar env) t with
+      | KStar -> KStar
+      | k -> kind_mismatch t k KStar
+    end
+  | TLambda (x, k, t) ->
+    KArrow (k, kind_check (IdMap.add x k env) t)
+  | TFix (x, k, t) ->
+    let k' = kind_check (IdMap.add x k env) t in
+    if  k' = k then k
+    else kind_mismatch typ k' k
+  | TApp (t1, t2) ->
+    begin match kind_check env t1, kind_check env t2 with
+      | KArrow (k_expected, k_result), k_arg ->
+	if k_expected = k_arg then
+	  k_result
+	else
+	  kind_mismatch t2 k_arg k_expected
+      | KStar, _ ->
+	raise (Kind_error 
+		 (sprintf "not a type operator:\n%s" (string_of_typ t1)))
+    end
+
+and assert_fld_kind (env : kind_env) (_, prop) = match prop with
+  | PPresent t
+  | PMaybe t ->
+    begin match kind_check env t with
+      | KStar -> ()
+      | k -> kind_mismatch t k KStar
+    end
+  | PAbsent ->
+    ()

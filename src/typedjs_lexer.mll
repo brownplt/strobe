@@ -34,6 +34,7 @@ rule token = parse
    | "//"[^ '\r' '\n']* [ '\r' '\n' ] { new_line lexbuf; token lexbuf }
 
    | "->" { ARROW }
+   | "=>" { THICKARROW }
    | "(" { LPAREN }
    | ")" { RPAREN }
    | "#{" { HASHBRACE }
@@ -57,6 +58,7 @@ rule token = parse
    | "BAD" { BAD }
    | "*" { STAR }
    | ":" { COLON }
+   | "::" { COLONCOLON }
    | "+" { UNION }
    | "&" { INTERSECTION }
    | "." { DOT }
@@ -69,6 +71,8 @@ rule token = parse
    | "val" { VAL }
    | "forall" { FORALL }
    | "type" { TYPE }
+   | "typlambda" { TYPLAMBDA }
+   | "typrec" { TYPREC }
    | "<:" { LTCOLON }
    | "?" { QUES }
    | "!" { BANG }
