@@ -91,6 +91,7 @@ rule token = parse
    | "null" { NULL }
    | "func" { FUNC }
    | "let" { LET }
+   | "letrec" { REC }
    | "delete" { DELETE }
    | "[" { LBRACK }
    | "]" { RBRACK }
@@ -98,6 +99,7 @@ rule token = parse
    | "," { COMMA }
    | "!" { DEREF }
    | "ref" { REF }
+   | "source" { SOURCE }
    | ":" { COLON }
    | ":=" { COLONEQ }
    | "prim" { PRIM }

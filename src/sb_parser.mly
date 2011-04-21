@@ -33,7 +33,7 @@ let parse_annotation (pos, end_p) str =
 %token UNDEFINED NULL FUNC LET DELETE LBRACE RBRACE LPAREN RPAREN LBRACK
   RBRACK EQUALS COMMA DEREF REF COLON COLONEQ PRIM IF ELSE SEMI
   LABEL BREAK TRY CATCH FINALLY THROW LLBRACK RRBRACK EQEQEQUALS TYPEOF
-  AMPAMP PIPEPIPE RETURN BANGEQEQUALS FUNCTION FIX
+  AMPAMP PIPEPIPE RETURN BANGEQEQUALS FUNCTION FIX SOURCE REC
 
 
 %token EOF
@@ -105,6 +105,8 @@ atom :
    { EDeref (($startpos, $endpos), $2) }
  | REF atom
    { ERef (($startpos, $endpos), RefCell, $2) }
+ | SOURCE atom
+   { ERef (($startpos, $endpos), SourceCell, $2) }
  | TYPEOF atom
      { EPrefixOp (($startpos, $endpos), "typeof", $2) }
 
@@ -163,6 +165,11 @@ seq_exp :
  | cexp { $1 }
  | LET LPAREN ID EQUALS seq_exp RPAREN seq_exp
    { ELet (($startpos, $endpos), $3, $5, $7) }
+ | REC LPAREN ID HINT EQUALS seq_exp RPAREN seq_exp
+   { let t = match parse_annotation ($startpos, $endpos) $4 with
+     | ATyp t -> typ t
+     | _ -> failwith "Expected a type for rec, something else" in
+     ERec ([($3, t, $6)], $8) }
  | cexp SEMI seq_exp
    { ESeq (($startpos, $endpos), $1, $3) }
 
