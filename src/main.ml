@@ -15,12 +15,28 @@ open Typedjs_dyn
 open RegLang
 open RegLang_generate
 
+let parse_sb cin name =
+  let lexbuf = Lexing.from_string cin in
+    try 
+      (* Set the correct filename in lexbuf (for source-tracking). *)
+      lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = name };
+      Sb_parser.prog Sb_lexer.token lexbuf
+    with
+      |  Failure "lexing: empty token" ->
+           failwith (sprintf "lexical error at %s"
+                       (string_of_position 
+                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+      | Sb_parser.Error ->
+           failwith (sprintf "parse error at %s; unexpected token %s"
+                       (string_of_position 
+                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p))
+                       (lexeme lexbuf))
+
 let string_of_cin cin =
   let buf = Buffer.create 5000 in
     Buffer.add_channel buf cin (in_channel_length cin);
     Buffer.contents buf
   
-
 let mk_flag flag desc (default : bool) = 
   let value = ref default in
   let set_flag () = value := not default in
@@ -39,6 +55,8 @@ module Input : sig
   val get_re_test_depth : unit -> int
   val set_re_test_count : int -> unit
   val get_re_test_count : unit -> int
+  val get_sourcetype : unit -> string
+  val set_sourcetype : string -> unit -> unit
 end = struct
 
   let env = ref Env.empty_env
@@ -49,6 +67,8 @@ end = struct
 
   let c = ref None
   let str = ref None
+
+  let sourcetype = ref "js"
 
   let cname = ref "no input specified"
 
@@ -72,6 +92,8 @@ end = struct
   let set_re_test_depth i = re_test_depth := Some i
   let set_re_test_count i = re_test_count := Some i
 
+  let get_sourcetype () = !sourcetype
+  let set_sourcetype (str : string) _ = sourcetype := str
 
   let get_env () = match !global_object with
     | None -> Env.set_global_object !env "Global"
@@ -107,10 +129,14 @@ let action_expr () : unit =
     Exprjs.Pretty.p_expr e std_formatter
 
 let get_typedjs () =
-  let (prog, _) = unique_ids 
-    (Typedjs_fromExpr.from_exprjs (get_env ())
-       (from_javascript (parse_javascript (get_cin ()) (get_cin_name ())))) 
-  in Sb_owned.owned_inference prog
+  let tjs = match get_sourcetype () with
+    | "js" ->     
+        (Typedjs_fromExpr.from_exprjs (get_env ())
+           (from_javascript (parse_javascript (get_cin ()) (get_cin_name ()))))
+    | "sb" -> 
+        (parse_sb (get_cin ()) (get_cin_name ())) in
+  let (prog, _) = unique_ids tjs in 
+    Sb_owned.owned_inference prog
 
 let action_pretypecheck () : unit = 
   let typedjs = get_typedjs () in
@@ -198,6 +224,8 @@ let main () : unit =
       ("-regex-generate", Arg.Int (fun i -> set_re_test_count i;
         (set_action action_reglang) ()),
        "generate <count> random regular expressions");
+      ("-sb", Arg.Unit (set_sourcetype "sb"),
+       "Parse strobe source");
       set_simpl_cps;
       set_print_contracts;
 

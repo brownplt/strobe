@@ -1,0 +1,3 @@
+func(this, x, y, z) /*: [{}] Int * Str * Bool -> Num */ {
+  return 5
+}
