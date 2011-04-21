@@ -3,6 +3,12 @@ open Typedjs_syntax
 
 exception Not_wf_typ of string
 
+type subtype_exn =
+  | MismatchTyp of typ * typ
+  | MismatchFld of (pat * prop) * (pat * prop)
+
+exception Not_subtype of subtype_exn
+
 module Env : sig
   
   type env
@@ -33,6 +39,8 @@ module Env : sig
   (** [subtype end typ1 typ2] assumes that [typ1] and [typ2] are in normal form.
       The [env] is needed for bounded quantification. *)
   val subtype : env -> typ -> typ -> bool
+
+  val assert_subtyp : env -> typ -> typ -> unit
 
   (** [subtypes typs1 typs2] applies [subtype] pairwise to the elements of
       [typs1] and [typs2]. If the lists have unequal lengths, it returns

@@ -198,28 +198,25 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
     let rec check_app tfun =
       begin match tfun with 
         | TArrow (expected_typs, result_typ) ->
-          let arg_typs = 
-            fill (List.length expected_typs - List.length args) 
-              (TPrim Undef) arg_typs in
-          if Env.subtypes env arg_typs expected_typs 
-          then result_typ 
-          else if List.length args = List.length expected_typs  
-          then
-            let typ_pairs = List.combine arg_typs expected_typs in
-            let arg_ix = ref 1 in
-            let find_typ_err (arg_typ, expected_typ) = 
-              if Env.subtype env arg_typ expected_typ 
-              then (incr arg_ix; false)
-              else true in
-            let arg_typ, expected_typ = List.find find_typ_err typ_pairs in
-            raise (Typ_error 
-                     (p, sprintf "argument %d: expected %s, but received %s"
-                       !arg_ix (string_of_typ expected_typ)
-                       (string_of_typ arg_typ)))
-          else raise (Typ_error 
-                        (p, sprintf "arity-mismatch: the function expects %d \
-                                arguments, but %d arguments given"
-                          (List.length expected_typs) (List.length args)))
+	  (* TODO: allow arguments to be elided *)
+          let arg_typs = fill (List.length expected_typs - List.length args) 
+            (TPrim Undef) arg_typs in
+	  if List.length args != List.length expected_typs then
+	    raise (Typ_error 
+                     (p, sprintf "arity-mismatch: the function expects %d \
+                                  arguments, but %d arguments given"
+                       (List.length expected_typs) (List.length args)));
+	  begin
+	    try
+	      let _ = List.iter2 (Env.assert_subtyp env)
+		arg_typs expected_typs in
+	      result_typ
+	    with
+	      | Not_subtype (MismatchTyp (t1, t2)) ->
+		raise (Typ_error
+			 (p, sprintf " %s\nis not a subtype of\n %s"
+			   (string_of_typ t1) (string_of_typ t2)))
+	  end
         | TIntersect (t1, t2) -> 
 	  begin 
 	    try 

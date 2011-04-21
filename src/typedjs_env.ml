@@ -44,6 +44,13 @@ module List = struct
 	    
 end
 
+(* Pair that were mismatched *)
+type subtype_exn =
+  | MismatchTyp of typ * typ
+  | MismatchFld of (pat * prop) * (pat * prop)
+
+exception Not_subtype of subtype_exn
+
 let rec typ_subst x s typ = match typ with
   | TPrim _ -> typ
   | TRegex _ -> typ
@@ -122,8 +129,6 @@ module Env = struct
 
   let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)
 
-  exception Not_subtype
-
   let rec bind_typ env typ : env * typ = match typ with
     | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) (typ_subst x s t)
     | typ -> (env, typ)
@@ -180,7 +185,7 @@ module Env = struct
   let flatten_obj_typ env obj_typ = 
     TSimpleObject (flatten_obj_typ_helper env P.all obj_typ)
 
-  let rec subt env (cache : TPSet.t) s t : TPSet.t= 
+  let rec subt env (cache : TPSet.t) s t : TPSet.t = 
     if TPSet.mem (s, t) cache then
       cache
     (* workaround for equal: functional value, due to lazy *)
@@ -189,12 +194,18 @@ module Env = struct
     else
       let subtype = subt env in
       let cache = TPSet.add (s, t) cache in
-      match simpl_typ env s, simpl_typ env t with
+      let simpl_s = simpl_typ env s in
+      let simpl_t = simpl_typ env t in
+      match simpl_s, simpl_t with
         | TPrim Int, TPrim Num -> cache
         | TRegex pat1, TRegex pat2 ->
           if P.contains pat1 pat2 then cache 
-            else raise Not_subtype
-        | TId x, TId y -> if x = y then cache else raise Not_subtype
+            else raise (Not_subtype (MismatchTyp (TRegex pat1, TRegex pat2)))
+        | TId x, TId y -> 
+	  if x = y then 
+	    cache 
+	  else 
+	    raise (Not_subtype (MismatchTyp (TId x, TId y)))
         | TId x, t -> begin try
           let s = IdMap.find x env.typ_ids in (* S-TVar *)
             subtype cache s t (* S-Trans *)
@@ -206,7 +217,7 @@ module Env = struct
         | TIntersect (s1, s2), _ -> 
           begin 
             try subtype cache s1 t
-            with Not_subtype -> subtype cache s2 t
+            with Not_subtype _ -> subtype cache s2 t
           end
         | _, TIntersect (t1, t2) ->
             subt env (subt env cache s t1) s t2
@@ -214,18 +225,22 @@ module Env = struct
         | _, TUnion (t1, t2) ->
           begin 
             try subtype cache s t1
-            with Not_subtype -> subtype cache s t2
+            with Not_subtype _ -> subtype cache s t2
           end
 	| TArrow (args1, r1), TArrow (args2, r2) ->
           begin
             try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
-            with Invalid_argument _ -> raise Not_subtype (* unequal lengths *)
+            with Invalid_argument _ -> raise (Not_subtype (MismatchTyp (s, t)))
           end
 	| TSimpleObject flds1, TSimpleObject flds2 ->
 	  let f cache fld1 =
 	    fold_left (fun cache fld2 -> subtype_field env cache fld1 fld2)
 	      cache flds2 in
 	  fold_left f cache flds1
+	(*** transitivity: TRef lhs <: TSource lhs <: TSource rhs ***)
+	(* | TRef (TObject (flds, proto) as lhs), 
+	 TSource (TSimpleObject _ as rhs) ->
+	  subtype cache (flatten_obj_typ env lhs) rhs *)
 	| TObject (flds, proto) as lhs, (TSimpleObject _ as rhs) ->
 	  subtype cache (flatten_obj_typ env lhs) rhs
 	| TObject (fs1, p1), TObject (fs2, p2) -> 
@@ -253,7 +268,7 @@ module Env = struct
 	  let env = bind_typ_id x TTop env in
 	  let env = bind_typ_id y TTop env in
 	  subt env cache s t
-        | _ -> raise Not_subtype
+        | _ -> raise (Not_subtype (MismatchTyp (s, t)))
 
   and subtype_field env cache ((pat1, fld1) : field * prop) 
       ((pat2, fld2) : field * prop) : TPSet.t = 
@@ -266,7 +281,7 @@ module Env = struct
 	| (PPresent t1, PPresent t2) -> subt env cache t1 t2
 	| (PPresent t1, PMaybe t2) -> subt env cache t1 t2
 	| (PMaybe t1, PMaybe t2) -> subt env cache t1 t2
-	| _ -> raise Not_subtype
+	| _ -> raise (Not_subtype (MismatchFld ((pat1, fld1), (pat2, fld2))))
 
   and subtype_object' env (cache : TPSet.t)
     (flds1 : (field * prop) list)
@@ -278,34 +293,19 @@ module Env = struct
 	cache' flds2 in
     fold_left g cache flds1
 
-
-  (* subtype_prop encodes this lattice:
-
-        PMaybe T
-       /        \
-    PPresent  PAbsent
-  *)
-  and subtype_prop env cache p1 p2 = match p1, p2 with
-    | PPresent s, PPresent t
-    | PPresent s, PMaybe t
-    | PMaybe s, PMaybe t -> subt env cache s t
-    | PAbsent, PAbsent
-    | PAbsent, PMaybe _ -> cache
-    | _ -> raise Not_subtype
-    
   and subtypes env ss ts = 
     try 
       let _ = List.fold_left2 (subt env) TPSet.empty ss ts in
       true
     with 
       | Invalid_argument _ -> false (* unequal lengths *)
-      | Not_subtype -> false
+      | Not_subtype _ -> false
 
   and subtype env s t = 
     try
       let _ = subt env TPSet.empty s t in
       true
-    with Not_subtype -> false
+    with Not_subtype _ -> false
       | Not_found -> failwith "not found in subtype!!!"
 
   and typ_union cs s t = match subtype cs s t, subtype cs t s with
@@ -319,6 +319,18 @@ module Env = struct
     | true, false -> s (* s <: t *)
     | false, true -> t
     | false, false -> TIntersect (s, t)
+
+  let subtype env s t = 
+    try
+      let _ = subt env TPSet.empty s t in
+      true
+    with Not_subtype _ -> false
+      | Not_found -> failwith "not found in subtype!!!"
+
+  let assert_subtyp env s t = 
+    let _ = subt env TPSet.empty s t in
+    ()
+
 
   let simpl_static env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env (TPrim Num) typ

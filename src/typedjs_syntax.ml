@@ -298,19 +298,20 @@ module Pretty = struct
               text "->";
               typ r_typ ]
     | TObject (fs, proto) ->
-          braces (horz ([text "proto:"; typ proto; text ","] @
-                          (intersperse (text ",") (map field fs))))
+          braces (vert ((horz [text "proto:"; typ proto; text ","]) ::
+                          (map field fs)))
     | TSimpleObject flds ->
-      braces (braces (horz (intersperse (text ",") (map field flds))))
-    | TRef s -> horz [ text "ref"; parens (typ s) ]
-    | TSource s -> horz [ text "source"; parens (typ s) ]
-    | TSink s -> horz [ text "sink"; parens (typ s) ]
+      braces (braces (vert (map field flds)))
+    | TRef s -> horz [ text "Ref"; parens (typ s) ]
+    | TSource s -> horz [ text "Src"; parens (typ s) ]
+    | TSink s -> horz [ text "Snk"; parens (typ s) ]
     | TForall (x, s, t) -> 
         horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
     | TId x -> text x
-    | TRec (x, t) -> horz [ text x; text "."; typ t ]
+    | TRec (x, t) -> horz [ text "rec"; text x; text "."; typ t ]
 
-  and field  (k, p) = horz [ text (Sb_strPat.pretty k); text ":"; prop p ]
+  and field  (k, p) = horz [ text (Sb_strPat.pretty k); text ":"; prop p;
+			     text "," ]
 
   and prop p = match p with
     | PPresent t -> typ t
