@@ -73,6 +73,7 @@ type typ =
   | TFix of id * kind * typ (** recursive type operators *)
 
 and prop = 
+  | PInherited of typ
   | PPresent of typ
   | PMaybe of typ
   | PAbsent
