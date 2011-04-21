@@ -1,0 +1,9 @@
+letrec (pt_proto /*: {move : forall a <: {x : Int} . ['a] Int -> 'a, proto : Object} */ = 
+        ref {move : func(this, x) 
+             /*: forall a <: {x : Int} . ['a] Int -> 'a */ {
+                 return
+                 this := !this["x" = prim("+", !this["x"], 5)];
+                 this
+             }})
+let (pt = ref { x : 5, proto: pt_proto })
+!pt["move"](pt, 5)
