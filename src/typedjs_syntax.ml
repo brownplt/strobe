@@ -143,7 +143,6 @@ module WritTyp = struct
     | Inter of t * t
     | Arrow of t option * t list * t (** [Arrow (this, args, result)] *)
     | Object of f list
-    | SimpleObject of f list
     | Pat of field
     | Ref of t
     | Source of t

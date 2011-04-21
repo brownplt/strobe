@@ -68,8 +68,6 @@ arg_typ
   | arg_typ UNION arg_typ { W.Union ($1, $3) }
   | arg_typ INTERSECTION arg_typ { W.Inter ($1, $3) }
   | LBRACE fields RBRACE { W.Ref (W.Object $2) }
-  | LBRACE LBRACE fields RBRACE RBRACE { W.Ref (W.SimpleObject $3) }
-  | HASHBRACE LBRACE fields RBRACE RBRACE { W.Source (W.SimpleObject $3) }
   | HASHBRACE fields RBRACE { W.Source (W.Object $2) }
   | LPAREN typ RPAREN { $2 }
   | TID { W.Id $1 }
