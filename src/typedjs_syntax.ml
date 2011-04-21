@@ -43,6 +43,10 @@ type prim =
 type field = Sb_strPat.t
 type pat = Sb_strPat.t
 
+let proto_str = "proto"
+
+let proto_pat = Sb_strPat.singleton proto_str
+
 type kind = 
   | KStar
   | KArrow of kind * kind
@@ -54,7 +58,7 @@ type typ =
   | TArrow of typ list * typ
       (* The list holds everything that's typed.
          The second type is the prototype *)
-  | TObject of (field * prop) list * typ
+  | TObject of (field * prop) list
   | TSimpleObject of (field * prop) list
     (** If [obj] has type [TSimpleObject ((x, t)::rest)] then, [obj.x]
 	gauranteed to produce a [t]-typed value. However, the type does not
@@ -210,7 +214,7 @@ module Typ = struct
   (** [obj_cover t] returns a pattern that matches the strings in the object's
       domain. When [t] is a [TObject _], it excludes the prototype. *)
   let obj_cover (typ : typ) = match typ with
-    | TObject (flds, _) ->
+    | TObject flds ->
       fold_left P.union P.empty (map fst2 flds)
     | TSimpleObject flds ->
       fold_left P.union P.empty (map fst2 flds)
@@ -297,9 +301,7 @@ module Pretty = struct
                             end) arg_typs));
               text "->";
               typ r_typ ]
-    | TObject (fs, proto) ->
-          braces (vert ((horz [text "proto:"; typ proto; text ","]) ::
-                          (map field fs)))
+    | TObject flds -> braces (vert (map field flds))
     | TSimpleObject flds ->
       braces (braces (vert (map field flds)))
     | TRef s -> horz [ text "Ref"; parens (typ s) ]

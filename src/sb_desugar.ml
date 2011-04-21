@@ -52,8 +52,7 @@ let rec typ (writ_typ : W.t) : typ = match writ_typ with
   | W.Inter (t1, t2) -> TIntersect (typ t1, typ t2)
   | W.Arrow (None, args, r) -> TArrow (map typ args, typ r)
   | W.Arrow (Some this, args, r) -> TArrow ((typ this):: (map typ args), typ r)
-  | W.Object flds -> object_typ false flds
-  | W.SimpleObject flds -> object_typ true flds
+  | W.Object flds -> object_typ flds
   | W.Pat pat -> TRegex pat
   | W.Ref t -> TRef (typ t)
   | W.Source t -> TSource (typ t)
@@ -73,9 +72,9 @@ and fld (writ_fld : W.f) : pat * prop = match writ_fld with
   | W.Skull _ -> error "fld applied to Skull"
   | W.Star _ -> error "fld applied to Star"
 
-and object_typ is_simple (lst : W.f list) =
-  let flds = (* Present, Maybe, Absent, and Skull only *)
-    let (stars, others) = List.partition is_star lst in
+and object_typ (flds : W.f list) =
+  let flds_no_stars =
+    let (stars, others) = List.partition is_star flds in
     match stars with
       | [] -> let skulls = List.filter is_skull others in
 	      begin match skulls with
@@ -90,26 +89,10 @@ and object_typ is_simple (lst : W.f list) =
 	  | Some t -> (W.Maybe (star_pat, t)) :: others
 	end
       | _ -> error "multiple stars (*) in an object type" in
-  List.iter_pairs assert_overlap (List.map pat_of flds);
-  let flds = List.filter (fun f -> not (is_skull f)) flds in
-  let (proto, non_proto_flds) = 
-    if is_simple then
-      (None, flds)
-    else
-      let (proto, non_proto) = 
-	List.partition
-	  (fun fld -> match P.singleton_string (pat_of fld) with
-	    | Some "proto" -> true
-	    | _ -> false)
-	  flds in
-      (Some proto, non_proto) in
-  match proto with
-    | None -> TSimpleObject (map fld non_proto_flds)
-    | Some [W.Present (_, proto_typ)] ->
-      TObject (map fld non_proto_flds, typ proto_typ)
-    | Some [] -> TObject (map fld non_proto_flds, TId "Object")
-    | Some [_] -> error "proto must be definitely present"
-    | Some _ -> error "multiple proto fields found"
+  List.iter_pairs assert_overlap (List.map pat_of flds_no_stars);
+  let flds_no_skulls_stars = 
+    List.filter (fun f -> not (is_skull f)) flds_no_stars in
+  TObject (map fld flds_no_skulls_stars)
 
 
 

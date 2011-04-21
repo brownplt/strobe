@@ -23,6 +23,8 @@ val is_overlapped : t -> t -> bool
 (** [contains pat1 pat2] is true if all strings in [pat1] are also in [pat2]. *)
 val contains : t -> t -> bool
 
+val is_member : string -> t -> bool
+
 val is_equal : t -> t -> bool
 
 (** [example pat] returns an example of a string in [pat]. *)

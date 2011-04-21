@@ -76,6 +76,13 @@ let is_overlapped pat1 pat2 = match pat1, pat2 with
 
 let contains pat1 pat2 = RegLang.contains (mach pat1) (mach pat2)
 
+let is_member str pat = match pat with
+  | Singleton str' -> str = str'
+  | _ -> 
+    RegLang.contains
+      (RegLang.fsm_of_regex (RegLang_syntax.String str))
+      (mach pat)
+
 let is_equal pat1 pat2 = match (pat1, pat2) with
   | Singleton str1, Singleton str2 -> str1 = str2
   | Dual (re1, mach1), Dual (re2, mach2) ->

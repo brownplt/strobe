@@ -60,8 +60,8 @@ let rec typ_subst x s typ = match typ with
       TIntersect (typ_subst x s t1, typ_subst x s t2)
   | TArrow (t2s, t3)  ->
       TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
-  | TObject (flds, proto) -> 
-      TObject (map (second2 (prop_subst x s)) flds, typ_subst x s proto)
+  | TObject flds ->
+      TObject (map (second2 (prop_subst x s)) flds)
   | TSimpleObject flds ->
     TSimpleObject (map (second2 (prop_subst x s)) flds)
   | TRef t -> TRef (typ_subst x s t)
@@ -147,6 +147,7 @@ module Env = struct
     | TBot _
     | TLambda _
     | TSimpleObject _
+    | TObject _
     | TForall _ -> typ
     | TRec (x, t) -> simpl_typ env (typ_subst x typ t)
     | TId x -> simpl_typ env (IdMap.find x env.typ_ids)
@@ -157,8 +158,6 @@ module Env = struct
 	  (Not_wf_typ (sprintf "%s in type-application position"
 			 (string_of_typ t1)))
     end
-    | TObject (fs, proto) ->
-      TObject (fs, simpl_typ env proto)
 
 
   let get_fld idx (pat, prop) = 
@@ -167,24 +166,6 @@ module Env = struct
       None
     else 
       Some (pat', prop)
-
-  let rec flatten_obj_typ_helper env (idx : pat) (typ : typ) =
-    match simpl_typ env typ with
-      | TObject (flds, TSource proto)
-      | TObject (flds, TRef proto) ->
-	let proto_idx = 
-	  P.subtract idx (* idx - present patterns *)
-	  (fold_left P.union P.empty 
-	     (map fst2 (List.filter Typ.is_present flds))) in
-	(List.filter_map (get_fld idx) flds) @ 
-	  (flatten_obj_typ_helper env proto_idx proto)
-      | TSimpleObject flds (* recursive case, __proto__ is already flat *)
-      | TObject (flds, TPrim Null) -> (* base case *)
-	List.filter_map (get_fld idx) flds
-      | _ -> failwith (sprintf "expected object type")
-
-  let flatten_obj_typ env obj_typ = 
-    TSimpleObject (flatten_obj_typ_helper env P.all obj_typ)
 
   let rec subt env (cache : TPSet.t) s t : TPSet.t = 
     if TPSet.mem (s, t) cache then
@@ -233,19 +214,8 @@ module Env = struct
             try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
             with Invalid_argument _ -> raise (Not_subtype (MismatchTyp (s, t)))
           end
-	| TSimpleObject flds1, TSimpleObject flds2 ->
-	  let f cache fld1 =
-	    fold_left (fun cache fld2 -> subtype_field env cache fld1 fld2)
-	      cache flds2 in
-	  fold_left f cache flds1
-	(*** transitivity: TRef lhs <: TSource lhs <: TSource rhs ***)
-	(* | TRef (TObject (flds, proto) as lhs), 
-	 TSource (TSimpleObject _ as rhs) ->
-	  subtype cache (flatten_obj_typ env lhs) rhs *)
-	| TObject (flds, proto) as lhs, (TSimpleObject _ as rhs) ->
-	  subtype cache (flatten_obj_typ env lhs) rhs
-	| TObject (fs1, p1), TObject (fs2, p2) -> 
-            subtype (subtype_object' env cache fs1 fs2) p1 p2
+	| TObject flds1, TObject flds2 ->
+	  subtype_object' env cache flds1 flds2
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
         | TSource s, TSource t -> subtype cache s t
         | TSink s, TSink t -> subtype cache t s
@@ -337,8 +307,10 @@ module Env = struct
     | RT.Num -> typ_union env (TPrim Num) typ
     | RT.Re _ -> typ_union env (TRegex any_fld) typ
     | RT.Bool -> typ_union env typ_bool typ
-    | RT.Function -> typ_union env (TObject ([], TId "Function")) typ 
-    | RT.Object -> typ_union env (TObject ([], TId "Object")) typ
+    | RT.Function ->
+      typ_union env (TObject [(proto_pat, PPresent (TId "Function"))]) typ 
+    | RT.Object -> 
+      typ_union env (TObject [proto_pat, PPresent (TId "Object")]) typ
     | RT.Undefined -> typ_union env (TPrim Undef) typ
 
   let rtany = 
@@ -393,7 +365,7 @@ module Env = struct
   let rec set_global_object env cname =
     let ci = IdMap.find cname env.typ_ids in
     match ci with
-      | TRef (TObject (fs, _)) ->
+      | TRef (TObject fs) ->
         let add_field env ((x : field), (p : prop)) = 
 	  begin match P.singleton_string x, p with
             | (Some s, PPresent t) -> bind_id s (TRef t) env
@@ -485,9 +457,9 @@ let rec typ_assoc (env : Env.env) (typ1 : typ) (typ2 : typ) =
     | t, TApp (s1, s2) ->
       typ_assoc env (simpl_typ env (TApp (s1, s2))) t
 
-    | TObject (flds1, proto1), TObject (flds2, proto2) ->
+    | TObject flds1, TObject flds2 ->
       List.fold_left assoc_merge
-	(typ_assoc env proto1 proto2)
+	IdMap.empty
 	(List.map2_noerr (fld_assoc env) flds1 flds2)
     | TSource s, TSource t
     | TSink s, TSink t
@@ -511,6 +483,17 @@ and fld_assoc env (_, fld1) (_, fld2) = match (fld1, fld2) with
     typ_assoc env s t
   | _ -> IdMap.empty
 
+
+let rec get_prototype_typ env flds = match flds with
+  | [] -> None
+  | ((pat, fld) :: flds') -> match P.is_member proto_str pat with
+      | true -> begin match fld with
+	  | PPresent t -> Some (simpl_typ env t)
+	  | _ -> failwith "maybe proto wtf"
+      end
+      | false -> get_prototype_typ env flds'
+
+
 let rec fields_helper env flds idx_pat =  match flds with
   | [] -> (TBot, idx_pat)
   | (pat, fld) :: flds' ->
@@ -528,23 +511,30 @@ let rec fields_helper env flds idx_pat =  match flds with
       fields_helper env flds' idx_pat
 
 let rec fields p env obj_typ idx_pat = match simpl_typ env obj_typ with
-  | TSimpleObject flds ->
+  | TObject flds -> 
     let (fld_typ, rest_pat) = fields_helper env flds idx_pat in
-    fld_typ
-  | TObject (flds, TPrim Null) -> 
-    let (fld_typ, rest_pat) = fields_helper env flds idx_pat in
-    fld_typ
-  | TObject (flds, TRef proto)
-  | TObject (flds, TSource proto) ->
-    let (fld_typ, rest_pat) = fields_helper env flds idx_pat in
-    Env.typ_union env fld_typ (fields p env proto rest_pat)
-  | TObject (_, proto) ->
-    raise 
-      (Typ_error
-	 (p, sprintf "cannot index object; prototype has type %s" 
-	   (string_of_typ proto)))
-  | obj_typ -> 
-    failwith (sprintf "fields expected object, received %s"
-		(string_of_typ obj_typ))
+    begin match get_prototype_typ env flds with
+      | None -> 
+	if P.is_empty rest_pat then
+	  fld_typ
+	else
+	  raise (Typ_error
+		   (p, sprintf "no type for __proto__ in:\n %s\nBut, index is \
+                                \n %s\n" (string_of_typ obj_typ)
+		     (P.pretty rest_pat)))
+      | Some (TPrim Null) ->
+	TBot (** might signal an error *)
+      | Some (TRef proto_typ)
+      | Some (TSource proto_typ) ->
+	Env.typ_union env fld_typ (fields p env proto_typ rest_pat)
+      | Some typ ->
+	raise (Typ_error
+		 (p, sprintf "prototype has type\n  %s\nin object of type\n  %s"
+		   (string_of_typ typ) (string_of_typ obj_typ)))
+    end
+  | obj_typ ->
+    raise (Typ_error
+	     (p, sprintf "expected object, received %s" 
+	       (string_of_typ obj_typ)))
 
 let typid_env env = env.Env.typ_ids

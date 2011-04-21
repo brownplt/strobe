@@ -16,9 +16,9 @@ let array_idx_pat =
 
 let mk_array_typ p env elt_typ =
   TRef (TObject
-	  ([(array_idx_pat, PMaybe elt_typ);
-	    (Sb_strPat.singleton "length", PPresent (TPrim Int))],
-	   (TId "Array_proto")))
+	  [(array_idx_pat, PMaybe elt_typ);
+	   (Sb_strPat.singleton "length", PPresent (TPrim Int));
+	   (Sb_strPat.singleton "proto", PPresent (TId "Array_proto"))])
 	  
 let error_on_unreachable = ref true
 
@@ -152,7 +152,8 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       let mk_field (name, exp) = 
 	(Sb_strPat.singleton name, PPresent (tc_exp env exp)) in
       (* TODO: everything else hsould be absent *)
-      TObject (map mk_field fields, TId "Object")
+      TObject ((Sb_strPat.singleton "proto", PPresent (TId "Object"))
+	       :: (map mk_field fields))
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (tc_exp env field) with
       | TRegex pat -> fields p env (un_null (tc_exp env obj)) pat
@@ -161,7 +162,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
   | EUpdate (p, obj, field, value) -> begin
       match simpl_typ env (tc_exp env obj), 
         simpl_typ env (tc_exp env field), tc_exp env value with
-          | (TObject (fs, proto) as tobj), (TRegex idx_pat as tfld), typ ->
+          | (TObject fs as tobj), (TRegex idx_pat as tfld), typ ->
               let okfield (fld_pat, prop) = 
                 if Sb_strPat.is_overlapped fld_pat idx_pat
                 then match prop with
