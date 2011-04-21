@@ -152,8 +152,11 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       let mk_field (name, exp) = 
 	(Sb_strPat.singleton name, PPresent (tc_exp env exp)) in
       (* TODO: everything else hsould be absent *)
-      TObject ((Sb_strPat.singleton "proto", PPresent (TId "Object"))
-	       :: (map mk_field fields))
+      if List.mem "proto" (map fst fields) then
+        TObject (map mk_field fields)
+      else
+        TObject ((Sb_strPat.singleton "proto", PPresent (TId "Object"))
+	         :: (map mk_field fields))
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (tc_exp env field) with
       | TRegex pat -> fields p env (un_null (tc_exp env obj)) pat
