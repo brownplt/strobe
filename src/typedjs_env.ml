@@ -178,7 +178,8 @@ module Env = struct
 	     (map fst2 (List.filter Typ.is_present flds))) in
 	(List.filter_map (get_fld idx) flds) @ 
 	  (flatten_obj_typ_helper env proto_idx proto)
-      | TObject (flds, TPrim Null) ->
+      | TSimpleObject flds (* recursive case, __proto__ is already flat *)
+      | TObject (flds, TPrim Null) -> (* base case *)
 	List.filter_map (get_fld idx) flds
       | _ -> failwith (sprintf "expected object type")
 
