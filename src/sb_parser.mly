@@ -84,13 +84,13 @@ ids :
  | ID COMMA ids { $1 :: $3 }
 
 func :
- | FUNC LPAREN ids RPAREN HINT LBRACE RETURN seq_exp RBRACE
+ | FUNC LPAREN ids RPAREN HINT LBRACE seq_exp RBRACE
    { let info = match parse_annotation ($startpos, $endpos) $5 with
        | ATyp t -> { func_typ = typ t;
                      func_owned = IdSet.empty;
                      func_loop = false } 
        | _ -> failwith "expected a type on the function, got something else" in
-     EFunc (($startpos, $endpos), $3, info, $8) }
+     EFunc (($startpos, $endpos), $3, info, $7) }
 
 atom :
  | const { EConst (($startpos, $endpos), $1) }
