@@ -43,7 +43,7 @@ type prim =
 type field = Sb_strPat.t
 type pat = Sb_strPat.t
 
-let proto_str = "proto"
+let proto_str = "__proto__"
 
 let proto_pat = Sb_strPat.singleton proto_str
 
@@ -160,6 +160,7 @@ module WritTyp = struct
   and f = 
     | Present of pat * t
     | Maybe of pat * t
+    | Inherited of pat * t
     | Absent of pat
     | Skull of pat
     | Star of t option
@@ -318,6 +319,7 @@ module Pretty = struct
   and prop p = match p with
     | PPresent t -> typ t
     | PMaybe t -> horz [ text "maybe"; typ t ]
+    | PInherited t -> squish [ text "^"; typ t]
     | PAbsent -> text "_"
 
   let rec exp e = match e with

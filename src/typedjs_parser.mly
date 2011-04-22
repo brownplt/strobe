@@ -12,8 +12,7 @@ module W = Typedjs_syntax.WritTyp
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
        CHEAT NULL TRUE FALSE REC INTERSECTION UNDERSCORE BAD
        HASHBRACE EQUALS TYPE QUES BANG TYPREC TYPLAMBDA THICKARROW
-       COLONCOLON
-       
+       COLONCOLON CARET
 
 %right UNION INTERSECTION THICKARROW 
 %left LANGLE
@@ -50,6 +49,7 @@ field :
 	  W.Present (pat, $3)
 	else
 	  W.Maybe (pat, $3) }
+  | pat COLON CARET typ { W.Inherited ($1, $4) }
   | pat COLON UNDERSCORE { W.Absent $1 }
   | pat COLON BAD { W.Skull $1 }
   | STAR COLON typ { W.Star (Some $3) }

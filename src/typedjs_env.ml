@@ -5,6 +5,8 @@ exception Not_wf_typ of string
 
 module P = Sb_strPat
 
+let dummy_pos = (Lexing.dummy_pos, Lexing.dummy_pos)
+
 let desugar_typ = Sb_desugar.desugar_typ
 
 (* Necessary for equi-recursive subtyping. *)
@@ -46,6 +48,7 @@ end
 
 (* Pair that were mismatched *)
 type subtype_exn =
+  | ExtraFld of pat * prop
   | MismatchTyp of typ * typ
   | MismatchFld of (pat * prop) * (pat * prop)
 
@@ -178,6 +181,8 @@ module Env = struct
     else 
       Some (pat', prop)
 
+
+
   let rec subt env (cache : TPSet.t) s t : TPSet.t = 
     if TPSet.mem (s, t) cache then
       cache
@@ -255,28 +260,119 @@ module Env = struct
 	  subt env cache s t
         | _ -> raise (Not_subtype (MismatchTyp (s, t)))
 
+  and get_prototype_typ env flds = match flds with
+    | [] -> None
+    | ((pat, fld) :: flds') -> match P.is_member proto_str pat with
+        | true -> begin match fld with
+	    | PPresent t -> Some (simpl_typ env t)
+	    | _ -> failwith "maybe proto wtf"
+        end
+        | false -> get_prototype_typ env flds'
+
+
+  and fields_helper env flds idx_pat idx_for_proto =  match flds with
+    | [] -> (TBot, idx_pat, idx_for_proto)
+    | (pat, fld) :: flds' ->
+      if P.is_overlapped pat idx_pat then
+        match fld with
+	  | PMaybe t ->
+	    let (fld_typ', all_pat, rest_pat') = fields_helper env flds' idx_pat idx_for_proto in
+	    (typ_union env t fld_typ', P.subtract all_pat pat, rest_pat')
+          | PInherited t
+	  | PPresent t -> 
+	    let (fld_typ', all_pat, rest_pat') =
+	      fields_helper env flds' idx_pat (P.subtract idx_pat pat) in
+	    (typ_union env t fld_typ', P.subtract all_pat pat, rest_pat')
+	  | PAbsent -> 
+            let (fld_typ, all_pat, rest_pat) = fields_helper env flds' idx_pat idx_for_proto in
+            (fld_typ, P.subtract all_pat pat, rest_pat)
+      else
+        fields_helper env flds' idx_pat idx_pat
+
+  and fields p env obj_typ idx_pat = match simpl_typ env obj_typ with
+    | TObject flds -> 
+      let (fld_typ, all_pat, rest_pat) = fields_helper env flds idx_pat idx_pat in
+      if not (P.is_empty all_pat) then 
+        raise (Typ_error
+                 (p, sprintf "Something left when performing fields: %s"
+                   (P.pretty all_pat)))
+      else
+        begin match get_prototype_typ env flds with
+          | None -> 
+	    if P.is_empty rest_pat then
+	      fld_typ
+	    else
+	      raise (Typ_error
+		       (p, sprintf "no type for __proto__ in:\n %s\nBut, index is \
+                                \n %s\n" (string_of_typ obj_typ)
+		         (P.pretty rest_pat)))
+          | Some (TPrim Null) ->
+	    TBot (** might signal an error *)
+          | Some (TRef proto_typ)
+          | Some (TSource proto_typ) ->
+	    typ_union env fld_typ (fields p env proto_typ rest_pat)
+          | Some typ ->
+	    raise (Typ_error
+		     (p, sprintf "prototype has type\n  %s\nin object of type\n  %s"
+		       (string_of_typ typ) (string_of_typ obj_typ)))
+        end
+    | obj_typ ->
+      raise (Typ_error
+	       (p, sprintf "expected object, received %s" 
+	         (string_of_typ obj_typ)))
+
+
+  (* Check that an "extra" field is inherited *)
+  and check_inherited env cache lang other_proto typ =
+    try 
+      let ftyp = fields dummy_pos env other_proto lang in
+      subt env cache typ ftyp 
+    with Typ_error _ ->
+      raise (Not_subtype (ExtraFld (lang, PInherited typ)))
+
   and subtype_field env cache ((pat1, fld1) : field * prop) 
       ((pat2, fld2) : field * prop) : TPSet.t = 
-    if P.is_empty (P.intersect pat1 pat2) then
-      cache
-    else
-      match (fld1, fld2) with
-	| (PAbsent, PAbsent) -> cache
-	| (PAbsent, PMaybe _) -> cache
-	| (PPresent t1, PPresent t2) -> subt env cache t1 t2
-	| (PPresent t1, PMaybe t2) -> subt env cache t1 t2
-	| (PMaybe t1, PMaybe t2) -> subt env cache t1 t2
-	| _ -> raise (Not_subtype (MismatchFld ((pat1, fld1), (pat2, fld2))))
+    match (fld1, fld2) with
+      | (PAbsent, PAbsent) -> cache
+      | (PAbsent, PMaybe _) -> cache
+      | (PPresent t1, PPresent t2) -> subt env cache t1 t2
+      | (PPresent t1, PMaybe t2) -> subt env cache t1 t2
+      | (PMaybe t1, PMaybe t2) -> subt env cache t1 t2
+      | (_, PInherited _) -> cache
+      | _ -> raise (Not_subtype (MismatchFld ((pat1, fld1), (pat2, fld2))))
+
 
   and subtype_object' env (cache : TPSet.t)
     (flds1 : (field * prop) list)
     (flds2 : (field * prop) list) : TPSet.t
       =
-    (* TODO: check for containment *)
-    let g cache' fld1 = 
-      fold_left (fun cache fld2 -> subtype_field env cache fld1 fld2)
-	cache' flds2 in
-    fold_left g cache flds1
+    let rec check_prop (((m_j : field), (g_j : prop)) as p2)
+        ((p2s : (field * prop) list), (fs : (field * prop) list), (cache : TPSet.t)) = 
+      match fs with
+        | [] -> (p2::p2s, fs, cache)
+        | ((l_i, f_i) as p1)::rest ->
+          match P.is_overlapped l_i m_j with
+            | true ->
+              let cache' = subtype_field env cache (l_i, f_i) (m_j, g_j) in
+            (* Remove the stuff in l_i (the lhs), for the next iteration *)
+              let (pat'', _) as p2' = ((P.subtract m_j l_i), g_j) in
+            (* Get the result, and re-build the rhs list, subtracting the
+               relevant part of overlap*)
+              let p2s'', fs1', cache'' = check_prop p2' (p2s, rest, cache') in
+              p2s'', (P.subtract l_i m_j, f_i)::fs1', cache'
+            | false ->
+              let p2s', fs1', cache' = check_prop p2 (p2s, rest, cache) in
+              p2s', (P.subtract l_i m_j, f_i)::fs1', cache' in
+    let (flds2', flds1', cache') = 
+      List.fold_right check_prop flds2 ([], flds1, cache) in
+    let extra_fields = 
+      List.filter (fun (pat, _) -> not (P.is_empty pat)) flds2' in
+    List.fold_right (fun (pat, prop) cache -> match prop with
+      | PInherited typ -> check_inherited env cache pat (TObject flds2) typ
+      | _ -> raise (Not_subtype (ExtraFld (pat, prop))))
+      extra_fields cache
+        
+
 
   and subtypes env ss ts = 
     try 
@@ -309,7 +405,19 @@ module Env = struct
     try
       let _ = subt env TPSet.empty s t in
       true
-    with Not_subtype _ -> false
+    with
+      | Not_subtype (ExtraFld (pat, prop)) -> 
+        (* printf "ExtraField - %s : %s\n" (P.pretty pat) (string_of_prop prop); *)
+        false
+      | Not_subtype (MismatchFld ((pat1, prop1), (pat2, prop2)) ) ->
+        (* printf "Mismatched - %s : %s and %s : %s\n"
+          (P.pretty pat1) (string_of_prop prop1)
+          (P.pretty pat2) (string_of_prop prop2);  *)
+        false
+      | Not_subtype (MismatchTyp (s, t)) ->
+        (* printf "MismatchTyp - %s <: %s\n" 
+          (string_of_typ s) (string_of_typ t); *)
+        false
       | Not_found -> failwith "not found in subtype!!!"
 
   let assert_subtyp env s t = 
@@ -499,57 +607,6 @@ and fld_assoc env (_, fld1) (_, fld2) = match (fld1, fld2) with
   | _ -> IdMap.empty
 
 
-let rec get_prototype_typ env flds = match flds with
-  | [] -> None
-  | ((pat, fld) :: flds') -> match P.is_member proto_str pat with
-      | true -> begin match fld with
-	  | PPresent t -> Some (simpl_typ env t)
-	  | _ -> failwith "maybe proto wtf"
-      end
-      | false -> get_prototype_typ env flds'
-
-
-let rec fields_helper env flds idx_pat =  match flds with
-  | [] -> (TBot, idx_pat)
-  | (pat, fld) :: flds' ->
-    if P.is_overlapped pat idx_pat then
-      match fld with
-	| PMaybe t ->
-	  let (fld_typ', rest_pat') = fields_helper env flds' idx_pat in
-	  (Env.typ_union env t fld_typ', rest_pat')
-	| PPresent t -> 
-	  let (fld_typ', rest_pat') =
-	    fields_helper env flds' (P.subtract idx_pat pat) in
-	  (Env.typ_union env t fld_typ', rest_pat')
-	| PAbsent -> fields_helper env flds' idx_pat
-    else
-      fields_helper env flds' idx_pat
-
-let rec fields p env obj_typ idx_pat = match simpl_typ env obj_typ with
-  | TObject flds -> 
-    let (fld_typ, rest_pat) = fields_helper env flds idx_pat in
-    begin match get_prototype_typ env flds with
-      | None -> 
-	if P.is_empty rest_pat then
-	  fld_typ
-	else
-	  raise (Typ_error
-		   (p, sprintf "no type for __proto__ in:\n %s\nBut, index is \
-                                \n %s\n" (string_of_typ obj_typ)
-		     (P.pretty rest_pat)))
-      | Some (TPrim Null) ->
-	TBot (** might signal an error *)
-      | Some (TRef proto_typ)
-      | Some (TSource proto_typ) ->
-	Env.typ_union env fld_typ (fields p env proto_typ rest_pat)
-      | Some typ ->
-	raise (Typ_error
-		 (p, sprintf "prototype has type\n  %s\nin object of type\n  %s"
-		   (string_of_typ typ) (string_of_typ obj_typ)))
-    end
-  | obj_typ ->
-    raise (Typ_error
-	     (p, sprintf "expected object, received %s" 
-	       (string_of_typ obj_typ)))
+let fields = Env.fields
 
 let typid_env env = IdMap.map (fun (t, _) -> t) env.Env.typ_ids

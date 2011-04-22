@@ -75,6 +75,7 @@ rule token = parse
    | "typrec" { TYPREC }
    | "<:" { LTCOLON }
    | "?" { QUES }
+   | "^" { CARET }
    | "!" { BANG }
    | "rec" { REC }
    | eof { EOF }

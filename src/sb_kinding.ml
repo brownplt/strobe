@@ -43,6 +43,7 @@ and simpl_equiv_fld (pat1, fld1) (pat2, fld2) =
   P.is_equal pat1 pat2 &&
     begin match (fld1, fld2) with
       | PPresent t1, PPresent t2
+      | PInherited t1, PInherited t2
       | PMaybe t1, PMaybe t2 ->
 	simpl_equiv t1 t2
       | PAbsent, PAbsent -> true

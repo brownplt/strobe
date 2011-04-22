@@ -33,6 +33,7 @@ let is_skull f = match f with
 
 let pat_of f = match f with
   | W.Present (p, _) -> p
+  | W.Inherited (p, _) -> p
   | W.Maybe (p, _) -> p
   | W.Absent p -> p
   | W.Skull p -> p
@@ -69,6 +70,7 @@ let rec typ (writ_typ : W.t) : typ = match writ_typ with
 and fld (writ_fld : W.f) : pat * prop = match writ_fld with
   | W.Present (pat, t) -> (pat, PPresent (typ t))
   | W.Maybe (pat, t) -> (pat, PMaybe (typ t))
+  | W.Inherited (pat, t) ->(pat, PInherited (typ t))
   | W.Absent pat -> (pat, PAbsent)
   | W.Skull _ -> error "fld applied to Skull"
   | W.Star _ -> error "fld applied to Star"

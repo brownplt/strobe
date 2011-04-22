@@ -4,6 +4,7 @@ open Typedjs_syntax
 exception Not_wf_typ of string
 
 type subtype_exn =
+  | ExtraFld of pat * prop
   | MismatchTyp of typ * typ
   | MismatchFld of (pat * prop) * (pat * prop)
 
@@ -39,6 +40,8 @@ module Env : sig
   (** [subtype end typ1 typ2] assumes that [typ1] and [typ2] are in normal form.
       The [env] is needed for bounded quantification. *)
   val subtype : env -> typ -> typ -> bool
+
+  val fields : pos -> env -> typ -> Sb_strPat.t -> typ
 
   val assert_subtyp : env -> typ -> typ -> unit
 
