@@ -1,0 +1,10 @@
+let (move_wrapper = func (this, o) 
+/*: 
+  forall a <: {{move : ^(Int -> Bool)}} . 
+  forall b <: {{ *: _, x : Int, __proto__: ref 'a }} . ref b -> Bool
+*/
+{
+    !o["move"](o, 5)
+})
+let (pr = ref {move : func (this, i) /*: Int -> Bool */ { true }, __proto__: null})
+move_wrapper</*: {{ *: _, move : Int -> Bool, __proto__: Null}} */>(undefined, ref {x: 5, __proto__: pr})
