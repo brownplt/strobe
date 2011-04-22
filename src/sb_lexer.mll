@@ -85,6 +85,8 @@ rule token = parse
    | "-inf" { NUM infinity }
    | "{" { LBRACE }
    | "}" { RBRACE }
+   | "<" { LANGLE }
+   | ">" { RANGLE }
    | '(' { LPAREN }
    | ')' { RPAREN }
    | "undefined" { UNDEFINED }

@@ -39,6 +39,8 @@ rule token = parse
    | ")" { RPAREN }
    | "#{" { HASHBRACE }
    | "{" { LBRACE }
+   | "{{" { LLBRACE }
+   | "}}" { RRBRACE }
    | "}" { RBRACE }
    | "[" { LBRACK }
    | "]" { RBRACK }
@@ -56,6 +58,7 @@ rule token = parse
    | "Null" { NULL }
    | "_" { UNDERSCORE }
    | "BAD" { BAD }
+   | "ref" { REF }
    | "*" { STAR }
    | ":" { COLON }
    | "::" { COLONCOLON }

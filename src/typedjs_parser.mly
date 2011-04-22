@@ -12,9 +12,9 @@ module W = Typedjs_syntax.WritTyp
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
        CHEAT NULL TRUE FALSE REC INTERSECTION UNDERSCORE BAD
        HASHBRACE EQUALS TYPE QUES BANG TYPREC TYPLAMBDA THICKARROW
-       COLONCOLON CARET
+       COLONCOLON CARET LLBRACE RRBRACE REF
 
-%right UNION INTERSECTION THICKARROW 
+%right UNION INTERSECTION THICKARROW REF
 %left LANGLE
 
 %start typ_ann
@@ -76,9 +76,11 @@ arg_typ
   | arg_typ INTERSECTION arg_typ { W.Inter ($1, $3) }
   | LBRACE fields RBRACE { W.Ref (W.Object $2) }
   | HASHBRACE fields RBRACE { W.Source (W.Object $2) }
+  | LLBRACE fields RRBRACE { W.Object $2 }
   | LPAREN typ RPAREN { $2 }
   | TID { W.Id $1 }
   | ID { W.Syn $1 }
+  | REF arg_typ { W.Ref $2 } 
   | arg_typ LANGLE typ RANGLE { W.App ($1, $3) }
 
 typ 

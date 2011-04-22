@@ -281,7 +281,7 @@ module Env = struct
           | PInherited t
 	  | PPresent t -> 
 	    let (fld_typ', all_pat, rest_pat') =
-	      fields_helper env flds' idx_pat (P.subtract idx_pat pat) in
+	      fields_helper env flds' idx_pat (P.subtract idx_for_proto pat) in
 	    (typ_union env t fld_typ', P.subtract all_pat pat, rest_pat')
 	  | PAbsent -> 
             let (fld_typ, all_pat, rest_pat) = fields_helper env flds' idx_pat idx_for_proto in
@@ -307,7 +307,7 @@ module Env = struct
                                 \n %s\n" (string_of_typ obj_typ)
 		         (P.pretty rest_pat)))
           | Some (TPrim Null) ->
-	    TBot (** might signal an error *)
+	    typ_union env fld_typ TBot (** might signal an error *)
           | Some (TRef proto_typ)
           | Some (TSource proto_typ) ->
 	    typ_union env fld_typ (fields p env proto_typ rest_pat)
@@ -324,28 +324,27 @@ module Env = struct
 
   (* Check that an "extra" field is inherited *)
   and check_inherited env cache lang other_proto typ =
-    try 
+    try
       let ftyp = fields dummy_pos env other_proto lang in
       subt env cache typ ftyp 
     with Typ_error _ ->
       raise (Not_subtype (ExtraFld (lang, PInherited typ)))
 
-  and subtype_field env cache ((pat1, fld1) : field * prop) 
-      ((pat2, fld2) : field * prop) : TPSet.t = 
-    match (fld1, fld2) with
-      | (PAbsent, PAbsent) -> cache
-      | (PAbsent, PMaybe _) -> cache
-      | (PPresent t1, PPresent t2) -> subt env cache t1 t2
-      | (PPresent t1, PMaybe t2) -> subt env cache t1 t2
-      | (PMaybe t1, PMaybe t2) -> subt env cache t1 t2
-      | (_, PInherited _) -> cache
-      | _ -> raise (Not_subtype (MismatchFld ((pat1, fld1), (pat2, fld2))))
-
-
   and subtype_object' env (cache : TPSet.t)
     (flds1 : (field * prop) list)
     (flds2 : (field * prop) list) : TPSet.t
       =
+    let rec subtype_field env cache ((pat1, fld1) : field * prop) 
+        ((pat2, fld2) : field * prop) : TPSet.t = 
+      match (fld1, fld2) with
+        | (PAbsent, PAbsent) -> cache
+        | (PAbsent, PMaybe _) -> cache
+        | (PPresent t1, PPresent t2) -> subt env cache t1 t2
+        | (PPresent t1, PMaybe t2) -> subt env cache t1 t2
+        | (PMaybe t1, PMaybe t2) -> subt env cache t1 t2
+        | (_, PInherited _) -> cache
+        | _ -> raise (Not_subtype (MismatchFld ((pat1, fld1), (pat2, fld2)))) in
+
     let rec check_prop (((m_j : field), (g_j : prop)) as p2)
         ((p2s : (field * prop) list), (fs : (field * prop) list), (cache : TPSet.t)) = 
       match fs with
@@ -365,12 +364,16 @@ module Env = struct
               p2s', (P.subtract l_i m_j, f_i)::fs1', cache' in
     let (flds2', flds1', cache') = 
       List.fold_right check_prop flds2 ([], flds1, cache) in
-    let extra_fields = 
-      List.filter (fun (pat, _) -> not (P.is_empty pat)) flds2' in
-    List.fold_right (fun (pat, prop) cache -> match prop with
-      | PInherited typ -> check_inherited env cache pat (TObject flds2) typ
-      | _ -> raise (Not_subtype (ExtraFld (pat, prop))))
-      extra_fields cache
+    let cache' = List.fold_right (fun (pat, prop) cache -> match prop with
+      | PInherited typ -> 
+        check_inherited env cache pat (TObject flds1) typ
+      | _ -> cache)
+      flds2 cache in
+    try
+      let (pat, fld) = List.find (fun (pat, _) -> not (P.is_empty pat)) flds2' in
+      raise (Not_subtype (ExtraFld (pat, fld)))
+    with Not_found -> cache'
+
         
 
 
@@ -407,15 +410,15 @@ module Env = struct
       true
     with
       | Not_subtype (ExtraFld (pat, prop)) -> 
-        (* printf "ExtraField - %s : %s\n" (P.pretty pat) (string_of_prop prop); *)
+(*        printf "ExtraField - %s : %s\n" (P.pretty pat) (string_of_prop prop); *)
         false
       | Not_subtype (MismatchFld ((pat1, prop1), (pat2, prop2)) ) ->
-        (* printf "Mismatched - %s : %s and %s : %s\n"
+(*        printf "Mismatched - %s : %s and %s : %s\n"
           (P.pretty pat1) (string_of_prop prop1)
-          (P.pretty pat2) (string_of_prop prop2);  *)
+          (P.pretty pat2) (string_of_prop prop2); *)
         false
       | Not_subtype (MismatchTyp (s, t)) ->
-        (* printf "MismatchTyp - %s <: %s\n" 
+(*        printf "MismatchTyp - %s <: %s\n" 
           (string_of_typ s) (string_of_typ t); *)
         false
       | Not_found -> failwith "not found in subtype!!!"

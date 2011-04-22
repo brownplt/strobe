@@ -18,7 +18,7 @@ let mk_array_typ p env elt_typ =
   TRef (TObject
 	  [(array_idx_pat, PMaybe elt_typ);
 	   (Sb_strPat.singleton "length", PPresent (TPrim Int));
-	   (Sb_strPat.singleton "proto", PPresent (TId "Array_proto"))])
+	   (Sb_strPat.singleton "__proto__", PPresent (TId "Array_proto"))])
 	  
 let error_on_unreachable = ref true
 
@@ -151,11 +151,15 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
   | EObject (p, fields) ->
       let mk_field (name, exp) = 
 	(Sb_strPat.singleton name, PPresent (tc_exp env exp)) in
+      let get_names (name, _) names = 
+        Sb_strPat.union names (Sb_strPat.singleton name) in
+      let rest = List.fold_right get_names fields (Sb_strPat.singleton "__proto__") in
+      let rest' = Sb_strPat.negate rest in
       (* TODO: everything else hsould be absent *)
-      if List.mem "proto" (map fst fields) then
-        TObject (map mk_field fields)
+      if List.mem "__proto__" (map fst fields) then
+        TObject ((rest', PAbsent)::(map mk_field fields))
       else
-        TObject ((Sb_strPat.singleton "proto", PPresent (TId "Object"))
+        TObject ((rest', PAbsent)::(Sb_strPat.singleton "__proto__", PPresent (TId "Object"))
 	         :: (map mk_field fields))
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (tc_exp env field) with
@@ -220,6 +224,13 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
 		raise (Typ_error
 			 (p, sprintf " %s\nis not a subtype of\n %s"
 			   (string_of_typ t1) (string_of_typ t2)))
+              | Not_subtype (ExtraFld (pat, prop)) -> 
+                raise (Typ_error
+                       (p, sprintf "ExtraField - %s : %s\n" (P.pretty pat) (string_of_prop prop)))
+              | Not_subtype (MismatchFld ((pat1, prop1), (pat2, prop2)) ) ->
+                raise (Typ_error (p, sprintf "Mismatched - %s : %s and %s : %s\n"
+                  (P.pretty pat1) (string_of_prop prop1)
+                  (P.pretty pat2) (string_of_prop prop2)))
 	  end
         | TIntersect (t1, t2) -> 
 	  begin 
@@ -246,8 +257,6 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
 		  let guessed_typ = IdMap.find typ_var assoc in
 		  ETypApp (p, exp, guessed_typ) 
 		with Not_found -> begin
-		  printf "  %s\n~ %s\n" (string_of_typ quant_typ)
-		    (string_of_typ (TArrow (arg_typs, r)));
 		  error p (sprintf "$$$ could not instantiate") end in
 	      let guessed_exp = 
 		fold_left guess_typ_app (ECheat (p, quant_typ, f)) 
@@ -339,7 +348,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
         if Env.subtype env u s then
           typ_subst x u t
         else 
-          error p (sprintf "expected an argument of type %s, got %s"
+          error p (sprintf "expected an argument of type \n %s, got \n %s"
                      (string_of_typ s) (string_of_typ u))
       | t ->
         error p (sprintf "expected forall-type in type application, got:\

@@ -33,7 +33,7 @@ let parse_annotation (pos, end_p) str =
 %token UNDEFINED NULL FUNC LET DELETE LBRACE RBRACE LPAREN RPAREN LBRACK
   RBRACK EQUALS COMMA DEREF REF COLON COLONEQ PRIM IF ELSE SEMI
   LABEL BREAK TRY CATCH FINALLY THROW LLBRACK RRBRACK EQEQEQUALS TYPEOF
-  AMPAMP PIPEPIPE RETURN BANGEQEQUALS FUNCTION FIX SOURCE REC
+  AMPAMP PIPEPIPE RETURN BANGEQEQUALS FUNCTION FIX SOURCE REC LANGLE RANGLE
 
 
 %token EOF
@@ -113,6 +113,11 @@ atom :
 
 exp :
  | atom { $1 }
+ | exp LANGLE HINT RANGLE
+     { let t = match parse_annotation ($startpos, $endpos) $3 with
+       | ATyp t -> t
+       | _ -> failwith "Expected type in application" in
+       ETypApp (($startpos, $endpos), $1, typ t) }
  | exp LPAREN exps RPAREN 
    { EApp (($startpos, $endpos), $1, $3) }
  | PRIM LPAREN STRING COMMA seq_exp COMMA seq_exp RPAREN

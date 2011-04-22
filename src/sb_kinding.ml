@@ -128,6 +128,7 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
 
 and assert_fld_kind (env : kind_env) (_, prop) = match prop with
   | PPresent t
+  | PInherited t
   | PMaybe t ->
     begin match kind_check env t with
       | KStar -> ()
