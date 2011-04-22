@@ -1,3 +1,5 @@
-function foo(o) /*: #{x:Int, y: Bool} -> #{*: BAD; x: Int} */ {
+function foo(o) 
+/*: #{x:Int, y: Bool} -> 
+    #{x: Int} */ {
     return o;
 }
