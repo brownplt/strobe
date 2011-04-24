@@ -1,8 +1,8 @@
 let (pr = ref {__proto__: null, move : 
                func (this, dist) 
                /*: rec x . (forall a <: {{ move : ^('x) }} .
-                            forall b <: {{ move : _, x : Int, __proto__: ref 'a }} . ([ref 'b] Int -> 'b)) */ {
-                                { __proto__: !this["__proto__"], x : prim("+", !this["x"], dist) }
+                            forall b <: {{ move : _, x : Int, __proto__: ref 'a }} . ([ref 'b] Int -> ref 'b)) */ {
+                                ref (upcast /*: 'b */ { __proto__: !this["__proto__"], x : prim("+", !this["x"], dist) })
             }})
 let (obj = ref { x : 5, __proto__: pr })
 !obj["move"]</*: {{ __proto__ : Null, * : _,

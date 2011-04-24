@@ -335,7 +335,9 @@ module Env = struct
       flds2 cache in
     try
       let (pat, fld) = List.find (fun (pat, _) -> not (P.is_empty pat)) flds2' in
-      raise (Not_subtype (ExtraFld (pat, fld)))
+      match fld with 
+        | PInherited _ -> cache'
+        | _ -> raise (Not_subtype (ExtraFld (pat, fld)))
     with Not_found -> cache'
 
         
