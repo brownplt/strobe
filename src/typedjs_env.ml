@@ -54,48 +54,7 @@ type subtype_exn =
 
 exception Not_subtype of subtype_exn
 
-let rec typ_subst x s typ = match typ with
-  | TPrim _ -> typ
-  | TRegex _ -> typ
-  | TId y -> if x = y then s else typ
-  | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
-  | TIntersect (t1, t2) ->
-      TIntersect (typ_subst x s t1, typ_subst x s t2)
-  | TArrow (t2s, t3)  ->
-      TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
-  | TObject flds ->
-      TObject (map (second2 (prop_subst x s)) flds)
-  | TRef t -> TRef (typ_subst x s t)
-  | TSource t -> TSource (typ_subst x s t)
-  | TSink t -> TSink (typ_subst x s t)
-  | TTop -> TTop
-  | TBot -> TBot
-  (* omg this stuff is NOT capture free ... *)
-  | TLambda (y, k, t) ->
-    TLambda (y, k, typ_subst x s t)
-  | TFix (y, k, t) ->
-    TFix (y, k, typ_subst x s t)
-  | TForall (y, t1, t2) -> 
-      if x = y then 
-        typ
-      else 
-        TForall (y, typ_subst x s t1, typ_subst x s t2)
-  | TRec (y, t) ->
-    if x = y then
-      failwith "TODO: capture free substitution"
-    else 
-      TRec (y, typ_subst x s t)
-  | TApp (t1, t2) -> TApp (typ_subst x s t1, typ_subst x s t2)
-
-and prop_subst x s p = match p with
-  | PInherited typ -> PInherited (typ_subst x s typ)
-  | PPresent typ -> PPresent (typ_subst x s typ)
-  | PMaybe typ -> PMaybe (typ_subst x s typ)
-  | PAbsent -> PAbsent
-
-
-
-
+let typ_subst x s typ = Typ.typ_subst x s typ
 
 module Env = struct
 
@@ -165,7 +124,9 @@ module Env = struct
     | TForall _ -> typ
     | TFix (x, k, t) -> simpl_typ env (typ_subst x typ t)
     | TRec (x, t) -> simpl_typ env (typ_subst x typ t)
-    | TId x -> simpl_typ env (fst2 (IdMap.find x env.typ_ids))
+    | TId x -> begin try
+                 simpl_typ env (fst2 (IdMap.find x env.typ_ids))
+      with Not_found -> failwith (sprintf "omg not found in simpl_typ %s" x) end
     | TApp (t1, t2) -> begin match simpl_typ env t1 with
 	| TLambda (x, KStar, u) -> 
 	  simpl_typ env (typ_subst x t2 u)
@@ -345,7 +306,8 @@ module Env = struct
         | (PPresent t1, PMaybe t2) -> subt env cache t1 t2
         | (PMaybe t1, PMaybe t2) -> subt env cache t1 t2
         | (_, PInherited _) -> cache
-        | _ -> raise (Not_subtype (MismatchFld ((pat1, fld1), (pat2, fld2)))) in
+        | _ -> 
+          raise (Not_subtype (MismatchFld ((pat1, fld1), (pat2, fld2)))) in
 
     let rec check_prop (((m_j : field), (g_j : prop)) as p2)
         ((p2s : (field * prop) list), (fs : (field * prop) list), (cache : TPSet.t)) = 

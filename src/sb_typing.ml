@@ -204,7 +204,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
     let assumed_arg_exps = 
       List.map2 (fun e t -> ECheat (p, t, e)) args arg_typs in
     let rec check_app tfun =
-      begin match tfun with 
+      begin match simpl_typ env tfun with 
         | TArrow (expected_typs, result_typ) ->
 	  (* TODO: allow arguments to be elided *)
           let arg_typs = fill (List.length expected_typs - List.length args) 
@@ -222,7 +222,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
 	    with
 	      | Not_subtype (MismatchTyp (t1, t2)) ->
 		raise (Typ_error
-			 (p, sprintf " %s\nis not a subtype of\n %s"
+			 (p, sprintf " %s\nis not a subtype of (app)\n %s"
 			   (string_of_typ t1) (string_of_typ t2)))
               | Not_subtype (ExtraFld (pat, prop)) -> 
                 raise (Typ_error
@@ -255,6 +255,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
 	      let guess_typ_app exp typ_var = 
 		try
 		  let guessed_typ = IdMap.find typ_var assoc in
+                  printf "Guessing: %s\n" (string_of_typ guessed_typ);
 		  ETypApp (p, exp, guessed_typ) 
 		with Not_found -> begin
 		  error p (sprintf "$$$ could not instantiate") end in
@@ -294,7 +295,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
           func_info.func_owned;
     end;
       let expected_typ = func_info.func_typ in
-      begin match Env.bind_typ env expected_typ with
+      begin match Env.bind_typ env (simpl_typ env expected_typ) with
         | (env, TArrow (arg_typs, result_typ)) ->
             if not (List.length arg_typs = List.length args) then
               error p 
@@ -343,7 +344,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       let env = Env.bind_typ_id x t env in
       TForall (x, t, tc_exp env e)
   | ETypApp (p, e, u) ->
-    begin match tc_exp env e with
+    begin match simpl_typ env (tc_exp env e) with
       | TForall (x, s, t) ->
         if Env.subtype env u s then
           typ_subst x u t
@@ -372,7 +373,7 @@ and tc_exp_ret env e =
     if !error_on_unreachable && t = TBot then
       error (Exp.pos e) "unreachable code"
     else 
-      t
+      simpl_typ env t
 
 let typecheck env exp =
   let _ = tc_exp env exp in

@@ -190,12 +190,52 @@ type annotation =
 
 module Typ = struct
 
+  let rec typ_subst x s typ = match typ with
+    | TPrim _ -> typ
+    | TRegex _ -> typ
+    | TId y -> if x = y then s else typ
+    | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
+    | TIntersect (t1, t2) ->
+      TIntersect (typ_subst x s t1, typ_subst x s t2)
+    | TArrow (t2s, t3)  ->
+      TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
+    | TObject flds ->
+      TObject (map (second2 (prop_subst x s)) flds)
+    | TRef t -> TRef (typ_subst x s t)
+    | TSource t -> TSource (typ_subst x s t)
+    | TSink t -> TSink (typ_subst x s t)
+    | TTop -> TTop
+    | TBot -> TBot
+  (* omg this stuff is NOT capture free ... *)
+    | TLambda (y, k, t) ->
+      TLambda (y, k, typ_subst x s t)
+    | TFix (y, k, t) ->
+      TFix (y, k, typ_subst x s t)
+    | TForall (y, t1, t2) -> 
+      if x = y then 
+        typ
+      else 
+        TForall (y, typ_subst x s t1, typ_subst x s t2)
+    | TRec (y, t) ->
+      if x = y then
+        failwith "TODO: capture free substitution"
+      else 
+        TRec (y, typ_subst x s t)
+    | TApp (t1, t2) -> TApp (typ_subst x s t1, typ_subst x s t2)
+
+  and prop_subst x s p = match p with
+    | PInherited typ -> PInherited (typ_subst x s typ)
+    | PPresent typ -> PPresent (typ_subst x s typ)
+    | PMaybe typ -> PMaybe (typ_subst x s typ)
+    | PAbsent -> PAbsent
+
   let rec forall_arrow (typ : typ) : (id list * typ) option = match typ with
     | TArrow _ -> Some ([], typ)
     | TForall (x, _, typ') -> begin match forall_arrow typ' with
 	| None -> None
 	| Some (xs, t) -> Some (x :: xs, t)
     end
+    | TRec (x , t) -> forall_arrow (typ_subst x typ t)
     | _ -> None
 
   let rec match_func_typ (typ : typ) : (typ list * typ) option = match typ with
