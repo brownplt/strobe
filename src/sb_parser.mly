@@ -4,6 +4,7 @@ open Typedjs_syntax
 open JavaScript_syntax
 open Sb_desugar
 
+
 let parse_annotation (pos, end_p) str =
   let lexbuf = Lexing.from_string str in
     lexbuf.Lexing.lex_start_p <- pos;
@@ -34,6 +35,7 @@ let parse_annotation (pos, end_p) str =
   RBRACK EQUALS COMMA DEREF REF COLON COLONEQ PRIM IF ELSE SEMI
   LABEL BREAK TRY CATCH FINALLY THROW LLBRACK RRBRACK EQEQEQUALS TYPEOF
   AMPAMP PIPEPIPE RETURN BANGEQEQUALS FUNCTION FIX SOURCE REC LANGLE RANGLE
+  UPCAST
 
 
 %token EOF
@@ -101,6 +103,11 @@ atom :
    { $2 }
  | LPAREN seq_exp RPAREN { $2 }
  | func { $1 }
+ | UPCAST HINT atom
+   { let t = match parse_annotation ($startpos, $endpos) $2 with
+     | ATyp t -> typ t
+     | _ -> failwith "Upcast expected a typ" in
+     ESubsumption (($startpos, $endpos), t, $3) }
  | DEREF atom
    { EDeref (($startpos, $endpos), $2) }
  | REF atom

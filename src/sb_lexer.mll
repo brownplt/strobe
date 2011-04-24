@@ -101,6 +101,7 @@ rule token = parse
    | "," { COMMA }
    | "!" { DEREF }
    | "ref" { REF }
+   | "upcast" { UPCAST }
    | "source" { SOURCE }
    | ":" { COLON }
    | ":=" { COLONEQ }
