@@ -88,6 +88,7 @@ let rec typ_subst x s typ = match typ with
   | TApp (t1, t2) -> TApp (typ_subst x s t1, typ_subst x s t2)
 
 and prop_subst x s p = match p with
+  | PInherited typ -> PInherited (typ_subst x s typ)
   | PPresent typ -> PPresent (typ_subst x s typ)
   | PMaybe typ -> PMaybe (typ_subst x s typ)
   | PAbsent -> PAbsent
@@ -287,15 +288,16 @@ module Env = struct
             let (fld_typ, all_pat, rest_pat) = fields_helper env flds' idx_pat idx_for_proto in
             (fld_typ, P.subtract all_pat pat, rest_pat)
       else
-        fields_helper env flds' idx_pat idx_pat
+        fields_helper env flds' idx_pat idx_for_proto
 
   and fields p env obj_typ idx_pat = match simpl_typ env obj_typ with
     | TObject flds -> 
       let (fld_typ, all_pat, rest_pat) = fields_helper env flds idx_pat idx_pat in
       if not (P.is_empty all_pat) then 
         raise (Typ_error
-                 (p, sprintf "Something left when performing fields: %s"
-                   (P.pretty all_pat)))
+                 (p, sprintf "Something left when performing fields: %s, \
+                              on object \n %s" 
+                   (P.pretty all_pat) (string_of_typ obj_typ)))
       else
         begin match get_prototype_typ env flds with
           | None -> 
