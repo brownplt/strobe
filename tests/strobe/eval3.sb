@@ -1,0 +1,47 @@
+let (prNum = ref {__proto__: null, eval : 
+                  func (this) /*: EvalNum */
+                  {
+                      !this["val"]
+                  },
+                  simplify : 
+                  func(this) /*: SimplifyNum */
+                  {
+                      this 
+                  }})
+letrec (prPlus /*: PrPlus */ = ref {__proto__: null, eval : 
+                   func (this) /*: EvalPlus */
+                   {
+                       let (left = (!this)["left"])
+                       let (right = !this["right"])
+                       let (lefteval = !left["eval"]</*: {{ eval : ^Eval }} */>)
+                       let (righteval = !right["eval"]</*: {{ eval : ^Eval }} */>)
+                       prim("+", lefteval(left), righteval(right))
+                   },
+                   simplify :
+                   func (this) /*: SimplifyPlus */
+                   {
+                       let (left = !this["left"])
+                       let (right = !this["right"])
+                       let (lefteval = !left["eval"])
+                       let (righteval = !right["eval"])
+                       ref (upcast /*: {{ eval : ^Eval, simplify : ^SimplifyPlus,
+                                          left : ref {{ eval : ^Eval, simplify : ^Simplify }},
+                                          right : ref {{ eval : ^Eval, simplify : ^Simplify }} }} */
+                            { __proto__: prPlus,
+                              left : ref (upcast /*: {{ eval : ^Eval, simplify : ^Simplify }} */ 
+                                          { __proto__: prNum, val : lefteval(left) }),
+                              right : ref (upcast /*: {{ eval : ^Eval, simplify : ^Simplify }} */
+                                           { __proto__ : prNum, val : righteval(right) }) })
+                   }
+})
+let (num1 = ref { __proto__ : prNum, val : 22.5 })
+let (num2 = ref { __proto__ : prNum, val : 44.1 })
+let (num3 = ref { __proto__ : prNum, val : 50.5 })
+let (plus1 = ref { __proto__ : prPlus, left : num1, right : num2 })
+let (plus2 = ref { __proto__ : prPlus, left : plus1, right : num3 })
+!plus2["simplify"]
+</*: {{ *: _, __proto__ : PrPlus, 
+        left : ref {{ __proto__ : PrNum, "val" : Num, *:_}},
+        right : ref {{ __proto__ : PrNum, "val" : Num, *:_}} }} */>
+    </*: {{ *: _, __proto__ : PrNum, "val": Num}} */>
+    (plus2)
