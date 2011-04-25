@@ -23,4 +23,5 @@ let (plus2 = ref { __proto__ : prPlus, left : plus1, right : num3 })
         left : ref {{ __proto__ : ref {{__proto__: Null, eval : EvalNum, *: _ }}, "val" : Num, *:_}},
         right : ref {{ __proto__ : ref {{__proto__: Null, eval : EvalNum, * : _ }}, "val" : Num, *:_}} }} */>
 </*: {{ *: _, __proto__ : ref {{__proto__: Null, eval : EvalNum, *: _}}, "val": Num}} */>
-    (plus2)
+    (plus2);
+!num1["eval"](ref { eval : func (this) /*: EvalNum */ { 5 }, val : 22.2 })
