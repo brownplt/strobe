@@ -214,24 +214,9 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
                      (p, sprintf "arity-mismatch: the function expects %d \
                                   arguments, but %d arguments given"
                        (List.length expected_typs) (List.length args)));
-	  begin
-	    try
-	      let _ = List.iter2 (Env.assert_subtyp env)
-		arg_typs expected_typs in
-	      result_typ
-	    with
-	      | Not_subtype (MismatchTyp (t1, t2)) ->
-		raise (Typ_error
-			 (p, sprintf " %s\nis not a subtype of (app)\n %s"
-			   (string_of_typ t1) (string_of_typ t2)))
-              | Not_subtype (ExtraFld (pat, prop)) -> 
-                raise (Typ_error
-                       (p, sprintf "ExtraField - %s : %s\n" (P.pretty pat) (string_of_prop prop)))
-              | Not_subtype (MismatchFld ((pat1, prop1), (pat2, prop2)) ) ->
-                raise (Typ_error (p, sprintf "Mismatched - %s : %s and %s : %s\n"
-                  (P.pretty pat1) (string_of_prop prop1)
-                  (P.pretty pat2) (string_of_prop prop2)))
-	  end
+	  let _ = List.iter2 (Env.assert_subtyp env p)
+	    arg_typs expected_typs in
+	  result_typ
         | TIntersect (t1, t2) -> 
 	  begin 
 	    try 
@@ -310,14 +295,16 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
               else 
                 body in
             let body_typ = tc_exp env body in
+            
             if Env.subtype env body_typ result_typ then 
               expected_typ
-            else raise 
-              (Typ_error
-                 (p,
-                    sprintf "function body has type\n%s\n, but the \
+            else 
+              (Env.assert_subtyp env p body_typ result_typ;
+               raise (Typ_error
+                  (p,
+                   sprintf "function body has type\n%s\n, but the \
                              return type is\n%s" (string_of_typ body_typ)
-                      (string_of_typ result_typ)))
+                     (string_of_typ result_typ))))
         | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
       end
   | ESubsumption (p, t, e) ->
@@ -325,7 +312,8 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
         if Env.subtype env s t then
           t
         else 
-          raise (Typ_error (p, "subsumption error"))
+          (Env.assert_subtyp env p s t;
+           raise (Typ_error (p, "subsumption error")))
   | EAssertTyp (p, t, e) ->
       let s = tc_exp env e in
         if Env.subtype env s t then

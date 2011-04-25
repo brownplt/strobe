@@ -389,10 +389,22 @@ module Env = struct
         false
       | Not_found -> failwith "not found in subtype!!!"
 
-  let assert_subtyp env s t = 
-    let _ = subt env TPSet.empty s t in
-    ()
-
+  let assert_subtyp env p s t = 
+    try
+      let _ = subt env TPSet.empty s t in
+      ()
+    with
+      | Not_subtype (MismatchTyp (t1, t2)) ->
+	raise (Typ_error
+		 (p, sprintf " %s\nis not a subtype of (app)\n %s"
+		   (string_of_typ t1) (string_of_typ t2)))
+      | Not_subtype (ExtraFld (pat, prop)) -> 
+        raise (Typ_error
+                 (p, sprintf "ExtraField - %s : %s\n" (P.pretty pat) (string_of_prop prop)))
+      | Not_subtype (MismatchFld ((pat1, prop1), (pat2, prop2)) ) ->
+        raise (Typ_error (p, sprintf "Mismatched - %s : %s and %s : %s\n"
+          (P.pretty pat1) (string_of_prop prop1)
+          (P.pretty pat2) (string_of_prop prop2)))
 
   let simpl_static env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env (TPrim Num) typ
