@@ -1,0 +1,80 @@
+let (prNum = 
+     ref { __proto__ : null,
+           eval :
+           func (this) /*: EvalNum */
+           {
+               !this["val"]
+           }})
+let (prPlus = 
+     ref { __proto__ : null,
+           eval :
+           func (this) /*: EvalPlus */
+           {
+               let (left = (!this)["left"])
+               let (right = !this["right"])
+               let (lefteval = !left["eval"])
+               let (righteval = !right["eval"])
+               prim("+", lefteval(left), righteval(right))
+           }})
+let (prNumSimpl = 
+     ref { __proto__ : prNum,
+           simplify :
+           func (this) /*: SimplifyNum */ {
+               this
+           }})
+let (prPlusSimpl =
+     ref { __proto__ : prPlus,
+           simplify :
+
+           func (this) /*: SimplifyPlus */ {
+               let (left = !this["left"])
+               let (right = !this["right"])
+               let (lefteval = !left["eval"])
+               let (righteval = !right["eval"])
+               ref (upcast /*: {{ __proto__ : ref {{  eval : ^Eval, simplify : ^Simplify }}, eval : ^Eval, simplify : ^SimplifyPlus,
+                                  left : ref {{ eval : ^Eval, simplify : ^Simplify }},
+                                  right : ref {{ eval : ^Eval, simplify : ^Simplify }} }} */
+                    { __proto__: !this["__proto__"], // Crucial!
+                      left : ref (upcast /*: {{ eval : ^Eval, simplify : ^Simplify }} */ 
+                                  { __proto__: prNumSimpl, val : lefteval(left) }),
+                      right : ref (upcast /*: {{ eval : ^Eval, simplify : ^Simplify }} */
+                                   { __proto__ : prNumSimpl, val : righteval(right) }) })
+           }})
+let (prMinusSimpl =
+     ref { __proto__ : null,
+           eval :
+           func (this) /*: EvalPlus */
+           {
+               let (left = (!this)["left"])
+               let (right = !this["right"])
+               let (lefteval = !left["eval"])
+               let (righteval = !right["eval"])
+               prim("-", lefteval(left), righteval(right))
+           },
+           simplify :
+           func (this) /*: SimplifyPlus */ {
+               let (left = !this["left"])
+               let (right = !this["right"])
+               let (lefteval = !left["eval"])
+               let (righteval = !right["eval"])
+               ref (upcast /*: {{ __proto__ : ref {{  eval : ^Eval, simplify : ^Simplify }}, eval : ^Eval, simplify : ^SimplifyPlus,
+                                  left : ref {{ eval : ^Eval, simplify : ^Simplify }},
+                                  right : ref {{ eval : ^Eval, simplify : ^Simplify }} }} */
+                    { __proto__: !this["__proto__"], // Crucial!
+                      left : ref (upcast /*: {{ eval : ^Eval, simplify : ^Simplify }} */ 
+                                  { __proto__: prNumSimpl, val : lefteval(left) }),
+                      right : ref (upcast /*: {{ eval : ^Eval, simplify : ^Simplify }} */
+                                   { __proto__ : prNumSimpl, val : righteval(right) }) })
+           }})
+let (num1 = ref { __proto__ : prNumSimpl, val : 44.2 })
+let (num2 = ref { __proto__ : prNumSimpl, val : 12.2 })
+let (num3 = ref { __proto__ : prNumSimpl, val : 11.1 })
+let (plus1 = ref { __proto__ : prPlusSimpl, left : num1, right : num2 })
+let (minus1 = ref { __proto__ : prMinusSimpl, left : plus1, right : num2})
+!minus1["simplify"]
+</*: {{ *: _, __proto__ : PrPlusSimpl, 
+        left : ref {{ __proto__ : PrNumSimpl, "val" : Num, *:_}},
+        right : ref {{ __proto__ : PrNumSimpl, "val" : Num, *:_}} }} */>
+    </*: {{ *: _, __proto__ : PrNumSimpl, "val": Num}} */>
+    </*: {{ __proto__ : Null, simplify : SimplifyPlus, eval : EvalPlus, *: _}} */>
+    (minus1)
