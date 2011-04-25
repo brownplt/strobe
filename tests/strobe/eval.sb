@@ -8,13 +8,14 @@ let (prPlus = ref {__proto__: null, eval :
                        prim("+", lefteval(left), righteval(right))
                    }})
 let (prNum = ref {__proto__: null, eval : 
-               func (this) 
-               /*: EvalNum */
-                   {
-                       !this["val"]
-                   }})
+                  func (this) /*: EvalNum */
+                  {
+                      !this["val"]
+                  }})
 let (num1 = ref { __proto__ : prNum, val : 22.5 })
 let (num2 = ref { __proto__ : prNum, val : 44.1 })
 let (plus = ref { __proto__ : prPlus, left : num1, right : num2 })
-!plus["eval"]</*: {{ *: _, __proto__ : ref {{__proto__: Null, eval : Eval, *: _}}, "val": Num}} */>
+!plus["eval"]
+</*: {{ *: _, __proto__ : ref {{__proto__: Null, eval : EvalNum, *: _}}, "val": Num}} */>
+</*: {{ *: _, __proto__ : ref {{__proto__: Null, eval : EvalNum, *: _}}, "val": Num}} */>
     (plus)
