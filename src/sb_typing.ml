@@ -15,10 +15,7 @@ let array_idx_pat =
 
 
 let mk_array_typ p env elt_typ =
-  TRef (TObject
-	  [(array_idx_pat, PMaybe elt_typ);
-	   (Sb_strPat.singleton "length", PPresent (TPrim Int));
-	   (Sb_strPat.singleton "__proto__", PPresent (TId "Array_proto"))])
+  TApp (TId "Array", elt_typ)
 	  
 let error_on_unreachable = ref true
 
