@@ -95,7 +95,6 @@ type func_info = {
   func_loop : bool;
 }
 
-
 (** Typed JavaScript expressions. Additional well-formedness criteria are
     inline. *)
 type exp

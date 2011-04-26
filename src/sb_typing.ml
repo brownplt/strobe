@@ -49,6 +49,14 @@ let un_ref t = match t with
   | TSource s -> s
   | TSink s -> s
   | _ -> failwith ("un_ref got " ^ string_of_typ t)
+
+let check_kind p env typ : typ =
+  match Env.kind_check env typ with
+    | KStar -> typ
+    | k ->
+      raise 
+	(Typ_error 
+	   (p, sprintf "type term has kind %s; expected *" (string_of_kind k)))
  
 let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
   | EConst (_, c) -> tc_const c
@@ -65,7 +73,8 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       | _ -> tc_exp env e2
     end
   | ERef (p1, RefCell, EEmptyArray (p2, elt_typ)) -> 
-      mk_array_typ p2 env elt_typ
+    let elt_typ = check_kind p2 env elt_typ in
+    mk_array_typ p2 env elt_typ
   | ERef (p1, RefCell, EArray (p2, [])) -> 
     raise (Typ_error (p2, "an empty array literal requires a type annotation"))
   | ERef (p1, RefCell, EArray (p2, es)) ->
@@ -107,26 +116,27 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
                       (string_of_typ s)))
     end
   | ELabel (p, l, t, e) -> 
-      let s = tc_exp (Env.bind_lbl l t env) e in
-        if Env.subtype env s t then t
-        else raise (Typ_error (p, "label type mismatch"))
+    let t = check_kind p env t in
+    let s = tc_exp (Env.bind_lbl l t env) e in
+    if Env.subtype env s t then t
+    else raise (Typ_error (p, "label type mismatch"))
   | EBreak (p, l, e) ->
-      let s = 
-        try Env.lookup_lbl l env
-        with Not_found -> 
-          raise (Typ_error (p, "label " ^ l ^ " is not defined"))
-      and t = tc_exp env e in
-        if Env.subtype env t s then TBot
-        else raise
-          (Typ_error 
-             (p,
-              match l with
-                  "%return" -> sprintf 
-                    "this expression has type %s, but the function\'s return \
+    let s = 
+      try Env.lookup_lbl l env
+      with Not_found -> 
+        raise (Typ_error (p, "label " ^ l ^ " is not defined"))
+    and t = tc_exp env e in
+    if Env.subtype env t s then TBot
+    else raise
+      (Typ_error 
+         (p,
+          match l with
+              "%return" -> sprintf 
+                "this expression has type %s, but the function\'s return \
                      type is %s" (string_of_typ t) (string_of_typ s)
-                | _ -> (* This should not happen. Breaks to labels always have 
-                          type typ_undef *)
-                    sprintf "this expression has type %s, but the label %s has \
+            | _ -> (* This should not happen. Breaks to labels always have 
+                      type typ_undef *)
+              sprintf "this expression has type %s, but the label %s has \
                           type %s" (string_of_typ t) l (string_of_typ s)))
   | ETryCatch (_, e1, x, e2) ->
       let t1 = tc_exp env e1
@@ -240,7 +250,6 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
 	      let guess_typ_app exp typ_var = 
 		try
 		  let guessed_typ = IdMap.find typ_var assoc in
-                  printf "Guessing: %s\n" (string_of_typ guessed_typ);
 		  ETypApp (p, exp, guessed_typ) 
 		with Not_found -> begin
 		  error p (sprintf "$$$ could not instantiate") end in
@@ -255,19 +264,20 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
 		     (string_of_typ not_func_typ))
       end in check_app (un_null (tc_exp env f)) 
   | ERec (binds, body) -> 
-      let f env (x, t, e) =
-        Env.bind_id x t env in
-      let env = fold_left f env binds in
-      let tc_bind (x, t, e) =
-        let s = tc_exp env e in
-          if Env.subtype env s t then ()
-          else (* this should not happen; rec-annotation is a copy of the
-                  function's type annotation. *)
-            failwith (sprintf "%s is declared to have type %s, but the bound \
+    (* No kinding check here, but it simply copies the type from the function.
+       Let it work. (Actual reason: no position available) *)
+    let f env (x, t, e) = Env.bind_id x t env in
+    let env = fold_left f env binds in
+    let tc_bind (x, t, e) =
+      let s = tc_exp env e in
+      if Env.subtype env s t then ()
+      else (* this should not happen; rec-annotation is a copy of the
+              function's type annotation. *)
+        failwith (sprintf "%s is declared to have type %s, but the bound \
                              expression has type %s" x (string_of_typ t)
-                        (string_of_typ s)) in
-        List.iter tc_bind binds;
-        tc_exp env body
+                    (string_of_typ s)) in
+    List.iter tc_bind binds;
+    tc_exp env body
   | EFunc (p, args, func_info, body) -> 
     begin
       let misowned_vars = IdSet.inter !consumed_owned_vars 
@@ -279,58 +289,62 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
         consumed_owned_vars := IdSet.union !consumed_owned_vars
           func_info.func_owned;
     end;
-      let expected_typ = func_info.func_typ in
-      begin match Env.bind_typ env (simpl_typ env expected_typ) with
-        | (env, TArrow (arg_typs, result_typ)) ->
-            if not (List.length arg_typs = List.length args) then
-              error p 
-                (sprintf "given %d argument names, but %d argument types"
-                   (List.length args) (List.length arg_typs));
-            let bind_arg env x t = Env.bind_id x t env in
-            let env = List.fold_left2 bind_arg env args arg_typs in
-            let env = Env.clear_labels env in
-            let body = 
-              if !is_flows_enabled then
-                Sb_semicfa.semicfa (func_info.func_owned) env body 
-              else 
-                body in
-            let body_typ = tc_exp env body in
-            
-            if Env.subtype env body_typ result_typ then 
-              expected_typ
-            else 
-              (Env.assert_subtyp env p body_typ result_typ;
-               raise (Typ_error
-                  (p,
-                   sprintf "function body has type\n%s\n, but the \
-                             return type is\n%s" (string_of_typ body_typ)
-                     (string_of_typ result_typ))))
-        | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
-      end
-  | ESubsumption (p, t, e) ->
-      let s = tc_exp env e in
-        if Env.subtype env s t then
-          t
-        else 
-          (Env.assert_subtyp env p s t;
-           raise (Typ_error (p, "subsumption error")))
-  | EAssertTyp (p, t, e) ->
-      let s = tc_exp env e in
-        if Env.subtype env s t then
-          s (* we do not subsume *)
-        else
+    let expected_typ = check_kind p env (func_info.func_typ) in
+    begin match Env.bind_typ env (simpl_typ env expected_typ) with
+      | (env, TArrow (arg_typs, result_typ)) ->
+        if not (List.length arg_typs = List.length args) then
           error p 
-            (sprintf "expression has type %s, which is incompatible with the \
+            (sprintf "given %d argument names, but %d argument types"
+               (List.length args) (List.length arg_typs));
+        let bind_arg env x t = Env.bind_id x t env in
+        let env = List.fold_left2 bind_arg env args arg_typs in
+        let env = Env.clear_labels env in
+        let body = 
+          if !is_flows_enabled then
+            Sb_semicfa.semicfa (func_info.func_owned) env body 
+          else 
+            body in
+        let body_typ = tc_exp env body in
+        
+        if Env.subtype env body_typ result_typ then 
+          expected_typ
+        else 
+          (Env.assert_subtyp env p body_typ result_typ;
+           raise (Typ_error
+                    (p,
+                     sprintf "function body has type\n%s\n, but the \
+                             return type is\n%s" (string_of_typ body_typ)
+                       (string_of_typ result_typ))))
+      | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
+    end
+  | ESubsumption (p, t, e) ->
+    let t = check_kind p env t in
+    let s = tc_exp env e in
+    if Env.subtype env s t then
+      t
+    else 
+      (Env.assert_subtyp env p s t;
+       raise (Typ_error (p, "subsumption error")))
+  | EAssertTyp (p, t, e) ->
+    let t = check_kind p env t in
+    let s = tc_exp env e in
+    if Env.subtype env s t then
+      s (* we do not subsume *)
+    else
+      error p 
+        (sprintf "expression has type %s, which is incompatible with the \
                       annotation" (string_of_typ s))
   | EDowncast (p, t, e) -> 
-      let (p1, p2) = Exp.pos e in 
-        contracts := IntMap.add p1.Lexing.pos_cnum (p2.Lexing.pos_cnum, t)
-          !contracts;
-        ignore (tc_exp env e);
-        t
+    let t = check_kind p env t in
+    let (p1, p2) = Exp.pos e in 
+    contracts := IntMap.add p1.Lexing.pos_cnum (p2.Lexing.pos_cnum, t)
+      !contracts;
+    ignore (tc_exp env e);
+    t
   | ETypAbs (p, x, t, e) ->
-      let env = Env.bind_typ_id x t env in
-      TForall (x, t, tc_exp env e)
+    (* bind_typ_id does the kinding check *)
+    let env = Env.bind_typ_id x t env in
+    TForall (x, t, tc_exp env e)
   | ETypApp (p, e, u) ->
     begin match simpl_typ env (tc_exp env e) with
       | TForall (x, s, t) ->

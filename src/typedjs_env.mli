@@ -16,6 +16,8 @@ module Env : sig
 
   val empty_env : env
 
+  val kind_check : env -> typ -> kind
+
   val bind_id : id -> typ -> env -> env
 
   val bind_lbl : id -> typ -> env -> env
