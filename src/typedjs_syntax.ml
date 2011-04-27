@@ -246,16 +246,6 @@ module Typ = struct
     | (_, PPresent _) -> true
     | _ -> false
 
-
-
-  (** [obj_cover t] returns a pattern that matches the strings in the object's
-      domain. When [t] is a [TObject _], it excludes the prototype. *)
-  let obj_cover (typ : typ) = match typ with
-    | TObject flds ->
-      fold_left P.union P.empty (map fst2 flds)
-    | _ ->
-      raise (Invalid_argument "obj_cover requires an object type")
-
 end
 
 module Exp = struct
