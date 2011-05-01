@@ -239,7 +239,8 @@ module Env = struct
       if P.is_overlapped pat idx_pat then
         match fld with
 	  | PMaybe t ->
-	    let (fld_typ', all_pat, rest_pat') = fields_helper env flds' idx_pat idx_for_proto in
+	    let (fld_typ', all_pat, rest_pat') =
+	      fields_helper env flds' idx_pat idx_for_proto in
 	    (typ_union env t fld_typ', P.subtract all_pat pat, rest_pat')
           | PInherited t
 	  | PPresent t -> 
@@ -247,14 +248,16 @@ module Env = struct
 	      fields_helper env flds' idx_pat (P.subtract idx_for_proto pat) in
 	    (typ_union env t fld_typ', P.subtract all_pat pat, rest_pat')
 	  | PAbsent -> 
-            let (fld_typ, all_pat, rest_pat) = fields_helper env flds' idx_pat idx_for_proto in
+            let (fld_typ, all_pat, rest_pat) =
+	      fields_helper env flds' idx_pat idx_for_proto in
             (fld_typ, P.subtract all_pat pat, rest_pat)
       else
         fields_helper env flds' idx_pat idx_for_proto
 
   and fields p env obj_typ idx_pat = match simpl_typ env obj_typ with
     | TObject flds -> 
-      let (fld_typ, all_pat, rest_pat) = fields_helper env flds idx_pat idx_pat in
+      let (fld_typ, all_pat, rest_pat) = 
+	fields_helper env flds idx_pat idx_pat in
       if not (P.is_empty all_pat) then 
         raise (Typ_error
                  (p, sprintf "Something left when performing fields: %s, \
@@ -266,8 +269,9 @@ module Env = struct
 	    if P.is_empty rest_pat then
 	      fld_typ
 	    else
-	      raise (Typ_error
-		       (p, sprintf "no type for __proto__ in:\n %s\nBut, index is \
+	      raise 
+		(Typ_error
+		   (p, sprintf "no type for __proto__ in:\n %s\nBut, index is \
                                 \n %s\n" (string_of_typ obj_typ)
 		         (P.pretty rest_pat)))
           | Some (TPrim Null) ->
@@ -276,8 +280,9 @@ module Env = struct
           | Some (TSource proto_typ) ->
 	    typ_union env fld_typ (fields p env proto_typ rest_pat)
           | Some typ ->
-	    raise (Typ_error
-		     (p, sprintf "prototype has type\n  %s\nin object of type\n  %s"
+	    raise 
+	      (Typ_error
+		 (p, sprintf "prototype has type\n  %s\nin object of type\n  %s"
 		       (string_of_typ typ) (string_of_typ obj_typ)))
         end
     | obj_typ ->
