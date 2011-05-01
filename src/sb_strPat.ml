@@ -92,6 +92,8 @@ let is_overlapped pat1 pat2 = not (is_empty (intersect pat1 pat2))
 let contains pat1 pat2 = 
   is_empty (intersect pat1 (negate pat2))
 
+let is_subset = contains
+
 let is_member str pat = match pat with
   | StrPlus strs -> IdSet.mem str strs
   | StrMinus strs -> not (IdSet.mem str strs)

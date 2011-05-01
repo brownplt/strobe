@@ -159,7 +159,7 @@ module Env = struct
       match simpl_s, simpl_t with
         | TPrim Int, TPrim Num -> cache
         | TRegex pat1, TRegex pat2 ->
-          if P.contains pat1 pat2 then cache 
+          if P.is_subset pat1 pat2 then cache 
             else raise (Not_subtype (MismatchTyp (TRegex pat1, TRegex pat2)))
 
       (* TId cases should be handled by simpl_typ 
