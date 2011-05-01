@@ -1,0 +1,103 @@
+open Prelude
+
+module StringSet = Set.Make (String)
+module StringSetExt = SetExt.Make (StringSet)
+
+
+type t =
+  | Finite of StringSet.t
+  | CoFinite of StringSet.t
+
+let parse pos str =
+  failwith "PatSets.parse not implemented"
+
+let singleton str = Finite (StringSet.singleton str)
+
+let singleton_string v = match v with
+  | CoFinite _ -> None
+  | Finite set -> match StringSet.cardinal set with
+      | 0 -> Some (StringSet.choose set)
+      | _ -> None
+
+let empty = Finite StringSet.empty
+
+let all = CoFinite StringSet.empty
+
+let intersect v1 v2 = match v1, v2 with
+  | Finite set1, Finite set2 -> Finite (StringSet.inter set1 set2)
+  | CoFinite set1, CoFinite set2 -> CoFinite (StringSet.union set1 set2)
+  | Finite fset, CoFinite cfset
+  | CoFinite cfset, Finite fset -> Finite (StringSet.diff fset cfset)
+
+let union v1 v2 = match v1, v2 with
+  | Finite set1, Finite set2 -> Finite (StringSet.union set1 set2)
+  | CoFinite set1, CoFinite set2 -> CoFinite (StringSet.inter set1 set2)
+  | Finite fset, CoFinite cfset
+  | CoFinite cfset, Finite fset -> CoFinite (StringSet.diff cfset fset)
+
+let negate v = match v with
+  | Finite set -> CoFinite set
+  | CoFinite set -> Finite set
+
+let subtract v1 v2 = intersect v1 (negate v2)
+
+let concat _ _ =
+  failwith "concat not implemented--probably should not be"
+
+let is_empty v = match v with
+  | Finite set -> StringSet.is_empty set
+  | CoFinite _ -> false
+
+let is_finite v = match v with
+  | Finite _ -> true
+  | CoFinite _ -> false
+
+let is_overlapped v1 v2 = match v1, v2 with
+  | Finite set1, Finite set2 ->
+    not (StringSet.is_empty (StringSet.inter set1 set2))
+  | CoFinite _, CoFinite _ -> 
+    (* There is always some element not in the set of excluded strings that
+       is common to both co-finite sets. *)
+    true
+  | Finite fset, CoFinite cfset
+  | CoFinite cfset, Finite fset ->
+    StringSet.equal fset cfset
+
+let is_subset v1 v2 = match v1, v2 with
+  | Finite set1, Finite set2 -> StringSet.subset set1 set2
+  | CoFinite set1, CoFinite set2 -> StringSet.subset set2 set1
+  | Finite fset, CoFinite cfset ->
+    StringSet.is_empty (StringSet.inter fset cfset)
+  | CoFinite _, Finite _ -> false
+
+let is_member str v = match v with
+  | Finite set -> StringSet.mem str set
+  | CoFinite set -> not (StringSet.mem str set)
+
+let is_equal v1 v2 = match v1, v2 with
+  | Finite set1, Finite set2
+  | CoFinite set1, CoFinite set2 ->
+    StringSet.equal set1 set2
+  | _ -> false
+
+let example v = match v with
+  | Finite set -> 
+    if StringSet.is_empty set then
+      None
+    else
+      Some (StringSet.choose set)
+  | CoFinite set -> failwith "example from a co-finite set, whoa"
+
+let pretty_helper v =
+  let open FormatExt in
+  match v with
+    | Finite set -> StringSetExt.p_set text set
+    | CoFinite set -> horz [ text "-"; StringSetExt.p_set text set; text "-" ]
+
+
+let pretty v =
+  FormatExt.to_string pretty_helper v
+  
+    
+
+    
