@@ -15,6 +15,8 @@ open Typedjs_dyn
 open RegLang
 open RegLang_generate
 
+module D = Sb_regex
+
 let parse_sb cin name =
   let lexbuf = Lexing.from_string cin in
     try 

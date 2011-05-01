@@ -205,6 +205,7 @@ module Env = struct
         | TForall (x1, s1, t1), TForall (x2, s2, t2) -> 
 	  (* Kernel rule *)
 	  printf "Maybe undecidable...\n%!";
+	  (* TODO: ensure s1 = s2 *)
 (*	  let cache = subt env cache s1 s2 in
 	  let cache = subt env cache s2 s1 in 
 	  let env = bind_typ_id x1 s1 env in
