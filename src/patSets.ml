@@ -16,7 +16,7 @@ let singleton str = Finite (StringSet.singleton str)
 let singleton_string v = match v with
   | CoFinite _ -> None
   | Finite set -> match StringSet.cardinal set with
-      | 0 -> Some (StringSet.choose set)
+      | 1 -> Some (StringSet.choose set)
       | _ -> None
 
 let empty = Finite StringSet.empty
@@ -98,6 +98,14 @@ let pretty_helper v =
 let pretty v =
   FormatExt.to_string pretty_helper v
   
-    
 
-    
+let rec set_to_nfa set = 
+  let module R = PatReg in
+  StringSet.fold
+    (fun str nfa -> R.union (R.singleton str) nfa)
+    set
+    R.empty
+
+let to_nfa v = match v with
+  | Finite set -> set_to_nfa set
+  | CoFinite set -> PatReg.negate (set_to_nfa set)

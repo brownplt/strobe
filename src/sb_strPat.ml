@@ -1,64 +1,83 @@
 open Prelude
-open RegLang
 
-open Dprle_nfa
-open Sb_regex
+module R = PatReg
+module S = PatSets
 
-module Nfa = Dprle_nfa
+type t = 
+  | Reg of R.t
+  | Set of S.t
+  | Both of R.t * S.t
 
-(** Type of string patterns. *)
-type t = nfa
+let parse pos str = Reg (R.parse pos str)
 
-(** Parse a string representing a pattern. *)
-let parse pos str =
-  to_nfa (RegLang.parse_regex pos str)
+let singleton str = Set (S.singleton str)
 
-let singleton str = to_nfa (RegLang_syntax.String str)
+let singleton_string v = match v with
+  | Reg r -> R.singleton_string r
+  | Set s -> S.singleton_string s
 
-let singleton_string = gen_string
+let empty = Set S.empty
 
-let empty = new_nfa_states 0 1
+let all = Set S.all
 
-let all = new_sigmastar ()
+let intersect v1 v2 = match v1, v2 with
+  | Set s1, Set s2 -> Set (S.intersect s1 s2)
+  | Reg r1, Reg r2 -> Reg (R.intersect r1 r2)
+  | Set s, Reg r
+  | Reg r, Set s -> Reg (R.intersect r (S.to_nfa s))
 
-let intersect p1 p2 = 
-  printf "Intersect\n%!";
-  simple_intersect p1 p2
+let union v1 v2 = match v1, v2 with
+  | Set s1, Set s2 -> Set (S.union s1 s2)
+  | Reg r1, Reg r2 -> Reg (R.union r1 r2)
+  | Set s, Reg r
+  | Reg r, Set s -> Reg (R.union r (S.to_nfa s))
 
-let union  p1 p2 = 
-  printf "union\n%!";
-  Nfa.union p1 p2
+let subtract v1 v2 = match v1, v2 with
+  | Set s1, Set s2 -> Set (S.subtract s1 s2)
+  | Reg r1, Reg r2 -> Reg (R.subtract r1 r2)
+  | Set s, Reg r
+  | Reg r, Set s -> Reg (R.subtract r (S.to_nfa s))
 
-let negate pat  = 
-  let pat' = Nfa.nfa_to_dfa pat in
-  complement pat';
-  pat'
+let negate v = match v with
+  | Set s -> Set (S.negate s)
+  | Reg r -> Reg (R.negate r)
 
-let subtract pat1 pat2 = 
-  Nfa.simple_intersect pat1 (negate pat2)
+let concat _ _ = failwith "concat NYI"
 
-let concat = Nfa.simple_concat
+let is_empty v = match v with
+  | Set s -> S.is_empty s
+  | Reg r -> R.is_empty r
 
-let is_empty = Nfa.is_empty
+let is_finite v = match v with
+  | Set s -> S.is_finite s
+  | Reg r -> R.is_finite r
 
-let is_finite _ = true
+let is_subset v1 v2 = match v1, v2 with
+  | Set s1, Set s2 -> S.is_subset s1 s2
+  | Reg r1, Reg r2 -> R.is_subset r1 r2
+  | Set s, Reg r -> R.is_subset (S.to_nfa s) r
+  | Reg r, Set s -> R.is_subset r (S.to_nfa s)
 
-let is_overlapped pat1 pat2 = 
-  printf "Overlapped?\n%!";
-  not (is_empty (intersect pat1 pat2))
+let is_overlapped v1 v2 = match v1, v2 with
+  | Set s1, Set s2 -> S.is_overlapped s1 s2
+  | Reg r1, Reg r2 -> R.is_overlapped r1 r2
+  | Set s, Reg r -> R.is_overlapped (S.to_nfa s) r
+  | Reg r, Set s -> R.is_overlapped r (S.to_nfa s)
 
-let is_subset p1 p2 =
-  printf "contains\n%!";
-  Nfa.nfa_subseteq p1 p2
+let is_member str v = match v with
+  | Set s -> S.is_member str s
+  | Reg r -> R.is_member str r
 
-let is_member str pat = 
-  printf "is_member\n%!";
-  Nfa.nfa_subseteq (to_nfa (RegLang_syntax.String str)) pat
+let is_equal v1 v2 = match v1, v2 with
+  | Set s1, Set s2 -> S.is_equal s1 s2
+  | Reg r1, Reg r2 -> R.is_equal r1 r2
+  | Set s, Reg r -> R.is_equal (S.to_nfa s) r
+  | Reg r, Set s -> R.is_equal r (S.to_nfa s)
 
-let is_equal p1 p2 = 
-  printf "is_equal\n%!";
-  Nfa.nfa_eq p1 p2
-
-let example pat = gen_string pat
-
-let pretty pat =  "** unprintable DFA **"
+let example v = match v with
+  | Set s -> S.example s
+  | Reg r -> R.example r
+ 
+let pretty v = match v with
+  | Set s -> S.pretty s
+  | Reg r -> R.pretty r
