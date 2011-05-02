@@ -15,8 +15,6 @@ open Typedjs_dyn
 open RegLang
 open RegLang_generate
 
-module D = Sb_regex
-
 let parse_sb cin name =
   let lexbuf = Lexing.from_string cin in
     try 
@@ -136,7 +134,8 @@ let get_typedjs () =
         (Typedjs_fromExpr.from_exprjs (get_env ())
            (from_javascript (parse_javascript (get_cin ()) (get_cin_name ()))))
     | "sb" -> 
-        (parse_sb (get_cin ()) (get_cin_name ())) in
+        (parse_sb (get_cin ()) (get_cin_name ())) 
+    | ext -> failwith ("unknown file extension " ^ ext)in
   let (prog, _) = unique_ids tjs in 
     Sb_owned.owned_inference prog
 
@@ -149,45 +148,6 @@ let action_tc () : unit =
     if get_print_contracts () then
       let tr_map = mk_contract_transformers !contracts in
         transform_exprs tr_map (get_cin ()) stdout
-
-let action_reglang () : unit =
-  let depth = get_re_test_depth () in
-  let count = get_re_test_count () in
-  let res1 = random_res depth count in
-  let res2 = random_res depth count in
-  List.iter2 (fun re1 re2 -> 
-    printf "%s <: %s;\n" (RegLang_syntax.Pretty.string_of_re re1)
-      (RegLang_syntax.Pretty.string_of_re re2))
-    res1 res2
-  
-
-let action_regex () : unit =
-  let lexbuf = from_string (get_cin ()) in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = get_cin_name () };
-  let tests = 
-    try
-      RegLang_parser.regex_tests RegLang_lexer.token lexbuf
-    with
-      |  Failure "lexing: empty token" ->
-           failwith (sprintf "lexical error at %s"
-                       (string_of_position
-                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
-      | RegLang_parser.Error ->
-        failwith (sprintf "parse error at %s; unexpected token %s"
-                    (string_of_position
-                       (lexbuf.lex_curr_p, lexbuf.lex_curr_p))
-                    (lexeme lexbuf)) in
-  let run_test (pos, re1, re2, should_succeed) = 
-    let fsm1 = RegLang.fsm_of_regex re1 in
-    let fsm2 = RegLang.fsm_of_regex re2 in
-    printf "Testing: %s <: %s ...\n%!" (RegLang_syntax.Pretty.string_of_re re1) 
-      (RegLang_syntax.Pretty.string_of_re re2);
-      match RegLang.counterexample fsm1 fsm2, should_succeed with
-        | None, false -> printf "(Failed) expected overlap\n"; ()
-        | Some str, true ->eprintf "(Failed) Found overlap: %s\n" str; () 
-        | _, _ -> () in
-  List.iter run_test tests
-  
 
 let action = ref action_tc
 
@@ -219,13 +179,6 @@ let main () : unit =
        "do not signal an error on unreachable code");
       ("-noflows", Arg.Unit disable_flows,
        "disable flow analysis (benchmarks and debugging)");
-      ("-regex", Arg.Unit (set_action action_regex),
-       "regular expression containment tests");
-      ("-regex-depth", Arg.Int (fun i -> set_re_test_depth i),
-       "set the depth of the res to generate (use with regex-generate)");
-      ("-regex-generate", Arg.Int (fun i -> set_re_test_count i;
-        (set_action action_reglang) ()),
-       "generate <count> random regular expressions");
       ("-sb", Arg.Unit (set_sourcetype "sb"),
        "Parse strobe source");
       set_simpl_cps;

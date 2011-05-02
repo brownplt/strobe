@@ -6,7 +6,7 @@ module S = PatSets
 type t = 
   | Reg of R.t
   | Set of S.t
-  | Both of R.t * S.t
+  | Both of R.t * S.t (** non-overlapping representations *)
 
 let parse pos str = Reg (R.parse pos str)
 

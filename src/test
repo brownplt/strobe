@@ -1,11 +1,5 @@
 #!/bin/bash
 
-for file in ../tests/regex/*.txt
-do
-    echo "Test ../tests/gadgets/$file ... "
-    ../obj/main.d.byte -regex $file
-done
-
 for file in ../tests/strobe/*.sb
 do
   echo -en "\r\e[KTest $file ... "
