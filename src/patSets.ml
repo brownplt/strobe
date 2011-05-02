@@ -61,12 +61,15 @@ let is_overlapped v1 v2 = match v1, v2 with
     true
   | Finite fset, CoFinite cfset
   | CoFinite cfset, Finite fset ->
-    StringSet.equal fset cfset
+    (* The finite set must be contained in the excluded elements of the
+       co-finite set. Any element not explicitly excluded is in cfset. *)
+    not (StringSet.subset fset cfset)
 
 let is_subset v1 v2 = match v1, v2 with
   | Finite set1, Finite set2 -> StringSet.subset set1 set2
   | CoFinite set1, CoFinite set2 -> StringSet.subset set2 set1
   | Finite fset, CoFinite cfset ->
+    (* The finite set must be in the complement *)
     StringSet.is_empty (StringSet.inter fset cfset)
   | CoFinite _, Finite _ -> false
 
@@ -91,8 +94,13 @@ let example v = match v with
 let pretty_helper v =
   let open FormatExt in
   match v with
-    | Finite set -> StringSetExt.p_set text set
-    | CoFinite set -> horz [ text "-"; StringSetExt.p_set text set; text "-" ]
+    | Finite set -> 
+      if StringSet.cardinal set = 1 then
+	text (StringSet.choose set)
+      else
+	StringSetExt.p_set text set
+    | CoFinite set ->
+      horz [ squish [ text "-"; StringSetExt.p_set text set; text "-" ] ]
 
 
 let pretty v =

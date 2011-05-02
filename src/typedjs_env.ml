@@ -142,7 +142,15 @@ module Env = struct
       None
     else 
       Some (pat', prop)
-
+	
+  let rec get_prototype_typ env flds = match flds with
+    | [] -> None
+    | ((pat, fld) :: flds') -> match P.is_member proto_str pat with
+        | true -> begin match fld with
+	    | PPresent t -> Some (simpl_typ env t)
+	    | _ -> failwith "maybe proto wtf"
+        end
+        | false -> get_prototype_typ env flds'
 
 
   let rec subt env (cache : TPSet.t) s t : TPSet.t = 
@@ -161,22 +169,6 @@ module Env = struct
         | TRegex pat1, TRegex pat2 ->
           if P.is_subset pat1 pat2 then cache 
             else raise (Not_subtype (MismatchTyp (TRegex pat1, TRegex pat2)))
-
-      (* TId cases should be handled by simpl_typ 
-        | TId x, TId y -> 
-	  if x = y then 
-	    cache 
-	  else 
-	    raise (Not_subtype (MismatchTyp (TId x, TId y)))
-        | TId x, t -> begin try
-          let s = IdMap.find x env.typ_ids in (* S-TVar *)
-            subtype cache s t (* S-Trans *)
-          with Not_found -> failwith (sprintf "failed looking up %s" x) end
-        | t, TId y -> begin try
-          let s = IdMap.find y env.typ_ids in (* S-TVar *)
-            subtype cache t s (* S-Trans *)
-          with Not_found -> failwith (sprintf "failed looking up %s" y) end
-      *)
         | TIntersect (s1, s2), _ -> 
           begin 
             try subtype cache s1 t
@@ -204,17 +196,10 @@ module Env = struct
         | TRef s, TSink t -> subtype cache t s
         | TForall (x1, s1, t1), TForall (x2, s2, t2) -> 
 	  (* Kernel rule *)
-	  printf "Maybe undecidable...\n%!";
 	  (* TODO: ensure s1 = s2 *)
-(*	  let cache = subt env cache s1 s2 in
-	  let cache = subt env cache s2 s1 in 
-	  let env = bind_typ_id x1 s1 env in
-	  let env = bind_typ_id x2 s2 env in *)
-
-	  
-            let (env', typ') = bind_typ env s in
-            let (env'', typ'') = bind_typ env t in
-              subt env cache typ' typ''
+          let (env', typ') = bind_typ env s in
+          let (env'', typ'') = bind_typ env t in
+          subt env cache typ' typ''
         | _, TTop -> cache
         | TBot, _ -> cache
 	| TLambda (x, KStar, s), TLambda (y, KStar, t) ->
@@ -222,16 +207,6 @@ module Env = struct
 	  let env = bind_typ_id y TTop env in
 	  subt env cache s t
         | _ -> raise (Not_subtype (MismatchTyp (s, t)))
-
-  and get_prototype_typ env flds = match flds with
-    | [] -> None
-    | ((pat, fld) :: flds') -> match P.is_member proto_str pat with
-        | true -> begin match fld with
-	    | PPresent t -> Some (simpl_typ env t)
-	    | _ -> failwith "maybe proto wtf"
-        end
-        | false -> get_prototype_typ env flds'
-
 
   and fields_helper env flds idx_pat idx_for_proto =  match flds with
     | [] -> (TBot, idx_pat, idx_for_proto)
@@ -260,9 +235,10 @@ module Env = struct
 	fields_helper env flds idx_pat idx_pat in
       if not (P.is_empty all_pat) then 
         raise (Typ_error
-                 (p, sprintf "Something left when performing fields: %s, \
-                              on object \n %s" 
-                   (P.pretty all_pat) (string_of_typ obj_typ)))
+                 (p, sprintf "cannot index object:\n%s\nwith pattern that \
+                              contains: %s"
+		   (string_of_typ obj_typ)                  
+		   (P.pretty all_pat)))
       else
         begin match get_prototype_typ env flds with
           | None -> 
@@ -345,9 +321,6 @@ module Env = struct
         | PInherited _ -> cache'
         | _ -> raise (Not_subtype (ExtraFld (pat, fld)))
     with Not_found -> cache'
-
-        
-
 
   and subtypes env ss ts = 
     try 
