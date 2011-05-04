@@ -197,9 +197,10 @@ module Env = struct
         | TForall (x1, s1, t1), TForall (x2, s2, t2) -> 
 	  (* Kernel rule *)
 	  (* TODO: ensure s1 = s2 *)
-          let (env', typ') = bind_typ env s in
-          let (env'', typ'') = bind_typ env t in
-          subt env cache typ' typ''
+	  let cache' = subt env (subt env cache s1 s2) s2 s1 in
+	  let t2 = typ_subst x2 (TId x1) t2 in
+          let env' = bind_typ_id x1 s1 env in
+	  subt env' cache' t1 t2
         | _, TTop -> cache
         | TBot, _ -> cache
 	| TLambda (x, KStar, s), TLambda (y, KStar, t) ->
