@@ -41,5 +41,10 @@ let (Point = ref
 		  "__proto__" : null
 		}}}))
     !pt2["setColor"]("purplish");
-!pt2["dist"]()
-	  
+!pt2["dist"]();
+let (distCaller = func(anyPt) /*: forall o <: {{ dist : ^([] -> Num) }} . [ref 'o] -> Num */ {
+	!anyPt["dist"]()
+    })
+    distCaller(pt2);
+distCaller(pt1)
+
