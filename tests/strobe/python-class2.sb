@@ -6,14 +6,14 @@ let (Point = ref
 
     letrec (pt1 /*: {x : Num, y : Num, dist : _,
                      "__class__" : {dist : 'Point_dist, "__proto__": Null, *: _}, 
-		     "__proto__" : {dist : -> Num, "__proto__": Null, *: _} } */ = 
+		     "__proto__" : {dist : [] -> Num, "__proto__": Null, *: _} } */ = 
 	    ref 
 	    (upcast /*: {{x : Num, y : Num, dist : _,
                      "__class__" : {dist : 'Point_dist, "__proto__": Null, *: _}, 
-		     "__proto__" : {dist : -> Num, "__proto__": Null, *: _} }} */
+		     "__proto__" : {dist : [] -> Num, "__proto__": Null, *: _} }} */
 	     {x : 2.3, y : 9.7, __class__ : Point, __proto__ :
 		 ref
-		 { dist : func(_) /*: -> Num */ {
+		 { dist : func() /*: [] -> Num */ {
 			 !(!pt1["__class__"])["dist"](pt1)
 		     },
 		   __proto__ : null}}))
@@ -35,11 +35,11 @@ let (Point = ref
 		  },
 		"__proto__":
 		ref 
-		{ dist: func(_) /*: -> Num */ {
+		{ dist: func() /*: [] -> Num */ {
 			!(!pt2["__class__"])["dist"](pt2)
 		    },
 		  "__proto__" : null
 		}}}))
     !pt2["setColor"]("purplish");
-!pt2["dist"](undefined) // undefined is a dummy value here... parser won't do 0 arg functions
+!pt2["dist"]()
 	  
