@@ -1,0 +1,48 @@
+let (Point = 
+    { dist : ref (func(self) /*: 'Point_dist */ {
+	    prim("+", !(self["x"]), !(self["y"]))
+	    }),
+      __proto__ : null })
+
+    letrec (pt1 /*: {{x : ref Num, y : ref Num, dist : _,
+                     "__class__" : {dist : ref 'Point_dist, "__proto__": Null, *: _}, 
+		     "__proto__" : {dist : ref ([] -> Num), "__proto__": Null, *: _} }} */ = 
+	    (upcast /*: {{x : ref Num, y : ref Num, dist : _,
+                     "__class__" : {dist : ref 'Point_dist, "__proto__": Null, *: _}, 
+		     "__proto__" : {dist : ref ([] -> Num), "__proto__": Null, *: _} }} */
+	     {x : ref 2.3, y : ref 9.7, __class__ : ref Point, __proto__ :
+		 ref
+	      { dist : ref (func() /*: [] -> Num */ {
+			  !(!(pt1["__class__"])["dist"])(pt1)
+		      }),
+		__proto__ : null}}))
+
+    let (ColorPoint = 
+	{ __proto__ : ref Point,
+	  setColor : ref (func(self, color) /*: 'ColorPoint_setColor */ {
+		self["color"] := color; undefined
+	      }) })
+    letrec (pt2 /*: 'cpt */ =
+	    (upcast /*: 'cpt */ 
+	     {x : ref 2.3, y : ref 9.7, color : ref (upcast /*: Str */ "blue"),
+	      "__class__" : ref ColorPoint,
+	      "__proto__": 
+	      ref
+	      { setColor : ref (func(color) /*: [Str] -> Undef */ {
+			  !((! (pt2["__class__"])) ["setColor"])(pt2, color)
+		      }),
+		"__proto__":
+		ref 
+		{ dist: ref (func() /*: [] -> Num */ {
+			!(!(pt2["__class__"])["dist"])(pt2)
+			}),
+		  "__proto__" : null
+		}}}))
+    !(pt2["setColor"])("purplish");
+!(pt2["dist"])();
+let (distCaller = func(anyPt) /*: [ {{ dist : ^(ref ([] -> Num)) }}] -> Num */ {
+	!(anyPt["dist"])()
+    })
+    distCaller(pt2);
+distCaller(pt1)
+	  
