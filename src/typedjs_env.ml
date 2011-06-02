@@ -202,6 +202,10 @@ module Env = struct
             try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
             with Invalid_argument _ -> raise (Not_subtype (MismatchTyp (s, t)))
           end
+        | TId x, t -> begin
+          try subtype cache (fst2 (lookup_typ_id x env)) t
+          with Not_found -> failwith (sprintf "Unbound id %s in subt" x)
+        end
 	| TObject flds1, TObject flds2 ->
 	  subtype_object' env cache flds1 flds2
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
