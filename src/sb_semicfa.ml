@@ -219,9 +219,9 @@ end = struct
 
   module TypEnv = Typedjs_env.Env
 
-  let rec rt_of_typ syns (t : Typedjs_syntax.typ) : RTSet.t =
+  let rec rt_of_typ ids syns (t : Typedjs_syntax.typ) : RTSet.t =
     let open Typedjs_syntax in
-    let rt = rt_of_typ syns in
+    let rt = rt_of_typ ids syns in
     match t with
       | TArrow _ -> RTSet.singleton RT.Function
       | TUnion (t1, t2) -> RTSet.union (rt t1) (rt t2)
@@ -242,15 +242,23 @@ end = struct
       | TTop -> rtany
       | TBot -> RTSet.empty
       | TForall _ -> rtany
-      | TId x -> rt_of_typ syns (IdMap.find x syns)
+      | TId x -> begin
+        try rt_of_typ ids syns (IdMap.find x ids)
+        with Not_found -> failwith (sprintf "tid %s not found in rt_of_typ" x)
+      end
+      | TSyn x -> begin
+        try rt_of_typ ids syns (IdMap.find x syns)
+        with Not_found -> failwith (sprintf "syn %s not found in rt_of_typ" x)
+      end
       | TRec (_, t) -> rt t
       | TApp (t1, t2) -> rtany
 
-  let runtime syns t : Absval.t = Absval.Set (rt_of_typ syns t)
+  let runtime ids syns t : Absval.t = Absval.Set (rt_of_typ ids syns t)
 
   let from_typ_env typ_env owned =
     { binds = 
-        IdMap.mapi (fun _ t -> runtime (Typedjs_env.typid_env typ_env) t) 
+        IdMap.mapi (fun _ t -> runtime (Typedjs_env.typid_env typ_env)
+          (Typedjs_env.syns_env typ_env) t) 
           (TypEnv.id_env typ_env);
       owned = owned }
 

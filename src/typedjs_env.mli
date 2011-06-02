@@ -78,6 +78,7 @@ val typ_assoc : Env.env -> typ -> typ -> typ IdMap.t
 val fields : pos -> Env.env -> typ -> Sb_strPat.t -> typ
 
 val typid_env : Env.env -> typ IdMap.t
+val syns_env : Env.env -> typ IdMap.t
 
 (*
 val operator_env_of_tc_env : Env.env 

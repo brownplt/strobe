@@ -59,7 +59,7 @@ let rec typ (writ_typ : W.t) : typ = match writ_typ with
   | W.Source t -> TSource (typ t)
   | W.Top -> TTop
   | W.Bot -> TBot
-  | W.Syn x -> TId x
+  | W.Syn x -> TSyn x
   | W.Id x -> TId x
   | W.App (t1, t2) -> TApp (typ t1, typ t2)
   | W.Forall (x, s, t) -> TForall (x, typ s, typ t)

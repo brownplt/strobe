@@ -63,14 +63,14 @@ let kind_mismatch typ calculated_kind expected_kind =
 	  (string_of_typ typ)))
 
 
-let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
+let rec kind_check (env : kind_env) (syns : kind_env) (typ : typ) : kind = match typ with
   | TTop
   | TBot
   | TRegex _
   | TPrim _ -> KStar
   | TUnion (t1, t2)
   | TIntersect (t1, t2) ->
-    begin match kind_check env t1, kind_check env t2 with
+    begin match kind_check env syns t1, kind_check env syns t2 with
       | KStar, KStar -> KStar
       | k1, KStar -> kind_mismatch t1 k1 KStar
       | _, k2 -> kind_mismatch t2 k2 KStar
@@ -78,18 +78,18 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
   | TRef t
   | TSource t
   | TSink t ->
-    begin match kind_check env t with
+    begin match kind_check env syns t with
       | KStar -> KStar
       | k -> kind_mismatch t k KStar
     end
   | TArrow (arg_typs, result_typ) ->
-    let assert_kind t = match kind_check env t with
+    let assert_kind t = match kind_check env syns t with
       | KStar -> ()
       | k -> kind_mismatch t k KStar in
     List.iter assert_kind (result_typ :: arg_typs);
     KStar
   | TObject flds ->
-    List.iter (assert_fld_kind env) flds;
+    List.iter (assert_fld_kind env syns) flds;
     KStar
   | TId x -> 
     begin 
@@ -97,25 +97,31 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
       with Not_found ->
 	raise (Kind_error (sprintf "type variable %s is unbound" x))
     end
+  | TSyn x ->
+    begin 
+      try IdMap.find x syns
+      with Not_found ->
+        raise (Kind_error (sprintf "type synonym %s is unbound" x))
+    end
   | TForall (x, t1, t2) ->
-    begin match kind_check env t1, kind_check (IdMap.add x KStar env) t2 with
+    begin match kind_check env syns t1, kind_check (IdMap.add x KStar env) syns t2 with
       | KStar, KStar -> KStar
       | k1, KStar -> kind_mismatch t1 k1 KStar
       | _, k2 -> kind_mismatch t2 k2 KStar
     end
   | TRec (x, t) ->
-    begin match kind_check (IdMap.add x KStar env) t with
+    begin match kind_check (IdMap.add x KStar env) syns t with
       | KStar -> KStar
       | k -> kind_mismatch t k KStar
     end
   | TLambda (x, k, t) ->
-    KArrow (k, kind_check (IdMap.add x k env) t)
+    KArrow (k, kind_check (IdMap.add x k env) syns t)
   | TFix (x, k, t) ->
-    let k' = kind_check (IdMap.add x k env) t in
+    let k' = kind_check (IdMap.add x k env) syns t in
     if  k' = k then k
     else kind_mismatch typ k' k
   | TApp (t1, t2) ->
-    begin match kind_check env t1, kind_check env t2 with
+    begin match kind_check env syns t1, kind_check env syns t2 with
       | KArrow (k_expected, k_result), k_arg ->
 	if k_expected = k_arg then
 	  k_result
@@ -126,11 +132,11 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
 		 (sprintf "not a type operator:\n%s" (string_of_typ t1)))
     end
 
-and assert_fld_kind (env : kind_env) (_, prop) = match prop with
+and assert_fld_kind (env : kind_env) (syns: kind_env) (_, prop) = match prop with
   | PPresent t
   | PInherited t
   | PMaybe t ->
-    begin match kind_check env t with
+    begin match kind_check env syns t with
       | KStar -> ()
       | k -> kind_mismatch t k KStar
     end
