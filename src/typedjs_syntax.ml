@@ -341,6 +341,7 @@ module Pretty = struct
     | TForall (x, s, t) -> 
         horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
     | TId x -> text x
+    | TSyn x -> text x
     | TRec (x, t) -> horz [ text "rec"; text x; text "."; typ t ]
 
   and field  (k, p) = horz [ text (Sb_strPat.pretty k); text ":"; prop p;
