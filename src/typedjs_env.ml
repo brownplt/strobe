@@ -132,10 +132,15 @@ module Env = struct
     | TBot _
     | TLambda _
     | TObject _
-    | TId _
     | TForall _ -> typ
     | TFix (x, k, t) -> simpl_typ env (typ_subst x typ t)
     | TRec (x, t) -> simpl_typ env (typ_subst x typ t)
+    | TId x ->
+	begin try
+	  simpl_typ env (fst2 (IdMap.find x env.typ_ids))
+	with Not_found -> 
+	  failwith (sprintf "%s (type variable) unbound" x)
+	end
     | TSyn x -> 
       begin try
               simpl_typ env (fst2 (IdMap.find x env.typ_syns))
