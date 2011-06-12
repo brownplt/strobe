@@ -1,3 +1,0 @@
-func(obj) /*: forall o <: {{x: Int, y: Int}} . [ref 'o] -> ref 'o */ {
-    obj
-}
