@@ -1,15 +1,15 @@
 let (Point = ref 
-    { dist : func(self) /*: 'Point_dist */ {
+    { dist : func(self) /*: Point_dist */ {
 	    prim("+", !self["x"], !self["y"])
 	},
       __proto__ : null })
 
     letrec (pt1 /*: {x : Num, y : Num, dist : _,
-                     "__class__" : {dist : 'Point_dist, "__proto__": Null, *: _}, 
+                     "__class__" : {dist : Point_dist, "__proto__": Null, *: _}, 
 		     "__proto__" : {dist : -> Num, "__proto__": Null, *: _} } */ = 
 	    ref 
 	    (upcast /*: {{x : Num, y : Num, dist : _,
-                     "__class__" : {dist : 'Point_dist, "__proto__": Null, *: _}, 
+                     "__class__" : {dist : Point_dist, "__proto__": Null, *: _}, 
 		     "__proto__" : {dist : -> Num, "__proto__": Null, *: _} }} */
 	     {x : 2.3, y : 9.7, __class__ : Point, __proto__ :
 		 ref
