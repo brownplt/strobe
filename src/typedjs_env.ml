@@ -281,6 +281,8 @@ module Env = struct
 		 (p, sprintf "prototype has type\n  %s\nin object of type\n  %s"
 		       (string_of_typ typ) (string_of_typ obj_typ)))
         end
+      (* OK to use subsumption on a type variable *)
+    | TId x -> fields p env (fst (lookup_typ_id x env)) idx_pat
     | obj_typ ->
       raise (Typ_error
 	       (p, sprintf "expected object, received %s" 
