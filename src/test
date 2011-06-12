@@ -3,7 +3,7 @@
 for file in ../tests/strobe-typable/*.sb
 do
   echo -en "\r\e[KTest $file ... "
-  result=`../tc -env $file.env -sb $file 2>&1`
+  result=`../tc -env $file.env -sb $file -noflows 2>&1`
   if [ $? -ne 0 ]; then
       echo -e "$file: aborted with exit code $?; output was:\n$result\n"
   fi
@@ -12,7 +12,7 @@ done
 for file in ../tests/strobe-untypable/*.sb
 do
   echo -en "\r\e[KTest $file ... "
-  result=`../tc -env $file.env -sb $file 2>&1`
+  result=`../tc -env $file.env -sb $file -noflows 2>&1`
   exitcode=$?
   if [ $exitcode -ne 2 ]; then
       echo -e "$file: expected a type-error error; exit code was $exitcode\n"
@@ -23,7 +23,6 @@ do
     echo -e "$file: expected a type error error; got\n$result\n"
   fi
 done
-
 
 for file in ../tests/typable/*.js
 do
