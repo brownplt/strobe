@@ -22,11 +22,9 @@ let empty = new_nfa_states 0 1
 let all = new_sigmastar ()
 
 let intersect p1 p2 = 
-  printf "Intersect\n%!";
   simple_intersect p1 p2
 
 let union  p1 p2 = 
-  printf "union\n%!";
   Nfa.union p1 p2
 
 let negate pat  = 
@@ -52,11 +50,9 @@ let is_subset p1 p2 =
   Nfa.nfa_subseteq p1 p2
 
 let is_member str pat = 
-  printf "is_member\n%!";
   Nfa.nfa_subseteq (to_nfa (RegLang_syntax.String str)) pat
 
 let is_equal p1 p2 = 
-  printf "is_equal\n%!";
   Nfa.nfa_eq p1 p2
 
 let example pat = gen_string pat
