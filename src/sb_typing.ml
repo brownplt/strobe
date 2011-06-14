@@ -323,8 +323,8 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
     if Env.subtype env s t then
       t
     else 
-      (Env.assert_subtyp env p s t;
-       raise (Typ_error (p, "subsumption error")))
+      raise (Typ_error (p, sprintf "invalid upcast: %s is not a subtype of %s"
+	(string_of_typ s) (string_of_typ t)))
   | EAssertTyp (p, t, e) ->
     let t = check_kind p env t in
     let s = tc_exp env e in
