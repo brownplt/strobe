@@ -177,9 +177,10 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       | idx_typ -> error p (sprintf "index has type %s" (string_of_typ idx_typ))
     end
   | EUpdate (p, obj, field, value) -> begin
+    let tobj = tc_exp env obj in
       match expose_simpl_typ env (tc_exp env obj), 
         expose_simpl_typ env (tc_exp env field), tc_exp env value with
-          | (TObject fs as tobj), (TRegex idx_pat as tfld), typ ->
+          | TObject fs, (TRegex idx_pat as tfld), typ ->
               let okfield (fld_pat, prop) = 
                 if Sb_strPat.is_overlapped fld_pat idx_pat
                 then match prop with
