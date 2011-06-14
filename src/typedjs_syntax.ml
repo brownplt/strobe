@@ -67,7 +67,6 @@ type typ =
   | TBot
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TId of id
-  | TSyn of id
   | TRec of id * typ 
   | TLambda of id * kind * typ (** type operator *)
   | TApp of typ * typ (** type operator application *)
@@ -192,7 +191,6 @@ module Typ = struct
   let rec typ_subst x s typ = match typ with
     | TPrim _ -> typ
     | TRegex _ -> typ
-    | TSyn _ -> typ
     | TId y -> if x = y then s else typ
     | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
     | TIntersect (t1, t2) ->
@@ -341,7 +339,6 @@ module Pretty = struct
     | TForall (x, s, t) -> 
         horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
     | TId x -> text x
-    | TSyn x -> text x
     | TRec (x, t) -> horz [ text "rec"; text x; text "."; typ t ]
 
   and field  (k, p) = horz [ text (Sb_strPat.pretty k); text ":"; prop p;

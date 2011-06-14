@@ -54,6 +54,8 @@ let check_kind p env typ : typ =
       raise 
 	(Typ_error 
 	   (p, sprintf "type term has kind %s; expected *" (string_of_kind k)))
+
+let expose_simpl_typ env typ = expose env (simpl_typ env typ)
  
 let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
   | EConst (_, c) -> tc_const c
@@ -97,14 +99,15 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
                                  (string_of_typ t)))
     end 
-  | ESetRef (p, e1, e2) -> begin match simpl_typ env (tc_exp env e1), tc_exp env e2 with
+  | ESetRef (p, e1, e2) -> 
+    begin match (expose_simpl_typ env (tc_exp env e1)), tc_exp env e2 with
       | TRef s, t
       | TSink s, t ->
           if Env.subtype env t s then 
             t
           else raise
             (Typ_error 
-               (p, sprintf "left-hand side has type %s, but the \
+               (p, sprintf "left-hand side of assignment has type %s, but the \
                   right-hand side has type %s"
                   (string_of_typ s) (string_of_typ t)))
       | s, _ -> 
@@ -169,13 +172,13 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
         TObject ((rest', PAbsent)::(Sb_strPat.singleton "__proto__", PPresent (TId "Object"))
 	         :: (map mk_field fields))
   | EBracket (p, obj, field) -> 
-    begin match simpl_typ env (tc_exp env field) with
+    begin match expose_simpl_typ env (tc_exp env field) with
       | TRegex pat -> fields p env (un_null (tc_exp env obj)) pat
       | idx_typ -> error p (sprintf "index has type %s" (string_of_typ idx_typ))
     end
   | EUpdate (p, obj, field, value) -> begin
-      match simpl_typ env (tc_exp env obj), 
-        simpl_typ env (tc_exp env field), tc_exp env value with
+      match expose_simpl_typ env (tc_exp env obj), 
+        expose_simpl_typ env (tc_exp env field), tc_exp env value with
           | (TObject fs as tobj), (TRegex idx_pat as tfld), typ ->
               let okfield (fld_pat, prop) = 
                 if Sb_strPat.is_overlapped fld_pat idx_pat
@@ -211,7 +214,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
     let assumed_arg_exps = 
       List.map2 (fun e t -> ECheat (p, t, e)) args arg_typs in
     let rec check_app tfun =
-      begin match simpl_typ env tfun with 
+      begin match expose_simpl_typ env tfun with 
         | TArrow (expected_typs, result_typ) ->
 	  (* TODO: allow arguments to be elided *)
           let arg_typs = fill (List.length expected_typs - List.length args) 
@@ -287,7 +290,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
           func_info.func_owned;
     end;
     let expected_typ = check_kind p env (func_info.func_typ) in
-    begin match Env.bind_typ env (simpl_typ env expected_typ) with
+    begin match Env.bind_typ env (expose_simpl_typ env expected_typ) with
       | (env, TArrow (arg_typs, result_typ)) ->
         if not (List.length arg_typs = List.length args) then
           error p 
@@ -343,7 +346,7 @@ let rec tc_exp (env : Env.env) (exp : exp) : typ = match exp with
     let env = Env.bind_typ_id x t env in
     TForall (x, t, tc_exp env e)
   | ETypApp (p, e, u) ->
-    begin match simpl_typ env (tc_exp env e) with
+    begin match expose_simpl_typ env (tc_exp env e) with
       | TForall (x, s, t) ->
         if Env.subtype env u s then
           typ_subst x u t

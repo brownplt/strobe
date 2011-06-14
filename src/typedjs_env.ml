@@ -67,7 +67,6 @@ module Env = struct
     id_typs : typ IdMap.t; (* type of term identifiers *)
     lbl_typs : typ IdMap.t; (* types of labels *)
     typ_ids: (typ * kind) IdMap.t; (* bounded type variables *)
-    typ_syns: (typ * kind) IdMap.t; (* aliases for types *)
   }
 
 
@@ -75,36 +74,25 @@ module Env = struct
     id_typs = IdMap.empty;
     lbl_typs = IdMap.empty;
     typ_ids = IdMap.empty;
-    typ_syns = IdMap.empty;
   }
 
-  let kind_check env typ =
-    Sb_kinding.kind_check
-      (IdMap.map (fun (_, k) -> k) env.typ_ids)
-      (IdMap.map (fun (_, k) -> k) env.typ_syns)
-      typ
+  let kind_check env (typ : typ) : kind  =
+    Sb_kinding.kind_check (IdMap.map (fun (_, k) -> k) env.typ_ids) typ
 
   let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
 
   let bind_lbl x t env = { env with lbl_typs = IdMap.add x t env.lbl_typs }
 
-  let bind_typ_id x t env = 
+  let bind_typ_id (x : id) (t : typ) (env : env) = 
     let k = kind_check env t in
     { env with 
       typ_ids = IdMap.add x (t, k) env.typ_ids }
-
-  let bind_syn x t env =
-    let k = kind_check env t in
-    { env with 
-      typ_syns = IdMap.add x (t, k) env.typ_syns }
 
   let lookup_id x env = IdMap.find x env.id_typs
 
   let lookup_lbl x env = IdMap.find x env.lbl_typs
 
   let lookup_typ_id x env = IdMap.find x env.typ_ids
-
-  let lookup_syn x env = IdMap.find x env.typ_syns
 
   let id_env env = env.id_typs
 
@@ -132,6 +120,7 @@ module Env = struct
     | TBot _
     | TLambda _
     | TObject _
+    | TId _  
     | TForall _ -> typ
     | TFix (x, k, t) -> simpl_typ env (typ_subst x typ t)
     | TRec (x, t) -> simpl_typ env (typ_subst x typ t)
@@ -140,13 +129,7 @@ module Env = struct
 	  simpl_typ env (fst2 (IdMap.find x env.typ_ids))
 	with Not_found -> 
 	  failwith (sprintf "%s (type variable) unbound" x)
-	end
-    | TSyn x -> 
-      begin try
-              simpl_typ env (fst2 (IdMap.find x env.typ_syns))
-        with Not_found -> 
-          failwith (sprintf "Synonym %s didn't exist in simpl_typ" x)
-      end
+	end 
     | TApp (t1, t2) -> begin match simpl_typ env t1 with
 	| TLambda (x, KStar, u) -> 
 	  simpl_typ env (typ_subst x t2 u)
@@ -471,7 +454,7 @@ module Env = struct
     | TApp _ -> typ
 
   let rec set_global_object env cname =
-    let ci = IdMap.find cname env.typ_syns in
+    let ci = IdMap.find cname env.typ_ids in
     match ci with
       | TRef (TObject fs), KStar ->
         let add_field env ((x : field), (p : prop)) = 
@@ -512,13 +495,13 @@ let extend_global_env env lst =
       else
         Env.bind_id x (desugar_typ p typ) env
     | EnvType (p, x, writ_typ) ->
-      if IdMap.mem x env.Env.typ_syns then
+      if IdMap.mem x env.Env.typ_ids then
 	raise (Not_wf_typ (sprintf "the type %s is already defined" x))
       else
 	let t = desugar_typ p writ_typ in
 	let k = Env.kind_check env t in
 	{ env with 
-	  Env.typ_syns = IdMap.add x (t, k) env.Env.typ_syns }
+	  Env.typ_ids = IdMap.add x (t, k) env.Env.typ_ids }
   in List.fold_left add env lst
 
 (*
@@ -533,7 +516,7 @@ let df_func_of_typ syns (t : typ) : L.av list -> L.av = match t with
   | _ -> (fun _ -> L.any)
 
 let cf_env_of_tc_env tc_env = 
-  let fn x typ cf_env = L.bind x (L.runtime tc_env.Env.typ_syns typ) cf_env in
+  let fn x typ cf_env = L.bind x (L.runtime tc_env.Env.typ_ids typ) cf_env in
     IdMap.fold fn (Env.id_env tc_env) L.empty_env
 
 let operator_env_of_tc_env tc_env =
@@ -542,6 +525,10 @@ let operator_env_of_tc_env tc_env =
 *)
 
 let simpl_typ = Env.simpl_typ
+
+let rec expose env typ = match typ with
+  | TId x -> expose env (simpl_typ env (fst2 (IdMap.find x env.Env.typ_ids)))
+  | _ -> typ
 
 let apply_subst subst typ = IdMap.fold typ_subst subst typ
 
@@ -597,5 +584,5 @@ and fld_assoc env (_, fld1) (_, fld2) = match (fld1, fld2) with
 let fields = Env.fields
 
 let typid_env env = IdMap.map (fun (t, _) -> t) env.Env.typ_ids
-let syns_env env = IdMap.map (fun (t, _) -> t) env.Env.typ_syns
+
 
