@@ -138,6 +138,9 @@ module Env = struct
 			 (string_of_typ t1)))
     end
 
+  let rec expose env typ = match typ with
+    | TId x -> expose env (simpl_typ env (fst2 (IdMap.find x env.typ_ids)))
+    | _ -> typ
 
   let get_fld idx (pat, prop) = 
     let pat' = P.intersect pat idx in
@@ -258,15 +261,17 @@ module Env = struct
 		   (p, sprintf "no type for __proto__ in:\n %s\nBut, index is \
                                 \n %s\n" (string_of_typ obj_typ)
 		         (P.pretty rest_pat)))
-          | Some (TPrim Null) ->
-	    typ_union env fld_typ TBot (** might signal an error *)
-          | Some (TRef proto_typ)
-          | Some (TSource proto_typ) ->
-	    typ_union env fld_typ (fields p env proto_typ rest_pat)
-          | Some typ ->
-	    raise 
-	      (Typ_error
-		 (p, sprintf "prototype has type\n  %s\nin object of type\n  %s"
+	  | Some t -> match expose env t with
+              | TPrim Null ->
+		typ_union env fld_typ TBot (** might signal an error *)
+              | TRef proto_typ
+              | TSource proto_typ ->
+		typ_union env fld_typ (fields p env proto_typ rest_pat)
+              | typ ->
+		raise 
+		  (Typ_error
+		     (p, sprintf "prototype has type\n  %s\nin object of \
+                                  type\n  %s"
 		       (string_of_typ typ) (string_of_typ obj_typ)))
         end
       (* OK to use subsumption on a type variable *)
@@ -529,9 +534,7 @@ let operator_env_of_tc_env tc_env =
 
 let simpl_typ = Env.simpl_typ
 
-let rec expose env typ = match typ with
-  | TId x -> expose env (simpl_typ env (fst2 (IdMap.find x env.Env.typ_ids)))
-  | _ -> typ
+let expose = Env.expose
 
 let apply_subst subst typ = IdMap.fold typ_subst subst typ
 
