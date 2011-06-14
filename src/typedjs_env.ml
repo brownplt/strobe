@@ -454,7 +454,10 @@ module Env = struct
     | TApp _ -> typ
 
   let rec set_global_object env cname =
-    let ci = IdMap.find cname env.typ_ids in
+    let ci = 
+      try IdMap.find cname env.typ_ids
+      with Not_found -> 
+	raise (Not_wf_typ ("global object, " ^ cname ^ ", not found")) in
     match ci with
       | TRef (TObject fs), KStar ->
         let add_field env ((x : field), (p : prop)) = 
