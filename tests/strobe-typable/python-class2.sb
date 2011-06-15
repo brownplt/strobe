@@ -23,9 +23,9 @@ let (Point = ref
 	  setColor : func(self, color) /*: ColorPoint_setColor */ {
 		self := !self["color" = color]; undefined
 	    } })
-    letrec (pt2 /*: ref cpt */ =
+    letrec (pt2 /*: ref cpt<Num> */ =
 	    ref
-	    (upcast /*: cpt */
+	    (upcast /*: cpt<Num> */
 	     {x : 2.3, y : 9.7, color : "blue",
 	      "__class__" : ColorPoint,
 	      "__proto__": 
@@ -34,12 +34,12 @@ let (Point = ref
 		      !(!pt2["__class__"])["setColor"](pt2, color)
 		  },
 		"__proto__":
-		ref 
+		(upcast /*: ptPr<Num> */ ref 
 		{ dist: func() /*: [] -> Num */ {
 			!(!pt2["__class__"])["dist"](pt2)
 		    },
 		  "__proto__" : null
-		}}}))
+		})}}))
     !pt2["setColor"]("purplish");
 !pt2["dist"]();
 let (distCaller = func(anyPt) /*: forall o <: {{ dist : ^([] -> Num) }} . [ref 'o] -> Num */ {
