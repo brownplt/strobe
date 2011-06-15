@@ -130,7 +130,7 @@ module Env = struct
 	with Not_found -> 
 	  failwith (sprintf "%s (type variable) unbound" x)
 	end 
-    | TApp (t1, t2) -> begin match simpl_typ env t1 with
+    | TApp (t1, t2) -> begin match expose env (simpl_typ env t1) with
 	| TLambda (x, KStar, u) -> 
 	  simpl_typ env (typ_subst x t2 u)
 	| _ -> raise
@@ -138,7 +138,7 @@ module Env = struct
 			 (string_of_typ t1)))
     end
 
-  let rec expose env typ = match typ with
+  and expose env typ = match typ with
     | TId x -> expose env (simpl_typ env (fst2 (IdMap.find x env.typ_ids)))
     | _ -> typ
 
