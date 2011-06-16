@@ -3,10 +3,7 @@
 for file in ../tests/strobe-typable/*.sb
 do
   echo -en "\r\e[KTest $file ... "
-  result=`../tc -env $file.env -sb $file -noflows 2>&1`
-  if [ $? -ne 0 ]; then
-      echo -e "$file: aborted with exit code $?; output was:\n$result\n"
-  fi
+  ../tests/strobe-typable/test.sh $file
 done
 
 for file in ../tests/strobe-untypable/*.sb
