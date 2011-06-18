@@ -3,21 +3,7 @@ open Typedjs_syntax
 
 module W = WritTyp
 module P = Sb_strPat
-
-module List = struct
-  include List
-
-  let rec tails (lst : 'a list) : 'a list list = match lst with
-    | [] -> [ [] ]
-    | _ :: lst' -> lst :: (tails lst')
-
-  let iter_pairs (f : 'a -> 'a -> unit) (lst : 'a list) : unit =
-    let g lst = match lst with
-      | x :: rest -> iter (f x) rest
-      | _ -> () in
-    iter g (tails lst)
-
-end
+module List = ListExt
 
 exception Typ_stx_error of string
 let error msg = 
