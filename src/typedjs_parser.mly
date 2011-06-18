@@ -28,7 +28,7 @@ module W = Typedjs_syntax.WritTyp
 kind :
   | STAR { KStar }
   | LPAREN kind RPAREN { $2 }
-  | kind THICKARROW kind { KArrow ($1, $3) }
+  | kind THICKARROW kind { KArrow ([$1], $3) }
 
 args
   :  { [] }
@@ -61,6 +61,11 @@ fields
   | field COMMA fields { $1 :: $3 }
   | COMMA { [] }
 
+typ_list :
+  |  { [] }
+  | typ { [$1] }
+  | typ COMMA typ_list { $1 :: $3 }
+
 arg_typ
   : ANY { W.Top }
   | INT { W.Prim Int }
@@ -81,7 +86,7 @@ arg_typ
   | TID { W.Id $1 }
   | ID { W.Syn $1 }
   | REF arg_typ { W.Ref $2 } 
-  | arg_typ LANGLE typ RANGLE { W.App ($1, $3) }
+  | arg_typ LANGLE typ_list RANGLE { W.App ($1, $3) }
 
 typ 
   : arg_typ { $1 }
@@ -91,7 +96,7 @@ typ
   | FORALL ID LTCOLON typ DOT typ { W.Forall ($2, $4, $6) }
   | FORALL ID DOT typ { W.Forall ($2, W.Top, $4) }
   | REC ID DOT typ { W.Rec ($2, $4) }
-  | TYPLAMBDA ID COLONCOLON kind DOT typ { W.Lambda ($2, $4, $6) }
+  | TYPLAMBDA ID COLONCOLON kind DOT typ { W.Lambda ([($2, $4)], $6) }
   | TYPREC ID COLONCOLON kind DOT typ { W.Fix ($2, $4, $6) }
 
 
@@ -116,9 +121,15 @@ any_id :
   | BOOL { "Bool" }
   | NUM { "Num" }
 
+id_list :
+  | { [] }
+  | ID { [$1] }
+  | ID COMMA id_list { $1 :: $3 }
+
 env_decl :
-  | TYPE any_id LANGLE ID RANGLE EQUALS typ 
-      { EnvType (($startpos, $endpos), $2, W.Lambda ($4, KStar, $7)) }
+  | TYPE any_id LANGLE id_list RANGLE EQUALS typ 
+      { EnvType (($startpos, $endpos), $2,
+		 W.Lambda (List.map (fun x -> (x, KStar)) $4, $7)) }
   | TYPE any_id EQUALS typ { EnvType (($startpos, $endpos), $2, $4) }
   | VAL ID COLON typ { EnvBind (($startpos, $endpos), $2, $4) }
   | ID COLON typ { EnvBind (($startpos, $endpos), $1, W.Ref $3) }

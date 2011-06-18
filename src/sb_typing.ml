@@ -15,7 +15,7 @@ let array_idx_pat =
 
 
 let mk_array_typ p env elt_typ =
-  TApp (TId "Array", elt_typ)
+  TApp (TId "Array", [elt_typ])
 	  
 let error_on_unreachable = ref true
 

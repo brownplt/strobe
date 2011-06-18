@@ -48,7 +48,7 @@ let proto_pat = Sb_strPat.singleton proto_str
 
 type kind = 
   | KStar
-  | KArrow of kind * kind
+  | KArrow of kind list * kind
 
 type typ = 
   | TPrim of prim
@@ -67,8 +67,8 @@ type typ =
   | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
   | TId of id
   | TRec of id * typ 
-  | TLambda of id * kind * typ (** type operator *)
-  | TApp of typ * typ (** type operator application *)
+  | TLambda of (id * kind) list * typ (** type operator *)
+  | TApp of typ * typ list (** type operator application *)
   | TFix of id * kind * typ (** recursive type operators *)
 
 and prop = 
@@ -153,9 +153,9 @@ module WritTyp = struct
     | Forall of id * t * t
     | Rec of id * t
     | Syn of id
-    | Lambda of id * kind * t
+    | Lambda of (id * kind) list * t
     | Fix of id * kind * t
-    | App of t * t
+    | App of t * t list
        
   and f = 
     | Present of pat * t
@@ -205,9 +205,9 @@ module Typ = struct
     | TSink t -> TSink (typ_subst x s t)
     | TTop -> TTop
     | TBot -> TBot
-  (* omg this stuff is NOT capture free ... *)
-    | TLambda (y, k, t) ->
-      TLambda (y, k, typ_subst x s t)
+  (* TODO: omg this stuff is NOT capture free ... *)
+    | TLambda (args, t) ->
+      TLambda (args, typ_subst x s t)
     | TFix (y, k, t) ->
       TFix (y, k, typ_subst x s t)
     | TForall (y, t1, t2) -> 
@@ -220,7 +220,7 @@ module Typ = struct
         failwith "TODO: capture free substitution"
       else 
         TRec (y, typ_subst x s t)
-    | TApp (t1, t2) -> TApp (typ_subst x s t1, typ_subst x s t2)
+    | TApp (t, ts) -> TApp (typ_subst x s t, List.map (typ_subst x s) ts)
 
   and prop_subst x s p = match p with
     | PInherited typ -> PInherited (typ_subst x s typ)
@@ -293,8 +293,12 @@ module Pretty = struct
 
   let rec kind k = match k with
     | KStar -> text "*"
-    | KArrow (KArrow _ as k1, k2) -> horz [parens (kind k1); text "=>"; kind k2]
-    | KArrow (k1, k2) -> horz [kind k1; text "=>"; kind k2]
+    | KArrow (ks, k) -> 
+      horz [horz (intersperse (text ",") (map pr_kind ks)); text "=>"; kind k]
+
+  and pr_kind k = match k with
+    | KArrow _ -> parens (kind k)
+    | _ -> kind k
 
   let rec typ t  = match t with
     | TTop -> text "Any"
@@ -307,11 +311,14 @@ module Pretty = struct
        | Null -> "Null"
        | Undef -> "Undef"
     end
-    | TLambda (x, k, t) -> 
-      horz [ text "Lambda "; text x; text "::"; kind k; typ t ]
+    | TLambda (args, t) -> 
+      let p (x, k) = horz [ text x; text "::"; kind k ] in
+      horz [ text "Lambda "; horz (map p args); text "."; typ t ]
     | TFix (x, k, t) -> 
       horz [ text "Fix "; text x; text "::"; kind k; typ t ]
-    | TApp (t1, t2) -> horz [typ t1; text "<"; typ t2; text ">"]
+    | TApp (t, ts) ->
+      horz [typ t; text "<"; horz (intersperse (text ",") (map typ ts));
+	    text ">"]
     | TRegex pat -> 
         squish [text "/"; text (Sb_strPat.pretty pat); text "/"]
     | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]

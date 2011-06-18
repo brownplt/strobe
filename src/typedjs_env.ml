@@ -128,9 +128,12 @@ let typ_subst x s typ = Typ.typ_subst x s typ
 	with Not_found -> 
 	  failwith (sprintf "%s (type variable) unbound" x)
 	end 
-    | TApp (t1, t2) -> begin match expose env (simpl_typ env t1) with
-	| TLambda (x, KStar, u) -> 
-	  simpl_typ env (typ_subst x t2 u)
+    | TApp (t1, ts) -> begin match expose env (simpl_typ env t1) with
+	| TLambda (args, u) -> 
+	  simpl_typ env 
+	    (List.fold_right2 (* well-kinded, no need to check *)
+	       (fun (x, k) t2 u -> typ_subst x t2 u)
+	       args ts u)
 	| _ -> raise
 	  (Not_wf_typ (sprintf "%s in type-application position"
 			 (string_of_typ t1)))
@@ -211,7 +214,7 @@ let typ_subst x s typ = Typ.typ_subst x s typ
 	  subt env' cache' t1 t2
         | _, TTop -> cache
         | TBot, _ -> cache
-	| TLambda (x, KStar, s), TLambda (y, KStar, t) ->
+	| TLambda ([(x, KStar)], s), TLambda ([(y, KStar)], t) ->
 	  let env = bind_typ_id x TTop env in
 	  let env = bind_typ_id y TTop env in
 	  subt env cache s t
@@ -529,8 +532,12 @@ let operator_env_of_tc_env tc_env =
 *)
 
 
+
+
 let apply_subst subst typ = IdMap.fold typ_subst subst typ
 
+
+(* Quick hack to infer types; it often works. Sometimes it does not. *)
 let assoc_merge = IdMap.merge (fun x opt_s opt_t -> match opt_s, opt_t with
   | Some (TId y), Some (TId z) -> 
     if x = y then opt_t else opt_s
@@ -541,10 +548,11 @@ let assoc_merge = IdMap.merge (fun x opt_s opt_t -> match opt_s, opt_t with
     Some t
   | None, None -> None)
 
+
 let rec typ_assoc (env : env) (typ1 : typ) (typ2 : typ) = 
   match (typ1, typ2) with
     | TId x, _ -> IdMap.singleton x typ2
-    | TApp (s1, s2), TApp (t1, t2)
+    | TApp (s1, [s2]), TApp (t1, [t2])
     | TIntersect (s1, s2), TIntersect (t1, t2)
     | TUnion (s1, s2), TUnion (t1, t2) -> 
       assoc_merge (typ_assoc env s1 t1) (typ_assoc env s2 t2)

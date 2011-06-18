@@ -11,7 +11,6 @@ let rec simpl_equiv (typ1 : typ) (typ2 : typ) : bool =
       true
     | TPrim p1, TPrim p2 ->
       p1 = p2
-    | TApp (s1, s2), TApp (t1, t2)
     | TIntersect (s1, s2), TIntersect (t1, t2)
     | TUnion (s1, s2), TUnion (t1, t2) -> 
       simpl_equiv s1 t1 && simpl_equiv s2 t2
@@ -19,6 +18,9 @@ let rec simpl_equiv (typ1 : typ) (typ2 : typ) : bool =
     | TSink s, TSink t
     | TRef s, TRef t ->
       simpl_equiv s t
+    | TApp (s1, s2s), TApp (t1, t2s) ->
+      (* for well-kinded types, for_all2 should not signal an error *)
+      simpl_equiv s1 t1 && List.for_all2 simpl_equiv s2s t2s
     | TId x, TId y ->
       x = y
     | TArrow (args1, r1), TArrow (args2, r2) ->
@@ -34,9 +36,10 @@ let rec simpl_equiv (typ1 : typ) (typ2 : typ) : bool =
     | TObject flds1, TObject flds2 ->
       List.length flds1 = List.length flds2
       && List.for_all2 simpl_equiv_fld flds1 flds2
-    | TLambda (x1, k1, t1), TFix (x2, k2, t2)
     | TFix (x1, k1, t1), TFix (x2, k2, t2) ->
       x1 = x2 && k1 = k2 && simpl_equiv t1 t2
+    | TLambda (args1, t1), TLambda (args2, t2) ->
+      args1 = args2 && simpl_equiv t1 t2
     | _, _ -> false
 
 and simpl_equiv_fld (pat1, fld1) (pat2, fld2) = 
@@ -108,22 +111,34 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
       | KStar -> KStar
       | k -> kind_mismatch t k KStar
     end
-  | TLambda (x, k, t) ->
-    KArrow (k, kind_check (IdMap.add x k env) t)
+  | TLambda (args, t) ->
+    let env' = fold_right (fun (x, k) env -> IdMap.add x k env) args env in
+    KArrow (List.map snd2 args, kind_check env' t)
   | TFix (x, k, t) ->
     let k' = kind_check (IdMap.add x k env) t in
     if  k' = k then k
     else kind_mismatch typ k' k
-  | TApp (t1, t2) ->
-    begin match kind_check env t1, kind_check env t2 with
-      | KArrow (k_expected, k_result), k_arg ->
-	if k_expected = k_arg then
-	  k_result
-	else
-	  kind_mismatch t2 k_arg k_expected
-      | KStar, _ ->
+  | TApp (t_op, t_args) ->
+    begin match kind_check env t_op with
+      | KArrow (k_args, k_result) ->
+	begin
+	  try
+	    let check k_arg t_arg = 
+	      let k_actual = kind_check env t_arg in
+	      if k_arg = k_actual then
+		()
+	      else 
+		kind_mismatch t_arg k_actual k_arg in
+	    let _ = List.iter2 check k_args t_args in
+	    k_result
+	  with Invalid_argument _ ->
+	    raise (Kind_error
+		     (sprintf "operator expects %d args, given %d"
+			(List.length k_args) (List.length t_args)))
+	end
+      | KStar ->
 	raise (Kind_error 
-		 (sprintf "not a type operator:\n%s" (string_of_typ t1)))
+		 (sprintf "not a type operator:\n%s" (string_of_typ t_op)))
     end
 
 and assert_fld_kind (env : kind_env) (_, prop) = match prop with

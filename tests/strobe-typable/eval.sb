@@ -1,10 +1,10 @@
 let (prPlus = ref {__proto__: null, eval : 
-                   func (this) /*: EvalPlus */
+                   func (this) /*: EvalPlus<> */
                    {
                        let (left = (!this)["left"])
                        let (right = !this["right"])
-                       let (lefteval = !left["eval"]</*: {{ eval : ^Eval }} */>)
-                       let (righteval = !right["eval"]</*: {{ eval : ^Eval }} */>)
+                       let (lefteval = !left["eval"]</*: {{ eval : ^Eval<> }} */>)
+                       let (righteval = !right["eval"]</*: {{ eval : ^Eval<> }} */>)
                        prim("+", lefteval(left), righteval(right))
                    }})
 let (prNum = ref {__proto__: null, eval : 
