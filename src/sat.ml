@@ -11,7 +11,7 @@ type t =
   | And of t * t
   | Or of t * t
   | Not of t
-  | Var of string
+  | Var of Id.t
   | True
   | False
   | Imp of t * t
@@ -61,6 +61,7 @@ module type LIT = sig
   type t
   val mk_not : t -> t
   val mk_var : string -> t
+  val from_id : Id.t -> t
   val gen_var : unit -> t
   val compare : t -> t -> int
 
@@ -111,8 +112,8 @@ end  = struct
       | Or (x, y) -> f x @ f y
       | True -> raise Exit (* trivially true *)
       | False -> []
-      | Not (Var x) -> [L.mk_not (L.mk_var x)]
-      | Var x -> [L.mk_var x]
+      | Not (Var x) -> [L.mk_not (L.from_id x)]
+      | Var x -> [L.from_id x]
       | _ -> raise (Invalid_argument "expected disjunction of atoms") in
     try f term 
     with Exit -> [ L.gen_var () ]
@@ -138,21 +139,21 @@ end
 	      
 module Lit : LIT = struct
 
-  type name = Str of string | Num of int
 
-  let next_name = ref 0
+  type t = { v : Id.t; is_not: bool }
 
-  type t = { v : name; is_not: bool }
-
-  let gen_var () = 
-    incr next_name;
-    { v = Num (!next_name - 1); is_not = false }
+  let gen_var () =  { v = Id.gen_id (); is_not = false }
 
   let mk_not t = { t with is_not = not t.is_not }
 
-  let compare = Pervasives.compare
+  let compare t1 t2 = 
+    let c = Id.compare t1.v t2.v in
+    if c != 0 then c
+    else Pervasives.compare t1.is_not t2.is_not
 
-  let mk_var x = { v = Str x; is_not = false }
+  let from_id x = { v = x; is_not = false }
+
+  let mk_var x = { v = Id.id_of_string x; is_not = false }
 
 end
 

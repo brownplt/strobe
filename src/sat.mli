@@ -2,7 +2,7 @@ type t =
   | And of t * t
   | Or of t * t
   | Not of t
-  | Var of string
+  | Var of Id.t
   | True
   | False
   | Imp of t * t
