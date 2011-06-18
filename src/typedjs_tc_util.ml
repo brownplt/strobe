@@ -15,16 +15,18 @@ let tc_const (const : JavaScript_syntax.const) = match const with
 let typ_of_value (exp : exp) : typ = 
   let mk_field f (name, exp) = (Sb_strPat.singleton name, PPresent (f exp)) in
   let rec f e = match e with
-    | EObject (_, fields) -> 
+    | EObject (_, fs) -> 
       (* TODO: Everything else should be absent *)
-      TObject ((proto_pat, PPresent (TId "Object")) :: map (mk_field f) fields)
+      TObject 
+	{ fields = (proto_pat, PPresent (TId "Object")) :: 
+	    (map (mk_field f) fs) }
     | EConst (_, c) -> tc_const c
     | EFunc (_, _, fi, _) -> fi.func_typ
     | ERef (_, RefCell, e') -> TRef begin match e' with
         | EObject (_, fields) -> 
 	  (* TODO: as above *)
-	  TObject ((proto_pat, PPresent (TId "Object")) 
-		   :: (map (mk_field f) fields))
+	  TObject { fields = ((proto_pat, PPresent (TId "Object")) 
+			      :: (map (mk_field f) fields)) }
         | EConst (_, c) -> tc_const c
         | EFunc (_, _, fi, _) -> fi.func_typ
         | _ -> raise (Not_value  (FormatExt.to_string Pretty.p_exp e'))

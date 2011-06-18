@@ -30,11 +30,6 @@ exception Not_subtype of subtype_exn
 
 let typ_subst x s typ = Typ.typ_subst x s typ
 
-  type class_info = {
-    fields : typ IdMap.t;
-    sup : constr option
-  }
-
   type env = {
     id_typs : typ IdMap.t; (* type of term identifiers *)
     lbl_typs : typ IdMap.t; (* types of labels *)
@@ -172,8 +167,8 @@ let typ_subst x s typ = Typ.typ_subst x s typ
           try subtype cache (fst2 (lookup_typ_id x env)) t
           with Not_found -> failwith (sprintf "Unbound id %s in subt" x)
         end
-	| TObject flds1, TObject flds2 ->
-	  subtype_object' env cache flds1 flds2
+	| TObject obj1, TObject obj2 ->
+	  subtype_object' env cache (obj1.fields) (obj2.fields)
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
         | TSource s, TSource t -> subtype cache s t
         | TSink s, TSink t -> subtype cache t s
@@ -216,7 +211,8 @@ let typ_subst x s typ = Typ.typ_subst x s typ
         fields_helper env flds' idx_pat idx_for_proto
 
   and fields p env obj_typ idx_pat = match simpl_typ env obj_typ with
-    | TObject flds -> 
+    | TObject obj -> 
+      let flds = obj.fields in
       let (fld_typ, all_pat, rest_pat) = 
 	fields_helper env flds idx_pat idx_pat in
       if not (P.is_empty all_pat) then 
@@ -285,7 +281,7 @@ let typ_subst x s typ = Typ.typ_subst x s typ
         ((p2s : field list), (fs : field list), (cache : TPSet.t)) = 
       match fs with
         | [] -> (p2::p2s, fs, cache)
-        | ((l_i, f_i) as p1)::rest ->
+        | (l_i, f_i)::rest ->
           match P.is_overlapped l_i m_j with
             | true ->
               let cache' = subtype_field env cache (l_i, f_i) (m_j, g_j) in
@@ -302,7 +298,7 @@ let typ_subst x s typ = Typ.typ_subst x s typ
       List.fold_right check_prop flds2 ([], flds1, cache) in
     let cache' = List.fold_right (fun (pat, prop) cache -> match prop with
       | PInherited typ -> 
-        check_inherited env cache pat (TObject flds1) typ
+        check_inherited env cache pat (TObject { fields = flds1 }) typ
       | _ -> cache)
       flds2 cache in
     try
@@ -380,9 +376,9 @@ let typ_subst x s typ = Typ.typ_subst x s typ
     | RT.Re _ -> typ_union env (TRegex any_fld) typ
     | RT.Bool -> typ_union env typ_bool typ
     | RT.Function ->
-      typ_union env (TObject [(proto_pat, PPresent (TId "Function"))]) typ 
+      typ_union env (TObject { fields = [(proto_pat, PPresent (TId "Function"))]}) typ 
     | RT.Object -> 
-      typ_union env (TObject [proto_pat, PPresent (TId "Object")]) typ
+      typ_union env (TObject { fields = [proto_pat, PPresent (TId "Object")]}) typ
     | RT.Undefined -> typ_union env (TPrim Undef) typ
 
   let rtany = 
@@ -439,7 +435,8 @@ let typ_subst x s typ = Typ.typ_subst x s typ
       with Not_found -> 
 	raise (Not_wf_typ ("global object, " ^ cname ^ ", not found")) in
     match ci with
-      | TRef (TObject fs), KStar ->
+      | TRef (TObject o), KStar ->
+	let fs = o.fields in
         let add_field env ((x : pat), (p : prop)) = 
 	  begin match P.singleton_string x, p with
             | (Some s, PPresent t) -> bind_id s (TRef t) env
@@ -535,7 +532,9 @@ let rec typ_assoc (env : env) (typ1 : typ) (typ2 : typ) =
     | t, TApp (s1, s2) ->
       typ_assoc env (simpl_typ env (TApp (s1, s2))) t
 
-    | TObject flds1, TObject flds2 ->
+    | TObject o1, TObject o2 ->
+      let flds1 = o1.fields in
+      let flds2 = o2.fields in
       List.fold_left assoc_merge
 	IdMap.empty
 	(List.map2_noerr (fld_assoc env) flds1 flds2)

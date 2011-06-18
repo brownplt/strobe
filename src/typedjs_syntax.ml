@@ -57,7 +57,7 @@ type typ =
   | TArrow of typ list * typ
       (* The list holds everything that's typed.
          The second type is the prototype *)
-  | TObject of (pat * prop) list
+  | TObject of obj_typ
   | TRegex of pat
   | TRef of typ
   | TSource of typ
@@ -70,6 +70,8 @@ type typ =
   | TLambda of (id * kind) list * typ (** type operator *)
   | TApp of typ * typ list (** type operator application *)
   | TFix of id * kind * typ (** recursive type operators *)
+
+and obj_typ = { fields: (pat * prop) list }
 
 and prop = 
   | PInherited of typ
@@ -198,8 +200,8 @@ module Typ = struct
       TIntersect (typ_subst x s t1, typ_subst x s t2)
     | TArrow (t2s, t3)  ->
       TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
-    | TObject flds ->
-      TObject (map (second2 (prop_subst x s)) flds)
+    | TObject o ->
+      TObject { o with fields = map (second2 (prop_subst x s)) o.fields}
     | TRef t -> TRef (typ_subst x s t)
     | TSource t -> TSource (typ_subst x s t)
     | TSink t -> TSink (typ_subst x s t)
@@ -340,7 +342,7 @@ module Pretty = struct
                             end) arg_typs));
               text "->";
               typ r_typ ]
-    | TObject flds -> braces (vert (map pat flds))
+    | TObject flds -> braces (vert (map pat flds.fields))
     | TRef s -> horz [ text "Ref"; parens (typ s) ]
     | TSource s -> horz [ text "Src"; parens (typ s) ]
     | TSink s -> horz [ text "Snk"; parens (typ s) ]

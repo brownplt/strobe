@@ -33,7 +33,9 @@ let rec simpl_equiv (typ1 : typ) (typ2 : typ) : bool =
       x = y && simpl_equiv s1 t1 && simpl_equiv s2 t2
     | TRegex pat1, TRegex pat2 ->
       P.is_equal pat1 pat2
-    | TObject flds1, TObject flds2 ->
+    | TObject o1, TObject o2 ->
+      let flds1 = o1.fields in
+      let flds2 = o2.fields in
       List.length flds1 = List.length flds2
       && List.for_all2 simpl_equiv_fld flds1 flds2
     | TFix (x1, k1, t1), TFix (x2, k2, t2) ->
@@ -91,8 +93,8 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
       | k -> kind_mismatch t k KStar in
     List.iter assert_kind (result_typ :: arg_typs);
     KStar
-  | TObject flds ->
-    List.iter (assert_fld_kind env) flds;
+  | TObject o ->
+    List.iter (assert_fld_kind env) o.fields;
     KStar
   | TId x -> 
     begin 
