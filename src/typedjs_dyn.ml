@@ -39,7 +39,7 @@ type contract =
   | CPred of string * expr
   | CArrow of contract list * contract
   | CUnion of contract * contract
-  | CObject of (field * contract) list
+  | CObject of (pat * contract) list
 
 let p = (Lexing.dummy_pos, Lexing.dummy_pos)
 

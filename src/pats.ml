@@ -1,6 +1,6 @@
 module type Pats = sig
     
-  (** String patterns represented as finite and co-finite sets *)
+  (** string patterns *)
   type t
 
   val parse : Lexing.position -> string -> t

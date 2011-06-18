@@ -48,9 +48,9 @@ end
 
 (* Pair that were mismatched *)
 type subtype_exn =
-  | ExtraFld of pat * prop
+  | ExtraFld of field
   | MismatchTyp of typ * typ
-  | MismatchFld of (pat * prop) * (pat * prop)
+  | MismatchFld of field * field
 
 exception Not_subtype of subtype_exn
 
@@ -291,11 +291,11 @@ module Env = struct
       raise (Not_subtype (ExtraFld (lang, PInherited typ)))
 
   and subtype_object' env (cache : TPSet.t)
-    (flds1 : (field * prop) list)
-    (flds2 : (field * prop) list) : TPSet.t
+    (flds1 : field list)
+    (flds2 : field list) : TPSet.t
       =
-    let rec subtype_field env cache ((pat1, fld1) : field * prop) 
-        ((pat2, fld2) : field * prop) : TPSet.t = 
+    let rec subtype_field env cache ((pat1, fld1) : field) 
+        ((pat2, fld2) : field) : TPSet.t = 
       match (fld1, fld2) with
         | (PAbsent, PAbsent) -> cache
         | (PAbsent, PMaybe _) -> cache
@@ -306,8 +306,8 @@ module Env = struct
         | _ -> 
           raise (Not_subtype (MismatchFld ((pat1, fld1), (pat2, fld2)))) in
 
-    let rec check_prop (((m_j : field), (g_j : prop)) as p2)
-        ((p2s : (field * prop) list), (fs : (field * prop) list), (cache : TPSet.t)) = 
+    let rec check_prop (((m_j : pat), (g_j : prop)) as p2)
+        ((p2s : field list), (fs : field list), (cache : TPSet.t)) = 
       match fs with
         | [] -> (p2::p2s, fs, cache)
         | ((l_i, f_i) as p1)::rest ->
@@ -465,7 +465,7 @@ module Env = struct
 	raise (Not_wf_typ ("global object, " ^ cname ^ ", not found")) in
     match ci with
       | TRef (TObject fs), KStar ->
-        let add_field env ((x : field), (p : prop)) = 
+        let add_field env ((x : pat), (p : prop)) = 
 	  begin match P.singleton_string x, p with
             | (Some s, PPresent t) -> bind_id s (TRef t) env
             | _, PAbsent -> env

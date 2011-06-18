@@ -40,7 +40,6 @@ type prim =
   | Undef
   | Null
 
-type field = Sb_strPat.t
 type pat = Sb_strPat.t
 
 let proto_str = "__proto__"
@@ -58,8 +57,8 @@ type typ =
   | TArrow of typ list * typ
       (* The list holds everything that's typed.
          The second type is the prototype *)
-  | TObject of (field * prop) list
-  | TRegex of field
+  | TObject of (pat * prop) list
+  | TRegex of pat
   | TRef of typ
   | TSource of typ
   | TSink of typ
@@ -77,6 +76,8 @@ and prop =
   | PPresent of typ
   | PMaybe of typ
   | PAbsent
+
+type field = pat * prop
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
@@ -143,7 +144,7 @@ module WritTyp = struct
     | Inter of t * t
     | Arrow of t option * t list * t (** [Arrow (this, args, result)] *)
     | Object of f list
-    | Pat of field
+    | Pat of pat
     | Ref of t
     | Source of t
     | Top
@@ -332,7 +333,7 @@ module Pretty = struct
                             end) arg_typs));
               text "->";
               typ r_typ ]
-    | TObject flds -> braces (vert (map field flds))
+    | TObject flds -> braces (vert (map pat flds))
     | TRef s -> horz [ text "Ref"; parens (typ s) ]
     | TSource s -> horz [ text "Src"; parens (typ s) ]
     | TSink s -> horz [ text "Snk"; parens (typ s) ]
@@ -341,7 +342,7 @@ module Pretty = struct
     | TId x -> text x
     | TRec (x, t) -> horz [ text "rec"; text x; text "."; typ t ]
 
-  and field  (k, p) = horz [ text (Sb_strPat.pretty k); text ":"; prop p;
+  and pat (k, p) = horz [ text (Sb_strPat.pretty k); text ":"; prop p;
 			     text "," ]
 
   and prop p = match p with
