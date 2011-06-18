@@ -2,4 +2,4 @@ open Prelude
 open Typedjs_syntax
 open Sb_semicps
 
-val semicfa : IdSet.t -> Typedjs_env.Env.env -> exp -> exp
+val semicfa : IdSet.t -> Typedjs_env.env -> exp -> exp

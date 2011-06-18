@@ -9,6 +9,6 @@ val disable_unreachable_check : unit -> unit
 
 val disable_flows : unit -> unit
 
-val tc_exp : Env.env -> exp -> typ
+val tc_exp : env -> exp -> typ
 
-val typecheck : Env.env -> exp -> unit
+val typecheck : env -> exp -> unit

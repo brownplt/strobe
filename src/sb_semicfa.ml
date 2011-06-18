@@ -188,7 +188,7 @@ module Env : sig
   val is_bound : id -> t -> bool
   val is_owned : id -> t -> bool
   val bind : id -> Absval.t -> t -> t
-  val from_typ_env : Typedjs_env.Env.env -> IdSet.t -> t
+  val from_typ_env : Typedjs_env.env -> IdSet.t -> t
 end = struct
 
   type t = {
@@ -217,7 +217,7 @@ end = struct
 
   let bind x v env = { env with binds = IdMap.add x v env.binds }
 
-  module TypEnv = Typedjs_env.Env
+  module TypEnv = Typedjs_env
 
   let rec rt_of_typ ids (t : Typedjs_syntax.typ) : RTSet.t =
     let open Typedjs_syntax in

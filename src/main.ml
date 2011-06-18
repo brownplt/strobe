@@ -50,7 +50,7 @@ module Input : sig
   val get_cin : unit -> string
   val get_cin_name : unit -> string
   val set_cin : in_channel -> string -> unit
-  val get_env : unit -> Env.env
+  val get_env : unit -> env
   val load_env : string -> unit
   val set_global_object : string -> unit
   val set_re_test_depth : int -> unit
@@ -61,7 +61,7 @@ module Input : sig
   val set_sourcetype : string -> unit -> unit
 end = struct
 
-  let env = ref Env.empty_env
+  let env = ref empty_env
   let global_object = ref None
 
   let re_test_depth = ref None
@@ -98,8 +98,8 @@ end = struct
   let set_sourcetype (str : string) _ = sourcetype := str
 
   let get_env () = match !global_object with
-    | None -> Env.set_global_object !env "Global"
-    | Some c -> Env.set_global_object !env c
+    | None -> Typedjs_env.set_global_object !env "Global"
+    | Some c -> Typedjs_env.set_global_object !env c
 
   let get_re_test_depth () = match !re_test_depth with
     | None -> 3

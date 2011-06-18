@@ -56,8 +56,6 @@ exception Not_subtype of subtype_exn
 
 let typ_subst x s typ = Typ.typ_subst x s typ
 
-module Env = struct
-
   type class_info = {
     fields : typ IdMap.t;
     sup : constr option
@@ -475,8 +473,6 @@ module Env = struct
       | _ -> 
         raise (Not_wf_typ (cname ^ " global must be an object"))
 
-end
-
 open Lexing
 
 let parse_env (cin : in_channel) (name : string) : env_decl list =
@@ -498,18 +494,18 @@ let parse_env (cin : in_channel) (name : string) : env_decl list =
 let extend_global_env env lst =
   let add env decl = match decl with
     | EnvBind (p, x, typ) ->
-      if IdMap.mem x env.Env.id_typs then
+      if IdMap.mem x env.id_typs then
         raise (Not_wf_typ (x ^ " is already bound in the environment"))
       else
-        Env.bind_id x (desugar_typ p typ) env
+        bind_id x (desugar_typ p typ) env
     | EnvType (p, x, writ_typ) ->
-      if IdMap.mem x env.Env.typ_ids then
+      if IdMap.mem x env.typ_ids then
 	raise (Not_wf_typ (sprintf "the type %s is already defined" x))
       else
 	let t = desugar_typ p writ_typ in
-	let k = Env.kind_check env t in
+	let k = kind_check env t in
 	{ env with 
-	  Env.typ_ids = IdMap.add x (t, k) env.Env.typ_ids }
+	  typ_ids = IdMap.add x (t, k) env.typ_ids }
   in List.fold_left add env lst
 
 (*
@@ -524,17 +520,14 @@ let df_func_of_typ syns (t : typ) : L.av list -> L.av = match t with
   | _ -> (fun _ -> L.any)
 
 let cf_env_of_tc_env tc_env = 
-  let fn x typ cf_env = L.bind x (L.runtime tc_env.Env.typ_ids typ) cf_env in
-    IdMap.fold fn (Env.id_env tc_env) L.empty_env
+  let fn x typ cf_env = L.bind x (L.runtime tc_env.typ_ids typ) cf_env in
+    IdMap.fold fn (id_env tc_env) L.empty_env
 
 let operator_env_of_tc_env tc_env =
-  let fn x t env = IdMap.add x (df_func_of_typ (Env.syns tc_env) t) env in
-    IdMap.fold fn (Env.id_env tc_env) IdMap.empty
+  let fn x t env = IdMap.add x (df_func_of_typ (syns tc_env) t) env in
+    IdMap.fold fn (id_env tc_env) IdMap.empty
 *)
 
-let simpl_typ = Env.simpl_typ
-
-let expose = Env.expose
 
 let apply_subst subst typ = IdMap.fold typ_subst subst typ
 
@@ -548,7 +541,7 @@ let assoc_merge = IdMap.merge (fun x opt_s opt_t -> match opt_s, opt_t with
     Some t
   | None, None -> None)
 
-let rec typ_assoc (env : Env.env) (typ1 : typ) (typ2 : typ) = 
+let rec typ_assoc (env : env) (typ1 : typ) (typ2 : typ) = 
   match (typ1, typ2) with
     | TId x, _ -> IdMap.singleton x typ2
     | TApp (s1, s2), TApp (t1, t2)
@@ -587,8 +580,7 @@ and fld_assoc env (_, fld1) (_, fld2) = match (fld1, fld2) with
   | _ -> IdMap.empty
 
 
-let fields = Env.fields
+let typid_env env = IdMap.map (fun (t, _) -> t) env.typ_ids
 
-let typid_env env = IdMap.map (fun (t, _) -> t) env.Env.typ_ids
 
 

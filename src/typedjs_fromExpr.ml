@@ -312,6 +312,6 @@ let from_exprjs env expr =
   exp 
     (IdMap.add "arguments" false 
        (IdSet.fold (fun x env -> IdMap.add x true env) 
-	  (Env.dom env) IdMap.empty))
+	  (dom env) IdMap.empty))
     expr
 

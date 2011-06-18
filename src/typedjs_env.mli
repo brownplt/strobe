@@ -4,14 +4,12 @@ open Typedjs_syntax
 exception Not_wf_typ of string
 
 type subtype_exn =
-  | ExtraFld of pat * prop
+  | ExtraFld of field
   | MismatchTyp of typ * typ
-  | MismatchFld of (pat * prop) * (pat * prop)
+  | MismatchFld of field * field
 
 exception Not_subtype of subtype_exn
 
-module Env : sig
-  
   type env
 
   val empty_env : env
@@ -60,29 +58,27 @@ module Env : sig
 
   val bind_typ : env -> typ -> env * typ
 
-end
-
 
 val parse_env : in_channel -> string -> env_decl list
 
-val extend_global_env : Env.env -> env_decl list -> Env.env
+val extend_global_env : env -> env_decl list -> env
 
 (** [typ_subst x s t] is capture-free substitution of the type variable [x]
     for the type [s] in the type [t]. *)
 val typ_subst : id -> typ -> typ -> typ
 
-val simpl_typ : Env.env -> typ -> typ
+val simpl_typ : env -> typ -> typ
 
-val expose : Env.env -> typ -> typ
+val expose : env -> typ -> typ
 
-val typ_assoc : Env.env -> typ -> typ -> typ IdMap.t
+val typ_assoc : env -> typ -> typ -> typ IdMap.t
 
-val fields : pos -> Env.env -> typ -> Sb_strPat.t -> typ
+val fields : pos -> env -> typ -> Sb_strPat.t -> typ
 
-val typid_env : Env.env -> typ IdMap.t
+val typid_env : env -> typ IdMap.t
 
 
 (*
-val operator_env_of_tc_env : Env.env 
+val operator_env_of_tc_env : env 
   -> (Typedjs_lattice.av list -> Typedjs_lattice.av) IdMap.t
 *)
