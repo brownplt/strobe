@@ -359,7 +359,7 @@ module Make (P : PAT) : (TYP with type pat = P.t) = struct
 
   let mismatched_typ_exn t1 t2 =
     raise (Not_subtype 
-	     (sprintf " %s\nis not a subtype of (app)\n %s"
+	     (sprintf " %s is not a subtype of %s"
 		(string_of_typ t1) (string_of_typ t2)))
 
   let extra_fld_exn pat prop =
@@ -536,10 +536,12 @@ module Make (P : PAT) : (TYP with type pat = P.t) = struct
     with Not_subtype _ -> false
 
   let assert_subtyp  env p s t = 
+(*      let _ = subt env TPSet.empty s t in
+      () *)
     try 
       let _ = subt env TPSet.empty s t in
       ()
     with
-      | Not_subtype txt -> raise (Typ_error (p, txt)) 
+      | Not_subtype txt -> raise (Typ_error (p, txt))  
 
 end
