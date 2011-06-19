@@ -1,2 +1,2 @@
-include Sig.Pats
+include Sig.PAT
 

@@ -71,7 +71,10 @@ type typ =
   | TApp of typ * typ list (** type operator application *)
   | TFix of id * kind * typ (** recursive type operators *)
 
-and obj_typ = { fields: (pat * prop) list }
+and obj_typ = { 
+  fields: (pat * prop) list;
+  
+}
 
 and prop = 
   | PInherited of typ

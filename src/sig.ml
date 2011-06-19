@@ -1,4 +1,4 @@
-module type Pats = sig
+module type PAT = sig
     
   (** string patterns *)
   type t
