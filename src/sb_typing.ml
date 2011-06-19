@@ -239,9 +239,13 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
 		try
                   let r2 = check_app t2 in
                      typ_intersect env r1 r2
-                with Typ_error _ -> r1 
+                with
+		  | Not_subtype _ 
+		  | Typ_error _ -> r1 
 	      end
-            with Typ_error _ -> check_app t2 
+            with
+	      | Not_subtype _ 
+	      | Typ_error _ -> check_app t2 
 	  end
 	| (TForall _) as quant_typ -> 
 	  begin match Typ.forall_arrow quant_typ with

@@ -39,6 +39,9 @@ end
 
 module type TYP = sig
 
+  exception Typ_error of pos * string
+  exception Not_subtype of string
+
   type pat
 
   type prim =
@@ -85,6 +88,7 @@ module type TYP = sig
   type typenv = (typ * kind) IdMap.t
 
   val string_of_typ : typ -> string
+  val string_of_kind : kind -> string
 
   val proto_str : string
 
@@ -101,6 +105,16 @@ module type TYP = sig
   val expose : typenv -> typ -> typ
 
   val inherits : typenv -> typ -> pat -> typ
+
+  val typ_union : typenv -> typ -> typ -> typ
+
+  val typ_intersect : typenv -> typ -> typ -> typ
+
+  val subtypes : typenv -> typ list -> typ list -> bool
+
+  val subtype : typenv -> typ -> typ -> bool
+
+  val assert_subtyp : typenv -> pos -> typ -> typ -> unit
 
 end
 

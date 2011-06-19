@@ -1,6 +1,5 @@
 open Prelude
 
-exception Typ_error of pos * string
 
 module P = Sb_strPat
 
@@ -351,8 +350,6 @@ end
 
 
 let string_of_exp = FormatExt.to_string Pretty.p_exp
-let string_of_prop = FormatExt.to_string Pretty.p_prop
-let string_of_kind = FormatExt.to_string Pretty.kind
 
 let assigned_free_vars (e : exp) = 
   let rec exp : exp -> IdSet.t = function
