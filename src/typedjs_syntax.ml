@@ -207,73 +207,8 @@ module Pretty = struct
   open Format
   open FormatExt
 
-  let rec kind k = match k with
-    | KStar -> text "*"
-    | KArrow (ks, k) -> 
-      horz [horz (intersperse (text ",") (map pr_kind ks)); text "=>"; kind k]
-
-  and pr_kind k = match k with
-    | KArrow _ -> parens (kind k)
-    | _ -> kind k
-
-  let rec typ t  = match t with
-    | TTop -> text "Any"
-    | TBot -> text "DoesNotReturn"
-    | TPrim p -> text begin match p with
-       | Num -> "Num"
-       | Int -> "Int"
-       | True -> "True"
-       | False -> "False"
-       | Null -> "Null"
-       | Undef -> "Undef"
-    end
-    | TLambda (args, t) -> 
-      let p (x, k) = horz [ text x; text "::"; kind k ] in
-      horz [ text "Lambda "; horz (map p args); text "."; typ t ]
-    | TFix (x, k, t) -> 
-      horz [ text "Fix "; text x; text "::"; kind k; typ t ]
-    | TApp (t, ts) ->
-      horz [typ t; text "<"; horz (intersperse (text ",") (map typ ts));
-	    text ">"]
-    | TRegex pat -> 
-        squish [text "/"; text (Sb_strPat.pretty pat); text "/"]
-    | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
-    | TIntersect (t1, t2) -> horz [typ t1; text "&"; typ t2]
-    | TArrow (tt::arg_typs, r_typ) ->
-        horz[ brackets (typ tt);
-              horz (intersperse (text "*") 
-                      (map (fun at -> begin match at with
-                              | TArrow _ -> parens (typ at)
-                              | _ -> typ at 
-                            end) arg_typs));
-              text "->";
-              typ r_typ ]
-    | TArrow (arg_typs, r_typ) ->
-        horz[ horz (intersperse (text "*") 
-                      (map (fun at -> begin match at with
-                              | TArrow _ -> parens (typ at)
-                              | _ -> typ at 
-                            end) arg_typs));
-              text "->";
-              typ r_typ ]
-    | TObject flds -> braces (vert (map pat (fields flds)))
-    | TRef s -> horz [ text "Ref"; parens (typ s) ]
-    | TSource s -> horz [ text "Src"; parens (typ s) ]
-    | TSink s -> horz [ text "Snk"; parens (typ s) ]
-    | TForall (x, s, t) -> 
-        horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
-    | TId x -> text x
-    | TRec (x, t) -> horz [ text "rec"; text x; text "."; typ t ]
-
-  and pat (k, p) = horz [ text (Sb_strPat.pretty k); text ":"; prop p;
-			     text "," ]
-
-  and prop p = match p with
-    | PPresent t -> typ t
-    | PMaybe t -> horz [ text "maybe"; typ t ]
-    | PInherited t -> squish [ text "^"; typ t]
-    | PAbsent -> text "_"
-
+  let typ t = text (string_of_typ t)
+    
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
     | EBot _ -> text "bot"
@@ -338,13 +273,7 @@ module Pretty = struct
   and rec_bind (x, t, e) = 
     parens (horz [text x; text ":"; typ t; exp e])
 
-  let p_typ = typ
-
   let p_exp = exp
-
-  let p_prop = prop
-
-  let pp_typ ppf t = p_typ t ppf
    
 end
 

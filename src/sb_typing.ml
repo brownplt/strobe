@@ -31,7 +31,6 @@ let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 
 let error p s = raise (Typ_error (p, s))
 
-let string_of_typ = FormatExt.to_string Typedjs_syntax.Pretty.p_typ
 let string_of_exp = FormatExt.to_string Typedjs_syntax.Pretty.p_exp
 
 let un_null t = match t with
