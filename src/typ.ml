@@ -159,6 +159,46 @@ module Make (P : PAT) : (TYP with type pat = P.t) = struct
 
   let fields ot = ot.fields
 
+  let prop_typ prop = match prop with
+    | PInherited t
+    | PPresent t
+    | PMaybe t -> Some t
+    | PAbsent -> None
+
+  let rec free_typ_ids (typ : typ) : IdSet.t =
+    let open IdSet in
+    let open IdSetExt in
+    match typ with
+      | TTop
+      | TBot
+      | TPrim _ 
+      | TRegex _ -> 
+	empty
+      | TId x -> 
+	singleton x
+      | TRef t
+      | TSource t
+      | TSink t ->
+	free_typ_ids t
+      | TIntersect (t1, t2)
+      | TUnion (t1, t2) ->
+	union (free_typ_ids t1) (free_typ_ids t2)
+      | TArrow (ss, t) 
+      | TApp (t, ss) ->
+	unions (free_typ_ids t :: (map free_typ_ids ss))
+      | TObject o ->
+	let sel (_, prop) = match prop_typ prop with
+	  | None -> None
+	  | Some s -> Some (free_typ_ids s) in
+	unions (L.filter_map sel o.fields)
+      | TFix (x, _, t)
+      | TRec (x, t) ->
+	remove x (free_typ_ids t)
+      | TForall (x, s, t) ->
+	union (free_typ_ids s) (remove x (free_typ_ids t))
+      | TLambda (xks, t) ->
+	diff (free_typ_ids t) (from_list (map fst2 xks))
+
   let rec typ_subst x s typ = match typ with
     | TPrim _ -> typ
     | TRegex _ -> typ
@@ -177,9 +217,15 @@ module Make (P : PAT) : (TYP with type pat = P.t) = struct
     | TSink t -> TSink (typ_subst x s t)
     | TTop -> TTop
     | TBot -> TBot
-  (* TODO: omg this stuff is NOT capture free ... *)
-    | TLambda (args, t) ->
-      TLambda (args, typ_subst x s t)
+    | TLambda (yks, t) ->
+      let ys = IdSetExt.from_list (map fst2 yks) in
+      if IdSet.mem x ys then
+	typ
+      else begin
+	(* TODO: omg this stuff is NOT capture free ... *)
+	assert (IdSet.is_empty (IdSet.inter (free_typ_ids s) ys));
+	TLambda (yks, typ_subst x s t)
+      end
     | TFix (y, k, t) ->
       TFix (y, k, typ_subst x s t)
     | TForall (y, t1, t2) -> 
@@ -339,13 +385,6 @@ module Make (P : PAT) : (TYP with type pat = P.t) = struct
     end
     | t -> raise (Invalid_argument ("expected object type, got " ^
 				       (string_of_typ t)))
-
-
-  let prop_typ prop = match prop with
-    | PInherited t
-    | PPresent t
-    | PMaybe t -> Some t
-    | PAbsent -> None
 
   let maybe_pats flds = 
     let sel (pat, prop) = match prop with
