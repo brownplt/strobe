@@ -542,6 +542,7 @@ module Make (P : PAT) : (TYP with type pat = P.t) = struct
       let _ = subt env TPSet.empty s t in
       ()
     with
-      | Not_subtype txt -> raise (Typ_error (p, txt))  
+      | Not_subtype txt -> raise (Typ_error (p, txt ^ "\nin "
+	^ (string_of_typ s) ^ "\n\nand\n\n" ^ (string_of_typ t)))
 
 end
