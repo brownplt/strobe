@@ -16,6 +16,7 @@ open RegLang
 open RegLang_generate
 
 module Z = Mls
+module Y = Sat
 
 let parse_sb cin name =
   let lexbuf = Lexing.from_string cin in
