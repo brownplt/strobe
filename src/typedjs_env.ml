@@ -28,7 +28,6 @@ type subtype_exn =
 
 exception Not_subtype of subtype_exn
 
-let typ_subst x s typ = Typ.typ_subst x s typ
 
   type env = {
     id_typs : typ IdMap.t; (* type of term identifiers *)
@@ -168,7 +167,7 @@ let typ_subst x s typ = Typ.typ_subst x s typ
           with Not_found -> failwith (sprintf "Unbound id %s in subt" x)
         end
 	| TObject obj1, TObject obj2 ->
-	  subtype_object' env cache (obj1.fields) (obj2.fields)
+	  subtype_object' env cache (fields obj1) (fields obj2)
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
         | TSource s, TSource t -> subtype cache s t
         | TSink s, TSink t -> subtype cache t s
@@ -210,9 +209,9 @@ let typ_subst x s typ = Typ.typ_subst x s typ
       else
         fields_helper env flds' idx_pat idx_for_proto
 
-  and fields p env obj_typ idx_pat = match simpl_typ env obj_typ with
+  and inherits p env obj_typ idx_pat = match simpl_typ env obj_typ with
     | TObject obj -> 
-      let flds = obj.fields in
+      let flds = fields obj in
       let (fld_typ, all_pat, rest_pat) = 
 	fields_helper env flds idx_pat idx_pat in
       if not (P.is_empty all_pat) then 
@@ -237,7 +236,7 @@ let typ_subst x s typ = Typ.typ_subst x s typ
 		typ_union env fld_typ TBot (** might signal an error *)
               | TRef proto_typ
               | TSource proto_typ ->
-		typ_union env fld_typ (fields p env proto_typ rest_pat)
+		typ_union env fld_typ (inherits p env proto_typ rest_pat)
               | typ ->
 		raise 
 		  (Typ_error
@@ -246,7 +245,7 @@ let typ_subst x s typ = Typ.typ_subst x s typ
 		       (string_of_typ typ) (string_of_typ obj_typ)))
         end
       (* OK to use subsumption on a type variable *)
-    | TId x -> fields p env (fst (lookup_typ_id x env)) idx_pat
+    | TId x -> inherits p env (fst (lookup_typ_id x env)) idx_pat
     | obj_typ ->
       raise (Typ_error
 	       (p, sprintf "expected object, received %s" 
@@ -256,7 +255,7 @@ let typ_subst x s typ = Typ.typ_subst x s typ
   (* Check that an "extra" field is inherited *)
   and check_inherited env cache lang other_proto typ =
     try
-      let ftyp = fields dummy_pos env other_proto lang in
+      let ftyp = inherits dummy_pos env other_proto lang in
       subt env cache typ ftyp 
     with Typ_error _ ->
       raise (Not_subtype (ExtraFld (lang, PInherited typ)))
@@ -298,7 +297,7 @@ let typ_subst x s typ = Typ.typ_subst x s typ
       List.fold_right check_prop flds2 ([], flds1, cache) in
     let cache' = List.fold_right (fun (pat, prop) cache -> match prop with
       | PInherited typ -> 
-        check_inherited env cache pat (TObject { fields = flds1 }) typ
+        check_inherited env cache pat (TObject (mk_obj_typ flds1)) typ
       | _ -> cache)
       flds2 cache in
     try
@@ -376,9 +375,11 @@ let typ_subst x s typ = Typ.typ_subst x s typ
     | RT.Re _ -> typ_union env (TRegex any_fld) typ
     | RT.Bool -> typ_union env typ_bool typ
     | RT.Function ->
-      typ_union env (TObject { fields = [(proto_pat, PPresent (TId "Function"))]}) typ 
+      typ_union env (TObject (mk_obj_typ
+				[(proto_pat, PPresent (TId "Function"))])) typ 
     | RT.Object -> 
-      typ_union env (TObject { fields = [proto_pat, PPresent (TId "Object")]}) typ
+      typ_union env (TObject (mk_obj_typ
+				[proto_pat, PPresent (TId "Object")])) typ
     | RT.Undefined -> typ_union env (TPrim Undef) typ
 
   let rtany = 
@@ -436,7 +437,7 @@ let typ_subst x s typ = Typ.typ_subst x s typ
 	raise (Not_wf_typ ("global object, " ^ cname ^ ", not found")) in
     match ci with
       | TRef (TObject o), KStar ->
-	let fs = o.fields in
+	let fs = fields o in
         let add_field env ((x : pat), (p : prop)) = 
 	  begin match P.singleton_string x, p with
             | (Some s, PPresent t) -> bind_id s (TRef t) env
@@ -533,8 +534,8 @@ let rec typ_assoc (env : env) (typ1 : typ) (typ2 : typ) =
       typ_assoc env (simpl_typ env (TApp (s1, s2))) t
 
     | TObject o1, TObject o2 ->
-      let flds1 = o1.fields in
-      let flds2 = o2.fields in
+      let flds1 = fields o1 in
+      let flds2 = fields o2 in
       List.fold_left assoc_merge
 	IdMap.empty
 	(List.map2_noerr (fld_assoc env) flds1 flds2)

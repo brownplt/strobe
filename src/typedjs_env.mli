@@ -41,7 +41,6 @@ exception Not_subtype of subtype_exn
       The [env] is needed for bounded quantification. *)
   val subtype : env -> typ -> typ -> bool
 
-  val fields : pos -> env -> typ -> Sb_strPat.t -> typ
 
   val assert_subtyp : env -> pos -> typ -> typ -> unit
 
@@ -63,17 +62,13 @@ val parse_env : in_channel -> string -> env_decl list
 
 val extend_global_env : env -> env_decl list -> env
 
-(** [typ_subst x s t] is capture-free substitution of the type variable [x]
-    for the type [s] in the type [t]. *)
-val typ_subst : id -> typ -> typ -> typ
-
 val simpl_typ : env -> typ -> typ
 
 val expose : env -> typ -> typ
 
 val typ_assoc : env -> typ -> typ -> typ IdMap.t
 
-val fields : pos -> env -> typ -> Sb_strPat.t -> typ
+val inherits : pos -> env -> typ -> Sb_strPat.t -> typ
 
 val typid_env : env -> typ IdMap.t
 

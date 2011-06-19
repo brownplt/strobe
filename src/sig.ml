@@ -1,3 +1,5 @@
+open Prelude
+
 module type PAT = sig
     
   (** string patterns *)
@@ -34,3 +36,74 @@ module type PAT = sig
 
   val pretty : t -> string
 end
+
+module type TYP = sig
+
+  type pat
+
+  type prim =
+    | Num
+    | Int
+    | True
+    | False
+    | Undef
+    | Null
+
+  type kind = 
+    | KStar
+    | KArrow of kind list * kind
+	
+  type typ = 
+    | TPrim of prim
+    | TUnion of typ * typ
+    | TIntersect of typ * typ
+    | TArrow of typ list * typ
+    | TObject of obj_typ
+    | TRegex of pat
+    | TRef of typ
+    | TSource of typ
+    | TSink of typ
+    | TTop
+    | TBot
+    | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
+    | TId of id
+    | TRec of id * typ 
+    | TLambda of (id * kind) list * typ (** type operator *)
+    | TApp of typ * typ list (** type operator application *)
+    | TFix of id * kind * typ (** recursive type operators *)
+
+  and obj_typ
+      
+  and prop = 
+    | PInherited of typ
+    | PPresent of typ
+    | PMaybe of typ
+    | PAbsent
+
+  type field = pat * prop 
+
+  type typenv = (typ * kind) IdMap.t
+
+  val proto_str : string
+
+  val proto_pat : pat
+
+  val mk_obj_typ : field list -> obj_typ
+
+  val fields : obj_typ -> field list
+
+  val typ_subst : id -> typ -> typ -> typ
+
+  val simpl_typ : typenv -> typ -> typ
+
+  val expose : typenv -> typ -> typ
+
+  (** Returns the type of the parent of an object type. *)
+  val parent_typ : typenv -> typ -> typ option
+
+  val inherit_guard_pat : typ -> pat
+
+end
+
+module type TYPMake = functor (P : PAT) ->  (TYP with type pat = P.t)
+

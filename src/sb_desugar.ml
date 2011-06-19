@@ -81,7 +81,7 @@ and object_typ (flds : W.f list) =
   List.iter_pairs assert_overlap (List.map pat_of flds_no_stars);
   let flds_no_skulls_stars = 
     List.filter (fun f -> not (is_skull f)) flds_no_stars in
-  TObject { fields = map fld flds_no_skulls_stars }
+  TObject (mk_obj_typ (map fld flds_no_skulls_stars))
 
 
 

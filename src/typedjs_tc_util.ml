@@ -18,15 +18,18 @@ let typ_of_value (exp : exp) : typ =
     | EObject (_, fs) -> 
       (* TODO: Everything else should be absent *)
       TObject 
-	{ fields = (proto_pat, PPresent (TId "Object")) :: 
-	    (map (mk_field f) fs) }
+	(mk_obj_typ
+	   ((proto_pat, PPresent (TId "Object")) :: 
+	       (map (mk_field f) fs)))
     | EConst (_, c) -> tc_const c
     | EFunc (_, _, fi, _) -> fi.func_typ
     | ERef (_, RefCell, e') -> TRef begin match e' with
         | EObject (_, fields) -> 
 	  (* TODO: as above *)
-	  TObject { fields = ((proto_pat, PPresent (TId "Object")) 
-			      :: (map (mk_field f) fields)) }
+	  TObject
+	    (mk_obj_typ
+	       ((proto_pat, PPresent (TId "Object")) 
+		:: (map (mk_field f) fields)))
         | EConst (_, c) -> tc_const c
         | EFunc (_, _, fi, _) -> fi.func_typ
         | _ -> raise (Not_value  (FormatExt.to_string Pretty.p_exp e'))

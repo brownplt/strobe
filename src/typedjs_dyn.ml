@@ -67,7 +67,7 @@ let rec ctc_of_typ p (typ : typ) = match typ with
         | PAbsent -> failwith "Cannot make contract for absent field"
       end in
       CObject (map (fun (f, pro) -> (f, ctc_of_typ p (typ_of_prop pro))) 
-		 o.fields)
+		 (fields o))
   | TRef t -> ctc_of_typ p t (* \JS artifacts, source and sinks are moot since
                                 contracts don't preserve identity *)
   | TSource t -> ctc_of_typ p t 

@@ -30,59 +30,9 @@ end
 module RTSet = Set.Make (RT)
 module RTSetExt = SetExt.Make (RTSet)
 
-type constr = string
+module TypImpl = Typ.Make (Sb_strPat)
 
-type prim =
-  | Num
-  | Int
-  | True
-  | False
-  | Undef
-  | Null
-
-type pat = Sb_strPat.t
-
-let proto_str = "__proto__"
-
-let proto_pat = Sb_strPat.singleton proto_str
-
-type kind = 
-  | KStar
-  | KArrow of kind list * kind
-
-type typ = 
-  | TPrim of prim
-  | TUnion of typ * typ
-  | TIntersect of typ * typ
-  | TArrow of typ list * typ
-      (* The list holds everything that's typed.
-         The second type is the prototype *)
-  | TObject of obj_typ
-  | TRegex of pat
-  | TRef of typ
-  | TSource of typ
-  | TSink of typ
-  | TTop
-  | TBot
-  | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
-  | TId of id
-  | TRec of id * typ 
-  | TLambda of (id * kind) list * typ (** type operator *)
-  | TApp of typ * typ list (** type operator application *)
-  | TFix of id * kind * typ (** recursive type operators *)
-
-and obj_typ = { 
-  fields: (pat * prop) list;
-  
-}
-
-and prop = 
-  | PInherited of typ
-  | PPresent of typ
-  | PMaybe of typ
-  | PAbsent
-
-type field = pat * prop
+include TypImpl
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
@@ -194,44 +144,6 @@ type annotation =
 
 module Typ = struct
 
-  let rec typ_subst x s typ = match typ with
-    | TPrim _ -> typ
-    | TRegex _ -> typ
-    | TId y -> if x = y then s else typ
-    | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
-    | TIntersect (t1, t2) ->
-      TIntersect (typ_subst x s t1, typ_subst x s t2)
-    | TArrow (t2s, t3)  ->
-      TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
-    | TObject o ->
-      TObject { o with fields = map (second2 (prop_subst x s)) o.fields}
-    | TRef t -> TRef (typ_subst x s t)
-    | TSource t -> TSource (typ_subst x s t)
-    | TSink t -> TSink (typ_subst x s t)
-    | TTop -> TTop
-    | TBot -> TBot
-  (* TODO: omg this stuff is NOT capture free ... *)
-    | TLambda (args, t) ->
-      TLambda (args, typ_subst x s t)
-    | TFix (y, k, t) ->
-      TFix (y, k, typ_subst x s t)
-    | TForall (y, t1, t2) -> 
-      if x = y then 
-        typ
-      else 
-        TForall (y, typ_subst x s t1, typ_subst x s t2)
-    | TRec (y, t) ->
-      if x = y then
-        failwith "TODO: capture free substitution"
-      else 
-        TRec (y, typ_subst x s t)
-    | TApp (t, ts) -> TApp (typ_subst x s t, List.map (typ_subst x s) ts)
-
-  and prop_subst x s p = match p with
-    | PInherited typ -> PInherited (typ_subst x s typ)
-    | PPresent typ -> PPresent (typ_subst x s typ)
-    | PMaybe typ -> PMaybe (typ_subst x s typ)
-    | PAbsent -> PAbsent
 
   let rec forall_arrow (typ : typ) : (id list * typ) option = match typ with
     | TArrow _ -> Some ([], typ)
@@ -345,7 +257,7 @@ module Pretty = struct
                             end) arg_typs));
               text "->";
               typ r_typ ]
-    | TObject flds -> braces (vert (map pat flds.fields))
+    | TObject flds -> braces (vert (map pat (fields flds)))
     | TRef s -> horz [ text "Ref"; parens (typ s) ]
     | TSource s -> horz [ text "Src"; parens (typ s) ]
     | TSink s -> horz [ text "Snk"; parens (typ s) ]

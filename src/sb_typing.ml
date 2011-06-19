@@ -167,15 +167,15 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
       let rest' = Sb_strPat.negate rest in
       (* TODO: everything else hsould be absent *)
       if List.mem "__proto__" (map fst fields) then
-        TObject { fields = (rest', PAbsent)::(map mk_field fields) }
+        TObject (mk_obj_typ ((rest', PAbsent)::(map mk_field fields)))
       else
-        TObject { fields = 
-	    (rest', PAbsent)::(Sb_strPat.singleton "__proto__",
-			       PPresent (TId "Object")) 
-	        :: (map mk_field fields) }
+        TObject (mk_obj_typ
+		   ((rest', PAbsent)::(Sb_strPat.singleton "__proto__",
+				       PPresent (TId "Object")) 
+	            :: (map mk_field fields)))
   | EBracket (p, obj, field) -> 
     begin match expose_simpl_typ env (tc_exp env field) with
-      | TRegex pat -> fields p env (un_null (tc_exp env obj)) pat
+      | TRegex pat -> inherits p env (un_null (tc_exp env obj)) pat
       | idx_typ -> error p (sprintf "index has type %s" (string_of_typ idx_typ))
     end
   | EUpdate (p, obj, field, value) -> begin
@@ -183,7 +183,7 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
       match expose_simpl_typ env (tc_exp env obj), 
         expose_simpl_typ env (tc_exp env field), tc_exp env value with
           | TObject o, (TRegex idx_pat as tfld), typ ->
-	    let fs = o.fields in
+	    let fs : field list = fields o in
               let okfield (fld_pat, prop) = 
                 if Sb_strPat.is_overlapped fld_pat idx_pat
                 then match prop with
