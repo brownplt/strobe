@@ -73,43 +73,9 @@ exception Not_subtype of subtype_exn
     | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) t
     | typ -> (env, typ)
 
-  let rec simpl_typ env typ = match typ with
-    | TPrim _ 
-    | TUnion _
-    | TIntersect _
-    | TRegex _
-    | TArrow _
-    | TRef _
-    | TSource _
-    | TSink _
-    | TTop _
-    | TBot _
-    | TLambda _
-    | TObject _
-    | TId _  
-    | TForall _ -> typ
-    | TFix (x, k, t) -> simpl_typ env (typ_subst x typ t)
-    | TRec (x, t) -> simpl_typ env (typ_subst x typ t)
-    | TId x ->
-	begin try
-	  simpl_typ env (fst2 (IdMap.find x env.typ_ids))
-	with Not_found -> 
-	  failwith (sprintf "%s (type variable) unbound" x)
-	end 
-    | TApp (t1, ts) -> begin match expose env (simpl_typ env t1) with
-	| TLambda (args, u) -> 
-	  simpl_typ env 
-	    (List.fold_right2 (* well-kinded, no need to check *)
-	       (fun (x, k) t2 u -> typ_subst x t2 u)
-	       args ts u)
-	| _ -> raise
-	  (Not_wf_typ (sprintf "%s in type-application position"
-			 (string_of_typ t1)))
-    end
+  let simpl_typ env typ = TypImpl.simpl_typ env.typ_ids typ
 
-  and expose env typ = match typ with
-    | TId x -> expose env (simpl_typ env (fst2 (IdMap.find x env.typ_ids)))
-    | _ -> typ
+  let expose env typ = TypImpl.expose env.typ_ids typ
 
   let get_fld idx (pat, prop) = 
     let pat' = P.intersect pat idx in
@@ -118,16 +84,6 @@ exception Not_subtype of subtype_exn
     else 
       Some (pat', prop)
 	
-  let rec get_prototype_typ env flds = match flds with
-    | [] -> None
-    | ((pat, fld) :: flds') -> match P.is_member proto_str pat with
-        | true -> begin match fld with
-	    | PPresent t -> Some (simpl_typ env t)
-	    | _ -> failwith "maybe proto wtf"
-        end
-        | false -> get_prototype_typ env flds'
-
-
   let rec subt env (cache : TPSet.t) s t : TPSet.t = 
     if TPSet.mem (s, t) cache then
       cache
@@ -210,7 +166,7 @@ exception Not_subtype of subtype_exn
         fields_helper env flds' idx_pat idx_for_proto
 
   and inherits p env obj_typ idx_pat = match simpl_typ env obj_typ with
-    | TObject obj -> 
+    | TObject obj as obj_typ -> 
       let flds = fields obj in
       let (fld_typ, all_pat, rest_pat) = 
 	fields_helper env flds idx_pat idx_pat in
@@ -221,7 +177,7 @@ exception Not_subtype of subtype_exn
 		   (string_of_typ obj_typ)                  
 		   (P.pretty all_pat)))
       else
-        begin match get_prototype_typ env flds with
+        begin match parent_typ env.typ_ids obj_typ with
           | None -> 
 	    if P.is_empty rest_pat then
 	      fld_typ
