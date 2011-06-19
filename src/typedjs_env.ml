@@ -77,13 +77,6 @@ exception Not_subtype of subtype_exn
 
   let expose env typ = TypImpl.expose env.typ_ids typ
 
-  let get_fld idx (pat, prop) = 
-    let pat' = P.intersect pat idx in
-    if P.is_empty pat' then
-      None
-    else 
-      Some (pat', prop)
-	
   let rec subt env (cache : TPSet.t) s t : TPSet.t = 
     if TPSet.mem (s, t) cache then
       cache
@@ -165,6 +158,9 @@ exception Not_subtype of subtype_exn
       else
         fields_helper env flds' idx_pat idx_for_proto
 
+  and inherits p env obj_typ idx_pat = 
+    TypImpl.inherits env.typ_ids obj_typ idx_pat
+(*
   and inherits p env obj_typ idx_pat = match simpl_typ env obj_typ with
     | TObject obj as obj_typ -> 
       let flds = fields obj in
@@ -207,6 +203,7 @@ exception Not_subtype of subtype_exn
 	       (p, sprintf "expected object, received %s" 
 	         (string_of_typ obj_typ)))
 
+*)
 
   (* Check that an "extra" field is inherited *)
   and check_inherited env cache lang other_proto typ =

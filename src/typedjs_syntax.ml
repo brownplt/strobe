@@ -349,7 +349,7 @@ module Pretty = struct
    
 end
 
-let string_of_typ = FormatExt.to_string Pretty.p_typ
+
 let string_of_exp = FormatExt.to_string Pretty.p_exp
 let string_of_prop = FormatExt.to_string Pretty.p_prop
 let string_of_kind = FormatExt.to_string Pretty.kind

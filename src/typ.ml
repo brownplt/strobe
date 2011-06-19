@@ -1,7 +1,10 @@
 open Prelude
 open Sig
 
+module L = ListExt
+
 module Make (P : PAT) : (TYP with type pat = P.t) = struct
+
 
   type pat = P.t
 
@@ -52,6 +55,82 @@ module Make (P : PAT) : (TYP with type pat = P.t) = struct
   type field = pat * prop
 
   type typenv = (typ * kind) IdMap.t
+
+  module Pretty = struct
+
+    open Format
+    open FormatExt
+      
+    let rec kind k = match k with
+      | KStar -> text "*"
+      | KArrow (ks, k) -> 
+	horz [horz (intersperse (text ",") (map pr_kind ks)); text "=>"; kind k]
+
+    and pr_kind k = match k with
+      | KArrow _ -> parens (kind k)
+      | _ -> kind k
+
+    let rec typ t  = match t with
+      | TTop -> text "Any"
+      | TBot -> text "DoesNotReturn"
+      | TPrim p -> text begin match p with
+	  | Num -> "Num"
+	  | Int -> "Int"
+	  | True -> "True"
+	  | False -> "False"
+	  | Null -> "Null"
+	  | Undef -> "Undef"
+      end
+      | TLambda (args, t) -> 
+	let p (x, k) = horz [ text x; text "::"; kind k ] in
+	horz [ text "Lambda "; horz (map p args); text "."; typ t ]
+      | TFix (x, k, t) -> 
+	horz [ text "Fix "; text x; text "::"; kind k; typ t ]
+      | TApp (t, ts) ->
+	horz [typ t; text "<"; horz (intersperse (text ",") (map typ ts));
+	      text ">"]
+      | TRegex pat -> 
+        squish [text "/"; text (P.pretty pat); text "/"]
+      | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
+      | TIntersect (t1, t2) -> horz [typ t1; text "&"; typ t2]
+      | TArrow (tt::arg_typs, r_typ) ->
+        horz[ brackets (typ tt);
+              horz (intersperse (text "*") 
+                      (map (fun at -> begin match at with
+                        | TArrow _ -> parens (typ at)
+                        | _ -> typ at 
+                      end) arg_typs));
+              text "->";
+              typ r_typ ]
+      | TArrow (arg_typs, r_typ) ->
+	horz[ horz (intersperse (text "*") 
+                      (map (fun at -> begin match at with
+                        | TArrow _ -> parens (typ at)
+                        | _ -> typ at 
+                      end) arg_typs));
+              text "->";
+              typ r_typ ]
+      | TObject flds -> braces (vert (map pat (flds.fields)))
+      | TRef s -> horz [ text "Ref"; parens (typ s) ]
+      | TSource s -> horz [ text "Src"; parens (typ s) ]
+      | TSink s -> horz [ text "Snk"; parens (typ s) ]
+      | TForall (x, s, t) -> 
+        horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
+      | TId x -> text x
+      | TRec (x, t) -> horz [ text "rec"; text x; text "."; typ t ]
+	
+    and pat (k, p) = horz [ text (P.pretty k); text ":"; prop p;
+			    text "," ]
+      
+    and prop p = match p with
+      | PPresent t -> typ t
+      | PMaybe t -> horz [ text "maybe"; typ t ]
+      | PInherited t -> squish [ text "^"; typ t]
+      | PAbsent -> text "_"
+	
+  end
+
+  let string_of_typ = FormatExt.to_string Pretty.typ
 
   let proto_str = "__proto__"
     
@@ -137,26 +216,98 @@ module Make (P : PAT) : (TYP with type pat = P.t) = struct
     | TId x -> expose typenv (simpl_typ typenv (fst2 (IdMap.find x typenv)))
     | _ -> typ
 
-
-  let rec parent_typ' typenv flds = match flds with
+  let rec parent_typ' env flds = match flds with
     | [] -> None
     | ((pat, fld) :: flds') -> match P.is_member proto_str pat with
         | true -> begin match fld with
-	    | PPresent t -> Some (simpl_typ typenv t)
+	    | PPresent t -> 
+	      begin match expose env t with
+		| TPrim Null -> Some (TPrim Null)
+		| TSource p
+		| TRef p -> Some (expose env (simpl_typ env p))
+		| _ -> failwith "invalid parent type"
+	      end
 	    | _ -> failwith "maybe proto wtf"
         end
-        | false -> parent_typ' typenv flds'
+        | false -> parent_typ' env flds'
 
-  let rec parent_typ (typenv : typenv) typ = match typ with
-    | TObject ot -> begin match !(ot.cached_parent_typ) with
-	| Some cached -> cached
-	| None ->
-	  let computed = parent_typ' typenv ot.fields in
-	  ot.cached_parent_typ := Some computed;
-	  computed
+  let rec parent_typ (env : typenv) typ = 
+    match expose env (simpl_typ env typ) with
+      | TObject ot -> begin match !(ot.cached_parent_typ) with
+	  | Some cached ->
+	    cached
+	  | None ->
+	    let computed = parent_typ' env ot.fields in
+	    ot.cached_parent_typ := Some computed;
+	    computed
+      end
+      | _ -> raise (Invalid_argument "parent_typ expects TObject")
+
+  let calc_inherit_guard_pat (env : typenv) (t : typ) : pat =
+    match t with
+      | TObject ot ->
+	begin match parent_typ env t with
+	  | None
+	  | Some (TPrim Null) ->
+	    let f (pat, prop) = match prop with
+	      | PInherited _
+	      | PPresent _ -> Some pat
+	      | PMaybe _
+	      | PAbsent -> None in
+	    L.fold_right P.union (L.filter_map f ot.fields) P.empty
+	  | Some (TObject _) ->
+	    L.fold_right P.union (L.map fst2 ot.fields) P.empty
+	  | Some pt ->
+	    raise (Invalid_argument 
+		     ("invalid parent type in object type: " ^
+			 (string_of_typ pt)))
+	end
+      | t -> raise (Invalid_argument "expected TObject")
+
+
+  let inherit_guard_pat env typ = match typ with
+    | TObject ot -> begin match !(ot.cached_guard_pat) with
+	| None -> let pat = calc_inherit_guard_pat env typ in
+		  ot.cached_guard_pat := Some pat;
+		  pat
+	| Some pat -> pat
     end
-    | _ -> raise (Invalid_argument "parent_typ expects TObject")
+    | t -> raise (Invalid_argument ("expected object type, got " ^
+				       (string_of_typ t)))
 
-  let inherit_guard_pat (t : typ) : pat = failwith "nyi"
+
+  let prop_typ prop = match prop with
+    | PInherited t
+    | PPresent t
+    | PMaybe t -> Some t
+    | PAbsent -> None
+
+
+  let maybe_pats flds = 
+    let sel (pat, prop) = match prop with
+      | PMaybe _ -> Some pat
+      | _ -> None in
+    L.fold_right P.union (L.filter_map sel flds) P.empty
+
+  let rec inherits (env : typenv) (t : typ) (pat : pat) : typ = 
+    let t = expose env (simpl_typ env t) in
+    if P.is_subset pat (inherit_guard_pat env t) then
+      begin match t with
+	| TObject ot -> 
+	  let sel (f_pat, f_prop) =
+	    if P.is_overlapped f_pat pat then prop_typ f_prop
+	    else None in
+	  L.fold_right (fun s t -> TUnion (s, t))
+	    (L.filter_map sel ot.fields)
+	    (match parent_typ env t with
+	      | None
+	      | Some (TPrim Null) -> TBot
+	      | Some parent_typ -> 
+		inherits env parent_typ 
+		  (P.intersect pat (maybe_pats ot.fields)))
+	| _ -> failwith "lookup non-object"
+      end
+    else
+      failwith "lookup hidden field"
 
 end

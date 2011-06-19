@@ -84,6 +84,8 @@ module type TYP = sig
 
   type typenv = (typ * kind) IdMap.t
 
+  val string_of_typ : typ -> string
+
   val proto_str : string
 
   val proto_pat : pat
@@ -98,10 +100,7 @@ module type TYP = sig
 
   val expose : typenv -> typ -> typ
 
-  (** Returns the type of the parent of an object type. *)
-  val parent_typ : typenv -> typ -> typ option
-
-  val inherit_guard_pat : typ -> pat
+  val inherits : typenv -> typ -> pat -> typ
 
 end
 
