@@ -227,7 +227,12 @@ module Make (P : PAT) : (TYP with type pat = P.t) = struct
 	TLambda (yks, typ_subst x s t)
       end
     | TFix (y, k, t) ->
-      TFix (y, k, typ_subst x s t)
+      if x = y then
+	typ
+      else begin
+	assert (not (IdSet.mem y (free_typ_ids s)));
+	TFix (y, k, typ_subst x s t)
+      end
     | TForall (y, t1, t2) -> 
       if x = y then 
         typ
@@ -235,9 +240,11 @@ module Make (P : PAT) : (TYP with type pat = P.t) = struct
         TForall (y, typ_subst x s t1, typ_subst x s t2)
     | TRec (y, t) ->
       if x = y then
-        failwith "TODO: capture free substitution"
-      else 
+	typ
+      else begin
+	assert (not (IdSet.mem y (free_typ_ids s)));
         TRec (y, typ_subst x s t)
+      end
     | TApp (t, ts) -> TApp (typ_subst x s t, List.map (typ_subst x s) ts)
 
   and prop_subst x s p = match p with
