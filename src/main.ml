@@ -15,7 +15,6 @@ open Typedjs_dyn
 open RegLang
 open RegLang_generate
 
-module Z = Mls
 module Y = Sat
 
 let parse_sb cin name =

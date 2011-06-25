@@ -89,6 +89,7 @@ module type MLS = sig
   module PAT : PAT
   module PATV: PATV with module P = PAT
   module SAT : SAT with module EQ = PATV
+  module SimplSAT : SAT with module EQ = PAT
 
   val is_sat : SAT.t -> bool
 
