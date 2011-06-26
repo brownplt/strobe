@@ -4,8 +4,6 @@ open Typedjs_syntax
 module List = ListExt
 exception Not_wf_typ of string
 
-module P = Sb_strPat
-
 let dummy_pos = (Lexing.dummy_pos, Lexing.dummy_pos)
 
 let desugar_typ = Sb_desugar.desugar_typ

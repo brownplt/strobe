@@ -68,6 +68,6 @@ val expose : env -> typ -> typ
 
 val typ_assoc : env -> typ -> typ -> typ IdMap.t
 
-val inherits : pos -> env -> typ -> Sb_strPat.t -> typ
+val inherits : pos -> env -> typ -> P.t -> typ
 
 val typid_env : env -> typ IdMap.t

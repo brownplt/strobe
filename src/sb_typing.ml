@@ -10,7 +10,7 @@ let consumed_owned_vars  = ref IdSet.empty
 let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
 
 let array_idx_pat = 
-  Sb_strPat.parse Lexing.dummy_pos
+  P.parse Lexing.dummy_pos
     "(([0-9])*|(\"+Infinity\"|(\"-Infinity\"|\"NaN\")))"
 
 
@@ -159,17 +159,17 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
                     (string_of_typ c))
   | EObject (p, fields) ->
       let mk_field (name, exp) = 
-	(Sb_strPat.singleton name, PPresent (tc_exp env exp)) in
+	(P.singleton name, PPresent (tc_exp env exp)) in
       let get_names (name, _) names = 
-        Sb_strPat.union names (Sb_strPat.singleton name) in
-      let rest = List.fold_right get_names fields (Sb_strPat.singleton "__proto__") in
-      let rest' = Sb_strPat.negate rest in
+        P.union names (P.singleton name) in
+      let rest = List.fold_right get_names fields (P.singleton "__proto__") in
+      let rest' = P.negate rest in
       (* TODO: everything else hsould be absent *)
       if List.mem "__proto__" (map fst fields) then
         TObject (mk_obj_typ ((rest', PAbsent)::(map mk_field fields)))
       else
         TObject (mk_obj_typ
-		   ((rest', PAbsent)::(Sb_strPat.singleton "__proto__",
+		   ((rest', PAbsent)::(P.singleton "__proto__",
 				       PPresent (TId "Object")) 
 	            :: (map mk_field fields)))
   | EBracket (p, obj, field) -> 
@@ -184,7 +184,7 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
           | TObject o, (TRegex idx_pat as tfld), typ ->
 	    let fs : field list = fields o in
               let okfield (fld_pat, prop) = 
-                if Sb_strPat.is_overlapped fld_pat idx_pat
+                if P.is_overlapped fld_pat idx_pat
                 then match prop with
                   | PPresent s
                   | PMaybe s -> if subtype env typ s then true
@@ -206,7 +206,7 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
     begin match (tc_exp env e1, tc_exp env e2) with
       | TRegex _, _
       | _, TRegex _ -> 
-	TRegex Sb_strPat.all
+	TRegex P.all
       | t1, t2 ->
 	tc_exp env (EApp (p, EId (p, "+"), [ ECheat (p, t1, e1); 
 					     ECheat (p, t2, e2) ]))

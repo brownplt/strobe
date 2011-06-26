@@ -42,9 +42,9 @@ args
   | arg_typ STAR args { $1 :: $3 }
 
 pat :
-  | REGEX { (Sb_strPat.parse $startpos $1, true) }
-  | ID { (Sb_strPat.singleton $1, false) }
-  | STRING { (Sb_strPat.singleton $1, false) }
+  | REGEX { (P.parse $startpos $1, true) }
+  | ID { (P.singleton $1, false) }
+  | STRING { (P.singleton $1, false) }
 
 field :
   | pat COLON QUES typ { W.Maybe (fst2 $1, $4) }
@@ -82,7 +82,7 @@ arg_typ
   | FALSE { W.Prim False }
   | UNDEF { W.Prim Undef }
   | NULL { W.Prim Null }
-  | REGEX { W.Pat (Sb_strPat.parse $startpos $1) }
+  | REGEX { W.Pat (P.parse $startpos $1) }
   | arg_typ UNION arg_typ { W.Union ($1, $3) }
   | arg_typ INTERSECTION arg_typ { W.Inter ($1, $3) }
   | LBRACE fields RBRACE { W.Ref (W.Object $2) }

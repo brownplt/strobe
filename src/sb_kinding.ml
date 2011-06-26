@@ -1,8 +1,6 @@
 open Prelude
 open Typedjs_syntax
 
-module P = Sb_strPat
-
 (** Decides if two types are syntactically equal. This helps subtyping. *)
 let rec simpl_equiv (typ1 : typ) (typ2 : typ) : bool =
   match (typ1, typ2) with

@@ -2,7 +2,6 @@ open Prelude
 open Typedjs_syntax
 
 module W = WritTyp
-module P = Sb_strPat
 module List = ListExt
 
 exception Typ_stx_error of string
@@ -32,7 +31,7 @@ let assert_overlap pat1 pat2 = match P.example (P.intersect pat1 pat2) with
 	     (P.pretty pat1) (P.pretty pat2) str)
 
 let rec typ (writ_typ : W.t) : typ = match writ_typ with
-  | W.Str -> TRegex Sb_strPat.all
+  | W.Str -> TRegex P.all
   | W.Prim p -> TPrim p
   | W.Bool -> TUnion (TPrim True, TPrim False)
   | W.Union (t1, t2) -> TUnion (typ t1, typ t2)

@@ -6,7 +6,7 @@ module P = Sb_strPat
 module RT = struct
   type t =
     | Num
-    | Re of Sb_strPat.t
+    | Re of P.t
     | Bool
     | Function
     | Object
@@ -18,7 +18,7 @@ module RT = struct
 
   let pp v = match v with
     | Num -> text "number"
-    | Re pat -> text ("string:" ^ (Sb_strPat.pretty pat))
+    | Re pat -> text ("string:" ^ (P.pretty pat))
     | Bool -> text "boolean"
     | Function -> text "function"
     | Object -> text "object"
@@ -29,13 +29,13 @@ end
 module RTSet = Set.Make (RT)
 module RTSetExt = SetExt.Make (RTSet)
 
-module TypImpl = Typ.Make (Sb_strPat)
+module TypImpl = Typ.Make (P)
 
 include TypImpl
 
 let typ_bool = TUnion (TPrim (True), TPrim (False))
 
-let any_fld = Sb_strPat.all
+let any_fld = P.all
 
 
 type ref_kind =

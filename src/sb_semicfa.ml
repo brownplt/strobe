@@ -2,7 +2,7 @@ open Prelude
 open Sb_semicps
 open Typedjs_syntax
 
-let any_str = Sb_strPat.all
+let any_str = P.all
 
 module H = Hashtbl
 module J = JavaScript_syntax
@@ -172,9 +172,9 @@ end = struct
 
   let mk_startswith x posn str = match posn with
     | Start ->
-      RT.Re (Sb_strPat.concat (Sb_strPat.singleton str) Sb_strPat.all)
+      RT.Re (P.concat (P.singleton str) P.all)
     | End -> 
-      RT.Re (Sb_strPat.concat Sb_strPat.all (Sb_strPat.singleton str))
+      RT.Re (P.concat P.all (P.singleton str))
 
 
 end
