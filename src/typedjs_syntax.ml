@@ -119,12 +119,6 @@ module WritTyp = struct
     | Skull of pat
     | Star of t option
 
-  let rec remove_this op = match op with
-    | Arrow (_, aa, r) -> Arrow (None, aa, r)
-    | Inter (t1, t2) -> Inter (remove_this t1, remove_this t2)
-    | Forall (x, s, t) -> Forall (x, s, remove_this t)
-    | _ -> failwith "remove_this : illegal argument"
-
 end
 
 type env_decl =

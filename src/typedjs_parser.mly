@@ -4,6 +4,12 @@ open Prelude
 open Typedjs_syntax
 module W = Typedjs_syntax.WritTyp
 
+let rec remove_this op = match op with
+  | W.Arrow (_, aa, r) -> W.Arrow (None, aa, r)
+  | W.Inter (t1, t2) -> W.Inter (remove_this t1, remove_this t2)
+  | W.Forall (x, s, t) -> W.Forall (x, s, remove_this t)
+  | _ -> failwith "remove_this : illegal argument"
+
 %}
 
 %token <string> ID TID STRING REGEX
@@ -134,7 +140,7 @@ env_decl :
   | VAL ID COLON typ { EnvBind (($startpos, $endpos), $2, $4) }
   | ID COLON typ { EnvBind (($startpos, $endpos), $1, W.Ref $3) }
   | OPERATOR STRING COLON typ 
-      { EnvBind (($startpos, $endpos), $2, W.remove_this $4) }
+      { EnvBind (($startpos, $endpos), $2, remove_this $4) }
 
 env_decls
   : { [] }
