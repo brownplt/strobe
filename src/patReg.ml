@@ -39,8 +39,6 @@ let concat = Nfa.simple_concat
 
 let is_empty = Nfa.is_empty
 
-let is_finite _ = true
-
 let is_overlapped pat1 pat2 = 
   printf "Overlapped?\n%!";
   not (is_empty (intersect pat1 pat2))

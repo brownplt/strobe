@@ -48,10 +48,6 @@ let is_empty v = match v with
   | Finite set -> StringSet.is_empty set
   | CoFinite _ -> false
 
-let is_finite v = match v with
-  | Finite _ -> true
-  | CoFinite _ -> false
-
 let is_overlapped v1 v2 = match v1, v2 with
   | Finite set1, Finite set2 ->
     not (StringSet.is_empty (StringSet.inter set1 set2))

@@ -71,9 +71,3 @@ val typ_assoc : env -> typ -> typ -> typ IdMap.t
 val inherits : pos -> env -> typ -> Sb_strPat.t -> typ
 
 val typid_env : env -> typ IdMap.t
-
-
-(*
-val operator_env_of_tc_env : env 
-  -> (Typedjs_lattice.av list -> Typedjs_lattice.av) IdMap.t
-*)

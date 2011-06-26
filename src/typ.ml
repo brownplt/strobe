@@ -9,7 +9,6 @@ module Make (P : PAT) : (TYP with type pat = P.t) = struct
 
   exception Typ_error of pos * string
 
-
   type pat = P.t
 
   type prim =

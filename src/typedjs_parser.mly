@@ -36,22 +36,22 @@ args
   | arg_typ STAR args { $1 :: $3 }
 
 pat :
-  | REGEX { Sb_strPat.parse $startpos $1 }
-  | ID { Sb_strPat.singleton $1 }
-  | STRING { Sb_strPat.singleton $1 }
+  | REGEX { (Sb_strPat.parse $startpos $1, true) }
+  | ID { (Sb_strPat.singleton $1, false) }
+  | STRING { (Sb_strPat.singleton $1, false) }
 
 field :
-  | pat COLON QUES typ { W.Maybe ($1, $4) }
-  | pat COLON BANG typ { W.Present ($1, $4) }
+  | pat COLON QUES typ { W.Maybe (fst2 $1, $4) }
+  | pat COLON BANG typ { W.Present (fst2 $1, $4) }
   | pat COLON typ
-      { let pat = $1 in
-	if Sb_strPat.is_finite pat then
-	  W.Present (pat, $3)
+      { let (pat, is_regex) = $1 in
+	if is_regex then
+          W.Maybe (pat, $3)
 	else
-	  W.Maybe (pat, $3) }
-  | pat COLON CARET typ { W.Inherited ($1, $4) }
-  | pat COLON UNDERSCORE { W.Absent $1 }
-  | pat COLON BAD { W.Skull $1 }
+         W.Present (pat, $3) }
+  | pat COLON CARET typ { W.Inherited (fst2 $1, $4) }
+  | pat COLON UNDERSCORE { W.Absent (fst2 $1) }
+  | pat COLON BAD { W.Skull (fst2 $1) }
   | STAR COLON typ { W.Star (Some $3) }
   | STAR COLON UNDERSCORE { W.Star None }
 

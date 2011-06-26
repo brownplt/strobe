@@ -8,6 +8,11 @@ module type EQ = sig
 
 end
 
+module type PRINTABLE = sig
+  type t
+  val pretty : t -> string
+end
+
 module type PAT = sig
     
   (** string patterns *)
@@ -28,7 +33,7 @@ module type PAT = sig
   val concat : t -> t -> t
     
   val is_empty : t -> bool
-  val is_finite : t -> bool
+
   val is_overlapped : t -> t -> bool
     
   (** [is_subset pat1 pat2] is true if all strings in [pat1] are also in 
@@ -44,6 +49,48 @@ module type PAT = sig
 
   val pretty : t -> string
 end
+
+module type SET = sig
+
+  (** type of sets *)
+  type t
+
+  (** set constructors *)
+  type r = 
+    | Pat of t
+    | Var of Id.t
+    | Union of r * r
+    | Inter of r * r
+    | Diff of r * r
+    | Empty
+    | All
+
+  (** interned representation may be better for predicates *)
+  val intern : r -> t
+
+  val extern : t -> r
+
+  val pretty : r -> string
+
+  val is_empty : t -> bool
+
+  val is_overlapped : t -> t -> bool
+    
+  (** [is_subset pat1 pat2] is true if all strings in [pat1] are also in 
+      [pat2]. *)
+  val is_subset : t -> t -> bool
+
+  val is_member : string -> t -> bool
+
+  val is_equal : t -> t -> bool
+
+  (** [example pat] returns an example of a string in [pat]. *)
+  val example : t -> string option
+
+
+
+end
+
 
 module type PATV = sig
 
@@ -100,7 +147,11 @@ module type TYP = sig
   exception Typ_error of pos * string
   exception Not_subtype of string
 
+(*  module StrLang : PAT
+  module Pat : PATV with module P = StrLang *)
+
   type pat
+
 
   type prim =
     | Num
@@ -175,6 +226,3 @@ module type TYP = sig
   val assert_subtyp : typenv -> pos -> typ -> typ -> unit
 
 end
-
-module type TYPMake = functor (P : PAT) ->  (TYP with type pat = P.t)
-

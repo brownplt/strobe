@@ -6,7 +6,6 @@ module S = PatSets
 type t = 
   | Reg of R.t
   | Set of S.t
-  | Both of R.t * S.t (** non-overlapping representations *)
 
 let parse pos str = Reg (R.parse pos str)
 
@@ -47,10 +46,6 @@ let concat _ _ = failwith "concat NYI"
 let is_empty v = match v with
   | Set s -> S.is_empty s
   | Reg r -> R.is_empty r
-
-let is_finite v = match v with
-  | Set s -> S.is_finite s
-  | Reg r -> R.is_finite r
 
 let is_subset v1 v2 = match v1, v2 with
   | Set s1, Set s2 -> S.is_subset s1 s2
