@@ -40,11 +40,9 @@ let concat = Nfa.simple_concat
 let is_empty = Nfa.is_empty
 
 let is_overlapped pat1 pat2 = 
-  printf "Overlapped?\n%!";
   not (is_empty (intersect pat1 pat2))
 
 let is_subset p1 p2 =
-  printf "contains\n%!";
   Nfa.nfa_subseteq p1 p2
 
 let is_equal p1 p2 = 

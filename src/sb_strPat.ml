@@ -47,23 +47,29 @@ let is_empty v = match v with
   | Set s -> S.is_empty s
   | Reg r -> R.is_empty r
 
-let is_subset v1 v2 = match v1, v2 with
-  | Set s1, Set s2 -> S.is_subset s1 s2
-  | Reg r1, Reg r2 -> R.is_subset r1 r2
-  | Set s, Reg r -> R.is_subset (S.to_nfa s) r
-  | Reg r, Set s -> R.is_subset r (S.to_nfa s)
+let is_subset v1 v2 = 
+  if v1 == v2 then true
+  else match v1, v2 with
+    | Set s1, Set s2 -> S.is_subset s1 s2
+    | Reg r1, Reg r2 -> R.is_subset r1 r2
+    | Set s, Reg r -> R.is_subset (S.to_nfa s) r
+    | Reg r, Set s -> R.is_subset r (S.to_nfa s)
 
-let is_overlapped v1 v2 = match v1, v2 with
-  | Set s1, Set s2 -> S.is_overlapped s1 s2
-  | Reg r1, Reg r2 -> R.is_overlapped r1 r2
-  | Set s, Reg r -> R.is_overlapped (S.to_nfa s) r
-  | Reg r, Set s -> R.is_overlapped r (S.to_nfa s)
+let is_overlapped v1 v2 = 
+  if v1 == v2 then true
+  else match v1, v2 with
+    | Set s1, Set s2 -> S.is_overlapped s1 s2
+    | Reg r1, Reg r2 -> R.is_overlapped r1 r2
+    | Set s, Reg r -> R.is_overlapped (S.to_nfa s) r
+    | Reg r, Set s -> R.is_overlapped r (S.to_nfa s)
 
-let is_equal v1 v2 = match v1, v2 with
-  | Set s1, Set s2 -> S.is_equal s1 s2
-  | Reg r1, Reg r2 -> R.is_equal r1 r2
-  | Set s, Reg r -> R.is_equal (S.to_nfa s) r
-  | Reg r, Set s -> R.is_equal r (S.to_nfa s)
+let is_equal v1 v2 = 
+  if v1 == v2 then true
+  else match v1, v2 with
+    | Set s1, Set s2 -> S.is_equal s1 s2
+    | Reg r1, Reg r2 -> R.is_equal r1 r2
+    | Set s, Reg r -> R.is_equal (S.to_nfa s) r
+    | Reg r, Set s -> R.is_equal r (S.to_nfa s)
 
 let example v = match v with
   | Set s -> S.example s
