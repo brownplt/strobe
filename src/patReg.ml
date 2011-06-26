@@ -47,9 +47,6 @@ let is_subset p1 p2 =
   printf "contains\n%!";
   Nfa.nfa_subseteq p1 p2
 
-let is_member str pat = 
-  Nfa.nfa_subseteq (to_nfa (RegLang_syntax.String str)) pat
-
 let is_equal p1 p2 = 
   Nfa.nfa_eq p1 p2
 

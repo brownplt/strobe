@@ -59,10 +59,6 @@ let is_overlapped v1 v2 = match v1, v2 with
   | Set s, Reg r -> R.is_overlapped (S.to_nfa s) r
   | Reg r, Set s -> R.is_overlapped r (S.to_nfa s)
 
-let is_member str v = match v with
-  | Set s -> S.is_member str s
-  | Reg r -> R.is_member str r
-
 let is_equal v1 v2 = match v1, v2 with
   | Set s1, Set s2 -> S.is_equal s1 s2
   | Reg r1, Reg r2 -> R.is_equal r1 r2

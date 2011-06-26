@@ -336,7 +336,7 @@ module Make (P : PAT) : (TYP with type pat = P.t) = struct
 
   let rec parent_typ' env flds = match flds with
     | [] -> None
-    | ((pat, fld) :: flds') -> match P.is_member proto_str pat with
+    | ((pat, fld) :: flds') -> match P.is_subset proto_pat pat with
         | true -> begin match fld with
 	    | PPresent t -> 
 	      begin match expose env (simpl_typ env t) with

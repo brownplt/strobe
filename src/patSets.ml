@@ -69,10 +69,6 @@ let is_subset v1 v2 = match v1, v2 with
     StringSet.is_empty (StringSet.inter fset cfset)
   | CoFinite _, Finite _ -> false
 
-let is_member str v = match v with
-  | Finite set -> StringSet.mem str set
-  | CoFinite set -> not (StringSet.mem str set)
-
 let is_equal v1 v2 = match v1, v2 with
   | Finite set1, Finite set2
   | CoFinite set1, CoFinite set2 ->
