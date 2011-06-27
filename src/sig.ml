@@ -50,25 +50,20 @@ end
 
 module type SET = sig
 
-  (** type of sets *)
-  type t
+  (** Type of sets *)
+  type repr
 
-  (** set constructors *)
-  type r = 
-    | Pat of t
+  (** Set constructors and external representation *)
+  type t = 
+    | Pat of repr
     | Var of Id.t
-    | Union of r * r
-    | Inter of r * r
-    | Diff of r * r
+    | Union of t * t
+    | Inter of t * t
+    | Diff of t * t
     | Empty
     | All
 
-  (** interned representation may be better for predicates *)
-  val intern : r -> t
-
-  (** There is no gaurantee that [extern (intern set)] is [set] or vice
-      versa. *)
-  val extern : t -> r
+  val simpl : t -> t
 
   val pretty : t -> string
 
@@ -80,10 +75,7 @@ module type SET = sig
   (** [example pat] returns an example of a string in [pat]. *)
   val example : t -> string option
 
-
-
 end
-
 
 module type PATV = sig
 
