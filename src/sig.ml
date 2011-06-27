@@ -60,9 +60,13 @@ module type SET = sig
     | Union of t * t
     | Inter of t * t
     | Diff of t * t
+    | Not of t
     | Empty
     | All
 
+
+  val singleton : string -> t
+  val singleton_string : t -> string option
   val simpl : t -> t
 
   val pretty : t -> string
@@ -74,6 +78,8 @@ module type SET = sig
 
   (** [example pat] returns an example of a string in [pat]. *)
   val example : t -> string option
+
+  val parse : Lexing.position -> string -> t
 
 end
 
