@@ -1,7 +1,7 @@
 open Prelude
 
 
-module P = PatReg (* Sb_strPat *)
+module P = Sb_strPat
 
 module RT = struct
   type t =
