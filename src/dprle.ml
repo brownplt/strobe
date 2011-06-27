@@ -111,17 +111,14 @@ module Set : Sig.SET = struct
       | Var x, Var y -> Id.compare x y = 0
       | Pat p1, Pat p2 -> P.is_overlapped p1 p2
       | _ -> false in
-    eprintf "is_overlapped %s %s\n" (pretty t1) (pretty t2);
     t1 == t2 || f t1 t2
 
   let is_subset env t1 t2 =
-    eprintf "is_subset %s %s\n" (pretty t1) (pretty t2);
     t1 == t2 
     || is_subset_exn env t1 t2
     || unvar_subset env t1 t2
 
   let is_equal t1 t2 = 
-    eprintf "is_equal %s %s\n" (pretty t1) (pretty t2);
     t1 == t2 || P.is_equal (to_nfa t1) (to_nfa t2)
 
   let is_empty t = P.is_empty (to_nfa t)

@@ -127,7 +127,7 @@ exp :
        ETypApp (($startpos, $endpos), $1, typ t) }
  | exp LPAREN exps RPAREN 
    { EApp (($startpos, $endpos), $1, $3) }
- | PRIM LPAREN STRING COMMA atom COMMA atom RPAREN
+ | PRIM LPAREN STRING COMMA seq_exp COMMA seq_exp RPAREN
    { EInfixOp (($startpos, $endpos), $3, $5, $7) }
  | PRIM LPAREN STRING COMMA seq_exp RPAREN
    { EPrefixOp (($startpos, $endpos), $3, $5) }
