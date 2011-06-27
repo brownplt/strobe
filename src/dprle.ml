@@ -81,23 +81,47 @@ module Set : Sig.SET = struct
 
   let empty = Pat uniq_empty
 
+  let rec unvar env t = match t with
+    | Var x -> IdMap.find (Id.string_of_id x) env
+    | Union (t1, t2) -> Union (unvar env t1, unvar env t2)
+    | Inter (t1, t2) -> Inter (unvar env t1, unvar env t2)
+    | Diff (t1, t2) -> Diff (unvar env t1, unvar env t2)
+    | Not t' -> Not (unvar env t')
+    | Pat _
+    | Empty 
+    | All -> t
 
-  let rec is_subset_exn t1 t2 = match (t1, t2) with
+  let rec unvar_subset env t1 t2 = 
+    match simpl (unvar env t1), simpl (unvar env t2) with
     | Pat p1, Pat p2 -> P.is_subset p1 p2
-    | Var _, Pat _ -> false
-    | Var x, Var y -> Id.compare x y = 0
-    | Var x, Diff (t2', Var y) -> false
     | _ -> false
-    | t1, t2 ->
+
+  let rec is_subset_exn env t1 t2 = match (t1, t2) with
+    | Pat p1, Pat p2 -> P.is_subset p1 p2
+    | Var x, Var y when Id.compare x y = 0 -> true
+    | Var x, _ -> is_subset_exn env 
+      (IdMap.find (Id.string_of_id x) env) t2 (* like exposure *)
+    | _ -> false
+(*    | t1, t2 ->
       failwith ("is_subset_exn " ^ pretty t1 ^ " " ^ pretty t2)
+*)
 
   let is_overlapped t1 t2 = 
-    t1 == t2 || P.is_overlapped (to_nfa t1) (to_nfa t2)
+    let rec f t1 t2 = match (t1, t2) with
+      | Var x, Var y -> Id.compare x y = 0
+      | Pat p1, Pat p2 -> P.is_overlapped p1 p2
+      | _ -> false in
+    eprintf "is_overlapped %s %s\n" (pretty t1) (pretty t2);
+    t1 == t2 || f t1 t2
 
-  let is_subset t1 t2 =
-    t1 == t2 || is_subset_exn t1 t2 (* P.is_subset (to_nfa t1) (to_nfa t2) *)
+  let is_subset env t1 t2 =
+    eprintf "is_subset %s %s\n" (pretty t1) (pretty t2);
+    t1 == t2 
+    || is_subset_exn env t1 t2
+    || unvar_subset env t1 t2
 
   let is_equal t1 t2 = 
+    eprintf "is_equal %s %s\n" (pretty t1) (pretty t2);
     t1 == t2 || P.is_equal (to_nfa t1) (to_nfa t2)
 
   let is_empty t = P.is_empty (to_nfa t)

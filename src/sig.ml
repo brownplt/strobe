@@ -39,7 +39,7 @@ module type PAT = sig
     
   (** [is_subset pat1 pat2] is true if all strings in [pat1] are also in 
       [pat2]. *)
-  val is_subset : t -> t -> bool
+  val is_subset :t -> t -> bool
 
   val is_equal : t -> t -> bool
 
@@ -70,7 +70,7 @@ module type SET = sig
 
   val is_empty : t -> bool
   val is_overlapped : t -> t -> bool
-  val is_subset : t -> t -> bool
+  val is_subset : t IdMap.t -> t -> t -> bool
   val is_equal : t -> t -> bool
 
   (** [example pat] returns an example of a string in [pat]. *)

@@ -336,9 +336,19 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 	| _ -> false
       end
 
+  let pat_env (env : typenv) : pat IdMap.t =
+    let select_pat_bound (x, (t, _)) = match t with
+      | TRegex p -> Some (x, p)
+	| _ -> None in
+      L.fold_right (fun (x,p) env -> IdMap.add x p env)
+	(L.filter_map select_pat_bound (IdMap.bindings env))
+	IdMap.empty
+
+
   let rec parent_typ' env flds = match flds with
     | [] -> None
-    | ((pat, fld) :: flds') -> match P.is_subset proto_pat pat with
+    | ((pat, fld) :: flds') -> 
+      match P.is_subset (pat_env env) proto_pat pat with
         | true -> begin match fld with
 	    | PPresent t -> 
 	      begin match expose env (simpl_typ env t) with
@@ -420,22 +430,32 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 		 (P.pretty pat1) (string_of_prop prop1)
 		 (P.pretty pat2) (string_of_prop prop2)))
 
+
+  let sel_not_absent (p, f) = match prop_typ f with
+    | None -> None
+    | Some _ -> Some p
+
   let rec simpl_lookup (env : typenv) (t : typ) (pat : pat) : typ =
    (* TODO: it's okay to overlap with a maybe, but not a hidden field;
       inherit_guard_pat does not apply *)
     match t with
 	| TObject ot -> 
-	  let sel (f_pat, f_prop) =
-	    if P.is_overlapped f_pat pat then prop_typ f_prop
-	    else None in
-	  L.fold_right (fun s t -> typ_union env s t)
-	    (L.filter_map sel ot.fields)
-	    TBot
+	  let guard_pat = L.fold_right P.union
+	    (L.filter_map sel_not_absent ot.fields) P.empty in
+	  if P.is_subset (pat_env env) pat guard_pat then
+	    let sel (f_pat, f_prop) =
+	      if P.is_overlapped f_pat pat then prop_typ f_prop
+	      else None in
+	    L.fold_right (fun s t -> typ_union env s t)
+	      (L.filter_map sel ot.fields)
+	      TBot
+	  else
+	    failwith "simpl_lookup hidden/absent field"
 	| _ -> failwith "simpl_lookup non-object"
 
   and  inherits (env : typenv) (t : typ) (pat : pat) : typ = 
     let t = expose env (simpl_typ env t) in
-    if P.is_subset pat (inherit_guard_pat env t) then
+    if P.is_subset (pat_env env) pat (inherit_guard_pat env t) then
       begin match t with
 	| TObject ot -> 
 	  let sel (f_pat, f_prop) =
@@ -469,7 +489,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       match simpl_s, simpl_t with
         | TPrim Int, TPrim Num -> cache
         | TRegex pat1, TRegex pat2 ->
-          if P.is_subset pat1 pat2 then cache 
+          if P.is_subset (pat_env env) pat1 pat2 then cache 
             else mismatched_typ_exn (TRegex pat1) (TRegex pat2)
         | TIntersect (s1, s2), _ -> 
           begin 

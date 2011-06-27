@@ -1,0 +1,7 @@
+func (obj, fx) /*: [{ /x|y|z/ : ? Int }] /x/ -> Int */ {
+  if (prim('hasfield',!obj, fx))
+    obj[fx]
+  else
+    9000
+}
+
