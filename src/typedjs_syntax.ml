@@ -1,7 +1,7 @@
 open Prelude
 
 
-module P = Sb_strPat
+module P = Dprle.Set
 
 module RT = struct
   type t =

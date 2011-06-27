@@ -170,11 +170,13 @@ end = struct
     with Invalid_argument "tag_of_string" ->
       Set (RTSet.singleton RT.Bool)
 
-  let mk_startswith x posn str = match posn with
+  let mk_startswith x posn str = 
+    failwith "NYI"
+(* match posn with
     | Start ->
       RT.Re (P.concat (P.singleton str) P.all)
     | End -> 
-      RT.Re (P.concat P.all (P.singleton str))
+      RT.Re (P.concat P.all (P.singleton str)) *)
 
 
 end

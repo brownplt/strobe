@@ -135,10 +135,9 @@ module type TYP = sig
   exception Typ_error of pos * string
   exception Not_subtype of string
 
-(*  module StrLang : PAT
-  module Pat : PATV with module P = StrLang *)
+  module Pat : SET
 
-  type pat
+  type pat = Pat.t
 
 
   type prim =
@@ -212,55 +211,5 @@ module type TYP = sig
   val subtype : typenv -> typ -> typ -> bool
 
   val assert_subtyp : typenv -> pos -> typ -> typ -> unit
-
-end
-
-(** Types written by users. *)
-module type WRITTYP = sig
-
-  module Pat : PAT
-  module Typ : TYP with type pat = Pat.t
-
-  type t = 
-    | Str
-    | Bool
-    | Prim of Typ.prim
-    | Union of t * t
-    | Inter of t * t
-    | Arrow of t option * t list * t (** [Arrow (this, args, result)] *)
-    | Object of f list
-    | Pat of Pat.t
-    | Ref of t
-    | Source of t
-    | Top
-    | Bot
-    | Id of id
-    | Forall of id * t * t
-    | Rec of id * t
-    | Syn of id
-    | Lambda of (id * Typ.kind) list * t
-    | Fix of id * Typ.kind * t
-    | App of t * t list
-       
-  and f = 
-    | Present of Pat.t * t
-    | Maybe of Pat.t * t
-    | Inherited of Pat.t * t
-    | Absent of Pat.t
-    | Skull of Pat.t
-    | Star of t option
-
-  type env_decl =
-    | EnvBind of pos * id * t
-    | EnvType of pos * id * t
-
-  type annotation =
-    | ATyp of t
-    | AUpcast of t
-    | ADowncast of t
-    | ATypAbs of id * t
-    | ATypApp of t
-    | AAssertTyp of t
-    | ACheat of t
 
 end

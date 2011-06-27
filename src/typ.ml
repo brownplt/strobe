@@ -5,10 +5,12 @@ module L = ListExt
 
 
 
-module Make (P : PAT) : (TYP with type pat = P.t) = struct
+module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   exception Typ_error of pos * string
 
+  module P = Pat
+  module Pat = Pat
   type pat = P.t
 
   type prim =
