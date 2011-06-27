@@ -66,7 +66,7 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
 	  else (p, t) in
 	let false_typ = tc_exp env false_part in
 	let true_typ =
-	  let fld_typ = inherits p env (TObject ot) pat in
+	  let fld_typ = simpl_lookup (tid_env env) (TObject ot) pat in
 	  let env = bind_typ_id "alpha" (TRegex pat) env in
 	  let env = bind_id fld (TId "alpha") env in
 	  let env = bind_id obj 
@@ -194,8 +194,15 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
 				       PPresent (TId "Object")) 
 	            :: (map mk_field fields)))
   | EBracket (p, obj, field) -> 
-    begin match expose_simpl_typ env (tc_exp env field) with
+    begin match simpl_typ env (tc_exp env field) with
       | TRegex pat -> inherits p env (un_null (tc_exp env obj)) pat
+      | TId x -> begin match expose env (TId x) with
+	  | TRegex _ -> 
+	    inherits p env (un_null (tc_exp env obj)) (P.var x)
+	  | t ->
+	    error p (sprintf "index variable %s, is a subtype of %s"
+		       x (string_of_typ t))
+      end
       | idx_typ -> error p (sprintf "index has type %s" (string_of_typ idx_typ))
     end
   | EUpdate (p, obj, field, value) -> begin

@@ -281,4 +281,6 @@ and fld_assoc env (_, fld1) (_, fld2) = match (fld1, fld2) with
   | _ -> IdMap.empty
 
 
+let tid_env env = env.typ_ids
+
 let typid_env env = IdMap.map (fun (t, _) -> t) env.typ_ids

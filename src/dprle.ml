@@ -15,6 +15,20 @@ module Set : Sig.SET = struct
     | Empty
     | All 
 
+  let rec prf t =
+    let open FormatExt in
+    match t with
+      | Pat p -> text (P.pretty p)
+      | Var x -> text (Id.string_of_id x)
+      | Union (t1, t2) -> parens (horz [ text "Union"; prf t1; prf t2 ])
+      | Inter (t1, t2) -> parens (horz [ text "Inter"; prf t1; prf t2 ])
+      | Diff (t1, t2) -> parens (horz [ text "Diff"; prf t1; prf t2 ])
+      | Not t' -> parens (horz [ text "Not"; prf t' ])
+      | Empty -> text "Empty"
+      | All -> text "All"
+
+  let pretty pat =  FormatExt.to_string prf pat
+
   let uniq_empty = P.empty
 
   let uniq_all = P.all
@@ -44,7 +58,7 @@ module Set : Sig.SET = struct
 
   let to_nfa t = match t with
     | Pat r -> r
-    | _ -> failwith "expected reduced pattern"
+    | _ -> failwith ("expected reduced pattern, got " ^ pretty t)
 
   let singleton str = Pat (P.singleton str)
 
@@ -67,16 +81,21 @@ module Set : Sig.SET = struct
 
   let empty = Pat uniq_empty
 
-  let pretty pat =  "** unprintable DFA **"
 
-
-
+  let rec is_subset_exn t1 t2 = match (t1, t2) with
+    | Pat p1, Pat p2 -> P.is_subset p1 p2
+    | Var _, Pat _ -> false
+    | Var x, Var y -> Id.compare x y = 0
+    | Var x, Diff (t2', Var y) -> false
+    | _ -> false
+    | t1, t2 ->
+      failwith ("is_subset_exn " ^ pretty t1 ^ " " ^ pretty t2)
 
   let is_overlapped t1 t2 = 
     t1 == t2 || P.is_overlapped (to_nfa t1) (to_nfa t2)
 
   let is_subset t1 t2 =
-    t1 == t2 || P.is_subset (to_nfa t1) (to_nfa t2)
+    t1 == t2 || is_subset_exn t1 t2 (* P.is_subset (to_nfa t1) (to_nfa t2) *)
 
   let is_equal t1 t2 = 
     t1 == t2 || P.is_equal (to_nfa t1) (to_nfa t2)

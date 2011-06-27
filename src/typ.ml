@@ -420,7 +420,20 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 		 (P.pretty pat1) (string_of_prop prop1)
 		 (P.pretty pat2) (string_of_prop prop2)))
 
-  let rec inherits (env : typenv) (t : typ) (pat : pat) : typ = 
+  let rec simpl_lookup (env : typenv) (t : typ) (pat : pat) : typ =
+   (* TODO: it's okay to overlap with a maybe, but not a hidden field;
+      inherit_guard_pat does not apply *)
+    match t with
+	| TObject ot -> 
+	  let sel (f_pat, f_prop) =
+	    if P.is_overlapped f_pat pat then prop_typ f_prop
+	    else None in
+	  L.fold_right (fun s t -> typ_union env s t)
+	    (L.filter_map sel ot.fields)
+	    TBot
+	| _ -> failwith "simpl_lookup non-object"
+
+  and  inherits (env : typenv) (t : typ) (pat : pat) : typ = 
     let t = expose env (simpl_typ env t) in
     if P.is_subset pat (inherit_guard_pat env t) then
       begin match t with
@@ -439,7 +452,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 	| _ -> failwith "lookup non-object"
       end
     else
-      failwith "lookup hidden field"
+      failwith ("lookup hidden field with " ^ (P.pretty pat) ^ " in "
+		   ^ string_of_typ t)
 
   and subt env (cache : TPSet.t) s t : TPSet.t = 
     if TPSet.mem (s, t) cache then

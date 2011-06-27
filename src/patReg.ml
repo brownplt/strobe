@@ -50,4 +50,6 @@ let is_equal p1 p2 =
 
 let example pat = gen_string pat
 
-let pretty pat =  "** unprintable DFA **"
+let pretty pat = match gen_string pat with
+  | Some s -> "** big DFA including " ^ s ^ " **"
+  | None ->  "** unprintable DFA **"

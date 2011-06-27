@@ -200,6 +200,8 @@ module type TYP = sig
 
   val expose : typenv -> typ -> typ
 
+  val simpl_lookup : typenv -> typ -> pat -> typ
+
   val inherits : typenv -> typ -> pat -> typ
 
   val typ_union : typenv -> typ -> typ -> typ
