@@ -31,6 +31,7 @@ module type PAT = sig
   val negate : t -> t
   val subtract : t -> t -> t
   val concat : t -> t -> t
+
     
   val is_empty : t -> bool
 
@@ -51,23 +52,19 @@ end
 module type SET = sig
 
   (** Type of sets *)
-  type repr
+  type t
 
-  (** Set constructors and external representation *)
-  type t = 
-    | Pat of repr
-    | Var of Id.t
-    | Union of t * t
-    | Inter of t * t
-    | Diff of t * t
-    | Not of t
-    | Empty
-    | All
-
-
+  val empty : t
+  val all : t
+    
+  val intersect : t -> t -> t
+  val union : t -> t -> t
+  val negate : t -> t
+  val subtract : t -> t -> t
   val singleton : string -> t
   val singleton_string : t -> string option
-  val simpl : t -> t
+  val var : string -> t
+
 
   val pretty : t -> string
 

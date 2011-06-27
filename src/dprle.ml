@@ -8,33 +8,25 @@ module Set : Sig.SET = struct
     
   module Nfa = Dprle_nfa
 
-  type repr = nfa
-
-  type t = 
-    | Pat of repr
+  type  t = 
+    | Pat of Dprle_nfa.nfa
     | Var of Id.t
     | Union of t * t
     | Inter of t * t
     | Diff of t * t
     | Not of t
     | Empty
-    | All
+    | All 
 
-  let singleton str = Pat (to_nfa (RegLang_syntax.String str))
+  let uniq_empty = new_nfa_states 0 1
 
-  let singleton_string t = match t with
-    | Pat r -> gen_string r
-    | _ -> None
-
-  let empty = new_nfa_states 0 1
-
-  let all = new_sigmastar ()
+  let uniq_all = new_sigmastar ()
 
   let rec simpl (t : t) : t = match t with
     | Pat r -> t
     | Var x -> t
-    | Empty -> Pat empty
-    | All -> Pat all
+    | Empty -> Pat uniq_empty
+    | All -> Pat uniq_all
     | Union (t1, t2) -> begin match simpl t1, simpl t2 with
 	| Pat r1, Pat r2 -> Pat (union r1 r2)
 	| t1', t2' -> Union (t1', t2')
@@ -58,12 +50,35 @@ module Set : Sig.SET = struct
 	| t'' -> Not t''
     end
 
-  let pretty pat =  "** unprintable DFA **"
-
 
   let to_nfa t = match t with
     | Pat r -> r
     | _ -> failwith "expected reduced pattern"
+
+  let singleton str = Pat (Sb_regex.to_nfa (RegLang_syntax.String str))
+
+  let singleton_string t = match t with
+    | Pat r -> gen_string r
+    | _ -> None
+
+
+  let intersect t1 t2 = simpl (Inter (t1, t2))
+
+  let union t1 t2 = simpl (Union (t1, t2))
+
+  let negate t = simpl (Not t)
+
+  let subtract t1 t2 = simpl (Diff (t1, t2))
+
+  let var x = Var (Id.id_of_string x)
+
+  let all = Pat uniq_all
+
+  let empty = Pat uniq_empty
+
+  let pretty pat =  "** unprintable DFA **"
+
+
 
 
   let is_overlapped t1 t2 = 
