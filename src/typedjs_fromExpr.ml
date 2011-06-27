@@ -101,7 +101,7 @@ let rec exp (env : env) expr = match expr with
         EDeref (a, EId (a, x))
       else
         EId (a, x)
-    with Not_found -> error a (x ^ " is not defined")
+    with Not_found -> error a ("identifier " ^ x ^ " is not defined")
     end
   | IdExpr (a, x) -> EId (a, x)
   | BracketExpr (a, e1, e2) -> 

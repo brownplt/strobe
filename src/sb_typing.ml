@@ -57,6 +57,27 @@ let check_kind p env typ : typ =
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
  
 let rec tc_exp (env : env) (exp : exp) : typ = match exp with
+  | EIf (p, EInfixOp (_, "hasfield",  EDeref (_, EId (_, obj)), (EId (_, fld))),
+	 true_part, false_part) ->
+    begin match expose_simpl_typ env (lookup_id obj env), lookup_id fld env with
+      | TRef (TObject ot), TRegex pat -> 
+	let subtract (p, t) =
+	  if P.is_overlapped p pat then (P.subtract p pat, t) (* perf *)
+	  else (p, t) in
+	let false_typ = tc_exp env false_part in
+	let true_typ =
+	  let fld_typ = inherits p env (TObject ot) pat in
+	  let env = bind_typ_id "alpha" (TRegex pat) env in
+	  let env = bind_id fld (TId "alpha") env in
+	  let env = bind_id obj 
+	    (TObject (mk_obj_typ ((P.var "alpha", PPresent fld_typ) ::
+				  map subtract (fields ot)))) env in
+	  tc_exp env true_part in
+	typ_union env true_typ false_typ
+      | s, t ->
+	raise (Typ_error (p, "expected object and string types, got " ^
+	  string_of_typ s ^ " and " ^ string_of_typ t))
+    end
   | EConst (_, c) -> tc_const c
   | EBot _ -> TBot
   | EId (p, x) -> begin

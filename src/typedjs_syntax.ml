@@ -242,8 +242,8 @@ module Pretty = struct
         parens (vert [ text "try"; exp body;
                        parens (vert [ text "finally"; exp finally ]) ])
     | EThrow (_, e) -> parens (vert [ text "throw"; exp e ])
-    | EPrefixOp (_, op, e) -> parens (vert [ text op; exp e ])
-    | EInfixOp (_, op, e1, e2) -> parens (horz [ text op; exp e1; exp e2 ])
+    | EPrefixOp (_, op, e) -> parens (vert [ text "prefix"; text op; exp e ])
+    | EInfixOp (_, op, e1, e2) -> parens (horz [ exp e1; text op; exp e2 ])
     | ETypecast (_, t, e) ->
         parens (vert [ text "cast"; RTSetExt.p_set RT.pp t; exp e ])
     | ERef (_, _, e) -> parens (horz [ text "ref"; exp e ])
