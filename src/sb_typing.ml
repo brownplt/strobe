@@ -214,6 +214,7 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
               let okfield (fld_pat, prop) = 
                 if P.is_overlapped fld_pat idx_pat
                 then match prop with
+		  | PInherited s
                   | PPresent s
                   | PMaybe s -> if subtype env typ s then true
                     else error p (sprintf "%s not subtype of %s in %s[%s = %s]"

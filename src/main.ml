@@ -12,8 +12,6 @@ open Format
 open FormatExt
 open Lexing
 open Typedjs_dyn
-open RegLang
-open RegLang_generate
 
 module Y = Dprle
 

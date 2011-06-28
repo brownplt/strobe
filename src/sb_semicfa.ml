@@ -250,6 +250,8 @@ end = struct
       end
       | TRec (_, t) -> rt t
       | TApp (t1, t2) -> rtany
+      | TFix _
+      | TLambda _ -> failwith "runtime type test on TFix / TLambda"
 
   let runtime ids t : Absval.t = Absval.Set (rt_of_typ ids t)
 

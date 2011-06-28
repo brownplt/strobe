@@ -28,7 +28,6 @@ rule token = parse
    | "-" { HYPHEN }
    | "^" { CARET }
    | "|" { PIPE }
-   | "!" { BANG }
    | "*" { STAR }
    | "." { DOT }
    | "<:" { LTCOLON }

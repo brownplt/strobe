@@ -1,5 +1,4 @@
 open Prelude
-open RegLang
 
 open Dprle_nfa
 open Sb_regex
@@ -11,7 +10,21 @@ type t = nfa
 
 (** Parse a string representing a pattern. *)
 let parse pos str =
-  to_nfa (RegLang.parse_regex pos str)
+  let lexbuf = Lexing.from_string str in
+  try 
+    lexbuf.Lexing.lex_curr_p <- pos;
+    to_nfa (RegLang_parser.regex RegLang_lexer.token lexbuf)
+  with
+    |  Failure "lexing: empty token" ->
+      failwith (sprintf "error lexing regex %s at %s"
+                  str
+                  (string_of_position 
+                     (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
+    | RegLang_parser.Error ->
+      failwith (sprintf "error parsing regex %s at %s"
+                  str
+                  (string_of_position 
+                     (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
 
 let singleton str = to_nfa (RegLang_syntax.String str)
 

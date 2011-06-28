@@ -8,11 +8,6 @@ module type EQ = sig
 
 end
 
-module type PRINTABLE = sig
-  type t
-  val pretty : t -> string
-end
-
 module type PAT = sig
     
   (** string patterns *)
@@ -77,56 +72,6 @@ module type SET = sig
   val example : t -> string option
 
   val parse : Lexing.position -> string -> t
-
-end
-
-module type PATV = sig
-
-  module P : PAT
-
-  type t = 
-    | Pat of P.t 
-    | Var of Id.t
-    | Union of t * t
-    | Inter of t * t
-    | Diff of t * t
-
-  val is_equal : t -> t -> bool (* always signals an exception *)
-
-end
-
-module type SAT = sig
-
-  module EQ : EQ
-
-  type t =
-    | And of t * t
-    | Or of t * t
-    | Not of t
-    | Var of Id.t
-    | True
-    | False
-    | Imp of t * t
-    | Eq of EQ.t * EQ.t
-
-  val is_sat : t -> bool
-
-  val cnf : t -> t
-  val dnf : t -> t
-
-  val undisjunct : t -> t list
-  val unconjunct : t -> t list
-
-end
-
-module type MLS = sig
-
-  module PAT : PAT
-  module PATV: PATV with module P = PAT
-  module SAT : SAT with module EQ = PATV
-  module SimplSAT : SAT with module EQ = PAT
-
-  val is_sat : SAT.t -> bool
 
 end
 

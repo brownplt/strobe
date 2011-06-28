@@ -124,8 +124,8 @@ rule token = parse
    | "false" { BOOL false }
    | "&&" { AMPAMP }
    | "||" { PIPEPIPE }
-   | "return" { RETURN }
-   | "function" { FUNCTION }
+
+
 
    | ident as x { ID x }
  

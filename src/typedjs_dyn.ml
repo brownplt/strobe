@@ -62,6 +62,7 @@ let rec ctc_of_typ p (typ : typ) = match typ with
   | TUnion (s, t) -> CUnion (ctc_of_typ p s, ctc_of_typ p t)
   | TObject o ->
       let typ_of_prop p = begin match p with
+	| PInherited typ
         | PPresent typ
         | PMaybe typ -> typ
         | PAbsent -> failwith "Cannot make contract for absent field"

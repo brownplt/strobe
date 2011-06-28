@@ -7,7 +7,7 @@ open RegLang_syntax
 
 %token <string> STRING
 %token <char> CHAR
-%token LPAREN RPAREN STAR PIPE DOT BANG
+%token LPAREN RPAREN STAR PIPE DOT
        LTCOLON LTSLASHCOLON SEMI EOF LBRACK RBRACK
        HYPHEN CARET
 
