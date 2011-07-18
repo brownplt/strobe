@@ -136,6 +136,13 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
                 v1, 
                 cps_exp e2 throw (Jmp k'),
                 cps_exp e3 throw (Jmp k'))))
+  | EAssertTyp (_, t, EFunc (_, args, fi, body)) ->
+    if fi.func_loop then
+      let k' = new_name () in
+      let throw' = new_name () in
+      ret k (Lambda (k' :: throw' :: args, cps_exp body throw' (Jmp k')))
+    else
+      ret k (ExternalLambda t)
   | EAssertTyp (_, t, e) -> 
     cps_exp e throw k
   | EApp (_, func, args) -> 
@@ -207,17 +214,14 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
   | ETryFinally (_, e1, e2) -> (*TODO: make this not drop the finally *)
       cps_exp e1 throw k
 
-and cps_bind ((name, _, e) : id * typ * exp) = match e with
+and cps_bind ((name, t, e) : id * typ * exp) = match e with
   | EFunc (_, args, fi, body) ->
     if fi.func_loop then
       let k = new_name () in
       let throw = new_name () in
       (name, Lambda (k :: throw :: args, cps_exp body throw (Jmp k)))
     else 
-      begin match fi.func_typ with
-        | None -> failwith "semicps cannot yet handle unannotated functions"
-        | Some t -> (name, ExternalLambda t)
-      end
+      (name, ExternalLambda t)
   | _ -> failwith "cps_bind : expected a function"
 
 and cps_exp_list exps throw (k : cpsval list -> cpsexp) = match exps with

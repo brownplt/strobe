@@ -15,6 +15,7 @@ let tc_const (const : JavaScript_syntax.const) = match const with
 let typ_of_value (exp : exp) : typ = 
   let mk_field f (name, exp) = (P.singleton name, PPresent (f exp)) in
   let rec f e = match e with
+    | EAssertTyp (_, t, EFunc _) -> t
     | EObject (_, fs) -> 
       (* TODO: Everything else should be absent *)
       TObject 

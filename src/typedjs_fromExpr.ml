@@ -182,30 +182,25 @@ let rec exp (env : env) expr = match expr with
   | VarDeclExpr (a, x, e) -> 
       (* peculiar code: body or block ends with var *)
       ELet (a, x, exp env e, EConst (a, S.CUndefined))
-  | HintExpr (p', txt, FuncStmtExpr (a, f, args, body)) ->
-      begin match match_func (IdMap.add f false env) 
-        (HintExpr (p', txt, FuncExpr (a, args, body))) with
-            Some (t, e) ->
-              ERec ([ (f,  t, e) ], EConst (a, S.CUndefined))
-          | None -> failwith "match_func returned None on a FuncExpr (2)"
-      end
-  | HintExpr (p, txt, FuncExpr _) -> 
-      (match match_func env expr with
-           Some (_, e) -> e
-         | None -> failwith "match_func returned None on a FuncExpr (1)")
+  | HintExpr (p, txt, (FuncStmtExpr (p', f, args, body) as fn)) ->
+    let t  = match parse_annotation p txt with
+      | AAssertTyp t -> desugar_typ p t
+      | _ -> failwith "expected type annotation around function statement" in
+    ERec
+      ([(f, t, EAssertTyp (p, t, match_func (IdMap.add f false env) fn))], 
+       EConst (p', S.CUndefined))
+  | FuncExpr _ -> match_func env expr
   | HintExpr (p, text, e) ->
       let e' = exp env e in
         begin match parse_annotation p text with
-	  | ACheat typ -> ECheat (p, desugar_typ p typ, e')
+	        | ACheat typ -> ECheat (p, desugar_typ p typ, e')
           | AUpcast typ -> ESubsumption (p, desugar_typ p typ, e')
           | ADowncast typ -> EDowncast (p, desugar_typ p typ, e')
           | ATypAbs (x, t) -> ETypAbs (p, x, desugar_typ p t, e')
           | ATypApp t -> ETypApp (p, e', desugar_typ p t)
           | AAssertTyp t -> EAssertTyp (p, desugar_typ p t, e')
-          | _ -> error p "unexpected hint"
+          | ATyp t -> EAssertTyp (p, desugar_typ p t, e')
         end
-  | FuncExpr (p, _, _) -> 
-      raise (Not_well_formed (p, "function is missing a type annotation"))
   | FuncStmtExpr (p, _, _, _) ->
       raise (Not_well_formed (p, "function is missing a type annotation"))
   | ForInExpr (p, x, obj, body) ->
@@ -221,13 +216,9 @@ let rec exp (env : env) expr = match expr with
 		[ ECheat (p, TRegex P.all, EId (p, x)) ]))
 
 and match_func env expr = match expr with
-  | HintExpr (p, txt, FuncExpr (a, args, LabelledExpr (a', "%return", body))) ->
+  | FuncExpr (a, args, LabelledExpr (a', "%return", body)) ->
       if List.length args != List.length (nub args) then
         raise (Not_well_formed (a, "each argument must have a distinct name"));
-      let typ = match parse_annotation p txt with
-        | ATyp t -> t
-        | _ -> raise
-            (Not_well_formed (p, "expected type on function, got " ^ txt)) in
       let locally_defined_vars = locals body in
       let visible_free_vars = 
         IdSet.diff (IdSetExt.from_list (IdMapExt.keys env))
@@ -255,25 +246,15 @@ and match_func env expr = match expr with
         let mutable_arg exp id =
           ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) in
         let args = "this"::args in
-	let typ = desugar_typ p typ in
-        begin match Typ.match_func_typ typ with
-            Some (arg_typs, r) ->
-              if List.length args != List.length arg_typs then
-                raise (Not_well_formed (
-                         a, sprintf "given %d args but %d arg types"
-                           (List.length args) (List.length arg_typs)));
-              Some (typ,
-		    EFunc (a, args, { func_typ = Some typ;
+		    EFunc (a, args, { func_typ = None;
                           func_loop = false;
                           func_owned = IdSet.empty }, 
-                           fold_left mutable_arg
-                             (ELabel (a', "%return", exp env' body))
-                             args))
-          | None -> raise (Not_well_formed (a, "expected a function type"))
-        end
+               fold_left mutable_arg
+                 (ELabel (a', "%return", exp env' body))
+                 args)
   | FuncExpr (a, _, _) ->
       failwith ("expected a LabelledExpr at " ^ string_of_position a)
-  | _ -> None
+  | _ -> failwith "hamg --- really should not fail anymore"
 
 and exp_seq env e = match e with
     SeqExpr (a, e1, e2) -> ESeq (a, exp env e1, exp env e2)

@@ -62,13 +62,45 @@ let expose_simpl_typ env typ = expose env (simpl_typ env typ)
     to avoid accumulating these benign errors as real errors. *)
 exception Fn_typ_error of pos * string * typ
 
-let rec check (env : env) (exp : exp) (typ : typ) = match exp with
+let rec check (env : env) (exp : exp) (typ : typ) : unit = match exp with
   | ELabel (p, lbl, e) ->
     let s = tc_exp (bind_lbl lbl typ env) e in
     if not (subtype env s typ) then
       raise (Typ_error (p, "label type mismatch")) (* should never happen *)
   | ELet (_, x, e1, e2) -> 
     check (bind_id x (tc_exp env e1) env) e2 typ
+  | EFunc (p, args, func_info, body) -> 
+    begin
+      let misowned_vars = IdSet.inter !consumed_owned_vars 
+        func_info.func_owned in
+      if (not (IdSet.is_empty misowned_vars)) then
+        raise (Typ_error (p, sprintf "identifier %s is already owned"
+          (IdSet.choose misowned_vars)))
+      else
+        consumed_owned_vars := IdSet.union !consumed_owned_vars
+          func_info.func_owned;
+    end;
+    let func_typ = typ in
+    let expected_typ = check_kind p env func_typ in
+    begin match bind_typ env (expose_simpl_typ env expected_typ) with
+      | (env, TArrow (arg_typs, result_typ)) ->
+        if not (List.length arg_typs = List.length args) then
+          typ_mismatch p
+            (sprintf "given %d argument names, but %d argument types"
+               (List.length args)
+               (List.length arg_typs))
+        else
+          let bind_arg env x t = bind_id x t env in
+          let env = List.fold_left2 bind_arg env args arg_typs in
+          let env = clear_labels env in
+          let body = 
+            if !is_flows_enabled then
+              Sb_semicfa.semicfa (func_info.func_owned) env body 
+            else 
+              body in
+          check env body result_typ
+      | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
+    end
   | _ -> 
     let synth_typ = tc_exp env exp in
     if not (subtype env synth_typ typ) then
@@ -76,7 +108,7 @@ let rec check (env : env) (exp : exp) (typ : typ) = match exp with
         (sprintf "expected %s, got %s" 
            (string_of_typ typ)
            (string_of_typ synth_typ))
-  
+
 and tc_exp (env : env) (exp : exp) : typ = match exp with
   (* TODO: Pure if-splitting rule; make more practical by integrating with
       flow typing. *)
@@ -358,40 +390,9 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     List.iter tc_bind binds;
     tc_exp env body
   | EFunc (p, args, func_info, body) -> 
-    begin
-      let misowned_vars = IdSet.inter !consumed_owned_vars 
-        func_info.func_owned in
-      if (not (IdSet.is_empty misowned_vars)) then
-        raise (Typ_error (p, sprintf "identifier %s is already owned"
-          (IdSet.choose misowned_vars)))
-      else
-        consumed_owned_vars := IdSet.union !consumed_owned_vars
-          func_info.func_owned;
-    end;
-    let func_typ = match func_info.func_typ with
-      | None -> failwith "nyi"
-      | Some t -> t in
-    let expected_typ = check_kind p env func_typ in
-    begin match bind_typ env (expose_simpl_typ env expected_typ) with
-      | (env, TArrow (arg_typs, result_typ)) ->
-        if not (List.length arg_typs = List.length args) then
-          let _ = typ_mismatch p
-            (sprintf "given %d argument names, but %d argument types"
-               (List.length args)
-               (List.length arg_typs)) in
-          expected_typ
-        else
-          let bind_arg env x t = bind_id x t env in
-          let env = List.fold_left2 bind_arg env args arg_typs in
-          let env = clear_labels env in
-          let body = 
-            if !is_flows_enabled then
-              Sb_semicfa.semicfa (func_info.func_owned) env body 
-            else 
-              body in
-          let _ = check env body result_typ in
-          expected_typ
-      | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
+    begin match func_info.func_typ with
+      | None -> failwith "cannot calculate function type"
+      | Some t -> let _ = check env exp t in t
     end
   | ESubsumption (p, t, e) ->
     let t = check_kind p env t in
