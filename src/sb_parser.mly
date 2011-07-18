@@ -159,11 +159,8 @@ cexp :
  | exp { $1 }
  | IF LPAREN seq_exp RPAREN seq_exp ELSE seq_exp
      { EIf (($startpos, $endpos), $3, $5, $7) }
- | LABEL ID HINT COLON cexp
-     { let t = match parse_annotation ($startpos, $endpos) $3 with
-       | ATyp t -> typ t
-       | _ -> failwith "Expected a type for label, got something else" in
-       ELabel (($startpos, $endpos), $2, t, $5) } 
+ | LABEL ID COLON cexp
+     { ELabel (($startpos, $endpos), $2, $4) } 
  | BREAK ID cexp
    { EBreak (($startpos, $endpos), $2, $3) }
  | THROW cexp

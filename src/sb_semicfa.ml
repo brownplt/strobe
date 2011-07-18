@@ -452,7 +452,7 @@ module Annotate = struct
     | ELet (p, x, e1, e2) -> ELet (p, x, a_exp e1, a_exp e2)
     | ERec (binds, e) -> ERec (map a_bind binds, a_exp e)
     | ESeq (p, e1, e2) -> ESeq (p, a_exp e1, a_exp e2)
-    | ELabel (p, i, t, e) -> ELabel (p, i, t, a_exp e)
+    | ELabel (p, i, e) -> ELabel (p, i, a_exp e)
     | EBreak (p, i, e) -> EBreak (p, i, a_exp e)
     | ETryCatch (p, e1, i, e2) -> ETryCatch (p, a_exp e1, i, a_exp e2)
     | ETryFinally (p, e1, e2) -> ETryFinally (p, a_exp e1, a_exp e2)

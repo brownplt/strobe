@@ -61,8 +61,23 @@ let expose_simpl_typ env typ = expose env (simpl_typ env typ)
     the intersection. [Fn_typ_error] is used internally in the [EApp] case
     to avoid accumulating these benign errors as real errors. *)
 exception Fn_typ_error of pos * string * typ
+
+let rec check (env : env) (exp : exp) (typ : typ) = match exp with
+  | ELabel (p, lbl, e) ->
+    let s = tc_exp (bind_lbl lbl typ env) e in
+    if not (subtype env s typ) then
+      raise (Typ_error (p, "label type mismatch")) (* should never happen *)
+  | ELet (_, x, e1, e2) -> 
+    check (bind_id x (tc_exp env e1) env) e2 typ
+  | _ -> 
+    let synth_typ = tc_exp env exp in
+    if not (subtype env synth_typ typ) then
+      typ_mismatch (Exp.pos exp)
+        (sprintf "expected %s, got %s" 
+           (string_of_typ typ)
+           (string_of_typ synth_typ))
   
-let rec tc_exp (env : env) (exp : exp) : typ = match exp with
+and tc_exp (env : env) (exp : exp) : typ = match exp with
   (* TODO: Pure if-splitting rule; make more practical by integrating with
       flow typing. *)
   | EIf (p, EInfixOp (_, "hasfield",  EDeref (_, EId (_, obj)), (EId (_, fld))),
@@ -145,11 +160,8 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
              (string_of_typ s));
         t
     end
-  | ELabel (p, l, t, e) -> 
-    let t = check_kind p env t in
-    let s = tc_exp (bind_lbl l t env) e in
-    if subtype env s t then t
-    else raise (Typ_error (p, "label type mismatch")) (* should never happen *)
+  | ELabel (p, t, e) -> 
+    raise (Typ_error (p, "cannot calculate type for label"))
   | EBreak (p, l, e) ->
     let s = 
       try lookup_lbl l env
@@ -377,12 +389,7 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
               Sb_semicfa.semicfa (func_info.func_owned) env body 
             else 
               body in
-          let body_typ = tc_exp env body in
-          (if not (subtype env body_typ result_typ) then 
-              typ_mismatch p
-                (sprintf "body has type\n%s\n, but return type is\n%s" 
-                   (string_of_typ body_typ)
-                   (string_of_typ result_typ)));
+          let _ = check env body result_typ in
           expected_typ
       | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
     end
@@ -396,14 +403,8 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
     t
   | EAssertTyp (p, t, e) ->
     let t = check_kind p env t in
-    let s = tc_exp env e in
-    if subtype env s t then
-      s (* we do not subsume *)
-    else
-      raise 
-        (Typ_error (p,  sprintf
-          "expression has type %s, which is incompatible with the \
-                      annotation" (string_of_typ s)))
+    let _ = check env e t in
+    t
   | EDowncast (p, t, e) -> 
     let t = check_kind p env t in
     let (p1, p2) = Exp.pos e in 

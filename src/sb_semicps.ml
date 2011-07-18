@@ -182,7 +182,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
     Rec (new_node (), map cps_bind binds, cps_exp body throw k)
   | ESeq (_, e1, e2) ->
     cps' e1 throw (fun _ -> cps_exp e2 throw k)
-  | ELabel (_, l, _, e) ->
+  | ELabel (_, l, e) ->
     let r = new_name () in
     Bind (new_node (),
           l, Let (Lambda ([r], ret k (mk_id r))),

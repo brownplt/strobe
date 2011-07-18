@@ -70,7 +70,7 @@ type exp
   | ELet of pos * id * exp * exp
   | ERec of (id * typ * exp) list * exp
   | ESeq of pos * exp * exp
-  | ELabel of pos * id * typ * exp 
+  | ELabel of pos * id * exp 
   | EBreak of pos * id * exp
   | ETryCatch of pos * exp * id * exp
   | ETryFinally of pos * exp * exp
@@ -179,7 +179,7 @@ module Exp = struct
     | ELet (p, _, _, _) -> p
     | ERec (_, _) -> failwith "Exp.pos of ERec"
     | ESeq (p, _, _) -> p
-    | ELabel (p, _, _, _) -> p
+    | ELabel (p, _, _) -> p
     | EBreak (p, _, _) -> p
     | ETryCatch (p, _, _, _) -> p
     | ETryFinally (p, _, _) -> p
@@ -237,7 +237,7 @@ module Pretty = struct
         parens (vert [ horz [ text "rec"; parens (vert (map rec_bind binds)) ];
                        exp body ])
     | ESeq (_, e1, e2) -> parens (vert [ sep [ text "seq"; exp e1 ]; exp e2 ])
-    | ELabel (_, x, t, e) -> parens (vert [ text "label"; text x; exp e ])
+    | ELabel (_, x, e) -> parens (vert [ text "label"; text x; exp e ])
     | EBreak (_, x, e) -> parens (vert [ text "break"; text x; exp e ])
     | ETryCatch (_, body, x, catch) ->
         parens (vert [ text "try"; exp body; 
@@ -301,7 +301,7 @@ let assigned_free_vars (e : exp) =
           binds ([], []) in
       fold_right IdSet.remove xs (IdSetExt.unions (map exp (e :: es)))
     | ESeq (_, e1, e2) -> IdSet.union (exp e1) (exp e2)
-    | ELabel (_, _, _, e) -> exp e
+    | ELabel (_, _, e) -> exp e
     | EBreak (_, _, e) -> exp e
     | ETryCatch (_, e1, x, e2) -> IdSet.union (exp e1) (IdSet.remove x (exp e2))
     | ETryFinally (_, e1, e2) -> IdSet.union (exp e1) (exp e2)
@@ -360,7 +360,7 @@ let unique_ids (prog : exp) : exp * (string, string) Hashtbl.t =
       ERec (map (fun (x, t, e) -> (find x env, t, exp env e)) binds,
             exp env body)
     | ESeq (p, e1, e2) -> ESeq (p, exp env e1, exp env e2)
-    | ELabel (p, x, t, e) -> ELabel (p, x, t, exp env e)
+    | ELabel (p, x,  e) -> ELabel (p, x, exp env e)
     | EBreak (p, x, e) -> EBreak (p, x, exp env e)
     | ETryCatch (p, e1, x, e2) ->
       let x' = name x in

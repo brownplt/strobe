@@ -86,9 +86,9 @@ let rec f (acc : IdSet.t * IdSet.t) (exp : exp) : (IdSet.t * IdSet.t) * exp =
     let (acc, e1) = f acc e1 in
     let (acc, e2) = f acc e2 in
     (acc, ESeq (p, e1, e2))
-  | ELabel (p, x, t, e) ->
+  | ELabel (p, x, e) ->
     let (acc, e) = f acc e in
-    (acc, ELabel (p, x, t, e))
+    (acc, ELabel (p, x, e))
   | EBreak (p, x, e) ->
     let (acc, e) = f acc e in
     (acc, EBreak (p, x, e))

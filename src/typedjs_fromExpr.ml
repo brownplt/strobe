@@ -171,10 +171,7 @@ let rec exp (env : env) expr = match expr with
                                     EConst (a, S.CUndefined)))))],
               EApp (a, EId (a, "%loop"), []))
 
-  | LabelledExpr (a, x, e) -> 
-      (** We assume that this [LabelledExpr] is from a [LabelledStmt]. 
-          Therefore, the return type is [ty_undef]. *)
-      ELabel (a, x, TPrim Undef, exp env e)
+  | LabelledExpr (a, x, e) -> ELabel (a, x, exp env e)
   | BreakExpr (a, x, e) -> EBreak (a, x, exp env e)
   | SeqExpr 
       (p,
@@ -270,7 +267,7 @@ and match_func env expr = match expr with
                           func_loop = false;
                           func_owned = IdSet.empty }, 
                            fold_left mutable_arg
-                             (ELabel (a', "%return", r, exp env' body))
+                             (ELabel (a', "%return", exp env' body))
                              args))
           | None -> raise (Not_well_formed (a, "expected a function type"))
         end
