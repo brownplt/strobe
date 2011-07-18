@@ -11,9 +11,23 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
 	let num_typ_errors = ref 0
 
+  let error_on_mismatch = ref false
+
+  let with_typ_exns thunk = 
+    let prev = !error_on_mismatch in
+    error_on_mismatch := true;
+    let r = thunk () in
+    error_on_mismatch := prev;
+    r
+
 	let typ_mismatch p s = 
-		incr num_typ_errors;
-		eprintf "%s : %s\n" (string_of_position p) s
+    if !error_on_mismatch then
+      raise (Typ_error (p, s))
+    else
+      begin
+		    incr num_typ_errors;
+		    eprintf "%s : %s\n" (string_of_position p) s
+      end
 
 	let get_num_typ_errors () = !num_typ_errors
 

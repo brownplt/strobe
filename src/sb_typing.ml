@@ -56,12 +56,6 @@ let check_kind p env typ : typ =
 
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
 
-(** While typing applications, if the function-expression has an intersection
-    type, wholly benign "type errors" can occur while checking elements of
-    the intersection. [Fn_typ_error] is used internally in the [EApp] case
-    to avoid accumulating these benign errors as real errors. *)
-exception Fn_typ_error of pos * string * typ
-
 let rec check (env : env) (exp : exp) (typ : typ) : unit = match exp with
   | ELabel (p, lbl, e) ->
     let s = tc_exp (bind_lbl lbl typ env) e in
@@ -99,7 +93,9 @@ let rec check (env : env) (exp : exp) (typ : typ) : unit = match exp with
             else 
               body in
           check env body result_typ
-      | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
+      | _, t -> 
+        raise (Typ_error (p, sprintf "invalid type annotation on a function: %s"
+          (string_of_typ t)))
     end
   | _ -> 
     let synth_typ = tc_exp env exp in
@@ -302,52 +298,43 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     end
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> 
-    let arg_typs = map (tc_exp_ret env) args in
-    let assumed_arg_exps = 
-      List.map2 (fun e t -> ECheat (p, t, e)) args arg_typs in
     let rec check_app tfun =
       begin match expose_simpl_typ env tfun with 
         | TArrow (expected_typs, result_typ) ->
-					(* TODO: allow arguments to be elided *)
-          let arg_typs = fill (List.length expected_typs - List.length args) 
-            (TPrim Undef) arg_typs in
-					let check_arg s t =
-						try assert_subtyp env p s t 
-						with Typ_error (p, msg) -> 
-              raise (Fn_typ_error 
-                       (p, 
-                        sprintf "expected argument of type %s, received %s"
-									        (string_of_typ s) (string_of_typ t),
-                        result_typ)) in
+          let args = fill (List.length expected_typs - List.length args) 
+            (EConst (p, JavaScript_syntax.CUndefined)) args in
 					begin
-            try List.iter2 check_arg arg_typs expected_typs
+            try List.iter2 (check env) args expected_typs
 						with Invalid_argument "List.iter2" -> 
-              raise (Fn_typ_error
+              raise (Typ_error
                        (p, 
                         sprintf "arity-mismatch: the function expects %d \
                                   arguments, but %d arguments given"
-									        (List.length expected_typs) (List.length args),
-                        result_typ))
+									        (List.length expected_typs) (List.length args)))
 					end;
 					result_typ
         | TIntersect (t1, t2) -> 
-					begin 
-						try 
-							let r1 = check_app t1 in 
-							begin 
-								try
-                  let r2 = check_app t2 in
-                  typ_intersect env r1 r2
-                with | Fn_typ_error _ -> r1
-							end
-            with | Fn_typ_error _ -> check_app t2
-					end
+          with_typ_exns
+            (fun () ->
+						  try 
+							  let r1 = check_app t1 in 
+							  begin 
+								  try
+                    let r2 = check_app t2 in
+                    typ_intersect env r1 r2
+                  with | Typ_error _ -> r1
+							  end
+              with | Typ_error _ -> check_app t2)
 				| (TForall _) as quant_typ -> 
 					begin match Typ.forall_arrow quant_typ with
 						| None -> 
 							error p (sprintf "expected function, got %s"
 												 (string_of_typ quant_typ))
 						| Some (typ_vars, (TArrow (_, r) as arrow_typ)) ->
+              (* guess-work breaks bidirectionality *)
+              let arg_typs = map (tc_exp_ret env) args in
+              let assumed_arg_exps = 
+                List.map2 (fun e t -> ECheat (p, t, e)) args arg_typs in
 							let assoc =
 								typ_assoc env arrow_typ (TArrow (arg_typs, r)) in
 							let guess_typ_app exp typ_var = 
@@ -368,12 +355,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
                             sprintf "expected function, got %s" 
 							                (string_of_typ not_func_typ)))
       end in 
-    begin
-      try check_app (un_null (tc_exp env f))
-      with Fn_typ_error (p, msg, result_typ) ->
-        let _ = typ_mismatch p msg in
-        result_typ
-    end
+    check_app (un_null (tc_exp env f))
   | ERec (binds, body) -> 
     (* No kinding check here, but it simply copies the type from the function.
        Let it work. (Actual reason: no position available) *)

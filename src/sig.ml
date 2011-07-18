@@ -163,4 +163,6 @@ module type TYP = sig
 
 	val get_num_typ_errors : unit -> int
 
+  val with_typ_exns : (unit -> 'a) -> 'a
+
 end
