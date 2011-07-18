@@ -248,56 +248,56 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
     let rec check_app tfun =
       begin match expose_simpl_typ env tfun with 
         | TArrow (expected_typs, result_typ) ->
-	  (* TODO: allow arguments to be elided *)
+					(* TODO: allow arguments to be elided *)
           let arg_typs = fill (List.length expected_typs - List.length args) 
             (TPrim Undef) arg_typs in
-	  if List.length args != List.length expected_typs then
-	    raise (Typ_error 
+					if List.length args != List.length expected_typs then
+						raise (Typ_error 
                      (p, sprintf "arity-mismatch: the function expects %d \
                                   arguments, but %d arguments given"
                        (List.length expected_typs) (List.length args)));
-	  let _ = List.iter2 (assert_subtyp env p)
-	    arg_typs expected_typs in
-	  result_typ
+					let _ = List.iter2 (assert_subtyp env p)
+						arg_typs expected_typs in
+					result_typ
         | TIntersect (t1, t2) -> 
-	  begin 
-	    try 
-	      let r1 = check_app t1 in 
-	      begin 
-		try
+					begin 
+						try 
+							let r1 = check_app t1 in 
+							begin 
+								try
                   let r2 = check_app t2 in
-                     typ_intersect env r1 r2
+                  typ_intersect env r1 r2
                 with
-		  | Not_subtype _ 
-		  | Typ_error _ -> r1 
-	      end
+									| Not_subtype _ 
+									| Typ_error _ -> r1 
+							end
             with
-	      | Not_subtype _ 
-	      | Typ_error _ -> check_app t2 
-	  end
-	| (TForall _) as quant_typ -> 
-	  begin match Typ.forall_arrow quant_typ with
-	    | None -> 
-	      error p (sprintf "expected function, got %s"
-			 (string_of_typ quant_typ))
-	    | Some (typ_vars, (TArrow (_, r) as arrow_typ)) ->
-	      let assoc =
-		typ_assoc env arrow_typ (TArrow (arg_typs, r)) in
-	      let guess_typ_app exp typ_var = 
-		try
-		  let guessed_typ = IdMap.find typ_var assoc in
-		  ETypApp (p, exp, guessed_typ) 
-		with Not_found -> begin
-		  error p (sprintf "$$$ could not instantiate") end in
-	      let guessed_exp = 
-		fold_left guess_typ_app (ECheat (p, quant_typ, f)) 
-		  typ_vars in
-	      tc_exp env (EApp (p, guessed_exp, assumed_arg_exps))
-	    | Some _ -> failwith "expected TArrow from forall_arrow"
-	  end
-	| not_func_typ ->
-	  error p (sprintf "expected function, got %s" 
-		     (string_of_typ not_func_typ))
+							| Not_subtype _ 
+							| Typ_error _ -> check_app t2 
+					end
+				| (TForall _) as quant_typ -> 
+					begin match Typ.forall_arrow quant_typ with
+						| None -> 
+							error p (sprintf "expected function, got %s"
+												 (string_of_typ quant_typ))
+						| Some (typ_vars, (TArrow (_, r) as arrow_typ)) ->
+							let assoc =
+								typ_assoc env arrow_typ (TArrow (arg_typs, r)) in
+							let guess_typ_app exp typ_var = 
+								try
+									let guessed_typ = IdMap.find typ_var assoc in
+									ETypApp (p, exp, guessed_typ) 
+								with Not_found -> begin
+									error p (sprintf "$$$ could not instantiate") end in
+							let guessed_exp = 
+								fold_left guess_typ_app (ECheat (p, quant_typ, f)) 
+									typ_vars in
+							tc_exp env (EApp (p, guessed_exp, assumed_arg_exps))
+						| Some _ -> failwith "expected TArrow from forall_arrow"
+					end
+				| not_func_typ ->
+					error p (sprintf "expected function, got %s" 
+										 (string_of_typ not_func_typ))
       end in check_app (un_null (tc_exp env f)) 
   | ERec (binds, body) -> 
     (* No kinding check here, but it simply copies the type from the function.
