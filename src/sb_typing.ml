@@ -439,10 +439,9 @@ and tc_exps env es = map (tc_exp env) es
   
 and tc_exp_ret env e = 
   let t = tc_exp env e in
-  if !error_on_unreachable && t = TBot then
-    error (Exp.pos e) "unreachable code"
-  else 
-    simpl_typ env t
+  let _ = if !error_on_unreachable && t = TBot then
+      typ_mismatch (Exp.pos e) "unreachable code" in
+  simpl_typ env t
 
 let typecheck env exp =
   let _ = tc_exp env exp in
