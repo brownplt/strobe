@@ -233,7 +233,6 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
       P.union names (P.singleton name) in
     let rest = List.fold_right get_names fields (P.singleton "__proto__") in
     let rest' = P.negate rest in
-      (* TODO: everything else hsould be absent *)
     if List.mem "__proto__" (map fst fields) then
       TObject (mk_obj_typ ((rest', PAbsent)::(map mk_field fields)))
     else
