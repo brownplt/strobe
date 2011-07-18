@@ -74,8 +74,7 @@ let rec check (env : env) (exp : exp) (typ : typ) : unit = match exp with
         consumed_owned_vars := IdSet.union !consumed_owned_vars
           func_info.func_owned;
     end;
-    let func_typ = typ in
-    let expected_typ = check_kind p env func_typ in
+    let expected_typ = check_kind p env typ in
     begin match bind_typ env (expose_simpl_typ env expected_typ) with
       | (env, TArrow (arg_typs, result_typ)) ->
         if not (List.length arg_typs = List.length args) then
@@ -372,10 +371,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     List.iter tc_bind binds;
     tc_exp env body
   | EFunc (p, args, func_info, body) -> 
-    begin match func_info.func_typ with
-      | None -> failwith "cannot calculate function type"
-      | Some t -> let _ = check env exp t in t
-    end
+    raise (Typ_error (p, "cannot calculate function type; annotation required"))
   | ESubsumption (p, t, e) ->
     let t = check_kind p env t in
     let s = tc_exp env e in

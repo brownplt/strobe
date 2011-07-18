@@ -87,12 +87,14 @@ ids :
 
 func :
  | FUNC LPAREN ids RPAREN HINT LBRACE seq_exp RBRACE
-   { let info = match parse_annotation ($startpos, $endpos) $5 with
-       | ATyp t -> { func_typ = Some (typ t);
-                     func_owned = IdSet.empty;
-                     func_loop = false } 
+   { let p = ($startpos, $endpos) in
+     let t = match parse_annotation p $5 with
+       | ATyp t -> t
        | _ -> failwith "expected a type on the function, got something else" in
-     EFunc (($startpos, $endpos), $3, info, $7) }
+     EAssertTyp (p, desugar_typ p t, 
+                 EFunc (p, $3, 
+                        { func_owned = IdSet.empty; func_loop = false }, 
+                        $7)) }
 
 atom :
  | const { EConst (($startpos, $endpos), $1) }

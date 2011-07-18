@@ -23,12 +23,9 @@ let typ_of_value (exp : exp) : typ =
 	   ((proto_pat, PPresent (TId "Object")) :: 
 	       (map (mk_field f) fs)))
     | EConst (_, c) -> tc_const c
-    | EFunc (p, _, fi, _) -> 
-      begin match fi.func_typ with
-        | Some t -> t
-        | None -> failwith (sprintf "unannotated function at %s"
-                              (string_of_position p))
-      end
+    | EFunc (p, _, _, _) -> 
+      raise (Not_value
+               (sprintf "unannotated function at %s" (string_of_position p)))
     | ERef (_, RefCell, e') -> TRef begin match e' with
         | EObject (_, fields) -> 
 	  (* TODO: as above *)
@@ -37,12 +34,11 @@ let typ_of_value (exp : exp) : typ =
 	       ((proto_pat, PPresent (TId "Object")) 
 		:: (map (mk_field f) fields)))
         | EConst (_, c) -> tc_const c
-        | EFunc (p, _, fi, _) -> 
-          begin match fi.func_typ with
-            | Some t -> t
-            | None -> failwith (sprintf "unannotated function at %s"
-                                  (string_of_position p))
-          end
+        | EAssertTyp (_, t, EFunc _) -> t
+        | EFunc (p, _, _, _) -> 
+          raise (Not_value
+                   (sprintf "unannotated function at %s"
+                      (string_of_position p)))
         | _ -> raise (Not_value  (FormatExt.to_string Pretty.p_exp e'))
       end
     | _ -> raise (Not_value (FormatExt.to_string Pretty.p_exp e)) in

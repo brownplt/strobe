@@ -151,24 +151,24 @@ let rec exp (env : env) expr = match expr with
   | WhileExpr (a, e1, e2) ->
       let loop_typ = TArrow ([], TPrim Undef) in
         ERec ([("%loop", loop_typ,
-                EFunc (a, [], { func_typ = Some loop_typ;
-                                func_loop = true;
-                                func_owned = IdSet.empty },
+                EAssertTyp (a, loop_typ, 
+                            EFunc (a, [], { func_loop = true;
+                                            func_owned = IdSet.empty },
                        EIf (a, exp env e1, 
                             ESeq (a, exp env e2, 
                                   EApp (a, EId (a, "%loop"), [])),
-                            EConst (a, S.CUndefined))))],
+                            EConst (a, S.CUndefined)))))],
               EApp (a, EId (a, "%loop"), []))
   | DoWhileExpr (a, body_e, test_e) ->
       let loop_typ = TArrow ([], TPrim Undef) in
         ERec ([("%loop", loop_typ,
-                EFunc (a, [], { func_typ = Some loop_typ; 
-                                func_loop = true;
+                EAssertTyp (a, loop_typ,
+                EFunc (a, [], { func_loop = true;
                                 func_owned = IdSet.empty },
                        ESeq (a, exp env body_e, 
                              EIf (a, exp env test_e, 
                                   EApp (a, EId (a, "%loop"), []),
-                                    EConst (a, S.CUndefined)))))],
+                                    EConst (a, S.CUndefined))))))],
               EApp (a, EId (a, "%loop"), []))
 
   | LabelledExpr (a, x, e) -> ELabel (a, x, exp env e)
@@ -206,12 +206,12 @@ let rec exp (env : env) expr = match expr with
   | ForInExpr (p, x, obj, body) ->
     let loop_typ = TArrow ([TRegex P.all], TPrim Undef) in
     ERec ([("%loop", loop_typ,
-            EFunc (p, [x], { func_typ = Some loop_typ;
-                            func_loop = true;
+            EAssertTyp (p, loop_typ, 
+            EFunc (p, [x], {func_loop = true;
                             func_owned = IdSet.empty },
 		   (* TODO: not fully-faithful--stopping condition missing *)
                    ESeq (p, exp env body, 
-                         EApp (p, EId (p, "%loop"), []))))],
+                         EApp (p, EId (p, "%loop"), [])))))],
 	  EApp (p, EId (p, "%loop"), 
 		[ ECheat (p, TRegex P.all, EId (p, x)) ]))
 
@@ -246,8 +246,7 @@ and match_func env expr = match expr with
         let mutable_arg exp id =
           ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) in
         let args = "this"::args in
-		    EFunc (a, args, { func_typ = None;
-                          func_loop = false;
+		    EFunc (a, args, { func_loop = false;
                           func_owned = IdSet.empty }, 
                fold_left mutable_arg
                  (ELabel (a', "%return", exp env' body))
