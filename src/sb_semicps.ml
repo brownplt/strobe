@@ -152,7 +152,10 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       let throw' = new_name () in
       ret k (Lambda (k' :: throw' :: args, cps_exp body throw' (Jmp k')))
     else
-      ret k (ExternalLambda fi.func_typ)
+      begin match fi.func_typ with
+        | None -> failwith "semicps cannot yet handle unannotated functions"
+        | Some t -> ret k (ExternalLambda t)
+      end
   | ELet (_, x, e1, e2) ->
     cps' e1 throw
       (fun v1 ->
@@ -211,7 +214,10 @@ and cps_bind ((name, _, e) : id * typ * exp) = match e with
       let throw = new_name () in
       (name, Lambda (k :: throw :: args, cps_exp body throw (Jmp k)))
     else 
-      (name, ExternalLambda fi.func_typ)
+      begin match fi.func_typ with
+        | None -> failwith "semicps cannot yet handle unannotated functions"
+        | Some t -> (name, ExternalLambda t)
+      end
   | _ -> failwith "cps_bind : expected a function"
 
 and cps_exp_list exps throw (k : cpsval list -> cpsexp) = match exps with

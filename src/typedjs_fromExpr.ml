@@ -151,8 +151,7 @@ let rec exp (env : env) expr = match expr with
   | WhileExpr (a, e1, e2) ->
       let loop_typ = TArrow ([], TPrim Undef) in
         ERec ([("%loop", loop_typ,
-                EFunc (a, [], { func_typ = loop_typ;
-
+                EFunc (a, [], { func_typ = Some loop_typ;
                                 func_loop = true;
                                 func_owned = IdSet.empty },
                        EIf (a, exp env e1, 
@@ -163,7 +162,7 @@ let rec exp (env : env) expr = match expr with
   | DoWhileExpr (a, body_e, test_e) ->
       let loop_typ = TArrow ([], TPrim Undef) in
         ERec ([("%loop", loop_typ,
-                EFunc (a, [], { func_typ = loop_typ; 
+                EFunc (a, [], { func_typ = Some loop_typ; 
                                 func_loop = true;
                                 func_owned = IdSet.empty },
                        ESeq (a, exp env body_e, 
@@ -215,7 +214,7 @@ let rec exp (env : env) expr = match expr with
   | ForInExpr (p, x, obj, body) ->
     let loop_typ = TArrow ([TRegex P.all], TPrim Undef) in
     ERec ([("%loop", loop_typ,
-            EFunc (p, [x], { func_typ = loop_typ;
+            EFunc (p, [x], { func_typ = Some loop_typ;
                             func_loop = true;
                             func_owned = IdSet.empty },
 		   (* TODO: not fully-faithful--stopping condition missing *)
@@ -267,9 +266,9 @@ and match_func env expr = match expr with
                          a, sprintf "given %d args but %d arg types"
                            (List.length args) (List.length arg_typs)));
               Some (typ,
-		    EFunc (a, args, { func_typ = typ;
-                                      func_loop = false;
-                                      func_owned = IdSet.empty }, 
+		    EFunc (a, args, { func_typ = Some typ;
+                          func_loop = false;
+                          func_owned = IdSet.empty }, 
                            fold_left mutable_arg
                              (ELabel (a', "%return", r, exp env' body))
                              args))

@@ -356,7 +356,10 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
         consumed_owned_vars := IdSet.union !consumed_owned_vars
           func_info.func_owned;
     end;
-    let expected_typ = check_kind p env (func_info.func_typ) in
+    let func_typ = match func_info.func_typ with
+      | None -> failwith "nyi"
+      | Some t -> t in
+    let expected_typ = check_kind p env func_typ in
     begin match bind_typ env (expose_simpl_typ env expected_typ) with
       | (env, TArrow (arg_typs, result_typ)) ->
         if not (List.length arg_typs = List.length args) then

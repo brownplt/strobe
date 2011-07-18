@@ -45,9 +45,9 @@ type ref_kind =
 
 
 type func_info = {
-  func_typ : typ;
+  func_typ : typ option;
   func_owned: IdSet.t;
-  func_loop : bool;
+  func_loop : bool; (* used by semicps.ml *)
 }
 
 (** Typed JavaScript expressions. Additional well-formedness criteria are
@@ -202,6 +202,10 @@ module Pretty = struct
   open FormatExt
 
   let typ t = text (string_of_typ t)
+
+  let opt_typ t = match t with
+    | None -> text ""
+    | Some t -> text (string_of_typ t)
     
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
@@ -221,7 +225,7 @@ module Pretty = struct
     | EApp (_, f, args) -> parens (horz (text "app" :: exp f :: map exp args))
     | EFunc (_, args, t, body) ->
       parens (vert [ horz [ text "fun"; parens (horz (map text args)); 
-                            text ":"; typ t.func_typ;
+                            text ":"; opt_typ t.func_typ;
                             IdSetExt.p_set text t.func_owned;
                           ];
                        exp body])

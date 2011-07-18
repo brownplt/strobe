@@ -88,7 +88,7 @@ ids :
 func :
  | FUNC LPAREN ids RPAREN HINT LBRACE seq_exp RBRACE
    { let info = match parse_annotation ($startpos, $endpos) $5 with
-       | ATyp t -> { func_typ = typ t;
+       | ATyp t -> { func_typ = Some (typ t);
                      func_owned = IdSet.empty;
                      func_loop = false } 
        | _ -> failwith "expected a type on the function, got something else" in
