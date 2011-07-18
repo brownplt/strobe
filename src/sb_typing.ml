@@ -57,6 +57,8 @@ let check_kind p env typ : typ =
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
   
 let rec tc_exp (env : env) (exp : exp) : typ = match exp with
+  (* TODO: Pure if-splitting rule; make more practical by integrating with
+      flow typing. *)
   | EIf (p, EInfixOp (_, "hasfield",  EDeref (_, EId (_, obj)), (EId (_, fld))),
 	       true_part, false_part) ->
     begin match expose_simpl_typ env (lookup_id obj env), lookup_id fld env with
@@ -83,7 +85,7 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
   | EId (p, x) -> begin
     try 
       lookup_id x env
-    with Not_found -> raise (Typ_error (p, x ^ " is not defined"))
+    with Not_found -> raise (Typ_error (p, x ^ " is not defined")) (* severe *)
   end
   | ELet (_, x, e1, e2) -> tc_exp (bind_id x (tc_exp env e1) env) e2
   | ESeq (_, e1, e2) -> begin match tc_exp env e1 with
@@ -91,6 +93,8 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
         TBot
       | _ -> tc_exp env e2
   end
+  (* TODO: well-formedness explodes if EEmptyArray does not have an annotation;
+     relax this behavior. *)
   | ERef (p1, RefCell, EEmptyArray (p2, elt_typ)) -> 
     let elt_typ = check_kind p2 env elt_typ in
     mk_array_typ p2 env elt_typ
@@ -123,28 +127,28 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
     begin match (expose_simpl_typ env (tc_exp env e1)), tc_exp env e2 with
       | TRef s, t
       | TSink s, t ->
-        if subtype env t s then 
-          t
-        else raise
-          (Typ_error 
-             (p, sprintf "left-hand side of assignment has type %s, but the \
+        if not (subtype env t s) then
+          typ_mismatch p
+            (sprintf "left-hand side of assignment has type %s, but the \
                   right-hand side has type %s"
-               (string_of_typ s) (string_of_typ t)))
-      | s, _ -> 
-        raise (Typ_error 
-                 (p, sprintf "cannot write to LHS (type %s)" 
-                   (string_of_typ s)))
+               (string_of_typ s) (string_of_typ t));
+        t
+      | s, t -> 
+        typ_mismatch p
+          (sprintf "left-hand side of assignment has type %s"
+             (string_of_typ s));
+        t
     end
   | ELabel (p, l, t, e) -> 
     let t = check_kind p env t in
     let s = tc_exp (bind_lbl l t env) e in
     if subtype env s t then t
-    else raise (Typ_error (p, "label type mismatch"))
+    else raise (Typ_error (p, "label type mismatch")) (* should never happen *)
   | EBreak (p, l, e) ->
     let s = 
       try lookup_lbl l env
       with Not_found -> 
-        raise (Typ_error (p, "label " ^ l ^ " is not defined"))
+        raise (Typ_error (p, "label " ^ l ^ " is not defined")) (* severe *)
     and t = tc_exp env e in
     if not (subtype env t s) then
       typ_mismatch p
@@ -172,11 +176,11 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
     static env rt t
   | EIf (p, e1, e2, e3) ->
     let c = tc_exp env e1 in
-    if subtype env c typ_bool then
-      typ_union env (tc_exp env e2) (tc_exp env e3)
-    else
-      error p ("expected condition to have type Bool, but got a " ^ 
-                  (string_of_typ c))
+    if not (subtype env c typ_bool) then
+      typ_mismatch p
+        ("expected condition to have type Bool, but got a " ^ 
+            (string_of_typ c));
+    typ_union env (tc_exp env e2) (tc_exp env e3)
   | EObject (p, fields) ->
     let mk_field (name, exp) = 
 	    (P.singleton name, PPresent (tc_exp env exp)) in
@@ -215,19 +219,26 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
             then match prop with
 		          | PInherited s
               | PPresent s
-              | PMaybe s -> if subtype env typ s then true
-                else error p (sprintf "%s not subtype of %s in %s[%s = %s]"
-                                (string_of_typ typ) (string_of_typ s) 
-                                (string_of_typ tobj) (string_of_typ tfld)
-                                (string_of_typ typ))
-              | PAbsent -> error p (sprintf "Assigning to absent field")
-            else true in
-          if List.for_all okfield fs then tobj
-          else error p "Shouldn't happen --- unknown error in update"
+              | PMaybe s -> 
+                if not (subtype env typ s) then
+                  typ_mismatch p
+                    (sprintf "%s not subtype of %s in %s[%s = %s]"
+                       (string_of_typ typ) 
+                       (string_of_typ s) 
+                       (string_of_typ tobj)
+                       (string_of_typ tfld)
+                       (string_of_typ typ))
+              | PAbsent -> 
+                typ_mismatch p (sprintf "Assigning to absent field") in
+          let _ = List.iter okfield fs in
+          tobj
         | obj, fld, typ ->
-          error p (sprintf "Bad update: %s[%s = %s]"
-                     (string_of_typ obj) (string_of_typ fld) 
-                     (string_of_typ typ))
+          let _ = typ_mismatch p (sprintf "Bad update: %s[%s = %s]"
+                                    (string_of_typ obj) 
+                                    (string_of_typ fld) 
+                                    (string_of_typ typ)) in
+          obj
+          
   end
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
   | EInfixOp (p, "+", e1, e2) -> 
@@ -347,35 +358,33 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
           else 
             body in
         let body_typ = tc_exp env body in
-        
-        if subtype env body_typ result_typ then 
-          expected_typ
-        else 
-          (assert_subtyp env p body_typ result_typ;
-           raise (Typ_error
-                    (p,
-                     sprintf "function body has type\n%s\n, but the \
-                             return type is\n%s" (string_of_typ body_typ)
-                       (string_of_typ result_typ))))
+        if not (subtype env body_typ result_typ) then 
+          typ_mismatch p
+            (sprintf "function body has type\n%s\n, but the \
+                      return type is\n%s" 
+               (string_of_typ body_typ)
+               (string_of_typ result_typ));
+        expected_typ
       | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
     end
   | ESubsumption (p, t, e) ->
     let t = check_kind p env t in
     let s = tc_exp env e in
-    if subtype env s t then
-      t
-    else 
-      raise (Typ_error (p, sprintf "invalid upcast: %s is not a subtype of %s"
-	      (string_of_typ s) (string_of_typ t)))
+    if not (subtype env s t) then
+      typ_mismatch p
+        (sprintf "invalid upcast: %s is not a subtype of %s"
+	         (string_of_typ s) (string_of_typ t));
+    t
   | EAssertTyp (p, t, e) ->
     let t = check_kind p env t in
     let s = tc_exp env e in
     if subtype env s t then
       s (* we do not subsume *)
     else
-      error p 
-        (sprintf "expression has type %s, which is incompatible with the \
-                      annotation" (string_of_typ s))
+      raise 
+        (Typ_error (p,  sprintf
+          "expression has type %s, which is incompatible with the \
+                      annotation" (string_of_typ s)))
   | EDowncast (p, t, e) -> 
     let t = check_kind p env t in
     let (p1, p2) = Exp.pos e in 
