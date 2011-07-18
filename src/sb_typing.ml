@@ -55,6 +55,12 @@ let check_kind p env typ : typ =
 	         (p, sprintf "type term has kind %s; expected *" (string_of_kind k)))
 
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
+
+(** While typing applications, if the function-expression has an intersection
+    type, wholly benign "type errors" can occur while checking elements of
+    the intersection. [Fn_typ_error] is used internally in the [EApp] case
+    to avoid accumulating these benign errors as real errors. *)
+exception Fn_typ_error of pos * string * typ
   
 let rec tc_exp (env : env) (exp : exp) : typ = match exp with
   (* TODO: Pure if-splitting rule; make more practical by integrating with
@@ -264,16 +270,20 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
 					let check_arg s t =
 						try assert_subtyp env p s t 
 						with Typ_error (p, msg) -> 
-							typ_mismatch p 
-								(sprintf "expected argument of type %s, received %s"
-									 (string_of_typ s) (string_of_typ t)) in
+              raise (Fn_typ_error 
+                       (p, 
+                        sprintf "expected argument of type %s, received %s"
+									        (string_of_typ s) (string_of_typ t),
+                        result_typ)) in
 					begin
             try List.iter2 check_arg arg_typs expected_typs
 						with Invalid_argument "List.iter2" -> 
-							typ_mismatch p
-								(sprintf "arity-mismatch: the function expects %d \
+              raise (Fn_typ_error
+                       (p, 
+                        sprintf "arity-mismatch: the function expects %d \
                                   arguments, but %d arguments given"
-									 (List.length expected_typs) (List.length args))
+									        (List.length expected_typs) (List.length args),
+                        result_typ))
 					end;
 					result_typ
         | TIntersect (t1, t2) -> 
@@ -284,13 +294,9 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
 								try
                   let r2 = check_app t2 in
                   typ_intersect env r1 r2
-                with
-									| Not_subtype _ 
-									| Typ_error _ -> r1 
+                with | Fn_typ_error _ -> r1
 							end
-            with
-							| Not_subtype _ 
-							| Typ_error _ -> check_app t2 
+            with | Fn_typ_error _ -> check_app t2
 					end
 				| (TForall _) as quant_typ -> 
 					begin match Typ.forall_arrow quant_typ with
@@ -313,9 +319,17 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
 						| Some _ -> failwith "expected TArrow from forall_arrow"
 					end
 				| not_func_typ ->
-					error p (sprintf "expected function, got %s" 
-										 (string_of_typ not_func_typ))
-      end in check_app (un_null (tc_exp env f)) 
+          (* even in an intersection, this should count as a genuine error *)
+          raise (Typ_error (p,
+                            sprintf "expected function, got %s" 
+							                (string_of_typ not_func_typ)))
+      end in 
+    begin
+      try check_app (un_null (tc_exp env f))
+      with Fn_typ_error (p, msg, result_typ) ->
+        let _ = typ_mismatch p msg in
+        result_typ
+    end
   | ERec (binds, body) -> 
     (* No kinding check here, but it simply copies the type from the function.
        Let it work. (Actual reason: no position available) *)
