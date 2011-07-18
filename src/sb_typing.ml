@@ -360,25 +360,27 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
     begin match bind_typ env (expose_simpl_typ env expected_typ) with
       | (env, TArrow (arg_typs, result_typ)) ->
         if not (List.length arg_typs = List.length args) then
-          error p 
+          let _ = typ_mismatch p
             (sprintf "given %d argument names, but %d argument types"
-               (List.length args) (List.length arg_typs));
-        let bind_arg env x t = bind_id x t env in
-        let env = List.fold_left2 bind_arg env args arg_typs in
-        let env = clear_labels env in
-        let body = 
-          if !is_flows_enabled then
-            Sb_semicfa.semicfa (func_info.func_owned) env body 
-          else 
-            body in
-        let body_typ = tc_exp env body in
-        if not (subtype env body_typ result_typ) then 
-          typ_mismatch p
-            (sprintf "function body has type\n%s\n, but the \
-                      return type is\n%s" 
-               (string_of_typ body_typ)
-               (string_of_typ result_typ));
-        expected_typ
+               (List.length args)
+               (List.length arg_typs)) in
+          expected_typ
+        else
+          let bind_arg env x t = bind_id x t env in
+          let env = List.fold_left2 bind_arg env args arg_typs in
+          let env = clear_labels env in
+          let body = 
+            if !is_flows_enabled then
+              Sb_semicfa.semicfa (func_info.func_owned) env body 
+            else 
+              body in
+          let body_typ = tc_exp env body in
+          (if not (subtype env body_typ result_typ) then 
+              typ_mismatch p
+                (sprintf "body has type\n%s\n, but return type is\n%s" 
+                   (string_of_typ body_typ)
+                   (string_of_typ result_typ)));
+          expected_typ
       | _ -> raise (Typ_error (p, "invalid type annotation on a function"))
     end
   | ESubsumption (p, t, e) ->
