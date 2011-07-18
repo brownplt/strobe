@@ -146,18 +146,17 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
       with Not_found -> 
         raise (Typ_error (p, "label " ^ l ^ " is not defined"))
     and t = tc_exp env e in
-    if subtype env t s then TBot
-    else raise
-      (Typ_error 
-         (p,
-          match l with
-              "%return" -> sprintf 
-                "this expression has type %s, but the function\'s return \
+    if not (subtype env t s) then
+      typ_mismatch p
+        (match l with
+            "%return" -> sprintf 
+              "this expression has type %s, but the function\'s return \
                      type is %s" (string_of_typ t) (string_of_typ s)
-            | _ -> (* This should not happen. Breaks to labels always have 
-                      type typ_undef *)
-              sprintf "this expression has type %s, but the label %s has \
-                          type %s" (string_of_typ t) l (string_of_typ s)))
+          | _ -> (* This should not happen. Breaks to labels always have 
+                    type typ_undef *)
+            sprintf "this expression has type %s, but the label %s has \
+                          type %s" (string_of_typ t) l (string_of_typ s));
+		TBot
   | ETryCatch (_, e1, x, e2) ->
       let t1 = tc_exp env e1
       and t2 = tc_exp (bind_id x TTop env) e2 in
@@ -251,13 +250,20 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
 					(* TODO: allow arguments to be elided *)
           let arg_typs = fill (List.length expected_typs - List.length args) 
             (TPrim Undef) arg_typs in
-					if List.length args != List.length expected_typs then
-						raise (Typ_error 
-                     (p, sprintf "arity-mismatch: the function expects %d \
+					let check_arg s t =
+						try assert_subtyp env p s t 
+						with Typ_error (p, msg) -> 
+							typ_mismatch p 
+								(sprintf "expected argument of type %s, received %s"
+									 (string_of_typ s) (string_of_typ t)) in
+					begin
+            try List.iter2 check_arg arg_typs expected_typs
+						with Invalid_argument "List.iter2" -> 
+							typ_mismatch p
+								(sprintf "arity-mismatch: the function expects %d \
                                   arguments, but %d arguments given"
-                       (List.length expected_typs) (List.length args)));
-					let _ = List.iter2 (assert_subtyp env p)
-						arg_typs expected_typs in
+									 (List.length expected_typs) (List.length args))
+					end;
 					result_typ
         | TIntersect (t1, t2) -> 
 					begin 

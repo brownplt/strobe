@@ -159,4 +159,8 @@ module type TYP = sig
 
   val assert_subtyp : typenv -> pos -> typ -> typ -> unit
 
+  val typ_mismatch : pos -> string -> unit
+
+	val get_num_typ_errors : unit -> int
+
 end

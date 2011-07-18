@@ -9,6 +9,15 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   exception Typ_error of pos * string
 
+	let num_typ_errors = ref 0
+
+	let typ_mismatch p s = 
+		incr num_typ_errors;
+		eprintf "%s : %s\n" (string_of_position p) s
+
+	let get_num_typ_errors () = !num_typ_errors
+
+
   module P = Pat
   module Pat = Pat
   type pat = P.t
@@ -625,5 +634,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     with
       | Not_subtype txt -> raise (Typ_error (p, txt ^ "\nin "
 	^ (string_of_typ s) ^ "\n\nand\n\n" ^ (string_of_typ t)))
+
 
 end
