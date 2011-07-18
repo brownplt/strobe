@@ -51,89 +51,89 @@ let check_kind p env typ : typ =
     | KStar -> typ
     | k ->
       raise 
-	(Typ_error 
-	   (p, sprintf "type term has kind %s; expected *" (string_of_kind k)))
+	      (Typ_error 
+	         (p, sprintf "type term has kind %s; expected *" (string_of_kind k)))
 
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
- 
+  
 let rec tc_exp (env : env) (exp : exp) : typ = match exp with
   | EIf (p, EInfixOp (_, "hasfield",  EDeref (_, EId (_, obj)), (EId (_, fld))),
-	 true_part, false_part) ->
+	       true_part, false_part) ->
     begin match expose_simpl_typ env (lookup_id obj env), lookup_id fld env with
       | TRef (TObject ot), TRegex pat -> 
-	let subtract (p, t) =
-	  if P.is_overlapped p pat then (P.subtract p pat, t) (* perf *)
-	  else (p, t) in
-	let false_typ = tc_exp env false_part in
-	let true_typ =
-	  let fld_typ = simpl_lookup (tid_env env) (TObject ot) pat in
-	  let env = bind_typ_id "alpha" (TRegex pat) env in
-	  let env = bind_id fld (TId "alpha") env in
-	  let env = bind_id obj 
-	    (TObject (mk_obj_typ ((P.var "alpha", PPresent fld_typ) ::
-				  map subtract (fields ot)))) env in
-	  tc_exp env true_part in
-	typ_union env true_typ false_typ
+	      let subtract (p, t) =
+	        if P.is_overlapped p pat then (P.subtract p pat, t) (* perf *)
+	        else (p, t) in
+	      let false_typ = tc_exp env false_part in
+	      let true_typ =
+	        let fld_typ = simpl_lookup (tid_env env) (TObject ot) pat in
+	        let env = bind_typ_id "alpha" (TRegex pat) env in
+	        let env = bind_id fld (TId "alpha") env in
+	        let env = bind_id obj 
+	          (TObject (mk_obj_typ ((P.var "alpha", PPresent fld_typ) ::
+				                             map subtract (fields ot)))) env in
+	        tc_exp env true_part in
+	      typ_union env true_typ false_typ
       | s, t ->
-	raise (Typ_error (p, "expected object and string types, got " ^
-	  string_of_typ s ^ " and " ^ string_of_typ t))
+	      raise (Typ_error (p, "expected object and string types, got " ^
+	        string_of_typ s ^ " and " ^ string_of_typ t))
     end
   | EConst (_, c) -> tc_const c
   | EBot _ -> TBot
   | EId (p, x) -> begin
-      try 
-        lookup_id x env
-      with Not_found -> raise (Typ_error (p, x ^ " is not defined"))
-    end
+    try 
+      lookup_id x env
+    with Not_found -> raise (Typ_error (p, x ^ " is not defined"))
+  end
   | ELet (_, x, e1, e2) -> tc_exp (bind_id x (tc_exp env e1) env) e2
   | ESeq (_, e1, e2) -> begin match tc_exp env e1 with
-        TBot -> (* e1 will not return; no need to typecheck e2 *)
-          TBot
+      TBot -> (* e1 will not return; no need to typecheck e2 *)
+        TBot
       | _ -> tc_exp env e2
-    end
+  end
   | ERef (p1, RefCell, EEmptyArray (p2, elt_typ)) -> 
     let elt_typ = check_kind p2 env elt_typ in
     mk_array_typ p2 env elt_typ
   | ERef (p1, RefCell, EArray (p2, [])) -> 
     raise (Typ_error (p2, "an empty array literal requires a type annotation"))
   | ERef (p1, RefCell, EArray (p2, es)) ->
-      begin match map (tc_exp env) es with
-        | t1::ts ->
-            let tarr = List.fold_right (typ_union env) ts t1 in
-              mk_array_typ p2 env tarr
-        | [] -> failwith "desugar bug: unexpected empty array"
-      end
+    begin match map (tc_exp env) es with
+      | t1::ts ->
+        let tarr = List.fold_right (typ_union env) ts t1 in
+        mk_array_typ p2 env tarr
+      | [] -> failwith "desugar bug: unexpected empty array"
+    end
   | EEmptyArray (p, _)
   | EArray (p, _) -> failwith (sprintf "desugar bug: array outside a ref at %s" 
-				 (string_of_position p))
+				                         (string_of_position p))
   | ERef (p, k, e) ->
-      let t = tc_exp env e in
-        begin match k with
-          | SourceCell -> TSource t
-          | SinkCell -> TSink t
-          | RefCell -> TRef t
-        end
+    let t = tc_exp env e in
+    begin match k with
+      | SourceCell -> TSource t
+      | SinkCell -> TSink t
+      | RefCell -> TRef t
+    end
   | EDeref (p, e) -> begin match simpl_typ env (tc_exp env e) with
       | TRef t -> t
       | TSource t -> t
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
-                                 (string_of_typ t)))
-    end 
+        (string_of_typ t)))
+  end 
   | ESetRef (p, e1, e2) -> 
     begin match (expose_simpl_typ env (tc_exp env e1)), tc_exp env e2 with
       | TRef s, t
       | TSink s, t ->
-          if subtype env t s then 
-            t
-          else raise
-            (Typ_error 
-               (p, sprintf "left-hand side of assignment has type %s, but the \
+        if subtype env t s then 
+          t
+        else raise
+          (Typ_error 
+             (p, sprintf "left-hand side of assignment has type %s, but the \
                   right-hand side has type %s"
-                  (string_of_typ s) (string_of_typ t)))
+               (string_of_typ s) (string_of_typ t)))
       | s, _ -> 
-          raise (Typ_error 
-                   (p, sprintf "cannot write to LHS (type %s)" 
-                      (string_of_typ s)))
+        raise (Typ_error 
+                 (p, sprintf "cannot write to LHS (type %s)" 
+                   (string_of_typ s)))
     end
   | ELabel (p, l, t, e) -> 
     let t = check_kind p env t in
@@ -158,86 +158,86 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
                           type %s" (string_of_typ t) l (string_of_typ s));
 		TBot
   | ETryCatch (_, e1, x, e2) ->
-      let t1 = tc_exp env e1
-      and t2 = tc_exp (bind_id x TTop env) e2 in
-        typ_union env t1 t2
+    let t1 = tc_exp env e1
+    and t2 = tc_exp (bind_id x TTop env) e2 in
+    typ_union env t1 t2
   | ETryFinally (_, e1, e2) -> 
-      let _ = tc_exp env e1 in
-        tc_exp env e2
+    let _ = tc_exp env e1 in
+    tc_exp env e2
   | EThrow (_, e) -> 
-      let _ = tc_exp env e in
-        TBot
+    let _ = tc_exp env e in
+    TBot
   | ETypecast (p, rt, e) -> 
-      let t = tc_exp env e in
-      static env rt t
+    let t = tc_exp env e in
+    static env rt t
   | EIf (p, e1, e2, e3) ->
-      let c = tc_exp env e1 in
-        if subtype env c typ_bool then
-          typ_union env (tc_exp env e2) (tc_exp env e3)
-        else
-          error p ("expected condition to have type Bool, but got a " ^ 
-                    (string_of_typ c))
+    let c = tc_exp env e1 in
+    if subtype env c typ_bool then
+      typ_union env (tc_exp env e2) (tc_exp env e3)
+    else
+      error p ("expected condition to have type Bool, but got a " ^ 
+                  (string_of_typ c))
   | EObject (p, fields) ->
-      let mk_field (name, exp) = 
-	(P.singleton name, PPresent (tc_exp env exp)) in
-      let get_names (name, _) names = 
-        P.union names (P.singleton name) in
-      let rest = List.fold_right get_names fields (P.singleton "__proto__") in
-      let rest' = P.negate rest in
+    let mk_field (name, exp) = 
+	    (P.singleton name, PPresent (tc_exp env exp)) in
+    let get_names (name, _) names = 
+      P.union names (P.singleton name) in
+    let rest = List.fold_right get_names fields (P.singleton "__proto__") in
+    let rest' = P.negate rest in
       (* TODO: everything else hsould be absent *)
-      if List.mem "__proto__" (map fst fields) then
-        TObject (mk_obj_typ ((rest', PAbsent)::(map mk_field fields)))
-      else
-        TObject (mk_obj_typ
-		   ((rest', PAbsent)::(P.singleton "__proto__",
-				       PPresent (TId "Object")) 
-	            :: (map mk_field fields)))
+    if List.mem "__proto__" (map fst fields) then
+      TObject (mk_obj_typ ((rest', PAbsent)::(map mk_field fields)))
+    else
+      TObject (mk_obj_typ
+		             ((rest', PAbsent)::(P.singleton "__proto__",
+				                             PPresent (TId "Object")) 
+	                :: (map mk_field fields)))
   | EBracket (p, obj, field) -> 
     begin match simpl_typ env (tc_exp env field) with
       | TRegex pat -> inherits p env (un_null (tc_exp env obj)) pat
       | TId x -> begin match expose env (TId x) with
-	  | TRegex _ -> 
-	    inherits p env (un_null (tc_exp env obj)) (P.var x)
-	  | t ->
-	    error p (sprintf "index variable %s, is a subtype of %s"
-		       x (string_of_typ t))
+	        | TRegex _ -> 
+	          inherits p env (un_null (tc_exp env obj)) (P.var x)
+	        | t ->
+	          error p (sprintf "index variable %s, is a subtype of %s"
+		                   x (string_of_typ t))
       end
       | idx_typ -> error p (sprintf "index has type %s" (string_of_typ idx_typ))
     end
   | EUpdate (p, obj, field, value) -> begin
     let tobj = tc_exp env obj in
-      match expose_simpl_typ env (tc_exp env obj), 
-        expose_simpl_typ env (tc_exp env field), tc_exp env value with
-          | TObject o, (TRegex idx_pat as tfld), typ ->
-	    let fs : field list = fields o in
-              let okfield (fld_pat, prop) = 
-                if P.is_overlapped fld_pat idx_pat
-                then match prop with
-		  | PInherited s
-                  | PPresent s
-                  | PMaybe s -> if subtype env typ s then true
-                    else error p (sprintf "%s not subtype of %s in %s[%s = %s]"
-                                    (string_of_typ typ) (string_of_typ s) 
-                                    (string_of_typ tobj) (string_of_typ tfld)
-                                    (string_of_typ typ))
-                  | PAbsent -> error p (sprintf "Assigning to absent field")
-                else true in
-                if List.for_all okfield fs then tobj
-                else error p "Shouldn't happen --- unknown error in update"
-          | obj, fld, typ ->
-              error p (sprintf "Bad update: %s[%s = %s]"
-                         (string_of_typ obj) (string_of_typ fld) 
-                         (string_of_typ typ))
-    end
+    match expose_simpl_typ env (tc_exp env obj), 
+      expose_simpl_typ env (tc_exp env field), tc_exp env value with
+        | TObject o, (TRegex idx_pat as tfld), typ ->
+	        let fs : field list = fields o in
+          let okfield (fld_pat, prop) = 
+            if P.is_overlapped fld_pat idx_pat
+            then match prop with
+		          | PInherited s
+              | PPresent s
+              | PMaybe s -> if subtype env typ s then true
+                else error p (sprintf "%s not subtype of %s in %s[%s = %s]"
+                                (string_of_typ typ) (string_of_typ s) 
+                                (string_of_typ tobj) (string_of_typ tfld)
+                                (string_of_typ typ))
+              | PAbsent -> error p (sprintf "Assigning to absent field")
+            else true in
+          if List.for_all okfield fs then tobj
+          else error p "Shouldn't happen --- unknown error in update"
+        | obj, fld, typ ->
+          error p (sprintf "Bad update: %s[%s = %s]"
+                     (string_of_typ obj) (string_of_typ fld) 
+                     (string_of_typ typ))
+  end
   | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
   | EInfixOp (p, "+", e1, e2) -> 
     begin match (tc_exp env e1, tc_exp env e2) with
       | TRegex _, _
       | _, TRegex _ -> 
-	TRegex P.all
+	      TRegex P.all
       | t1, t2 ->
-	tc_exp env (EApp (p, EId (p, "+"), [ ECheat (p, t1, e1); 
-					     ECheat (p, t2, e2) ]))
+	      tc_exp env (EApp (p, EId (p, "+"), [ ECheat (p, t1, e1); 
+					                                   ECheat (p, t2, e2) ]))
     end
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> 
@@ -366,7 +366,7 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
       t
     else 
       raise (Typ_error (p, sprintf "invalid upcast: %s is not a subtype of %s"
-	(string_of_typ s) (string_of_typ t)))
+	      (string_of_typ s) (string_of_typ t)))
   | EAssertTyp (p, t, e) ->
     let t = check_kind p env t in
     let s = tc_exp env e in
@@ -398,7 +398,7 @@ let rec tc_exp (env : env) (exp : exp) : typ = match exp with
       | t ->
         error p (sprintf "expected forall-type in type application, got:\
                                 \n%s\nargument has type:\n%s"
-		   (string_of_typ t) (string_of_typ u))
+		               (string_of_typ t) (string_of_typ u))
     end
   | ECheat (p, t, _) -> t
 
@@ -409,15 +409,15 @@ and tc_exps env es = map (tc_exp env) es
    
    1. [e] is a control operator. If so, call [tc_exp'] to avoid this check.
    2. [e] is unreachable code. This is not a type-error, but probably 
-      unintended.
+   unintended.
 *)
-   
+  
 and tc_exp_ret env e = 
   let t = tc_exp env e in
-    if !error_on_unreachable && t = TBot then
-      error (Exp.pos e) "unreachable code"
-    else 
-      simpl_typ env t
+  if !error_on_unreachable && t = TBot then
+    error (Exp.pos e) "unreachable code"
+  else 
+    simpl_typ env t
 
 let typecheck env exp =
   let _ = tc_exp env exp in
