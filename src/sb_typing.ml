@@ -172,40 +172,24 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
         (string_of_typ t)))
   end 
   | ESetRef (p, e1, e2) -> 
-    begin match (expose_simpl_typ env (tc_exp env e1)), tc_exp env e2 with
-      | TRef s, t
-      | TSink s, t ->
-        if not (subtype env t s) then
-          typ_mismatch p
-            (sprintf "left-hand side of assignment has type %s, but the \
-                  right-hand side has type %s"
-               (string_of_typ s) (string_of_typ t));
-        t
-      | s, t -> 
-        typ_mismatch p
-          (sprintf "left-hand side of assignment has type %s"
-             (string_of_typ s));
+    let t = expose_simpl_typ env (tc_exp env e1) in
+    begin match  t with
+      | TRef s 
+      | TSink s -> check env e2 s; t
+      | s -> typ_mismatch p
+        (sprintf "left-hand side of assignment has type %s"
+           (string_of_typ s));
         t
     end
   | ELabel (p, t, e) -> 
     raise (Typ_error (p, "cannot calculate type for label"))
-  | EBreak (p, l, e) ->
-    let s = 
-      try lookup_lbl l env
-      with Not_found -> 
-        raise (Typ_error (p, "label " ^ l ^ " is not defined")) (* severe *)
-    and t = tc_exp env e in
-    if not (subtype env t s) then
-      typ_mismatch p
-        (match l with
-            "%return" -> sprintf 
-              "this expression has type %s, but the function\'s return \
-                     type is %s" (string_of_typ t) (string_of_typ s)
-          | _ -> (* This should not happen. Breaks to labels always have 
-                    type typ_undef *)
-            sprintf "this expression has type %s, but the label %s has \
-                          type %s" (string_of_typ t) l (string_of_typ s));
-		TBot
+  | EBreak (p, lbl, e) ->
+    let lbl_typ = 
+      try lookup_lbl lbl env
+      with Not_found -> (* severe *)
+        raise (Typ_error (p, "label " ^ lbl ^ " is not defined")) in
+    check env e lbl_typ;
+    TBot
   | ETryCatch (_, e1, x, e2) ->
     let t1 = tc_exp env e1
     and t2 = tc_exp (bind_id x TTop env) e2 in
@@ -220,11 +204,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     let t = tc_exp env e in
     static env rt t
   | EIf (p, e1, e2, e3) ->
-    let c = tc_exp env e1 in
-    if not (subtype env c typ_bool) then
-      typ_mismatch p
-        ("expected condition to have type Bool, but got a " ^ 
-            (string_of_typ c));
+    check env e1 typ_bool;
     typ_union env (tc_exp env e2) (tc_exp env e3)
   | EObject (p, fields) ->
     let mk_field (name, exp) = 
@@ -359,25 +339,14 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
        Let it work. (Actual reason: no position available) *)
     let f env (x, t, e) = bind_id x t env in
     let env = fold_left f env binds in
-    let tc_bind (x, t, e) =
-      let s = tc_exp env e in
-      if subtype env s t then ()
-      else (* this should not happen; rec-annotation is a copy of the
-              function's type annotation. *)
-        failwith (sprintf "%s is declared to have type %s, but the bound \
-                             expression has type %s" x (string_of_typ t)
-                    (string_of_typ s)) in
+    let tc_bind (x, t, e) = check env e t in
     List.iter tc_bind binds;
     tc_exp env body
   | EFunc (p, args, func_info, body) -> 
     raise (Typ_error (p, "cannot calculate function type; annotation required"))
   | ESubsumption (p, t, e) ->
     let t = check_kind p env t in
-    let s = tc_exp env e in
-    if not (subtype env s t) then
-      typ_mismatch p
-        (sprintf "invalid upcast: %s is not a subtype of %s"
-	         (string_of_typ s) (string_of_typ t));
+    check env e t;
     t
   | EAssertTyp (p, t, e) ->
     let t = check_kind p env t in
