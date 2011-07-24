@@ -45,6 +45,7 @@ let parse_annotation (pos, end_p) str =
 %left AMPAMP
 %left EQEQEQUALS BANGEQEQUALS
 %left LBRACK
+%left LANGLE
 
 /* http://stackoverflow.com/questions/1737460/
    how-to-find-shift-reduce-conflict-in-this-yacc-file */
@@ -159,8 +160,6 @@ exp :
 
 cexp :
  | exp { $1 }
- | IF LPAREN seq_exp RPAREN seq_exp ELSE seq_exp
-     { EIf (($startpos, $endpos), $3, $5, $7) }
  | LABEL ID COLON cexp
      { ELabel (($startpos, $endpos), $2, $4) } 
  | BREAK ID cexp
@@ -174,6 +173,8 @@ cexp :
 
 seq_exp :
  | cexp { $1 }
+ | IF LPAREN seq_exp RPAREN cexp ELSE cexp
+     { EIf (($startpos, $endpos), $3, $5, $7) }
  | LET LPAREN ID EQUALS seq_exp RPAREN seq_exp
    { ELet (($startpos, $endpos), $3, $5, $7) }
  | REC LPAREN ID HINT EQUALS seq_exp RPAREN seq_exp
