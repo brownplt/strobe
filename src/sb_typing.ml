@@ -286,11 +286,9 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
 					begin
             try List.iter2 (check env) args expected_typs
 						with Invalid_argument "List.iter2" -> 
-              raise (Typ_error
-                       (p, 
-                        sprintf "arity-mismatch: the function expects %d \
-                                  arguments, but %d arguments given"
-									        (List.length expected_typs) (List.length args)))
+              typ_mismatch p
+                (sprintf "arity-mismatch:  %d args expected, but %d given"
+									 (List.length expected_typs) (List.length args))
 					end;
 					result_typ
         | TIntersect (t1, t2) -> 
@@ -371,10 +369,12 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
         if subtype env u s then
           typ_subst x u t
         else 
-          raise 
-            (Typ_error (p,
-                        sprintf "expected an argument of type \n %s, got \n %s"
-                          (string_of_typ s) (string_of_typ u)))
+          begin
+            typ_mismatch p
+              (sprintf "type-argument %s is not a subtype of the bound %s"
+                 (string_of_typ u) (string_of_typ s));
+            typ_subst x s t (* Warning: produces possibily spurious errors *)
+          end
       | t ->
         raise
           (Typ_error (p, sprintf "expected forall-type in type application, \
