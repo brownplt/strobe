@@ -13,9 +13,6 @@ let desugar_typ = Desugar.desugar_typ
 
 exception Not_well_formed of pos * string
 
-let error (p : pos) (s : string) : 'exn =
-  raise (Not_well_formed (p, s))
-
 let parse_annotation (pos, end_p) str =
   let lexbuf = Lexing.from_string str in
     lexbuf.Lexing.lex_start_p <- pos;
@@ -101,7 +98,7 @@ let rec exp (env : env) expr = match expr with
         EDeref (a, EId (a, x))
       else
         EId (a, x)
-    with Not_found -> error a ("identifier " ^ x ^ " is not defined")
+    with Not_found -> EDeref (a, EId (a, x))
     end
   | IdExpr (a, x) -> EId (a, x)
   | BracketExpr (a, e1, e2) -> 
