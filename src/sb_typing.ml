@@ -43,11 +43,17 @@ let check_kind p env typ : typ =
 
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
 
-let rec check (env : env) (exp : exp) (typ : typ) : unit = match exp with
+let rec check (env : env) (exp : exp) (typ : typ) : unit =
+  try check' env exp typ
+  (* typ_mismatch normally records the error and proceeds. If we're in a
+     [with_typ_exns] context, it will re-raise the error. *)
+  with Typ_error (p, s) -> typ_mismatch p s
+    
+and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
   | ELabel (p, lbl, e) ->
     let s = tc_exp (bind_lbl lbl typ env) e in
     if not (subtype env s typ) then
-      raise (Typ_error (p, "label type mismatch")) (* should never happen *)
+      typ_mismatch p "label type mismatch"
   | ELet (_, x, e1, e2) -> 
     check (bind_id x (tc_exp env e1) env) e2 typ
   | EFunc (p, args, func_info, body) -> 
