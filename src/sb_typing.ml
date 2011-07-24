@@ -227,7 +227,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     end
   | EUpdate (p, obj, field, value) -> begin
     let tobj = tc_exp env obj in
-    match expose_simpl_typ env (tc_exp env obj), 
+    match expose_simpl_typ env tobj, 
       expose_simpl_typ env (tc_exp env field), tc_exp env value with
         | TObject o, (TRegex idx_pat as tfld), typ ->
 	        let fs : field list = fields o in
