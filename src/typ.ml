@@ -458,7 +458,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | None -> None
     | Some _ -> Some p
 
-  let rec simpl_lookup (env : typenv) (t : typ) (pat : pat) : typ =
+  let rec simpl_lookup p (env : typenv) (t : typ) (pat : pat) : typ =
    (* TODO: it's okay to overlap with a maybe, but not a hidden field;
       inherit_guard_pat does not apply *)
     match t with
@@ -473,8 +473,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 	      (L.filter_map sel ot.fields)
 	      TBot
 	  else
-	    failwith "simpl_lookup hidden/absent field"
-	| _ -> failwith "simpl_lookup non-object"
+      raise (Typ_error (p, "checking for a hidden or absent field"))
+	| _ -> raise (Typ_error (p, "object expected"))
 
   and  inherits (env : typenv) (t : typ) (pat : pat) : typ = 
     let t = expose env (simpl_typ env t) in

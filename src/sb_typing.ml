@@ -114,7 +114,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
 	        else (p, t) in
 	      let false_typ = tc_exp env false_part in
 	      let true_typ =
-	        let fld_typ = simpl_lookup (tid_env env) (TObject ot) pat in
+	        let fld_typ = simpl_lookup p (tid_env env) (TObject ot) pat in
 	        let env = bind_typ_id "alpha" (TRegex pat) env in
 	        let env = bind_id fld (TId "alpha") env in
 	        let env = bind_id obj 
