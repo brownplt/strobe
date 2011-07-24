@@ -17,11 +17,6 @@ let array_idx_pat =
 let mk_array_typ p env elt_typ =
   TApp (TId "Array", [elt_typ])
 	  
-let error_on_unreachable = ref true
-
-let disable_unreachable_check () =
-  error_on_unreachable := false
-
 let is_flows_enabled = ref true
 
 let disable_flows () = is_flows_enabled := false
@@ -37,12 +32,6 @@ let un_null t = match t with
   | TUnion (TPrim (Null), t') -> t'
   | TUnion (t', TPrim (Null)) -> t'
   | _ -> t
-
-let un_ref t = match t with
-  | TRef s -> s
-  | TSource s -> s
-  | TSink s -> s
-  | _ -> failwith ("un_ref got " ^ string_of_typ t)
 
 let check_kind p env typ : typ =
   match kind_check env typ with
@@ -301,7 +290,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
 								(string_of_typ quant_typ)))
 						| Some (typ_vars, (TArrow (_, r) as arrow_typ)) ->
               (* guess-work breaks bidirectionality *)
-              let arg_typs = map (tc_exp_ret env) args in
+              let arg_typs = map (tc_exp env) args in
               let assumed_arg_exps = 
                 List.map2 (fun e t -> ECheat (p, t, e)) args arg_typs in
 							let assoc =
@@ -375,20 +364,6 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
   | ECheat (p, t, _) -> t
 
 and tc_exps env es = map (tc_exp env) es
-
-(* type-check [e] and ensure that the resulting type is not [TBot]. If 
-   [e : TBot], then [e] provably does not return. There are two possibilities:
-   
-   1. [e] is a control operator. If so, call [tc_exp'] to avoid this check.
-   2. [e] is unreachable code. This is not a type-error, but probably 
-   unintended.
-*)
-  
-and tc_exp_ret env e = 
-  let t = tc_exp env e in
-  let _ = if !error_on_unreachable && t = TBot then
-      typ_mismatch (Exp.pos e) "unreachable code" in
-  simpl_typ env t
 
 let typecheck env exp =
   let _ = tc_exp env exp in

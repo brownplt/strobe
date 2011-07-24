@@ -179,8 +179,6 @@ let main () : unit =
        "simplify JavaScript to exprjs");
       ("-pretc", Arg.Unit (set_action action_pretypecheck),
        "basic well-formedness checks before type-checking and flow-analysis");
-      ("-disable-unreachable", Arg.Unit disable_unreachable_check,
-       "do not signal an error on unreachable code");
       ("-noflows", Arg.Unit disable_flows,
        "disable flow analysis (benchmarks and debugging)");
       ("-sb", Arg.Unit (set_sourcetype "sb"),
