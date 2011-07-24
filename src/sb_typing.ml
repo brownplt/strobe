@@ -29,8 +29,6 @@ let disable_flows () = is_flows_enabled := false
 let rec skip n l = if n == 0 then l else (skip (n-1) (List.tl l))
 let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 
-let error p s = raise (Typ_error (p, s))
-
 let string_of_exp = FormatExt.to_string Typedjs_syntax.Pretty.p_exp
 
 let un_null t = match t with
@@ -227,10 +225,14 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
 	        | TRegex _ -> 
 	          inherits p env (un_null (tc_exp env obj)) (P.var x)
 	        | t ->
-	          error p (sprintf "index variable %s, is a subtype of %s"
-		                   x (string_of_typ t))
+	          raise (Typ_error 
+                     (p, 
+                      sprintf "index variable %s, is a subtype of %s"
+		                    x (string_of_typ t)))
       end
-      | idx_typ -> error p (sprintf "index has type %s" (string_of_typ idx_typ))
+      | idx_typ -> 
+        raise (Typ_error
+                 (p, sprintf "index has type %s" (string_of_typ idx_typ)))
     end
   | EUpdate (p, obj, field, value) -> begin
     let tobj = tc_exp env obj in
@@ -306,8 +308,8 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
 				| (TForall _) as quant_typ -> 
 					begin match Typ.forall_arrow quant_typ with
 						| None -> 
-							error p (sprintf "expected function, got %s"
-												 (string_of_typ quant_typ))
+							raise (Typ_error (p, sprintf "expected function, got %s"
+								(string_of_typ quant_typ)))
 						| Some (typ_vars, (TArrow (_, r) as arrow_typ)) ->
               (* guess-work breaks bidirectionality *)
               let arg_typs = map (tc_exp_ret env) args in
@@ -320,7 +322,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
 									let guessed_typ = IdMap.find typ_var assoc in
 									ETypApp (p, exp, guessed_typ) 
 								with Not_found -> begin
-									error p (sprintf "$$$ could not instantiate") end in
+									raise (Typ_error (p, "$$$ could not instantiate")) end in
 							let guessed_exp = 
 								fold_left guess_typ_app (ECheat (p, quant_typ, f)) 
 									typ_vars in
@@ -369,12 +371,15 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
         if subtype env u s then
           typ_subst x u t
         else 
-          error p (sprintf "expected an argument of type \n %s, got \n %s"
-                     (string_of_typ s) (string_of_typ u))
+          raise 
+            (Typ_error (p,
+                        sprintf "expected an argument of type \n %s, got \n %s"
+                          (string_of_typ s) (string_of_typ u)))
       | t ->
-        error p (sprintf "expected forall-type in type application, got:\
-                                \n%s\nargument has type:\n%s"
-		               (string_of_typ t) (string_of_typ u))
+        raise
+          (Typ_error (p, sprintf "expected forall-type in type application, \
+                                  got:\n%s\nargument has type:\n%s"
+		        (string_of_typ t) (string_of_typ u)))
     end
   | ECheat (p, t, _) -> t
 
