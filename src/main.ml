@@ -13,7 +13,7 @@ open FormatExt
 open Lexing
 open Typedjs_dyn
 
-module Y = Dprle
+module Y = Jsdoc
 
 let parse_sb cin name =
   let lexbuf = Lexing.from_string cin in
@@ -135,7 +135,8 @@ let get_typedjs () =
            (from_javascript (parse_javascript (get_cin ()) (get_cin_name ()))))
     | "sb" -> 
         (parse_sb (get_cin ()) (get_cin_name ())) 
-    | ext -> failwith ("unknown file extension " ^ ext)in
+    | ext -> failwith ("unknown file extension " ^ ext) in
+  let cs = !JavaScript_lexer.comments in
   let (prog, _) = unique_ids tjs in 
     Sb_owned.owned_inference prog
 
@@ -153,6 +154,11 @@ let action_tc () : unit =
       let tr_map = mk_contract_transformers !contracts in
       transform_exprs tr_map (get_cin ()) stdout
 
+let jsdoc_env fname = 
+  let _ = parse_javascript (string_of_cin (open_in fname)) fname in
+  let _ = Jsdoc.jsdoc_of_comments !JavaScript_lexer.comments in
+  ()
+
 let action = ref action_tc
 
 let is_action_set = ref false
@@ -169,6 +175,8 @@ let main () : unit =
        "type-check the source program (default when no options are given)");
       ("-stdin", Arg.Unit (fun () -> set_cin stdin "<stdin>"),
        "read from stdin instead of a file");
+      ("-jsdoc-env", Arg.String jsdoc_env,
+       "Read a Google Closure Compiler environment");
       ("-env", Arg.String (fun s -> load_env s),
        "<file> read environment types from <file>");
       ("-global", Arg.String (fun s -> set_global_object s),
