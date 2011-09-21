@@ -16,7 +16,7 @@ let array_idx_pat =
 
 let mk_array_typ p env elt_typ =
   TApp (TId "Array", [elt_typ])
-	  
+
 let is_flows_enabled = ref true
 
 let disable_flows () = is_flows_enabled := false
@@ -89,6 +89,20 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
         raise (Typ_error (p, sprintf "invalid type annotation on a function: %s"
           (string_of_typ t)))
     end
+  | ERef (p, ref_kind, e) -> begin match ref_kind, simpl_typ env typ with
+    | SourceCell, TSource t
+    | SinkCell, TSink t
+    | RefCell, TRef t -> check env e t
+    | _  -> typ_mismatch p (* TODO(arjun): error msg *)
+             (sprintf "expected %s, got %s" (string_of_typ typ) "TODO")
+    end
+  | EArray (p, es) ->
+      let expect_elt_typ = 
+        simpl_lookup p (tid_env env)
+          (un_null (expose_simpl_typ env typ)) array_idx_pat in
+      assert_subtyp env p (TRef typ) (mk_array_typ p env expect_elt_typ);
+      List.iter (fun e -> check env e expect_elt_typ) es 
+  | EParen (_, e) -> check env e typ
   | _ -> 
     let synth_typ = tc_exp env exp in
     if not (subtype env synth_typ typ) then
@@ -134,23 +148,18 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
         TBot
       | _ -> tc_exp env e2
   end
-  (* TODO: well-formedness explodes if EEmptyArray does not have an annotation;
-     relax this behavior. *)
-  | ERef (p1, RefCell, EEmptyArray (p2, elt_typ)) -> 
-    let elt_typ = check_kind p2 env elt_typ in
-    mk_array_typ p2 env elt_typ
-  | ERef (p1, RefCell, EArray (p2, [])) -> 
-    raise (Typ_error (p2, "an empty array literal requires a type annotation"))
-  | ERef (p1, RefCell, EArray (p2, es)) ->
-    begin match map (tc_exp env) es with
-      | t1::ts ->
-        let tarr = List.fold_right (typ_union env) ts t1 in
-        mk_array_typ p2 env tarr
-      | [] -> failwith "desugar bug: unexpected empty array"
-    end
-  | EEmptyArray (p, _)
-  | EArray (p, _) -> failwith (sprintf "desugar bug: array outside a ref at %s" 
-				                         (string_of_position p))
+  | EArray (p, []) -> 
+    raise (Typ_error (p, "an empty array literal requires a type annotation"))
+  | EArray (p, e::es) -> 
+    let (t1, ts) = tc_exp env e, map (tc_exp env) es in
+    let tarr = List.fold_right (typ_union env) ts t1 in
+    (match simpl_typ env (mk_array_typ p env tarr) with
+     | TRef t -> t)
+  (* Optimization to avoid reducing TArray<'a> *)
+  | ERef (p1, RefCell, EArray (p2, e::es)) ->
+    let (t1, ts) = tc_exp env e, map (tc_exp env) es in
+    let tarr = List.fold_right (typ_union env) ts t1 in
+    mk_array_typ p2 env tarr
   | ERef (p, k, e) ->
     let t = tc_exp env e in
     begin match k with
@@ -234,12 +243,10 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
               | PMaybe s -> 
                 if not (subtype env typ s) then
                   typ_mismatch p
-                    (sprintf "%s not subtype of %s in %s[%s = %s]"
+                    (sprintf "field update: %s, the new value, is not subtype of %s at index %s"
                        (string_of_typ typ) 
                        (string_of_typ s) 
-                       (string_of_typ tobj)
-                       (string_of_typ tfld)
-                       (string_of_typ typ))
+                       (string_of_typ tfld))
               | PAbsent -> 
                 typ_mismatch p (sprintf "Assigning to absent field") in
           let _ = List.iter okfield fs in
@@ -364,10 +371,11 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
       | t ->
         raise
           (Typ_error (p, sprintf "expected forall-type in type application, \
-                                  got:\n%s\nargument has type:\n%s"
+                                  got:\n%s\ntype argument is:\n%s"
 		        (string_of_typ t) (string_of_typ u)))
     end
   | ECheat (p, t, _) -> t
+  | EParen (p, e) -> tc_exp env e
 
 and tc_exps env es = map (tc_exp env) es
 

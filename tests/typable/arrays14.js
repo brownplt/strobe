@@ -1,4 +1,4 @@
-var myArr = /*: Int */[];
+var myArr = /*: Array<Int> */[];
 
 myArr[1] = 900;
 myArr[2] = 1000;

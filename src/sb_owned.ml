@@ -35,7 +35,6 @@ let rec f (acc : IdSet.t * IdSet.t) (exp : exp) : (IdSet.t * IdSet.t) * exp =
   | EArray (p, es) ->
     let (acc', es) = fold_map f es acc in
     (acc', EArray (p, es))
-  | EEmptyArray _ -> (acc, exp)
   | EObject (p, fs) ->
     let (acc', fs') = fold_map 
       (fun acc (s, e) ->  let (acc, e) = f acc e in (acc, (s, e)))
@@ -136,6 +135,9 @@ let rec f (acc : IdSet.t * IdSet.t) (exp : exp) : (IdSet.t * IdSet.t) * exp =
   | ECheat (p, t, e) ->
     let (acc, e) = f acc e in
     (acc, ECheat (p, t, e))
+  | EParen (p, e) ->
+    let (acc, e) = f acc e in
+    (acc, EParen (p, e))
 
 let  owned_inference (prog : exp) = 
   let (_, prog) = f (IdSet.empty, IdSet.empty) prog in

@@ -56,7 +56,6 @@ type exp
   | EBot of pos
   | EAssertTyp of pos * typ * exp
   | EArray of pos * exp list
-  | EEmptyArray of pos * typ
   | EObject of pos * (string * exp) list
   | EId of pos * id
   | EBracket of pos * exp * exp
@@ -83,6 +82,7 @@ type exp
   | ETypAbs of pos * id * typ * exp 
   | ETypApp of pos * exp * typ
   | ECheat of pos * typ * exp
+  | EParen of pos * exp
 
 (******************************************************************************)
 
@@ -189,10 +189,10 @@ module Exp = struct
     | ESetRef (p, _, _) -> p
     | ESubsumption (p, _, _) -> p
     | EDowncast (p, _, _) -> p
-    | EEmptyArray (p, _) -> p
     | ETypApp (p, _, _) -> p
     | ETypAbs (p, _, _, _) -> p
     | ECheat (p, _, _) -> p
+    | EParen (p, _) -> p
 end
 
 module Pretty = struct
@@ -207,7 +207,6 @@ module Pretty = struct
     | EBot _ -> text "bot"
     | EAssertTyp (_, t, e) ->
         parens (vert [ text "assert-typ"; parens (typ t); exp e ])
-    | EEmptyArray _ -> text "[ ]"
     | EArray (_, es) -> brackets (horz (map exp es))
     | EObject (_, ps) -> brackets (vert (map fld ps))
     | EId (_, x) -> text x
@@ -255,6 +254,7 @@ module Pretty = struct
     | ETypAbs (_, x, t, e) -> 
         parens (horz [ text "typ-abs"; text x; text "<:"; typ t; exp e ])
     | ECheat (_, t, e) -> parens (horz [ text "cheat"; typ t; exp e ])
+    | EParen (_, e) -> parens (horz [ text "parens"; exp e ])
 
   and fld (s, e) =
     parens (horz [ text s; text ":"; exp e ])
@@ -278,7 +278,6 @@ let assigned_free_vars (e : exp) =
     | EBot _ -> IdSet.empty
     | EAssertTyp (_, _, e) -> exp e
     | EArray (_, es) -> IdSetExt.unions (map exp es)
-    | EEmptyArray _ -> IdSet.empty
     | EObject (_, fs) -> IdSetExt.unions (map (fun (_, e) -> exp e) fs)
     | EId _ -> IdSet.empty
     | EBracket (_, e1, e2) -> IdSet.union (exp e1) (exp e2)
@@ -310,6 +309,7 @@ let assigned_free_vars (e : exp) =
     | ETypAbs (_, _, _, e) -> exp e
     | ETypApp (_, e, _) -> exp e
     | ECheat _ -> IdSet.empty
+    | EParen (_, e) -> exp e
   in exp e
 
 let unique_ids (prog : exp) : exp * (string, string) Hashtbl.t = 
@@ -330,7 +330,6 @@ let unique_ids (prog : exp) : exp * (string, string) Hashtbl.t =
     | EBot p -> EBot p
     | EAssertTyp (p, t, e) -> EAssertTyp (p, t, exp env e)
     | EArray (p, es) -> EArray (p, map (exp env) es)
-    | EEmptyArray (p, t) -> EEmptyArray (p, t)
     | EObject (p, flds) -> EObject (p, map (second2 (exp env)) flds)
     | EId (p, x) -> EId (p, find x env)
     | EBracket (p, e1, e2) -> EBracket (p, exp env e1, exp env e2)
@@ -370,4 +369,5 @@ let unique_ids (prog : exp) : exp * (string, string) Hashtbl.t =
     | ETypAbs (p, x, t, e) -> ETypAbs (p, x, t, exp env e)
     | ETypApp (p, e, t) -> ETypApp (p, exp env e, t)
     | ECheat (p, t, e) -> ECheat (p, t, e)
+    | EParen (p, e) -> EParen (p, exp env e)
   in (exp IdMap.empty prog, ht)

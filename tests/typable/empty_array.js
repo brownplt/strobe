@@ -1,1 +1,1 @@
-var arr1 = /*: Int */ [];
+var arr1 = /*: Array<Int> */ [];

@@ -1,1 +1,1 @@
-(/*: Int -> Int*/(function(x) { return x; }))(10);
+(/*: Int -> Int*/ (function(x) { return x; }))(10);

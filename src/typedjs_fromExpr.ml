@@ -29,6 +29,9 @@ let parse_annotation (pos, end_p) str =
                        (string_of_position
                           (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
 
+(* TODO(arjun): fix!! *)
+let bad_p = (Lexing.dummy_pos, Lexing.dummy_pos)
+
 (******************************************************************************)
 
 (** [seq expr] returns the [VarDeclExpr]s at the head of a sequence of
@@ -42,13 +45,12 @@ let rec seq expr = match expr with
     SeqExpr (a1, VarDeclExpr (a2, x, e1), e2) ->
       let (decls, body) = seq e2 in
         ((a2, x, e1) :: decls, body)
-  | SeqExpr (a1, HintExpr (a3, txt, FuncStmtExpr (a2, f, args, e1)), e2) ->
+  | SeqExpr (a1, FuncStmtExpr (a2, f, args, e1), e2) ->
       let (decls, body) = seq e2 in
-        ((a2, f, HintExpr (a3, txt, FuncExpr (a2, args, e1))) :: decls, body)
+        ((a2, f, FuncExpr (a2, args, e1)) :: decls, body)
   | _ -> ([], expr)
 
 let rec is_value e = match e with
-  | HintExpr (_, _, FuncExpr _) -> true
   | ConstExpr _ -> true
   | ObjectExpr (_, flds) -> List.for_all (fun (_, _, e') -> is_value e') flds
   | _ -> false
@@ -73,19 +75,13 @@ let to_boolean p e = EPrefixOp (p, "%ToBoolean", e)
 *)
 let rec object_and_function p (expr : expr) : expr * expr = match expr with
   | BracketExpr (p, e1, e2) -> (e1, BracketExpr (p, IdExpr (p, "%this"), e2))
-  | HintExpr (p, str, e) -> 
+  | ParenExpr (p, e) -> 
     let (this, func) = object_and_function p e in
-    (this, HintExpr (p, str, func))
-  | expr -> (IdExpr (p, "%global"), expr)
+    (this, ParenExpr (p, e))
+  | expr -> (IdExpr (bad_p, "%global"), expr)
 
 let rec exp (env : env) expr = match expr with
   | ConstExpr (a, c) -> EConst (a, c)
-  | HintExpr (p, txt, ArrayExpr (p', [])) -> 
-      begin match parse_annotation p txt with
-        | ATyp t -> ERef (p, RefCell, EEmptyArray (p, desugar_typ p t))
-        | _ -> 
-            raise (Not_well_formed (p, "expected the type of array elements" ))
-      end
   | ArrayExpr (a, es) -> 
       ERef (a, RefCell, EArray (a, map (fun e -> exp env e) es))
   | ObjectExpr (a, ps) -> 
@@ -179,27 +175,9 @@ let rec exp (env : env) expr = match expr with
   | VarDeclExpr (a, x, e) -> 
       (* peculiar code: body or block ends with var *)
       ELet (a, x, exp env e, EConst (a, S.CUndefined))
-  | HintExpr (p, txt, (FuncStmtExpr (p', f, args, body) as fn)) ->
-    let t  = match parse_annotation p txt with
-      | AAssertTyp t -> desugar_typ p t
-      | _ -> failwith "expected type annotation around function statement" in
-    ERec
-      ([(f, t, EAssertTyp (p, t, match_func (IdMap.add f false env) fn))], 
-       EConst (p', S.CUndefined))
   | FuncExpr _ -> match_func env expr
-  | HintExpr (p, text, e) ->
-      let e' = exp env e in
-        begin match parse_annotation p text with
-	        | ACheat typ -> ECheat (p, desugar_typ p typ, e')
-          | AUpcast typ -> ESubsumption (p, desugar_typ p typ, e')
-          | ADowncast typ -> EDowncast (p, desugar_typ p typ, e')
-          | ATypAbs (x, t) -> ETypAbs (p, x, desugar_typ p t, e')
-          | ATypApp t -> ETypApp (p, e', desugar_typ p t)
-          | AAssertTyp t -> EAssertTyp (p, desugar_typ p t, e')
-          | ATyp t -> EAssertTyp (p, desugar_typ p t, e')
-        end
   | FuncStmtExpr (p, _, _, _) ->
-      raise (Not_well_formed (p, "function is missing a type annotation"))
+      raise (Not_well_formed (p, "funcasdasdtion is missing a type annotation"))
   | ForInExpr (p, x, obj, body) ->
     let loop_typ = TArrow ([TRegex P.all], TPrim Undef) in
     ERec ([("%loop", loop_typ,
@@ -211,6 +189,7 @@ let rec exp (env : env) expr = match expr with
                          EApp (p, EId (p, "%loop"), [])))))],
 	  EApp (p, EId (p, "%loop"), 
 		[ ECheat (p, TRegex P.all, EId (p, x)) ]))
+  | ParenExpr (a, e) -> EParen (a, exp env e)
 
 and match_func env expr = match expr with
   | FuncExpr (a, args, LabelledExpr (a', "%return", body)) ->
@@ -271,7 +250,7 @@ and set_func_ref (x, t, e) rest_exp =
 and block_intro env (decls, body) = match take_while is_func_decl decls with
     [], [] -> exp_seq env body
   | [], (a, x, e) :: rest ->
-      ELet (a, x, ERef (a, RefCell, exp env e),
+      ELet (bad_p, x, ERef (bad_p, RefCell, exp env e),
             block_intro (IdMap.add x true env) (rest, body))
   | funcs, rest ->
       let new_ids = map snd3 funcs in

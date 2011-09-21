@@ -295,14 +295,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TFix (x, k, t) -> simpl_typ typenv (typ_subst x typ t)
     | TRec (x, t) -> simpl_typ typenv (typ_subst x typ t)
     | TApp (t1, ts) -> begin match expose typenv (simpl_typ typenv t1) with
-	| TLambda (args, u) -> 
-	  simpl_typ typenv 
-	    (List.fold_right2 (* well-kinded, no need to check *)
-	       (fun (x, k) t2 u -> typ_subst x t2 u)
-	       args ts u)
-	| _ -> 
-	  raise (Invalid_argument "ill-kinded type application in simpl_typ")
-    end
+    	| TLambda (args, u) -> 
+    	  simpl_typ typenv 
+    	    (List.fold_right2 (* well-kinded, no need to check *)
+    	       (fun (x, k) t2 u -> typ_subst x t2 u)
+    	       args ts u)
+    	| _ -> 
+    	  raise (Invalid_argument "ill-kinded type application in simpl_typ")
+      end
 
   and expose typenv typ = match typ with
     | TId x -> expose typenv (simpl_typ typenv (fst2 (IdMap.find x typenv)))

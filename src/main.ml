@@ -14,6 +14,7 @@ open Lexing
 open Typedjs_dyn
 
 module Y = Dprle
+module Z= ReadTyps
 
 let parse_sb cin name =
   let lexbuf = Lexing.from_string cin in
@@ -128,23 +129,34 @@ let action_expr () : unit =
   let e = from_javascript prog in
     Exprjs.Pretty.p_expr e std_formatter
 
+let src_js : JavaScript_syntax.prog option ref = ref None
+
 let get_typedjs () =
   let tjs = match get_sourcetype () with
     | "js" ->     
-        (Typedjs_fromExpr.from_exprjs (get_env ())
-           (from_javascript (parse_javascript (get_cin ()) (get_cin_name ()))))
+      let js = parse_javascript (get_cin ()) (get_cin_name ()) in
+      src_js := Some js;
+      Typedjs_fromExpr.from_exprjs (get_env ()) (from_javascript js)
     | "sb" -> 
         (parse_sb (get_cin ()) (get_cin_name ())) 
     | ext -> failwith ("unknown file extension " ^ ext)in
   let (prog, _) = unique_ids tjs in 
     Sb_owned.owned_inference prog
 
+let weave_annotations typedjs = 
+  match !src_js with
+    | None -> typedjs
+    | Some js -> 
+      let typ_db = 
+        ReadTyps.read_typs js (List.rev !JavaScript_lexer.comments) in
+      WeaveAnnotations.weave typ_db typedjs
+
 let action_pretypecheck () : unit = 
-  let typedjs = get_typedjs () in
+  let typedjs = weave_annotations (get_typedjs ()) in
     Typedjs_syntax.Pretty.p_exp typedjs std_formatter
 
 let action_tc () : unit = 
-  let _ = typecheck (get_env ()) (get_typedjs ()) in
+  let _ = typecheck (get_env ()) (weave_annotations (get_typedjs ())) in
 	if get_num_typ_errors () > 0 then
     raise (Typ_error ((dummy_pos, dummy_pos),
                       sprintf "%d type errors" (get_num_typ_errors ())))
