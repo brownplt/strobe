@@ -123,8 +123,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TFix (x, k, t) -> 
 	horz [ text "Fix "; text x; text "::"; kind k; typ t ]
       | TApp (t, ts) ->
-	horz [typ t; text "<"; horz (intersperse (text ",") (map typ ts));
-	      text ">"]
+	parens (horz [typ t; text "<"; horz (intersperse (text ",") (map typ ts));
+	      text ">"])
       | TRegex pat -> 
         squish [text "/"; text (P.pretty pat); text "/"]
       | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
@@ -399,22 +399,22 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   let calc_inherit_guard_pat (env : typenv) (t : typ) : pat =
     match t with
       | TObject ot ->
-	begin match parent_typ env t with
-	  | None
-	  | Some (TPrim Null) ->
-	    let f (pat, prop) = match prop with
-	      | PInherited _
-	      | PPresent _ -> Some pat
-	      | PMaybe _
-	      | PAbsent -> None in
-	    L.fold_right P.union (L.filter_map f ot.fields) P.empty
-	  | Some (TObject _) ->
-	    L.fold_right P.union (L.map fst2 ot.fields) P.empty
-	  | Some pt ->
-	    raise (Invalid_argument 
-		     ("invalid parent type in object type: " ^
-			 (string_of_typ pt)))
-	end
+          begin match parent_typ env t with
+            | None
+            | Some (TPrim Null) ->
+              let f (pat, prop) = match prop with
+                | PInherited _
+                | PPresent _ -> Some pat
+                | PMaybe _
+                | PAbsent -> None in
+              L.fold_right P.union (L.filter_map f ot.fields) P.empty
+            | Some (TObject _) ->
+              L.fold_right P.union (L.map fst2 ot.fields) P.empty
+            | Some pt ->
+              raise (Invalid_argument 
+          	     ("invalid parent type in object type: " ^
+          		 (string_of_typ pt)))
+          end
       | t -> raise (Invalid_argument "expected TObject")
 
   let inherit_guard_pat env typ = match typ with
@@ -480,20 +480,20 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     let t = expose env (simpl_typ env t) in
     if P.is_subset (pat_env env) pat (inherit_guard_pat env t) then
       begin match t with
-	| TObject ot -> 
-	  let sel (f_pat, f_prop) =
-	    if P.is_overlapped f_pat pat then prop_typ f_prop
-	    else None in
-	  L.fold_right (fun s t -> typ_union env s t)
-	    (L.filter_map sel ot.fields)
-	    (match parent_typ env t with
-	      | None
-	      | Some (TPrim Null) -> TBot
-	      | Some parent_typ -> 
-		inherits p env parent_typ 
-		  (P.intersect pat (maybe_pats ot.fields)))
-	| _ -> failwith "lookup non-object"
-      end
+        | TObject ot -> 
+          let sel (f_pat, f_prop) =
+            if P.is_overlapped f_pat pat then prop_typ f_prop
+            else None in
+          L.fold_right (fun s t -> typ_union env s t)
+            (L.filter_map sel ot.fields)
+            (match parent_typ env t with
+              | None
+              | Some (TPrim Null) -> TBot
+              | Some parent_typ -> 
+        	inherits p env parent_typ 
+        	  (P.intersect pat (maybe_pats ot.fields)))
+        | _ -> failwith "lookup non-object"
+             end
     else
       raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ " in "
 		   ^ string_of_typ t))
