@@ -6,4 +6,5 @@ function Point(x, y) /*: [ { x: ? Int, y: ? Int } ] Int * Int
     this.y = y;
     var addition = this.x + this.y;
     lastSum = addition;
-  };
+}
+
