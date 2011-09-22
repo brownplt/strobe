@@ -2,100 +2,109 @@
 
 for file in ../tests/strobe-typable/*.sb
 do
-  echo -en "\r\e[KTest $file ... "
+  echo -en "\rTest $file ... "
   ../tests/strobe-typable/test.sh $file
+  tput el1
 done
 
 for file in ../tests/strobe-untypable/*.sb
 do
-  echo -en "\r\e[KTest $file ... "
+  echo -en "\rTest $file ... "
   result=`../tc -env $file.env -sb $file -noflows 2>&1`
   exitcode=$?
   if [ $exitcode -ne 2 ]; then
-      echo -e "$file: expected a type-error error; exit code was $exitcode\n"
+      echo -e "\n$file: expected a type-error error; exit code was $exitcode\n"
       continue
   fi
   errors=`echo "$result" | grep -ci "type error"`
   if [ $errors -ne 1 ]; then
-    echo -e "$file: expected a type error error; got\n$result\n"
+    echo -e "\n$file: expected a type error error; got\n$result\n"
   fi
+  tput el1
 done
 
 for file in ../tests/typable/*.js
 do
-  echo -en "\r\e[KTest $file ... "
+  echo -en "\rTest $file ... "
   # echo -en "Test $file ... "
   result=`../tc -tc $file 2>&1`
   if [ $? -ne 0 ]; then
-      echo -e "$file: aborted with exit code $?; output was:\n$result\n"
+      echo -e "\n$file: aborted with exit code $?; output was:\n$result\n"
   fi
+  tput el1
 done
 
 for file in ../tests/not-well-formed/*.js
 do
-  echo -en "\r\e[KTest $file ... "
+  echo -en "\rTest $file ... "
   result=`../tc -pretc $file 2>&1`
   exitcode=$?
   if [ $exitcode -ne 2 ]; then
-      echo -e "$file: expected a well-formedness error; exit code was $exitcode\n"
+      echo -e "\n$file: expected a well-formedness error; exit code was $exitcode\n"
       continue
   fi
   errors=`echo "$result" | grep -ci "not well-formed"`
   if [ $errors -ne 1 ]; then
-    echo -e "$file: expected a well-formness error; got\n$result\n"
+    echo -e "\n$file: expected a well-formness error; got\n$result\n"
   fi
+  tput el1
 done
 
 for file in ../tests/well-formed/*.js
 do
-  echo -en "\r\e[KTest $file ... "
+  echo -en "\rTest $file ... "
   result=`../tc -pretc $file 2>&1`
   if [ $? -ne 0 ]; then
-      echo -e "$file: aborted with exit code $?; output was:\n$result\n"
+      echo -e "\n$file: aborted with exit code $?; output was:\n$result\n"
   fi
+  tput el1
 done
 
 
 for file in ../tests/untypable/*.js
 do
-  echo -en "\r\e[KTest $file ... "
+  echo -en "\rTest $file ... "
   result=`../tc -tc $file 2>&1`
   exitcode=$?
   if [ $exitcode -ne 2 ]; then
-      echo -e "$file: expected a type-error error; exit code was $exitcode\n"
+      echo -e "\n$file: expected a type-error error; exit code was $exitcode\n"
       continue
   fi
   errors=`echo "$result" | grep -ci "type error"`
   if [ $errors -ne 1 ]; then
-    echo -e "$file: expected a type error error; got\n$result\n"
+    echo -e "\n$file: expected a type error error; got\n$result\n"
   fi
+  tput el1
 done
 
 
 for file in ../tests/browser/*.js
 do
-  echo -ne "\r\e[KTest $file ... "
+  echo -ne "\rTest $file ... "
   result=`../tcb -tc $file 2>&1`
   if [ $? -ne 0 ]; then
-      echo -e "$file: aborted with exit code $?; output was:\n$result\n"
+      echo -e "\n$file: aborted with exit code $?; output was:\n$result\n"
   fi
+  tput el1
 done
 
 
 for file in ../tests/parsing/*.js
 do
-  echo -ne "\r\e[KTest $file ... "
+  echo -ne "\rTest $file ... "
   result=`../tc -pretty $file 2>&1`
   if [ $? -ne 0 ]; then
-      echo -e "$file: aborted with exit code $?; output was:\n$result\n"
+      echo -e "\n$file: aborted with exit code $?; output was:\n$result\n"
   fi
+  tput el1
 done
 
 cd ../gadgets
 for file in *.js
 do
-    echo -ne "\r\e[KTest ../tests/gadgets/$file ... "
+    echo -ne "\rTest ../tests/gadgets/$file ... "
   ./runtest.sh $file
+  tput el1
 done
 
 
