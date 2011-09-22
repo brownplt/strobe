@@ -147,7 +147,7 @@ module type TYP = sig
 
   val simpl_lookup : pos -> typenv -> typ -> pat -> typ
 
-  val inherits : typenv -> typ -> pat -> typ
+  val inherits : pos -> typenv -> typ -> pat -> typ
 
   val typ_union : typenv -> typ -> typ -> typ
 

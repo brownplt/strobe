@@ -77,7 +77,7 @@ exception Not_subtype of subtype_exn
 
 
   let inherits p env obj_typ idx_pat = 
-    TypImpl.inherits env.typ_ids obj_typ idx_pat
+    TypImpl.inherits p env.typ_ids obj_typ idx_pat
 
   let subtypes env ss ts = TypImpl.subtypes env.typ_ids ss ts
   

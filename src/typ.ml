@@ -476,7 +476,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       raise (Typ_error (p, "checking for a hidden or absent field"))
 	| _ -> raise (Typ_error (p, "object expected"))
 
-  and  inherits (env : typenv) (t : typ) (pat : pat) : typ = 
+  and  inherits p (env : typenv) (t : typ) (pat : pat) : typ = 
     let t = expose env (simpl_typ env t) in
     if P.is_subset (pat_env env) pat (inherit_guard_pat env t) then
       begin match t with
@@ -490,13 +490,13 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 	      | None
 	      | Some (TPrim Null) -> TBot
 	      | Some parent_typ -> 
-		inherits env parent_typ 
+		inherits p env parent_typ 
 		  (P.intersect pat (maybe_pats ot.fields)))
 	| _ -> failwith "lookup non-object"
       end
     else
-      failwith ("lookup hidden field with " ^ (P.pretty pat) ^ " in "
-		   ^ string_of_typ t)
+      raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ " in "
+		   ^ string_of_typ t))
 
   and subt env (cache : TPSet.t) s t : TPSet.t = 
     if TPSet.mem (s, t) cache then
@@ -558,7 +558,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   (* Check that an "extra" field is inherited *)
   and check_inherited env cache lang other_proto typ =
-    subt env cache typ (inherits env other_proto lang)
+    subt env cache typ (inherits (Lexing.dummy_pos, Lexing.dummy_pos) env other_proto lang)
 
   and subtype_object' env (cache : TPSet.t) (flds1 : field list)
       (flds2 : field list) : TPSet.t =
