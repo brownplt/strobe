@@ -7,6 +7,4 @@ val contracts : (int * typ) IntMap.t ref
 
 val disable_flows : unit -> unit
 
-val tc_exp : env -> exp -> typ
-
 val typecheck : env -> exp -> unit
