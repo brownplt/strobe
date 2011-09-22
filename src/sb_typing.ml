@@ -100,7 +100,10 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
       let expect_elt_typ = 
         simpl_lookup p (tid_env env)
           (un_null (expose_simpl_typ env typ)) array_idx_pat in
-      assert_subtyp env p (TRef typ) (mk_array_typ p env expect_elt_typ);
+      let expect_array_typ = mk_array_typ p env expect_elt_typ in
+      (if not (subtype env (TRef typ) expect_array_typ) then
+         typ_mismatch p 
+           (sprintf "expected Array<%s>" (string_of_typ expect_elt_typ)));
       List.iter (fun e -> check env e expect_elt_typ) es 
   | EParen (_, e) -> check env e typ
   | _ -> 

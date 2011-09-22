@@ -41,9 +41,6 @@ exception Not_subtype of subtype_exn
       The [env] is needed for bounded quantification. *)
   val subtype : env -> typ -> typ -> bool
 
-
-  val assert_subtyp : env -> pos -> typ -> typ -> unit
-
   (** [subtypes typs1 typs2] applies [subtype] pairwise to the elements of
       [typs1] and [typs2]. If the lists have unequal lengths, it returns
       [false]. *)

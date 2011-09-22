@@ -632,15 +632,4 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | false, true -> t
     | false, false -> TIntersect (s, t)
   
-  let assert_subtyp  env p s t = 
-(*      let _ = subt env TPSet.empty s t in
-      () *)
-    try 
-      let _ = subt env TPSet.empty s t in
-      ()
-    with
-      | Not_subtype txt -> raise (Typ_error (p, txt ^ "\nin "
-  ^ (string_of_typ s) ^ "\n\nand\n\n" ^ (string_of_typ t)))
-
-
 end

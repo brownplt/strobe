@@ -87,8 +87,6 @@ exception Not_subtype of subtype_exn
 
   let typ_intersect env = TypImpl.typ_intersect env.typ_ids
 
-  let assert_subtyp env pos s t = TypImpl.assert_subtyp env.typ_ids pos s t
-
   let simpl_static env (typ : typ) (rt : RT.t) : typ = match rt with
     | RT.Num -> typ_union env (TPrim Num) typ
     | RT.Re _ -> typ_union env (TRegex any_fld) typ
