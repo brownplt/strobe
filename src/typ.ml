@@ -574,15 +574,15 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     let rec check_prop (((m_j : pat), (g_j : prop)) as p2)
         ((p2s : field list), (fs : field list), (cache : TPSet.t)) = 
       match fs with
-        | [] -> (p2::p2s, fs, cache)
+        | [] -> (p2::p2s, [], cache)
         | (l_i, f_i)::rest ->
           match P.is_overlapped l_i m_j with
             | true ->
               let cache' = subtype_field env cache (l_i, f_i) (m_j, g_j) in
-            (* Remove the stuff in l_i (the lhs), for the next iteration *)
+              (* Remove the stuff in l_i (the lhs), for the next iteration *)
               let (pat'', _) as p2' = ((P.subtract m_j l_i), g_j) in
-            (* Get the result, and re-build the rhs list, subtracting the
-               relevant part of overlap*)
+              (* Get the result, and re-build the rhs list, subtracting the
+                 relevant part of overlap*)
               let p2s'', fs1', cache'' = check_prop p2' (p2s, rest, cache') in
               p2s'', (P.subtract l_i m_j, f_i)::fs1', cache'
             | false ->
