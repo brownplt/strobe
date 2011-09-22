@@ -535,7 +535,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
               | TId x, t -> 
           subtype cache (fst2 (IdMap.find x env)) t
         | TObject obj1, TObject obj2 ->
-            eprintf "subt _ %s %s\n" (string_of_typ s) (string_of_typ t);
             subtype_object' env cache (fields obj1) (fields obj2)
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
         | TSource s, TSource t -> subtype cache s t
