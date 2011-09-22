@@ -153,8 +153,10 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
   | EArray (p, e::es) -> 
     let (t1, ts) = tc_exp env e, map (tc_exp env) es in
     let tarr = List.fold_right (typ_union env) ts t1 in
-    (match simpl_typ env (mk_array_typ p env tarr) with
-     | TRef t -> t)
+    begin match simpl_typ env (mk_array_typ p env tarr) with
+      | TRef t -> t
+      | _ -> failwith "mk_array_typ did not produce a TRef"
+    end
   (* Optimization to avoid reducing TArray<'a> *)
   | ERef (p1, RefCell, EArray (p2, e::es)) ->
     let (t1, ts) = tc_exp env e, map (tc_exp env) es in

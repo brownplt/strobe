@@ -36,11 +36,11 @@ let rec weave_rec (db : typ_db) (exp : exp) =
   | ESetRef (p, e1, e2) -> ESetRef (p, w e1, w e2)
   | EParen (p, e) -> EParen (p, w e)
   | ESubsumption (p, t, e) -> ESubsumption (p, t, w e)
- (*
-  | EDowncast of pos * typ * exp
-  | ETypAbs of pos * id * typ * exp 
-  | ETypApp of pos * exp * typ
-  | ECheat of pos * typ * exp *)
+  | EDowncast (p, t, e) -> EDowncast (p, t, w e)
+  | ETypAbs (p, x, t, e) -> ETypAbs (p, x, t, w e)
+  | ETypApp (p, e, t) -> ETypApp (p, w e, t)
+  | ECheat (p, t, e) -> ECheat (p, t, w e)
+
 and weave (db : typ_db) (exp : exp) = match exp with
   | ERec _ -> weave_rec db exp
   | _ -> 
