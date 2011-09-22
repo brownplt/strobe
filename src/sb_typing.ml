@@ -53,7 +53,8 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
   | ELabel (p, lbl, e) ->
     let s = tc_exp (bind_lbl lbl typ env) e in
     if not (subtype env s typ) then
-      typ_mismatch p "label type mismatch"
+      typ_mismatch p (sprintf "label has type %s, but body returns %s"
+                              (string_of_typ typ) (string_of_typ s))
   | ELet (_, x, e1, e2) -> 
     check (bind_id x (tc_exp env e1) env) e2 typ
   | EFunc (p, args, func_info, body) -> 
