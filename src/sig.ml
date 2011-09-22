@@ -96,7 +96,7 @@ module type TYP = sig
   type kind = 
     | KStar
     | KArrow of kind list * kind
-	
+  
   type typ = 
     | TPrim of prim
     | TUnion of typ * typ
@@ -161,7 +161,7 @@ module type TYP = sig
 
   val typ_mismatch : pos -> string -> unit
 
-	val get_num_typ_errors : unit -> int
+  val get_num_typ_errors : unit -> int
 
   val with_typ_exns : (unit -> 'a) -> 'a
 

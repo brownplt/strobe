@@ -9,7 +9,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   exception Typ_error of pos * string
 
-	let num_typ_errors = ref 0
+  let num_typ_errors = ref 0
 
   let error_on_mismatch = ref false
 
@@ -20,16 +20,16 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     error_on_mismatch := prev;
     r
 
-	let typ_mismatch p s = 
+  let typ_mismatch p s = 
     if !error_on_mismatch then
       raise (Typ_error (p, s))
     else
       begin
-		    incr num_typ_errors;
-		    eprintf "%s : %s\n" (string_of_position p) s
+        incr num_typ_errors;
+        eprintf "%s : %s\n" (string_of_position p) s
       end
 
-	let get_num_typ_errors () = !num_typ_errors
+  let get_num_typ_errors () = !num_typ_errors
 
 
   module P = Pat
@@ -47,7 +47,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   type kind = 
     | KStar
     | KArrow of kind list * kind
-	
+  
   type typ = 
     | TPrim of prim
     | TUnion of typ * typ
@@ -100,7 +100,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     let rec kind k = match k with
       | KStar -> text "*"
       | KArrow (ks, k) -> 
-	horz [horz (intersperse (text ",") (map pr_kind ks)); text "=>"; kind k]
+  horz [horz (intersperse (text ",") (map pr_kind ks)); text "=>"; kind k]
 
     and pr_kind k = match k with
       | KArrow _ -> parens (kind k)
@@ -110,21 +110,21 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TTop -> text "Any"
       | TBot -> text "DoesNotReturn"
       | TPrim p -> text begin match p with
-	  | Num -> "Num"
-	  | Int -> "Int"
-	  | True -> "True"
-	  | False -> "False"
-	  | Null -> "Null"
-	  | Undef -> "Undef"
+    | Num -> "Num"
+    | Int -> "Int"
+    | True -> "True"
+    | False -> "False"
+    | Null -> "Null"
+    | Undef -> "Undef"
       end
       | TLambda (args, t) -> 
-	let p (x, k) = horz [ text x; text "::"; kind k ] in
-	horz [ text "Lambda "; horz (map p args); text "."; typ t ]
+  let p (x, k) = horz [ text x; text "::"; kind k ] in
+  horz [ text "Lambda "; horz (map p args); text "."; typ t ]
       | TFix (x, k, t) -> 
-	horz [ text "Fix "; text x; text "::"; kind k; typ t ]
+  horz [ text "Fix "; text x; text "::"; kind k; typ t ]
       | TApp (t, ts) ->
-	parens (horz [typ t; text "<"; horz (intersperse (text ",") (map typ ts));
-	      text ">"])
+  parens (horz [typ t; text "<"; horz (intersperse (text ",") (map typ ts));
+        text ">"])
       | TRegex pat -> 
         squish [text "/"; text (P.pretty pat); text "/"]
       | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
@@ -139,7 +139,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
               text "->";
               typ r_typ ]
       | TArrow (arg_typs, r_typ) ->
-	horz[ horz (intersperse (text "*") 
+  horz[ horz (intersperse (text "*") 
                       (map (fun at -> begin match at with
                         | TArrow _ -> parens (typ at)
                         | _ -> typ at 
@@ -154,16 +154,16 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
       | TId x -> text x
       | TRec (x, t) -> horz [ text "rec"; text x; text "."; typ t ]
-	
+  
     and pat (k, p) = horz [ text (P.pretty k); text ":"; prop p;
-			    text "," ]
+          text "," ]
       
     and prop p = match p with
       | PPresent t -> typ t
       | PMaybe t -> horz [ text "maybe"; typ t ]
       | PInherited t -> squish [ text "^"; typ t]
       | PAbsent -> text "_"
-	
+  
   end
 
   let string_of_typ = FormatExt.to_string Pretty.typ
@@ -197,31 +197,31 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TBot
       | TPrim _ 
       | TRegex _ -> 
-	empty
+  empty
       | TId x -> 
-	singleton x
+  singleton x
       | TRef t
       | TSource t
       | TSink t ->
-	free_typ_ids t
+  free_typ_ids t
       | TIntersect (t1, t2)
       | TUnion (t1, t2) ->
-	union (free_typ_ids t1) (free_typ_ids t2)
+  union (free_typ_ids t1) (free_typ_ids t2)
       | TArrow (ss, t) 
       | TApp (t, ss) ->
-	unions (free_typ_ids t :: (map free_typ_ids ss))
+  unions (free_typ_ids t :: (map free_typ_ids ss))
       | TObject o ->
-	let sel (_, prop) = match prop_typ prop with
-	  | None -> None
-	  | Some s -> Some (free_typ_ids s) in
-	unions (L.filter_map sel o.fields)
+  let sel (_, prop) = match prop_typ prop with
+    | None -> None
+    | Some s -> Some (free_typ_ids s) in
+  unions (L.filter_map sel o.fields)
       | TFix (x, _, t)
       | TRec (x, t) ->
-	remove x (free_typ_ids t)
+  remove x (free_typ_ids t)
       | TForall (x, s, t) ->
-	union (free_typ_ids s) (remove x (free_typ_ids t))
+  union (free_typ_ids s) (remove x (free_typ_ids t))
       | TLambda (xks, t) ->
-	diff (free_typ_ids t) (from_list (map fst2 xks))
+  diff (free_typ_ids t) (from_list (map fst2 xks))
 
   let rec typ_subst x s typ = match typ with
     | TPrim _ -> typ
@@ -234,8 +234,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
     | TObject o ->
       TObject { fields = map (second2 (prop_subst x s)) o.fields;
-		cached_parent_typ = ref None;
-		cached_guard_pat = ref None }
+    cached_parent_typ = ref None;
+    cached_guard_pat = ref None }
     | TRef t -> TRef (typ_subst x s t)
     | TSource t -> TSource (typ_subst x s t)
     | TSink t -> TSink (typ_subst x s t)
@@ -244,18 +244,18 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TLambda (yks, t) ->
       let ys = IdSetExt.from_list (map fst2 yks) in
       if IdSet.mem x ys then
-	typ
+  typ
       else begin
-	(* TODO: omg this stuff is NOT capture free ... *)
-	assert (IdSet.is_empty (IdSet.inter (free_typ_ids s) ys));
-	TLambda (yks, typ_subst x s t)
+  (* TODO: omg this stuff is NOT capture free ... *)
+  assert (IdSet.is_empty (IdSet.inter (free_typ_ids s) ys));
+  TLambda (yks, typ_subst x s t)
       end
     | TFix (y, k, t) ->
       if x = y then
-	typ
+  typ
       else begin
-	assert (not (IdSet.mem y (free_typ_ids s)));
-	TFix (y, k, typ_subst x s t)
+  assert (not (IdSet.mem y (free_typ_ids s)));
+  TFix (y, k, typ_subst x s t)
       end
     | TForall (y, t1, t2) -> 
       if x = y then 
@@ -264,9 +264,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         TForall (y, typ_subst x s t1, typ_subst x s t2)
     | TRec (y, t) ->
       if x = y then
-	typ
+  typ
       else begin
-	assert (not (IdSet.mem y (free_typ_ids s)));
+  assert (not (IdSet.mem y (free_typ_ids s)));
         TRec (y, typ_subst x s t)
       end
     | TApp (t, ts) -> TApp (typ_subst x s t, List.map (typ_subst x s) ts)
@@ -295,13 +295,13 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TFix (x, k, t) -> simpl_typ typenv (typ_subst x typ t)
     | TRec (x, t) -> simpl_typ typenv (typ_subst x typ t)
     | TApp (t1, ts) -> begin match expose typenv (simpl_typ typenv t1) with
-    	| TLambda (args, u) -> 
-    	  simpl_typ typenv 
-    	    (List.fold_right2 (* well-kinded, no need to check *)
-    	       (fun (x, k) t2 u -> typ_subst x t2 u)
-    	       args ts u)
-    	| _ -> 
-    	  raise (Invalid_argument "ill-kinded type application in simpl_typ")
+      | TLambda (args, u) -> 
+        simpl_typ typenv 
+          (List.fold_right2 (* well-kinded, no need to check *)
+             (fun (x, k) t2 u -> typ_subst x t2 u)
+             args ts u)
+      | _ -> 
+        raise (Invalid_argument "ill-kinded type application in simpl_typ")
       end
 
   and expose typenv typ = match typ with
@@ -351,21 +351,21 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   and simpl_equiv_fld (pat1, fld1) (pat2, fld2) = 
     P.is_equal pat1 pat2 &&
       begin match (fld1, fld2) with
-	| PPresent t1, PPresent t2
-	| PInherited t1, PInherited t2
-	| PMaybe t1, PMaybe t2 ->
-	  simpl_equiv t1 t2
-	| PAbsent, PAbsent -> true
-	| _ -> false
+  | PPresent t1, PPresent t2
+  | PInherited t1, PInherited t2
+  | PMaybe t1, PMaybe t2 ->
+    simpl_equiv t1 t2
+  | PAbsent, PAbsent -> true
+  | _ -> false
       end
 
   let pat_env (env : typenv) : pat IdMap.t =
     let select_pat_bound (x, (t, _)) = match t with
       | TRegex p -> Some (x, p)
-	| _ -> None in
+  | _ -> None in
       L.fold_right (fun (x,p) env -> IdMap.add x p env)
-	(L.filter_map select_pat_bound (IdMap.bindings env))
-	IdMap.empty
+  (L.filter_map select_pat_bound (IdMap.bindings env))
+  IdMap.empty
 
 
   let rec parent_typ' env flds = match flds with
@@ -373,26 +373,26 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | ((pat, fld) :: flds') -> 
       match P.is_subset (pat_env env) proto_pat pat with
         | true -> begin match fld with
-	    | PPresent t -> 
-	      begin match expose env (simpl_typ env t) with
-		| TPrim Null -> Some (TPrim Null)
-		| TSource p
-		| TRef p -> Some (expose env (simpl_typ env p))
-		| _ -> failwith "invalid parent type"
-	      end
-	    | _ -> failwith "maybe proto wtf"
+      | PPresent t -> 
+        begin match expose env (simpl_typ env t) with
+    | TPrim Null -> Some (TPrim Null)
+    | TSource p
+    | TRef p -> Some (expose env (simpl_typ env p))
+    | _ -> failwith "invalid parent type"
+        end
+      | _ -> failwith "maybe proto wtf"
         end
         | false -> parent_typ' env flds'
 
   let rec parent_typ (env : typenv) typ = 
     match expose env (simpl_typ env typ) with
       | TObject ot -> begin match !(ot.cached_parent_typ) with
-	  | Some cached ->
-	    cached
-	  | None ->
-	    let computed = parent_typ' env ot.fields in
-	    ot.cached_parent_typ := Some computed;
-	    computed
+    | Some cached ->
+      cached
+    | None ->
+      let computed = parent_typ' env ot.fields in
+      ot.cached_parent_typ := Some computed;
+      computed
       end
       | _ -> raise (Invalid_argument "parent_typ expects TObject")
 
@@ -412,20 +412,20 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
               L.fold_right P.union (L.map fst2 ot.fields) P.empty
             | Some pt ->
               raise (Invalid_argument 
-          	     ("invalid parent type in object type: " ^
-          		 (string_of_typ pt)))
+                 ("invalid parent type in object type: " ^
+               (string_of_typ pt)))
           end
       | t -> raise (Invalid_argument "expected TObject")
 
   let inherit_guard_pat env typ = match typ with
     | TObject ot -> begin match !(ot.cached_guard_pat) with
-	| None -> let pat = calc_inherit_guard_pat env typ in
-		  ot.cached_guard_pat := Some pat;
-		  pat
-	| Some pat -> pat
+  | None -> let pat = calc_inherit_guard_pat env typ in
+      ot.cached_guard_pat := Some pat;
+      pat
+  | Some pat -> pat
     end
     | t -> raise (Invalid_argument ("expected object type, got " ^
-				       (string_of_typ t)))
+               (string_of_typ t)))
 
   let maybe_pats flds = 
     let sel (pat, prop) = match prop with
@@ -439,19 +439,19 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   let mismatched_typ_exn t1 t2 =
     raise (Not_subtype 
-	     (sprintf " %s is not a subtype of %s"
-		(string_of_typ t1) (string_of_typ t2)))
+       (sprintf " %s is not a subtype of %s"
+    (string_of_typ t1) (string_of_typ t2)))
 
   let extra_fld_exn pat prop =
     raise (Not_subtype
-	     (sprintf "ExtraField - %s : %s\n" (P.pretty pat) 
-		(string_of_prop prop)))
+       (sprintf "ExtraField - %s : %s\n" (P.pretty pat) 
+    (string_of_prop prop)))
 
   let mismatch_fld_exn (pat1, prop1) (pat2, prop2) =
     raise (Not_subtype
-	     ( sprintf "Mismatched - %s : %s and %s : %s\n"
-		 (P.pretty pat1) (string_of_prop prop1)
-		 (P.pretty pat2) (string_of_prop prop2)))
+       ( sprintf "Mismatched - %s : %s and %s : %s\n"
+     (P.pretty pat1) (string_of_prop prop1)
+     (P.pretty pat2) (string_of_prop prop2)))
 
 
   let sel_not_absent (p, f) = match prop_typ f with
@@ -462,19 +462,19 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
    (* TODO: it's okay to overlap with a maybe, but not a hidden field;
       inherit_guard_pat does not apply *)
     match t with
-	| TObject ot -> 
-	  let guard_pat = L.fold_right P.union
-	    (L.filter_map sel_not_absent ot.fields) P.empty in
-	  if P.is_subset (pat_env env) pat guard_pat then
-	    let sel (f_pat, f_prop) =
-	      if P.is_overlapped f_pat pat then prop_typ f_prop
-	      else None in
-	    L.fold_right (fun s t -> typ_union env s t)
-	      (L.filter_map sel ot.fields)
-	      TBot
-	  else
+  | TObject ot -> 
+    let guard_pat = L.fold_right P.union
+      (L.filter_map sel_not_absent ot.fields) P.empty in
+    if P.is_subset (pat_env env) pat guard_pat then
+      let sel (f_pat, f_prop) =
+        if P.is_overlapped f_pat pat then prop_typ f_prop
+        else None in
+      L.fold_right (fun s t -> typ_union env s t)
+        (L.filter_map sel ot.fields)
+        TBot
+    else
       raise (Typ_error (p, "checking for a hidden or absent field"))
-	| _ -> raise (Typ_error (p, "object expected"))
+  | _ -> raise (Typ_error (p, "object expected"))
 
   and  inherits p (env : typenv) (t : typ) (pat : pat) : typ = 
     let t = expose env (simpl_typ env t) in
@@ -490,13 +490,13 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
               | None
               | Some (TPrim Null) -> TBot
               | Some parent_typ -> 
-        	inherits p env parent_typ 
-        	  (P.intersect pat (maybe_pats ot.fields)))
+          inherits p env parent_typ 
+            (P.intersect pat (maybe_pats ot.fields)))
         | _ -> failwith "lookup non-object"
              end
     else
       raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ " in "
-		   ^ string_of_typ t))
+       ^ string_of_typ t))
 
   and subt env (cache : TPSet.t) s t : TPSet.t = 
     if TPSet.mem (s, t) cache then
@@ -542,18 +542,18 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | TRef s, TSource t -> subtype cache s t
         | TRef s, TSink t -> subtype cache t s
         | TForall (x1, s1, t1), TForall (x2, s2, t2) -> 
-	  (* Kernel rule *)
-	  (* TODO: ensure s1 = s2 *)
-	  let cache' = subt env (subt env cache s1 s2) s2 s1 in
-	  let t2 = typ_subst x2 (TId x1) t2 in
+    (* Kernel rule *)
+    (* TODO: ensure s1 = s2 *)
+    let cache' = subt env (subt env cache s1 s2) s2 s1 in
+    let t2 = typ_subst x2 (TId x1) t2 in
           let env' = IdMap.add x1 (s1, KStar) env in
-	  subt env' cache' t1 t2
+    subt env' cache' t1 t2
         | _, TTop -> cache
         | TBot, _ -> cache
-	| TLambda ([(x, KStar)], s), TLambda ([(y, KStar)], t) ->
-	  let env = IdMap.add x (TTop, KStar) env in
-	  let env = IdMap.add y (TTop, KStar) env in
-	  subt env cache s t
+  | TLambda ([(x, KStar)], s), TLambda ([(y, KStar)], t) ->
+    let env = IdMap.add x (TTop, KStar) env in
+    let env = IdMap.add y (TTop, KStar) env in
+    subt env cache s t
         | _ -> mismatched_typ_exn s t
 
   (* Check that an "extra" field is inherited *)
@@ -592,13 +592,13 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       List.fold_right check_prop flds2 ([], flds1, cache) in
     let cache' = List.fold_right (fun (pat, prop) cache -> match prop with
       | PInherited typ -> 
-	      (* TODO BAD PERFORMANCE *)
+        (* TODO BAD PERFORMANCE *)
         check_inherited env cache pat (TObject (mk_obj_typ flds1)) typ
       | _ -> cache)
       flds2 cache in
     try
       let (pat, fld) =
-	List.find (fun (pat, _) -> not (P.is_empty pat)) flds2' in
+  List.find (fun (pat, _) -> not (P.is_empty pat)) flds2' in
       match fld with 
         | PInherited _ -> cache'
         | _ -> extra_fld_exn pat fld
@@ -640,7 +640,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       ()
     with
       | Not_subtype txt -> raise (Typ_error (p, txt ^ "\nin "
-	^ (string_of_typ s) ^ "\n\nand\n\n" ^ (string_of_typ t)))
+  ^ (string_of_typ s) ^ "\n\nand\n\n" ^ (string_of_typ t)))
 
 
 end

@@ -38,8 +38,8 @@ let check_kind p env typ : typ =
     | KStar -> typ
     | k ->
       raise 
-	      (Typ_error 
-	         (p, sprintf "type term has kind %s; expected *" (string_of_kind k)))
+        (Typ_error 
+           (p, sprintf "type term has kind %s; expected *" (string_of_kind k)))
 
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
 
@@ -115,25 +115,25 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
   (* TODO: Pure if-splitting rule; make more practical by integrating with
       flow typing. *)
   | EIf (p, EInfixOp (_, "hasfield",  EDeref (_, EId (_, obj)), (EId (_, fld))),
-	       true_part, false_part) ->
+         true_part, false_part) ->
     begin match expose_simpl_typ env (lookup_id obj env), lookup_id fld env with
       | TRef (TObject ot), TRegex pat -> 
-	      let subtract (p, t) =
-	        if P.is_overlapped p pat then (P.subtract p pat, t) (* perf *)
-	        else (p, t) in
-	      let false_typ = tc_exp env false_part in
-	      let true_typ =
-	        let fld_typ = simpl_lookup p (tid_env env) (TObject ot) pat in
-	        let env = bind_typ_id "alpha" (TRegex pat) env in
-	        let env = bind_id fld (TId "alpha") env in
-	        let env = bind_id obj 
-	          (TObject (mk_obj_typ ((P.var "alpha", PPresent fld_typ) ::
-				                             map subtract (fields ot)))) env in
-	        tc_exp env true_part in
-	      typ_union env true_typ false_typ
+        let subtract (p, t) =
+          if P.is_overlapped p pat then (P.subtract p pat, t) (* perf *)
+          else (p, t) in
+        let false_typ = tc_exp env false_part in
+        let true_typ =
+          let fld_typ = simpl_lookup p (tid_env env) (TObject ot) pat in
+          let env = bind_typ_id "alpha" (TRegex pat) env in
+          let env = bind_id fld (TId "alpha") env in
+          let env = bind_id obj 
+            (TObject (mk_obj_typ ((P.var "alpha", PPresent fld_typ) ::
+                                     map subtract (fields ot)))) env in
+          tc_exp env true_part in
+        typ_union env true_typ false_typ
       | s, t ->
-	      raise (Typ_error (p, "expected object and string types, got " ^
-	        string_of_typ s ^ " and " ^ string_of_typ t))
+        raise (Typ_error (p, "expected object and string types, got " ^
+          string_of_typ s ^ " and " ^ string_of_typ t))
     end
   | EConst (_, c) -> tc_const c
   | EBot _ -> TBot
@@ -212,7 +212,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     typ_union env (tc_exp env e2) (tc_exp env e3)
   | EObject (p, fields) ->
     let mk_field (name, exp) = 
-	    (P.singleton name, PPresent (tc_exp env exp)) in
+      (P.singleton name, PPresent (tc_exp env exp)) in
     let get_names (name, _) names = 
       P.union names (P.singleton name) in
     let rest = List.fold_right get_names fields (P.singleton "__proto__") in
@@ -221,9 +221,9 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
       TObject (mk_obj_typ ((rest', PAbsent)::(map mk_field fields)))
     else
       TObject (mk_obj_typ
-		             ((rest', PAbsent)::(P.singleton "__proto__",
-				                             PPresent (TId "Object")) 
-	                :: (map mk_field fields)))
+                 ((rest', PAbsent)::(P.singleton "__proto__",
+                                     PPresent (TId "Object")) 
+                  :: (map mk_field fields)))
   | EBracket (p, obj, field) -> 
     begin match expose_simpl_typ env (tc_exp env field) with
       | TRegex pat -> inherits p env (un_null (tc_exp env obj)) pat
@@ -236,11 +236,11 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     match expose_simpl_typ env tobj, 
       expose_simpl_typ env (tc_exp env field), tc_exp env value with
         | TObject o, (TRegex idx_pat as tfld), typ ->
-	        let fs : field list = fields o in
+          let fs : field list = fields o in
           let okfield (fld_pat, prop) = 
             if P.is_overlapped fld_pat idx_pat
             then match prop with
-		          | PInherited s
+              | PInherited s
               | PPresent s
               | PMaybe s -> 
                 if not (subtype env typ s) then
@@ -266,10 +266,10 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     begin match (tc_exp env e1, tc_exp env e2) with
       | TRegex _, _
       | _, TRegex _ -> 
-	      TRegex P.all
+        TRegex P.all
       | t1, t2 ->
-	      tc_exp env (EApp (p, EId (p, "+"), [ ECheat (p, t1, e1); 
-					                                   ECheat (p, t2, e2) ]))
+        tc_exp env (EApp (p, EId (p, "+"), [ ECheat (p, t1, e1); 
+                                             ECheat (p, t2, e2) ]))
     end
   | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> 
@@ -278,55 +278,55 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
         | TArrow (expected_typs, result_typ) ->
           let args = fill (List.length expected_typs - List.length args) 
             (EConst (p, JavaScript_syntax.CUndefined)) args in
-					begin
+          begin
             try List.iter2 (check env) args expected_typs
-						with Invalid_argument "List.iter2" -> 
+            with Invalid_argument "List.iter2" -> 
               typ_mismatch p
                 (sprintf "arity-mismatch:  %d args expected, but %d given"
-									 (List.length expected_typs) (List.length args))
-					end;
-					result_typ
+                   (List.length expected_typs) (List.length args))
+          end;
+          result_typ
         | TIntersect (t1, t2) -> 
           with_typ_exns
             (fun () ->
-						  try 
-							  let r1 = check_app t1 in 
-							  begin 
-								  try
+              try 
+                let r1 = check_app t1 in 
+                begin 
+                  try
                     let r2 = check_app t2 in
                     typ_intersect env r1 r2
                   with | Typ_error _ -> r1
-							  end
+                end
               with | Typ_error _ -> check_app t2)
-				| (TForall _) as quant_typ -> 
-					begin match Typ.forall_arrow quant_typ with
-						| None -> 
-							raise (Typ_error (p, sprintf "expected function, got %s"
-								(string_of_typ quant_typ)))
-						| Some (typ_vars, (TArrow (_, r) as arrow_typ)) ->
+        | (TForall _) as quant_typ -> 
+          begin match Typ.forall_arrow quant_typ with
+            | None -> 
+              raise (Typ_error (p, sprintf "expected function, got %s"
+                (string_of_typ quant_typ)))
+            | Some (typ_vars, (TArrow (_, r) as arrow_typ)) ->
               (* guess-work breaks bidirectionality *)
               let arg_typs = map (tc_exp env) args in
               let assumed_arg_exps = 
                 List.map2 (fun e t -> ECheat (p, t, e)) args arg_typs in
-							let assoc =
-								typ_assoc env arrow_typ (TArrow (arg_typs, r)) in
-							let guess_typ_app exp typ_var = 
-								try
-									let guessed_typ = IdMap.find typ_var assoc in
-									ETypApp (p, exp, guessed_typ) 
-								with Not_found -> begin
-									raise (Typ_error (p, "$$$ could not instantiate")) end in
-							let guessed_exp = 
-								fold_left guess_typ_app (ECheat (p, quant_typ, f)) 
-									typ_vars in
-							tc_exp env (EApp (p, guessed_exp, assumed_arg_exps))
-						| Some _ -> failwith "expected TArrow from forall_arrow"
-					end
-				| not_func_typ ->
+              let assoc =
+                typ_assoc env arrow_typ (TArrow (arg_typs, r)) in
+              let guess_typ_app exp typ_var = 
+                try
+                  let guessed_typ = IdMap.find typ_var assoc in
+                  ETypApp (p, exp, guessed_typ) 
+                with Not_found -> begin
+                  raise (Typ_error (p, "$$$ could not instantiate")) end in
+              let guessed_exp = 
+                fold_left guess_typ_app (ECheat (p, quant_typ, f)) 
+                  typ_vars in
+              tc_exp env (EApp (p, guessed_exp, assumed_arg_exps))
+            | Some _ -> failwith "expected TArrow from forall_arrow"
+          end
+        | not_func_typ ->
           (* even in an intersection, this should count as a genuine error *)
           raise (Typ_error (p,
                             sprintf "expected function, got %s" 
-							                (string_of_typ not_func_typ)))
+                              (string_of_typ not_func_typ)))
       end in 
     check_app (un_null (tc_exp env f))
   | ERec (binds, body) -> 
@@ -374,7 +374,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
         raise
           (Typ_error (p, sprintf "expected forall-type in type application, \
                                   got:\n%s\ntype argument is:\n%s"
-		        (string_of_typ t) (string_of_typ u)))
+            (string_of_typ t) (string_of_typ u)))
     end
   | ECheat (p, t, _) -> t
   | EParen (p, e) -> tc_exp env e
