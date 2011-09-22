@@ -26,7 +26,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     else
       begin
         incr num_typ_errors;
-        eprintf "%s : %s\n" (string_of_position p) s
+        eprintf "type error at %s : %s\n" (string_of_position p) s
       end
 
   let get_num_typ_errors () = !num_typ_errors

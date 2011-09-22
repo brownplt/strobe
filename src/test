@@ -91,13 +91,6 @@ do
   fi
 done
 
-cd ../tests/contracts
-for file in *.js
-do
-  echo -ne "\r\e[KTest ../tests/contracts/$file ... "
-  ./runtest.sh $file
-done
-
 cd ../gadgets
 for file in *.js
 do

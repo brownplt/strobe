@@ -158,8 +158,7 @@ let action_pretypecheck () : unit =
 let action_tc () : unit = 
   let _ = typecheck (get_env ()) (weave_annotations (get_typedjs ())) in
 	if get_num_typ_errors () > 0 then
-    raise (Typ_error ((dummy_pos, dummy_pos),
-                      sprintf "%d type errors" (get_num_typ_errors ())))
+    exit 2
 	else
     if get_print_contracts () then
       let tr_map = mk_contract_transformers !contracts in
@@ -200,19 +199,24 @@ let main () : unit =
 
     ]
     (fun s -> set_cin (open_in s) s)
-    "Usage: jst [options] [file]\noptions are:\n";;
+    "Usage: jst [options] [file]\noptions are:\n"
 
-Printexc.print main ();
-let exitcode = begin
-  try
-    !action (); 0
-  with 
-      Failure s ->  eprintf "%s\n" s; 3
-    | Not_well_formed (p, s) -> 
-        eprintf "%s not well-formed:\n%s\n" (string_of_position p) s; 2
-    | Typ_error (p, s) ->
-        eprintf "%s type error:\n%s\n" (string_of_position p) s; 2
-end in
+let cleanup () =
   pp_print_flush std_formatter ();
-  pp_print_flush err_formatter ();
-  exit exitcode
+  pp_print_flush err_formatter ();;
+
+at_exit cleanup;
+Printexc.print main ();
+try
+  !action (); 
+  exit 0
+with 
+    Failure s ->  eprintf "%s\n" s; exit 3
+  | Not_well_formed (p, s) -> 
+      eprintf "%s not well-formed:\n%s\n" (string_of_position p) s; exit 2
+  | Typ_error (p, s) ->
+      eprintf "fatal type error at %s: %s\n" (string_of_position p) s; exit 2
+  | Sb_kinding.Kind_error s ->
+      eprintf "type error (kinding): %s\n" s; exit 2
+  | Sb_desugar.Typ_stx_error s -> 
+      eprintf "type error (annotation): %s\n" s; exit 2

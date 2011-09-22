@@ -188,8 +188,9 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
            (string_of_typ s));
         t
     end
-  | ELabel (p, t, e) -> 
-    raise (Typ_error (p, "cannot calculate type for label"))
+  | ELabel (p, lbl, e) -> 
+    (* This is a valid assumption for JavaScript. *)
+    tc_exp (bind_lbl lbl (TPrim Undef) env) e
   | EBreak (p, lbl, e) ->
     let lbl_typ = 
       try lookup_lbl lbl env
