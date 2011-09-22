@@ -80,6 +80,9 @@ let rec object_and_function p (expr : expr) : expr * expr = match expr with
     (this, ParenExpr (p, e))
   | expr -> (IdExpr (bad_p, "%global"), expr)
 
+let forin_ix_typ = 
+  TSource (TRegex (P.negate (P.parse Lexing.dummy_pos "__proto__")))
+
 let rec exp (env : env) expr = match expr with
   | ConstExpr (a, c) -> EConst (a, c)
   | ArrayExpr (a, es) -> 
@@ -179,8 +182,7 @@ let rec exp (env : env) expr = match expr with
   | FuncStmtExpr (p, _, _, _) ->
       raise (Not_well_formed (p, "funcasdasdtion is missing a type annotation"))
   | ForInExpr (p, x, obj, body) ->
-    let ix_typ = TRef (TRegex P.all) in
-    let loop_typ = TArrow ([ix_typ], TPrim Undef) in
+    let loop_typ = TArrow ([forin_ix_typ], TPrim Undef) in
     ERec ([("%loop", loop_typ,
             EAssertTyp (p, loop_typ, 
             EFunc (p, [x], {func_loop = true;
@@ -188,9 +190,9 @@ let rec exp (env : env) expr = match expr with
 		   (* TODO: not fully-faithful--stopping condition missing *)
                    ESeq (p, exp env body, 
                          EApp (p, EId (p, "%loop"), 
-                               [ ECheat (p, ix_typ, EId (p, x)) ])))))],
+                               [ ECheat (p, forin_ix_typ, EId (p, x)) ])))))],
 	  EApp (p, EId (p, "%loop"), 
-		[ ECheat (p, ix_typ, EId (p, x)) ]))
+		[ ECheat (p, forin_ix_typ, EId (p, x)) ]))
   | ParenExpr (a, e) -> EParen (a, exp env e)
 
 and match_func env expr = match expr with
