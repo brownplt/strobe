@@ -210,6 +210,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
   | EParen (_, e) -> cps_exp e throw k
 
 and cps_bind ((name, t, e) : id * typ * exp) = match e with
+  | EAssertTyp (_, _, e) -> cps_bind (name, t, e)
   | EFunc (_, args, fi, body) ->
     if fi.func_loop then
       let k = new_name () in
