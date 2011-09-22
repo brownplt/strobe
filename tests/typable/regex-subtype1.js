@@ -1,3 +1,3 @@
-function foo(rx) /*: /_(.*)__/ -> /_(.*)_/ */ {
+function foo(rx) /*: /_(.*)__/ -> /_(.*)._/ */ {
     return rx;
 }

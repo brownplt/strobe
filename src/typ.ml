@@ -527,15 +527,16 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             try subtype cache s t1
             with Not_subtype _ -> subtype cache s t2
           end
-	| TArrow (args1, r1), TArrow (args2, r2) ->
-          begin
-            try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
-            with Invalid_argument _ -> mismatched_typ_exn s t
-          end
-        | TId x, t -> 
-	  subtype cache (fst2 (IdMap.find x env)) t
-	| TObject obj1, TObject obj2 ->
-	  subtype_object' env cache (fields obj1) (fields obj2)
+        | TArrow (args1, r1), TArrow (args2, r2) ->
+                begin
+                  try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
+                  with Invalid_argument _ -> mismatched_typ_exn s t
+                end
+              | TId x, t -> 
+          subtype cache (fst2 (IdMap.find x env)) t
+        | TObject obj1, TObject obj2 ->
+            eprintf "subt _ %s %s\n" (string_of_typ s) (string_of_typ t);
+            subtype_object' env cache (fields obj1) (fields obj2)
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
         | TSource s, TSource t -> subtype cache s t
         | TSink s, TSink t -> subtype cache t s
@@ -562,13 +563,12 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   and subtype_object' env (cache : TPSet.t) (flds1 : field list)
       (flds2 : field list) : TPSet.t =
-    let rec subtype_field env cache ((pat1, fld1) : field) 
-        ((pat2, fld2) : field) : TPSet.t = 
+    let rec subtype_field env cache  (pat1, fld1) (pat2, fld2) = 
       match (fld1, fld2) with
-        | (PAbsent, PAbsent) -> cache
+        | (PAbsent, PAbsent)
         | (PAbsent, PMaybe _) -> cache
-        | (PPresent t1, PPresent t2) -> subt env cache t1 t2
-        | (PPresent t1, PMaybe t2) -> subt env cache t1 t2
+        | (PPresent t1, PPresent t2)
+        | (PPresent t1, PMaybe t2)
         | (PMaybe t1, PMaybe t2) -> subt env cache t1 t2
         | (_, PInherited _) -> cache
         | _ -> mismatch_fld_exn (pat1, fld1) (pat2, fld2) in
@@ -593,7 +593,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       List.fold_right check_prop flds2 ([], flds1, cache) in
     let cache' = List.fold_right (fun (pat, prop) cache -> match prop with
       | PInherited typ -> 
-	(* TODO BAD PERFORMANCE *)
+	      (* TODO BAD PERFORMANCE *)
         check_inherited env cache pat (TObject (mk_obj_typ flds1)) typ
       | _ -> cache)
       flds2 cache in
@@ -612,14 +612,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       true
     with 
       | Invalid_argument _ -> false (* unequal lengths *)
-      | Not_subtype _ -> false
+      (* | Not_subtype _ -> false *)
 
   and subtype env s t = 
     try
       let _ = subt env TPSet.empty s t in
       true
-    with Not_subtype _ -> false
-      | Not_found -> failwith "not found in subtype!!!"
+    with 
+      | Not_subtype _ -> false
 
   and typ_union cs s t = match subtype cs s t, subtype cs t s with
       true, true -> s (* t = s *)
@@ -632,13 +632,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | true, false -> s (* s <: t *)
     | false, true -> t
     | false, false -> TIntersect (s, t)
-
-  let subtype env s t = 
-    try
-      let _ = subt env TPSet.empty s t in
-      true
-    with Not_subtype _ -> false
-
+  
   let assert_subtyp  env p s t = 
 (*      let _ = subt env TPSet.empty s t in
       () *)
