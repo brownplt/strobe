@@ -179,16 +179,18 @@ let rec exp (env : env) expr = match expr with
   | FuncStmtExpr (p, _, _, _) ->
       raise (Not_well_formed (p, "funcasdasdtion is missing a type annotation"))
   | ForInExpr (p, x, obj, body) ->
-    let loop_typ = TArrow ([TRegex P.all], TPrim Undef) in
+    let ix_typ = TRef (TRegex P.all) in
+    let loop_typ = TArrow ([ix_typ], TPrim Undef) in
     ERec ([("%loop", loop_typ,
             EAssertTyp (p, loop_typ, 
             EFunc (p, [x], {func_loop = true;
                             func_owned = IdSet.empty },
 		   (* TODO: not fully-faithful--stopping condition missing *)
                    ESeq (p, exp env body, 
-                         EApp (p, EId (p, "%loop"), [])))))],
+                         EApp (p, EId (p, "%loop"), 
+                               [ ECheat (p, ix_typ, EId (p, x)) ])))))],
 	  EApp (p, EId (p, "%loop"), 
-		[ ECheat (p, TRegex P.all, EId (p, x)) ]))
+		[ ECheat (p, ix_typ, EId (p, x)) ]))
   | ParenExpr (a, e) -> EParen (a, exp env e)
 
 and match_func env expr = match expr with
