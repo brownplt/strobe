@@ -139,7 +139,14 @@ module type TYP = sig
 
   val fields : obj_typ -> field list
 
+  (** Pattern for absent field *)
+  val absent_pat : obj_typ -> pat
+
+  (** includes absent *)
   val cover_pat : obj_typ -> pat
+
+  (** excludes absent *)
+  val possible_field_cover_pat : obj_typ -> pat
 
   val typ_subst : id -> typ -> typ -> typ
 

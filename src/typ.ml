@@ -71,7 +71,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     fields : (pat * prop) list;
     cached_parent_typ : typ option option ref;
     cached_guard_pat : pat option ref;
-    cached_cover_pat : pat Lazy.t
+    cached_cover_pat : pat option ref;
+    cached_possible_cover_pat : pat Lazy.t
   }
       
   and prop = 
@@ -175,15 +176,33 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   let proto_str = "__proto__"
     
   let proto_pat = P.singleton proto_str
+  
+  let absent_pat ot = 
+    let f (pat, prop) pat_acc = match prop with
+      | PAbsent -> P.union pat pat_acc
+      |  _ -> pat_acc in
+    fold_right f ot.fields P.empty
 
   let mk_obj_typ (fs: field list) : obj_typ = 
+    let fn (pat, prop) = match prop with
+      | PAbsent -> None
+      | _ -> Some pat in
     { fields = fs;
       cached_parent_typ = ref None;
       cached_guard_pat = ref None;
-      cached_cover_pat = lazy (fold_right P.union (map fst2 fs) P.empty)
+      cached_possible_cover_pat = 
+        lazy (fold_right P.union (L.filter_map fn fs) P.empty);
+      cached_cover_pat = ref None
     }
+  
+  let possible_field_cover_pat ot = Lazy.force ot.cached_possible_cover_pat
 
-  let cover_pat ot = Lazy.force ot.cached_cover_pat
+  let cover_pat ot =  match !(ot.cached_cover_pat) with
+    | None -> 
+      let p = P.union (absent_pat ot) (possible_field_cover_pat ot) in
+      ot.cached_cover_pat := Some p;
+      p
+    | Some p -> p
 
   let fields ot = ot.fields
 
@@ -237,10 +256,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TArrow (t2s, t3)  ->
       TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
     | TObject o ->
-      TObject { fields = map (second2 (prop_subst x s)) o.fields;
-    cached_parent_typ = ref None;
-    cached_guard_pat = ref None;
-    cached_cover_pat = o.cached_cover_pat }
+        TObject (mk_obj_typ (map (second2 (prop_subst x s)) o.fields))
     | TRef t -> TRef (typ_subst x s t)
     | TSource t -> TSource (typ_subst x s t)
     | TSink t -> TSink (typ_subst x s t)
@@ -447,18 +463,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
        (sprintf " %s is not a subtype of %s"
     (string_of_typ t1) (string_of_typ t2)))
 
-  let extra_fld_exn pat prop =
-    raise (Not_subtype
-       (sprintf "ExtraField - %s : %s\n" (P.pretty pat) 
-    (string_of_prop prop)))
-
-  let mismatch_fld_exn (pat1, prop1) (pat2, prop2) =
-    raise (Not_subtype
-       ( sprintf "Mismatched - %s : %s and %s : %s\n"
-     (P.pretty pat1) (string_of_prop prop1)
-     (P.pretty pat2) (string_of_prop prop2)))
-
-
   let sel_not_absent (p, f) = match prop_typ f with
     | None -> None
     | Some _ -> Some p
@@ -540,7 +544,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
               | TId x, t -> 
           subtype cache (fst2 (IdMap.find x env)) t
         | TObject obj1, TObject obj2 ->
-            subtype_object' env cache (fields obj1) (fields obj2)
+            subtype_object env cache obj1 obj2
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
         | TSource s, TSource t -> subtype cache s t
         | TSink s, TSink t -> subtype cache t s
@@ -565,50 +569,60 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   and check_inherited env cache lang other_proto typ =
     subt env cache typ (inherits (Lexing.dummy_pos, Lexing.dummy_pos) env other_proto lang)
 
-  and subtype_object' env (cache : TPSet.t) (flds1 : field list)
-      (flds2 : field list) : TPSet.t =
-    let rec subtype_field env cache  (pat1, fld1) (pat2, fld2) = 
-      match (fld1, fld2) with
-        | (PAbsent, PAbsent)
-        | (PAbsent, PMaybe _) -> cache
-        | (PPresent t1, PPresent t2)
-        | (PPresent t1, PMaybe t2)
-        | (PMaybe t1, PMaybe t2) -> subt env cache t1 t2
-        | (_, PInherited _) -> cache
-        | _ -> mismatch_fld_exn (pat1, fld1) (pat2, fld2) in
-    let rec check_prop (((m_j : pat), (g_j : prop)) as p2)
-        ((p2s : field list), (fs : field list), (cache : TPSet.t)) = 
-      match fs with
-        | [] -> (p2::p2s, [], cache)
-        | (l_i, f_i)::rest ->
-          match P.is_overlapped l_i m_j with
-            | true ->
-              let cache' = subtype_field env cache (l_i, f_i) (m_j, g_j) in
-              (* Remove the stuff in l_i (the lhs), for the next iteration *)
-              let (pat'', _) as p2' = ((P.subtract m_j l_i), g_j) in
-              (* Get the result, and re-build the rhs list, subtracting the
-                 relevant part of overlap*)
-              let p2s'', fs1', cache'' = check_prop p2' (p2s, rest, cache') in
-              p2s'', (P.subtract l_i m_j, f_i)::fs1', cache'
-            | false ->
-              let p2s', fs1', cache' = check_prop p2 (p2s, rest, cache) in
-              p2s', (P.subtract l_i m_j, f_i)::fs1', cache' in
-    let (flds2', flds1', cache) = 
-      List.fold_right check_prop flds2 ([], flds1, cache) in
-    let cache' = List.fold_right (fun (pat, prop) cache -> match prop with
-      | PInherited typ -> 
-        (* TODO BAD PERFORMANCE *)
-        check_inherited env cache pat (TObject (mk_obj_typ flds1)) typ
-      | _ -> cache)
-      flds2 cache in
-    try
-      let (pat, fld) =
-        List.find (fun (pat, _) -> not (P.is_empty pat)) flds2' in
-      match fld with 
-        | PInherited _ -> cache'
-        | _ -> extra_fld_exn pat fld
-    with Not_found -> cache'
+  and subtype_presence prop1 prop2 = match prop1, prop2 with
+    | PAbsent _, _ -> failwith "oops"
+    | _, PAbsent _ -> failwith "oops"
+    | PPresent _, PPresent _ 
+    | PMaybe _, PMaybe _
+    | PInherited _, PInherited _
+    | PPresent _ , PMaybe _
+    | PPresent _, PInherited _ -> ()
+    | _, _ -> raise (Not_subtype "incompatible presence annotations")
 
+  and subtype_object env cache obj1 obj2 : TPSet.t =
+    let bad_p = (Lexing.dummy_pos, Lexing.dummy_pos) in
+    let lhs_absent = absent_pat obj1 in
+    let rhs_absent = absent_pat obj2 in
+    let check_simple_overlap ((pat1, prop1), (pat2, prop2)) cache = 
+      match prop_typ prop1, prop_typ prop2 with
+        | Some t1, Some t2 -> 
+            if P.is_overlapped pat1 pat2 then
+              begin
+                subtype_presence prop1 prop2;
+                subt env cache t1 t2
+              end
+            else
+              cache
+        | _ -> cache (* absents *) in
+    let check_pat_containment () =
+      (if not (P.is_subset (pat_env env) (possible_field_cover_pat obj2) 
+                           (cover_pat obj1)) then
+         match P.example (P.subtract (possible_field_cover_pat obj2)
+                                     (cover_pat obj1)) with
+         | Some ex -> raise (Not_subtype
+             ("fields on the RHS that are not on the LHS, e.g. " ^ ex ^ 
+              "; cover_pat obj1 = " ^ (P.pretty (cover_pat obj1) ^
+              "; possible_pat obj1 = " ^ (P.pretty (possible_field_cover_pat obj1)))))
+         | None -> failwith "error building counterexample for (2)");
+      (if not (P.is_subset (pat_env env) rhs_absent lhs_absent); 
+          then raise (Not_subtype "violated 2-2")) in
+    let check_lhs_absent_overlap (rhs_pat, rhs_prop) = 
+      if rhs_prop = PAbsent then ()
+      else if P.is_overlapped rhs_pat lhs_absent then
+        match rhs_prop with
+          | PMaybe _ | PInherited _ -> ()
+          | _ -> raise (Not_subtype "LHS absent, RHS present") in
+    let check_rhs_inherited (rhs_pat, rhs_prop) cache = match rhs_prop with
+      | PInherited rhs_typ -> 
+          let lhs_typ = inherits bad_p env (TObject obj1) rhs_pat in
+          subt env cache lhs_typ rhs_typ
+      | _ -> cache in
+    let cache = 
+      L.fold_right check_simple_overlap (L.pairs obj1.fields obj2.fields)
+                   cache in
+    check_pat_containment ();
+    L.iter check_lhs_absent_overlap obj2.fields;
+    fold_right check_rhs_inherited obj2.fields cache
 
   and subtypes env ss ts = 
     try 
@@ -616,14 +630,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       true
     with 
       | Invalid_argument _ -> false (* unequal lengths *)
-      (* | Not_subtype _ -> false *)
+      | Not_subtype _ -> false
 
   and subtype env s t = 
     try
       let _ = subt env TPSet.empty s t in
       true
     with 
-      | Not_subtype _ -> false
+      | Not_subtype str -> false
 
   and typ_union cs s t = match subtype cs s t, subtype cs t s with
       true, true -> s (* t = s *)
