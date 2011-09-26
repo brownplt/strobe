@@ -27,7 +27,8 @@ let rec mk (nfa : nfa) (rx : regex) (start : state) (stop : state) : unit =
       mk nfa rx2 start stop
     | Star rx' ->
       mk nfa rx' start stop;
-      add_trans nfa start Epsilon stop
+      add_trans nfa start Epsilon stop;
+      add_trans nfa stop Epsilon start
     | Empty -> add_trans nfa start Epsilon stop
     | Concat (rx1, rx2) ->
       let mid = new_state nfa in
