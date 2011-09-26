@@ -593,7 +593,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             | false ->
               let p2s', fs1', cache' = check_prop p2 (p2s, rest, cache) in
               p2s', (P.subtract l_i m_j, f_i)::fs1', cache' in
-    let (flds2', flds1', cache') = 
+    let (flds2', flds1', cache) = 
       List.fold_right check_prop flds2 ([], flds1, cache) in
     let cache' = List.fold_right (fun (pat, prop) cache -> match prop with
       | PInherited typ -> 
@@ -603,7 +603,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       flds2 cache in
     try
       let (pat, fld) =
-  List.find (fun (pat, _) -> not (P.is_empty pat)) flds2' in
+        List.find (fun (pat, _) -> not (P.is_empty pat)) flds2' in
       match fld with 
         | PInherited _ -> cache'
         | _ -> extra_fld_exn pat fld
