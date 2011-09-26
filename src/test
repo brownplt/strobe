@@ -71,7 +71,7 @@ do
       continue
   fi
   errors=`echo "$result" | grep -ci "type error"`
-  if [ $errors -ne 1 ]; then
+  if [ $errors -lt 1 ]; then
     echo -e "\n$file: expected a type error error; got\n$result\n"
   fi
   tput el1
