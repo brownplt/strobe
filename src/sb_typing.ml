@@ -85,6 +85,9 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
               Sb_semicfa.semicfa (func_info.func_owned) env body 
             else 
               body in
+          (* printf "Owned = %s\n" (FormatExt.to_string
+            (IdSetExt.p_set FormatExt.text) func_info.func_owned);
+          printf "Rewritten to:\n%s\n\n\n" (string_of_exp body); *)
           check env body result_typ
       | _, t -> 
         raise (Typ_error (p, sprintf "invalid type annotation on a function: %s"

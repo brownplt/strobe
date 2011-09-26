@@ -471,8 +471,16 @@ module Annotate = struct
 
 end
 
+(* Initializes the heap and sets environment to reference heap locations. *)
+let init_heap x (loc, heap, env) = 
+  let rt = Env.lookup x env in
+  (loc - 1,
+   Heap.set_ref (Loc loc) (Absval.to_set rt)  heap,
+   Env.bind x (Absval.Ref (Loc loc)) env)
+
 let semicfa owned_ids typ_env exp =
   let env = Env.from_typ_env typ_env owned_ids in
+  let (_, heap, env) = IdSet.fold init_heap owned_ids (-1, Heap.empty, env) in
   let open Sb_semicps in
   let cpsexp = cps_exp exp "#exn" (Jmp "#ret") in
   (* TBot is the wrong type *)
@@ -480,7 +488,7 @@ let semicfa owned_ids typ_env exp =
     env in
   let env = Env.bind "#exn" (Absval.Val (ExternalLambda Typedjs_syntax.TBot)) 
     env in
-  flow env Heap.empty cpsexp;
+  flow env heap cpsexp;
   Annotate.a_exp exp
 
 
