@@ -3,6 +3,11 @@ include List
 let rec tails (lst : 'a list) : 'a list list = match lst with
   | [] -> [ [] ]
   | _ :: lst' -> lst :: (tails lst')
+
+let rec pairs (lst1 : 'a list) (lst2 : 'b list) : ('a * 'b) list = 
+  match lst1 with
+    | [] -> []
+    | (x :: rest) -> (map (fun y -> (x, y)) lst2) @ (pairs rest lst2)
     
 let iter_pairs (f : 'a -> 'a -> unit) (lst : 'a list) : unit =
   let g lst = match lst with
