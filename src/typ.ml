@@ -390,19 +390,17 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   let rec parent_typ' env flds = match flds with
     | [] -> None
-    | ((pat, fld) :: flds') -> 
-      match P.is_subset (pat_env env) proto_pat pat with
-        | true -> begin match fld with
-      | PPresent t -> 
-        begin match expose env (simpl_typ env t) with
-    | TPrim Null -> Some (TPrim Null)
-    | TSource p
-    | TRef p -> Some (expose env (simpl_typ env p))
-    | _ -> failwith "invalid parent type"
+    | ((pat, fld)::flds') -> match P.is_subset (pat_env env) proto_pat pat with
+      | true -> begin match fld with
+        | PPresent t -> begin match expose env (simpl_typ env t) with
+          | TPrim Null -> Some (TPrim Null)
+          | TSource p
+          | TRef p -> Some (expose env (simpl_typ env p))
+          | _ -> failwith "invalid parent type"
+          end
+        | _ -> failwith "maybe proto wtf"
         end
-      | _ -> failwith "maybe proto wtf"
-        end
-        | false -> parent_typ' env flds'
+      | false -> parent_typ' env flds'
 
   let rec parent_typ (env : typenv) typ = 
     match expose env (simpl_typ env typ) with
