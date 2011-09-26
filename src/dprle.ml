@@ -39,12 +39,12 @@ module Set : Sig.SET = struct
     | Empty -> Pat uniq_empty
     | All -> Pat uniq_all
     | Union (t1, t2) -> begin match simpl t1, simpl t2 with
-	| Pat r1, Pat r2 -> Pat (union r1 r2)
-	| t1', t2' -> Union (t1', t2')
+    	| Pat r1, Pat r2 -> Pat (union r1 r2)
+    	| t1', t2' -> Union (t1', t2')
     end
     | Inter (t1, t2) -> begin match simpl t1, simpl t2 with
-	| Pat r1, Pat r2 -> Pat (intersect r1 r2)
-	| t1', t2' -> Inter (t1', t2')
+    	| Pat r1, Pat r2 -> Pat (intersect r1 r2)
+    	| t1', t2' -> Inter (t1', t2')
     end
     | Diff (t1, t2) -> begin match simpl t1, simpl t2 with
 	| Pat r1, Pat r2 -> Pat (subtract r1 r2)
