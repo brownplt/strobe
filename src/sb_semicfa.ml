@@ -191,6 +191,7 @@ module Env : sig
   val is_owned : id -> t -> bool
   val bind : id -> Absval.t -> t -> t
   val from_typ_env : Typedjs_env.env -> IdSet.t -> t
+  val runtime : typ IdMap.t -> typ -> Absval.t
 end = struct
 
   type t = {
@@ -350,6 +351,8 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
       | Object _ -> (Absval.Set (RTSet.singleton RT.Object), heap)
       | Array _ -> (Absval.Set (RTSet.singleton RT.Object), heap)
       | UpdateField _ -> (Absval.Set (RTSet.singleton RT.Object), heap) in
+      (* | AssertTyp (t, v) -> printf "Using a hint ...\n";      
+          (Env.runtime IdMap.empty t, heap) in *)
     flow (Env.bind x v env) heap cont
   | Rec (node, binds, cont) ->
     let env = 

@@ -21,6 +21,7 @@ type bindexp =
   | Object of (string * cpsval) list
   | Array of cpsval list
   | UpdateField of cpsval * cpsval * cpsval
+  | AssertTyp of typ * cpsval
 
 and cpsexp =
   | Rec of node * (id * cpsval) list * cpsexp
@@ -141,7 +142,10 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
     else
       ret k (ExternalLambda t)
   | EAssertTyp (_, t, e) -> 
-    cps_exp e throw k
+    cps' e throw (fun v ->
+      let x = new_name () in
+      Bind (new_node (), x,  AssertTyp (t, v),
+            ret k (mk_id x))) 
   | EApp (_, func, args) -> 
     cps' func throw
       (fun f ->

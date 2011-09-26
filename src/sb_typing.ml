@@ -58,16 +58,11 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
   | ELet (_, x, e1, e2) -> 
     check (bind_id x (tc_exp env e1) env) e2 typ
   | EFunc (p, args, func_info, body) -> 
-    begin
-      let misowned_vars = IdSet.inter !consumed_owned_vars 
-        func_info.func_owned in
-      if (not (IdSet.is_empty misowned_vars)) then
-        raise (Typ_error (p, sprintf "identifier %s is already owned"
-          (IdSet.choose misowned_vars)))
-      else
-        consumed_owned_vars := IdSet.union !consumed_owned_vars
-          func_info.func_owned;
-    end;
+    let misowned_vars = IdSet.inter !consumed_owned_vars 
+      func_info.func_owned in
+    consumed_owned_vars := IdSet.union !consumed_owned_vars
+      func_info.func_owned;
+    let owned_vars = IdSet.diff func_info.func_owned misowned_vars in
     let expected_typ = check_kind p env typ in
     begin match bind_typ env (expose_simpl_typ env expected_typ) with
       | (env, TArrow (arg_typs, result_typ)) ->
@@ -82,12 +77,12 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
           let env = clear_labels env in
           let body = 
             if !is_flows_enabled then
-              Sb_semicfa.semicfa (func_info.func_owned) env body 
+              Sb_semicfa.semicfa owned_vars env body 
             else 
               body in
           (* printf "Owned = %s\n" (FormatExt.to_string
             (IdSetExt.p_set FormatExt.text) func_info.func_owned);
-          printf "Rewritten to:\n%s\n\n\n" (string_of_exp body); *)
+          printf "Rewritten to:\n%s\n\n\n" (string_of_exp body);  *)
           check env body result_typ
       | _, t -> 
         raise (Typ_error (p, sprintf "invalid type annotation on a function: %s"
