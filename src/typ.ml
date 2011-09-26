@@ -70,7 +70,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   and obj_typ = { 
     fields : (pat * prop) list;
     cached_parent_typ : typ option option ref;
-    cached_guard_pat : pat option ref
+    cached_guard_pat : pat option ref;
+    cached_cover_pat : pat Lazy.t
   }
       
   and prop = 
@@ -175,11 +176,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     
   let proto_pat = P.singleton proto_str
 
-      
   let mk_obj_typ (fs: field list) : obj_typ = 
     { fields = fs;
       cached_parent_typ = ref None;
-      cached_guard_pat = ref None }
+      cached_guard_pat = ref None;
+      cached_cover_pat = lazy (fold_right P.union (map fst2 fs) P.empty)
+    }
+
+  let cover_pat ot = Lazy.force ot.cached_cover_pat
 
   let fields ot = ot.fields
 
@@ -235,7 +239,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TObject o ->
       TObject { fields = map (second2 (prop_subst x s)) o.fields;
     cached_parent_typ = ref None;
-    cached_guard_pat = ref None }
+    cached_guard_pat = ref None;
+    cached_cover_pat = o.cached_cover_pat }
     | TRef t -> TRef (typ_subst x s t)
     | TSource t -> TSource (typ_subst x s t)
     | TSink t -> TSink (typ_subst x s t)

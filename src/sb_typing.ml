@@ -241,6 +241,13 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     match expose_simpl_typ env tobj, 
       expose_simpl_typ env (tc_exp env field), tc_exp env value with
         | TObject o, (TRegex idx_pat as tfld), typ ->
+          begin
+            if not (P.is_subset (pat_env (tid_env env)) 
+                                idx_pat (cover_pat o))
+              then
+                typ_mismatch p (sprintf "%s affects hidden fields"
+                                        (P.pretty idx_pat))
+          end;
           let fs : field list = fields o in
           let okfield (fld_pat, prop) = 
             if P.is_overlapped fld_pat idx_pat

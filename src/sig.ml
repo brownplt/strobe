@@ -139,6 +139,8 @@ module type TYP = sig
 
   val fields : obj_typ -> field list
 
+  val cover_pat : obj_typ -> pat
+
   val typ_subst : id -> typ -> typ -> typ
 
   val simpl_typ : typenv -> typ -> typ
@@ -162,5 +164,7 @@ module type TYP = sig
   val get_num_typ_errors : unit -> int
 
   val with_typ_exns : (unit -> 'a) -> 'a
+
+  val pat_env : typenv -> pat IdMap.t
 
 end
