@@ -1,3 +1,3 @@
-function foo(o, s) /*: {proto: {y: Bool}; x: Int} * /(x|y)/ -> Int + Bool */ {
+function foo(o, s) /*: { __proto__: {y: Bool}, x: Int, y: _ } * /(x|y)/ -> Int + Bool */ {
     return o[s];
 }

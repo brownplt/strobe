@@ -1,8 +1,8 @@
 function foo(o, s)
 /*:
-    (rec o . {proto: Object, *: Int + 'o; /_(.*)_/: Any})
+    (rec o . { __proto__: Object, *: Int + 'o, /___(.*)_/: Any})
   * /([^_])(.*)([^_])/
- -> Undef + Int + (rec o . {proto: Object, *: Int + 'o; /_(.*)_/: Any})
+ -> Undef + Int + (rec o . { __proto__: Object, *: Int + 'o, /___(.*)_/: Any})
 */
 {
     return o[s];

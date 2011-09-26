@@ -502,9 +502,12 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
               (P.intersect pat (maybe_pats ot.fields)))
           | _ -> failwith "lookup non-object"
                end
-      else
-        raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ 
-                              " in " ^ string_of_typ t))
+      else begin match parent_typ env t with
+        | Some (TPrim Null) -> TPrim Undef
+        | _ ->
+          raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ 
+                               " in " ^ string_of_typ t))
+      end
     with Invalid_parent msg -> raise (Typ_error (p, msg))
 
   and subt env (cache : TPSet.t) s t : TPSet.t = 
