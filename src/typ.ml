@@ -127,8 +127,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TApp (t, ts) ->
   parens (horz [typ t; text "<"; horz (intersperse (text ",") (map typ ts));
         text ">"])
-      | TRegex pat -> 
-        squish [text "/"; text (P.pretty pat); text "/"]
+      | TRegex pat -> text (P.pretty pat)
       | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
       | TIntersect (t1, t2) -> horz [typ t1; text "&"; typ t2]
       | TArrow (tt::arg_typs, r_typ) ->

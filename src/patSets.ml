@@ -92,7 +92,10 @@ let pretty_helper v =
       else
 	StringSetExt.p_set text set
     | CoFinite set ->
-      horz [ squish [ text "-"; StringSetExt.p_set text set; text "-" ] ]
+      if StringSet.is_empty set then
+        text "Str"
+      else
+        horz [ squish [ text "-"; StringSetExt.p_set text set; text "-" ] ]
 
 
 let pretty v =

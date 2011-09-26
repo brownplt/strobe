@@ -99,13 +99,13 @@ do
   tput el1
 done
 
-cd ../gadgets
-for file in *.js
-do
-    echo -ne "\rTest ../tests/gadgets/$file ... "
-  ./runtest.sh $file
-  tput el1
-done
+# cd ../gadgets
+# for file in *.js
+# do
+#     echo -ne "\rTest ../tests/gadgets/$file ... "
+#   ./runtest.sh $file
+#   tput el1
+# done
 
 
 echo "Testing complete."
