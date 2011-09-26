@@ -387,6 +387,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   (L.filter_map select_pat_bound (IdMap.bindings env))
   IdMap.empty
 
+  exception Invalid_parent of string
 
   let rec parent_typ' env flds = match flds with
     | [] -> None
@@ -396,9 +397,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
           | TPrim Null -> Some (TPrim Null)
           | TSource p
           | TRef p -> Some (expose env (simpl_typ env p))
-          | _ -> failwith "invalid parent type"
+          | _ -> raise (Invalid_parent ("__proto__ is "^ (string_of_typ t)))
           end
-        | _ -> failwith "maybe proto wtf"
+        | _ -> raise (Invalid_parent "__proto__ must be present or hidden")
         end
       | false -> parent_typ' env flds'
 
@@ -482,27 +483,29 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       raise (Typ_error (p, "checking for a hidden or absent field"))
   | _ -> raise (Typ_error (p, "object expected"))
 
-  and  inherits p (env : typenv) (t : typ) (pat : pat) : typ = 
-    let t = expose env (simpl_typ env t) in
-    if P.is_subset (pat_env env) pat (inherit_guard_pat env t) then
-      begin match t with
-        | TObject ot -> 
-          let sel (f_pat, f_prop) =
-            if P.is_overlapped f_pat pat then prop_typ f_prop
-            else None in
-          L.fold_right (fun s t -> typ_union env s t)
-            (L.filter_map sel ot.fields)
-            (match parent_typ env t with
-              | None
-              | Some (TPrim Null) -> TBot
-              | Some parent_typ -> 
-          inherits p env parent_typ 
-            (P.intersect pat (maybe_pats ot.fields)))
-        | _ -> failwith "lookup non-object"
-             end
-    else
-      raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ " in "
-       ^ string_of_typ t))
+  and inherits p (env : typenv) (t : typ) (pat : pat) : typ =
+    try
+      let t = expose env (simpl_typ env t) in
+      if P.is_subset (pat_env env) pat (inherit_guard_pat env t) then
+        begin match t with
+          | TObject ot -> 
+            let sel (f_pat, f_prop) =
+              if P.is_overlapped f_pat pat then prop_typ f_prop
+              else None in
+            L.fold_right (fun s t -> typ_union env s t)
+              (L.filter_map sel ot.fields)
+              (match parent_typ env t with
+                | None
+                | Some (TPrim Null) -> TBot
+                | Some parent_typ -> 
+            inherits p env parent_typ 
+              (P.intersect pat (maybe_pats ot.fields)))
+          | _ -> failwith "lookup non-object"
+               end
+      else
+        raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ 
+                              " in " ^ string_of_typ t))
+    with Invalid_parent msg -> raise (Typ_error (p, msg))
 
   and subt env (cache : TPSet.t) s t : TPSet.t = 
     if TPSet.mem (s, t) cache then
