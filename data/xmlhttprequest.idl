@@ -1,0 +1,24 @@
+/* URL: http://www.w3.org/TR/2006/WD-XMLHttpRequest-20060927
+ * Accessed: 2 May 2009
+ */
+
+/* Copyright 2006 W3C. */
+interface XMLHttpRequest {
+           attribute EventListener   onreadystatechange;
+  readonly attribute unsigned short  readyState;
+  void               open(in DOMString method, in DOMString url);
+  void               open(in DOMString method, in DOMString url, in boolean async);
+  void               open(in DOMString method, in DOMString url, in boolean async, in DOMString user);
+  void               open(in DOMString method, in DOMString url, in boolean async, in DOMString user, in DOMString password);
+  void               setRequestHeader(in DOMString header, in DOMString value);
+  void               send();
+  void               send(in DOMString data);
+  void               send(in Document data);
+  void               abort();
+  DOMString          getAllResponseHeaders();
+  DOMString          getResponseHeader(in DOMString header);
+  readonly attribute DOMString       responseText;
+  readonly attribute Document        responseXML;
+  readonly attribute unsigned short  status;
+  readonly attribute DOMString       statusText;
+};

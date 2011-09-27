@@ -1,0 +1,15 @@
+/* URL: http://www.w3c.org/TR/DOM-Level-2-Views/
+ */
+
+  interface DocumentView;
+
+  // Introduced in DOM Level 2:
+  interface AbstractView {
+    readonly attribute DocumentView     document;
+  };
+
+  // Introduced in DOM Level 2:
+  interface DocumentView {
+    readonly attribute AbstractView     defaultView;
+  };
+

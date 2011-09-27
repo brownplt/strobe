@@ -1,0 +1,24 @@
+/* The Window object is described here:
+ *
+ *   http://www.w3.org/TR/Window/
+ *
+ * and uses the DOM Views:
+ *
+ *   http://www.w3.org/TR/DOM-Level-3-Views/idl-definitions.html
+ *   http://www.w3.org/TR/DOM-Level-2-Views/idl-definitions.html
+ *
+ * It is not clear what is going on, so this is made up.
+ * The Window that is really used is defined in core.tjs for now.
+ */
+
+interface Window {
+  attribute HTMLDocument document;
+  attribute WindowLocation location;
+
+  int setTimeout(in AnyFunction func, in int timelen);
+  void clearTimeout(in int timerid);
+  int parseInt(in String s);
+  void alert(in String s);
+  DOMString unescape(in DOMString x);
+
+};
