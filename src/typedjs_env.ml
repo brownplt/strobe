@@ -92,11 +92,12 @@ exception Not_subtype of subtype_exn
     | RT.Re _ -> typ_union env (TRegex any_fld) typ
     | RT.Bool -> typ_union env typ_bool typ
     | RT.Function ->
+      (* TODO(arjun): This should be a type operator invocation *)
       typ_union env (TObject (mk_obj_typ
-				[(proto_pat, PPresent (TId "Function"))])) typ 
-    | RT.Object -> 
+				[(proto_pat, Present, TId "Function")] P.empty)) typ 
+    | RT.Object -> (* TODO(arjun): This should be a type operator invocation *)
       typ_union env (TObject (mk_obj_typ
-				[proto_pat, PPresent (TId "Object")])) typ
+				[(proto_pat, Present, TId "Object")] P.empty)) typ
     | RT.Undefined -> typ_union env (TPrim Undef) typ
 
   let rtany = 
@@ -151,19 +152,20 @@ exception Not_subtype of subtype_exn
     let ci = 
       try IdMap.find cname env.typ_ids
       with Not_found -> 
-	raise (Not_wf_typ ("global object, " ^ cname ^ ", not found")) in
+        raise (Not_wf_typ ("global object, " ^ cname ^ ", not found")) in
     match ci with
-      | TRef (TObject o), KStar ->
-	let fs = fields o in
-        let add_field env ((x : pat), (p : prop)) = 
-	  begin match P.singleton_string x, p with
-            | (Some s, PPresent t) -> bind_id s (TRef t) env
-            | _, PAbsent -> env
-            | _ -> raise (Not_wf_typ (cname ^ " field was a regex in global"))
-        end in
-        List.fold_left add_field env fs
-      | _ -> 
-        raise (Not_wf_typ (cname ^ " global must be an object"))
+    | TRef (TObject o), KStar ->
+    	let fs = fields o in
+      let add_field env (x, pres, t) =
+        if pres = Present then
+          match P.singleton_string x with
+            | Some s -> bind_id s (TRef t) env
+            | None -> 
+              raise (Not_wf_typ (cname ^ " field was a regex in global"))
+        else
+          raise (Not_wf_typ "all fields on global must be present") in
+      List.fold_left add_field env fs
+    | _ -> raise (Not_wf_typ (cname ^ " global must be an object"))
 
 open Lexing
 
@@ -272,12 +274,7 @@ let rec typ_assoc (env : env) (typ1 : typ) (typ2 : typ) =
       assoc_merge (typ_assoc env s1 t1) (typ_assoc env s2 t2)
     | _ -> IdMap.empty
 
-and fld_assoc env (_, fld1) (_, fld2) = match (fld1, fld2) with
-  | PPresent s, PPresent t
-  | PMaybe s, PMaybe t ->
-    typ_assoc env s t
-  | _ -> IdMap.empty
-
+and fld_assoc env (_, _, s) (_, _, t) = typ_assoc env s t
 
 let tid_env env = env.typ_ids
 

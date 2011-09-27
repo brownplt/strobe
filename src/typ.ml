@@ -48,6 +48,11 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | KStar
     | KArrow of kind list * kind
   
+  type presence = 
+    | Inherited
+    | Present
+    | Maybe
+  
   type typ = 
     | TPrim of prim
     | TUnion of typ * typ
@@ -68,21 +73,15 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TFix of id * kind * typ (** recursive type operators *)
 
   and obj_typ = { 
-    fields : (pat * prop) list;
+    fields : (pat * presence * typ) list;
+    absent_pat : pat;
     cached_parent_typ : typ option option ref;
     cached_guard_pat : pat option ref;
     cached_cover_pat : pat option ref;
     cached_possible_cover_pat : pat Lazy.t
   }
       
-  and prop = 
-    | PInherited of typ
-    | PPresent of typ
-    | PMaybe of typ
-    | PAbsent
-
-
-  type field = pat * prop
+  type field = pat * presence * typ
 
   type typenv = (typ * kind) IdMap.t
 
@@ -147,7 +146,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
                       end) arg_typs));
               text "->";
               typ r_typ ]
-      | TObject flds -> braces (vert (map pat (flds.fields)))
+      | TObject flds -> 
+        let abs = horz [ text (P.pretty flds.absent_pat); text ": _" ] in
+        braces (vert (map pat (flds.fields) @ [abs]))
       | TRef s -> horz [ text "Ref"; parens (typ s) ]
       | TSource s -> horz [ text "Src"; parens (typ s) ]
       | TSink s -> horz [ text "Snk"; parens (typ s) ]
@@ -156,41 +157,30 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TId x -> text x
       | TRec (x, t) -> horz [ text "rec"; text x; text "."; typ t ]
   
-    and pat (k, p) = horz [ text (P.pretty k); text ":"; prop p;
-          text "," ]
-      
-    and prop p = match p with
-      | PPresent t -> typ t
-      | PMaybe t -> horz [ text "maybe"; typ t ]
-      | PInherited t -> squish [ text "^"; typ t]
-      | PAbsent -> text "_"
-  
+    and pat (k, pres, p) = 
+          let pretty_pres = match pres with
+            | Present -> text "!"
+            | Maybe -> text "?"
+            | Inherited -> text "^" in
+          horz [ text (P.pretty k); text ":"; pretty_pres; typ p; text "," ]
   end
 
   let string_of_typ = FormatExt.to_string Pretty.typ
-  let string_of_prop = FormatExt.to_string Pretty.prop
   let string_of_kind = FormatExt.to_string Pretty.kind
-
 
   let proto_str = "__proto__"
     
   let proto_pat = P.singleton proto_str
   
-  let absent_pat ot = 
-    let f (pat, prop) pat_acc = match prop with
-      | PAbsent -> P.union pat pat_acc
-      |  _ -> pat_acc in
-    fold_right f ot.fields P.empty
+  let absent_pat ot = ot.absent_pat
 
-  let mk_obj_typ (fs: field list) : obj_typ = 
-    let fn (pat, prop) = match prop with
-      | PAbsent -> None
-      | _ -> Some pat in
+  let mk_obj_typ (fs: field list) (absent_pat : pat): obj_typ = 
     { fields = fs;
+      absent_pat = absent_pat;
       cached_parent_typ = ref None;
       cached_guard_pat = ref None;
       cached_possible_cover_pat = 
-        lazy (fold_right P.union (L.filter_map fn fs) P.empty);
+        lazy (fold_right P.union (L.map fst3 fs) P.empty);
       cached_cover_pat = ref None
     }
   
@@ -204,12 +194,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | Some p -> p
 
   let fields ot = ot.fields
-
-  let prop_typ prop = match prop with
-    | PInherited t
-    | PPresent t
-    | PMaybe t -> Some t
-    | PAbsent -> None
 
   let rec free_typ_ids (typ : typ) : IdSet.t =
     let open IdSet in
@@ -232,11 +216,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TArrow (ss, t) 
       | TApp (t, ss) ->
   unions (free_typ_ids t :: (map free_typ_ids ss))
-      | TObject o ->
-  let sel (_, prop) = match prop_typ prop with
-    | None -> None
-    | Some s -> Some (free_typ_ids s) in
-  unions (L.filter_map sel o.fields)
+      | TObject o -> unions (L.map (fun (_, _, t) -> free_typ_ids t) o.fields)
       | TFix (x, _, t)
       | TRec (x, t) ->
   remove x (free_typ_ids t)
@@ -255,7 +235,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TArrow (t2s, t3)  ->
       TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
     | TObject o ->
-        TObject (mk_obj_typ (map (second2 (prop_subst x s)) o.fields))
+        TObject (mk_obj_typ (map (third3 (typ_subst x s)) o.fields) 
+                            o.absent_pat)
     | TRef t -> TRef (typ_subst x s t)
     | TSource t -> TSource (typ_subst x s t)
     | TSink t -> TSink (typ_subst x s t)
@@ -290,12 +271,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         TRec (y, typ_subst x s t)
       end
     | TApp (t, ts) -> TApp (typ_subst x s t, List.map (typ_subst x s) ts)
-
-  and prop_subst x s p = match p with
-    | PInherited typ -> PInherited (typ_subst x s typ)
-    | PPresent typ -> PPresent (typ_subst x s typ)
-    | PMaybe typ -> PMaybe (typ_subst x s typ)
-    | PAbsent -> PAbsent
 
   let rec simpl_typ typenv typ = match typ with
     | TPrim _ 
@@ -362,22 +337,15 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       let flds2 = fields o2 in
       List.length flds1 = List.length flds2
       && List.for_all2 simpl_equiv_fld flds1 flds2
+      && P.is_equal o1.absent_pat o2.absent_pat
     | TFix (x1, k1, t1), TFix (x2, k2, t2) ->
       x1 = x2 && k1 = k2 && simpl_equiv t1 t2
     | TLambda (args1, t1), TLambda (args2, t2) ->
       args1 = args2 && simpl_equiv t1 t2
     | _, _ -> false
 
-  and simpl_equiv_fld (pat1, fld1) (pat2, fld2) = 
-    P.is_equal pat1 pat2 &&
-      begin match (fld1, fld2) with
-  | PPresent t1, PPresent t2
-  | PInherited t1, PInherited t2
-  | PMaybe t1, PMaybe t2 ->
-    simpl_equiv t1 t2
-  | PAbsent, PAbsent -> true
-  | _ -> false
-      end
+  and simpl_equiv_fld (pat1, pres1, t1) (pat2, pres2, t2) = 
+    P.is_equal pat1 pat2 && pres1 = pres2 && simpl_equiv t1 t2
 
   let pat_env (env : typenv) : pat IdMap.t =
     let select_pat_bound (x, (t, _)) = match t with
@@ -391,13 +359,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   let rec parent_typ' env flds = match flds with
     | [] -> None
-    | ((pat, fld)::flds') -> match P.is_subset (pat_env env) proto_pat pat with
-      | true -> begin match fld with
-        | PPresent t -> begin match expose env (simpl_typ env t) with
+    | ((pat, pres, fld)::flds') -> 
+       match P.is_subset (pat_env env) proto_pat pat with
+      | true -> begin match pres with
+        | Present -> begin match expose env (simpl_typ env fld) with
           | TPrim Null -> Some (TPrim Null)
           | TSource p
           | TRef p -> Some (expose env (simpl_typ env p))
-          | _ -> raise (Invalid_parent ("__proto__ is "^ (string_of_typ t)))
+          | _ -> raise (Invalid_parent ("__proto__ is "^ (string_of_typ fld)))
           end
         | _ -> raise (Invalid_parent "__proto__ must be present or hidden")
         end
@@ -421,14 +390,13 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
           begin match parent_typ env t with
             | None
             | Some (TPrim Null) ->
-              let f (pat, prop) = match prop with
-                | PInherited _
-                | PPresent _ -> Some pat
-                | PMaybe _
-                | PAbsent -> None in
+              let f (pat, pres, _) = match pres with
+                | Inherited
+                | Present -> Some pat
+                | Maybe _ -> None in
               L.fold_right P.union (L.filter_map f ot.fields) P.empty
             | Some (TObject _) ->
-              L.fold_right P.union (L.map fst2 ot.fields) P.empty
+              L.fold_right P.union (L.map fst3 ot.fields) ot.absent_pat
             | Some pt ->
               raise (Invalid_argument 
                  ("invalid parent type in object type: " ^
@@ -446,13 +414,11 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | t -> raise (Invalid_argument ("expected object type, got " ^
                (string_of_typ t)))
 
-  let maybe_pats flds = 
-    let sel (pat, prop) = match prop with
-      | PMaybe _ -> Some pat
-      | PAbsent -> Some pat
-      | _ -> None in
-    L.fold_right P.union (L.filter_map sel flds) P.empty
-
+  let maybe_pats ot = 
+    let f (pat, pres, _) acc = match pres with
+      | Maybe -> P.union pat acc
+      | _ -> acc in
+    L.fold_right f ot.fields ot.absent_pat
 
   exception Not_subtype of string
 
@@ -461,20 +427,15 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
        (sprintf " %s is not a subtype of %s"
     (string_of_typ t1) (string_of_typ t2)))
 
-  let sel_not_absent (p, f) = match prop_typ f with
-    | None -> None
-    | Some _ -> Some p
-
   let rec simpl_lookup p (env : typenv) (t : typ) (pat : pat) : typ =
    (* TODO: it's okay to overlap with a maybe, but not a hidden field;
       inherit_guard_pat does not apply *)
     match t with
   | TObject ot -> 
-    let guard_pat = L.fold_right P.union
-      (L.filter_map sel_not_absent ot.fields) P.empty in
+    let guard_pat = L.fold_right P.union (map fst3 ot.fields) P.empty in
     if P.is_subset (pat_env env) pat guard_pat then
-      let sel (f_pat, f_prop) =
-        if P.is_overlapped f_pat pat then prop_typ f_prop
+      let sel (f_pat, _, f_prop) =
+        if P.is_overlapped f_pat pat then Some f_prop
         else None in
       L.fold_right (fun s t -> typ_union env s t)
         (L.filter_map sel ot.fields)
@@ -483,14 +444,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       raise (Typ_error (p, "checking for a hidden or absent field"))
   | _ -> raise (Typ_error (p, "object expected"))
 
-  and inherits p (env : typenv) (t : typ) (pat : pat) : typ =
+  and inherits p (env : typenv) (orig_t : typ) (pat : pat) : typ =
     try
-      let t = expose env (simpl_typ env t) in
+      let t = expose env (simpl_typ env orig_t) in
       if P.is_subset (pat_env env) pat (inherit_guard_pat env t) then
         begin match t with
           | TObject ot -> 
-            let sel (f_pat, f_prop) =
-              if P.is_overlapped f_pat pat then prop_typ f_prop
+            let sel (f_pat, _, f_prop) =
+              if P.is_overlapped f_pat pat then Some f_prop
               else None in
             L.fold_right (fun s t -> typ_union env s t)
               (L.filter_map sel ot.fields)
@@ -499,7 +460,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
                 | Some (TPrim Null) -> TBot
                 | Some parent_typ -> 
             inherits p env parent_typ 
-              (P.intersect pat (maybe_pats ot.fields)))
+              (P.intersect pat (maybe_pats ot)))
           | _ -> failwith "lookup non-object"
                end
       else begin match parent_typ env t with
@@ -573,30 +534,25 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     subt env cache typ (inherits (Lexing.dummy_pos, Lexing.dummy_pos) env other_proto lang)
 
   and subtype_presence prop1 prop2 = match prop1, prop2 with
-    | PAbsent _, _ -> failwith "oops"
-    | _, PAbsent _ -> failwith "oops"
-    | PPresent _, PPresent _ 
-    | PMaybe _, PMaybe _
-    | PInherited _, PInherited _
-    | PPresent _ , PMaybe _
-    | PPresent _, PInherited _ -> ()
+    | Present, Present 
+    | Maybe, Maybe
+    | Inherited, Inherited
+    | Present , Maybe
+    | Present, Inherited -> ()
     | _, _ -> raise (Not_subtype "incompatible presence annotations")
 
   and subtype_object env cache obj1 obj2 : TPSet.t =
     let bad_p = (Lexing.dummy_pos, Lexing.dummy_pos) in
     let lhs_absent = absent_pat obj1 in
     let rhs_absent = absent_pat obj2 in
-    let check_simple_overlap ((pat1, prop1), (pat2, prop2)) cache = 
-      match prop_typ prop1, prop_typ prop2 with
-        | Some t1, Some t2 -> 
-            if P.is_overlapped pat1 pat2 then
-              begin
-                subtype_presence prop1 prop2;
-                subt env cache t1 t2
-              end
-            else
-              cache
-        | _ -> cache (* absents *) in
+    let check_simple_overlap ((pat1, pres1, t1), (pat2, pres2, t2)) cache = 
+      if P.is_overlapped pat1 pat2 then
+        begin
+          subtype_presence pres1 pres2;
+          subt env cache t1 t2
+        end
+      else
+        cache in
     let check_pat_containment () =
       (if not (P.is_subset (pat_env env) (possible_field_cover_pat obj2) 
                            (cover_pat obj1)) then
@@ -609,14 +565,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
          | None -> failwith "error building counterexample for (2)");
       (if not (P.is_subset (pat_env env) rhs_absent lhs_absent); 
           then raise (Not_subtype "violated 2-2")) in
-    let check_lhs_absent_overlap (rhs_pat, rhs_prop) = 
-      if rhs_prop = PAbsent then ()
-      else if P.is_overlapped rhs_pat lhs_absent then
-        match rhs_prop with
-          | PMaybe _ | PInherited _ -> ()
+    let check_lhs_absent_overlap (rhs_pat, rhs_pres, rhs_prop) = 
+      if P.is_overlapped rhs_pat lhs_absent then
+        match rhs_pres with
+          | Maybe | Inherited -> ()
           | _ -> raise (Not_subtype "LHS absent, RHS present") in
-    let check_rhs_inherited (rhs_pat, rhs_prop) cache = match rhs_prop with
-      | PInherited rhs_typ -> 
+    let check_rhs_inherited (rhs_pat, rhs_pres, rhs_typ) cache = 
+      match rhs_pres with
+      | Inherited -> 
           let lhs_typ = inherits bad_p env (TObject obj1) rhs_pat in
           subt env cache lhs_typ rhs_typ
       | _ -> cache in

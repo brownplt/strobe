@@ -16,6 +16,10 @@ let is_skull f = match f with
   | W.Skull _ -> true
   | _ -> false
 
+let is_absent f = match f with
+  | W.Absent p -> true
+  | _ -> false
+
 let pat_of f = match f with
   | W.Present (p, _) -> p
   | W.Inherited (p, _) -> p
@@ -28,7 +32,7 @@ let assert_overlap pat1 pat2 = match P.example (P.intersect pat1 pat2) with
   | None -> ()
   | Some str ->
     error (sprintf "%s and %s are overlapped. E.g.,\n%s\n is in both patterns." 
-	     (P.pretty pat1) (P.pretty pat2) str)
+       (P.pretty pat1) (P.pretty pat2) str)
 
 let rec typ (writ_typ : W.t) : typ = match writ_typ with
   | W.Str -> TRegex P.all
@@ -52,35 +56,42 @@ let rec typ (writ_typ : W.t) : typ = match writ_typ with
   | W.Lambda (args, t) -> TLambda (args, typ t)
   | W.Fix (x, k, t) -> TFix (x, k, typ t)
 
-and fld (writ_fld : W.f) : pat * prop = match writ_fld with
-  | W.Present (pat, t) -> (pat, PPresent (typ t))
-  | W.Maybe (pat, t) -> (pat, PMaybe (typ t))
-  | W.Inherited (pat, t) ->(pat, PInherited (typ t))
-  | W.Absent pat -> (pat, PAbsent)
+and fld (writ_fld : W.f) : field = match writ_fld with
+  | W.Present (pat, t) -> (pat, Present, typ t)
+  | W.Maybe (pat, t) -> (pat, Maybe, typ t)
+  | W.Inherited (pat, t) -> (pat, Inherited, typ t)
+  | W.Absent pat -> error "fld applied to Absent"
   | W.Skull _ -> error "fld applied to Skull"
   | W.Star _ -> error "fld applied to Star"
 
 and object_typ (flds : W.f list) =
-  let flds_no_stars =
-    let (stars, others) = List.partition is_star flds in
+  let (flds_no_absents, absent_pat) = 
+    let (absents, others) = List.partition is_absent flds in
+    (others, 
+     fold_right (fun w acc -> P.union (pat_of w) acc) absents P.empty) in
+  let (flds_no_stars, absent_pat) =
+    let (stars, others) = List.partition is_star flds_no_absents in
     match stars with
-      | [] -> let skulls = List.filter is_skull others in
-	      begin match skulls with
-		| [] -> others
-		| _ -> error "BAD is nonsensical without *"
-	      end
-      | [W.Star opt_star_typ] ->
-	let star_pat = 
-	  P.negate (fold_right P.union (map pat_of others) P.empty) in
-	begin match opt_star_typ with
-	  | None -> (W.Absent star_pat) :: others
-	  | Some t -> (W.Maybe (star_pat, t)) :: others
-	end
-      | _ -> error "multiple stars (*) in an object type" in
-  List.iter_pairs assert_overlap (List.map pat_of flds_no_stars);
+    | [] -> let skulls = List.filter is_skull others in
+            begin match skulls with
+            | [] -> (others, absent_pat)
+            | _ -> error "BAD is nonsensical without *"
+            end
+    | [W.Star opt_star_typ] ->
+      let star_pat =
+        P.negate (fold_right P.union (map pat_of others) absent_pat) in
+      begin match opt_star_typ with
+      | None -> (others, P.union star_pat absent_pat)
+      | Some t -> ((W.Maybe (star_pat, t)) :: others, absent_pat)
+      end
+   | _ -> error "multiple stars (*) in an object type" in
+  (* TODO(arjun): Why is this overlap check here? Can we do it at the top
+     of the function? *)
+  List.iter_pairs assert_overlap 
+    (absent_pat :: (List.map pat_of flds_no_stars));
   let flds_no_skulls_stars = 
     List.filter (fun f -> not (is_skull f)) flds_no_stars in
-  TObject (mk_obj_typ (map fld flds_no_skulls_stars))
+  TObject (mk_obj_typ (map fld flds_no_skulls_stars) absent_pat)
 
 
 

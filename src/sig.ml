@@ -96,6 +96,11 @@ module type TYP = sig
   type kind = 
     | KStar
     | KArrow of kind list * kind
+
+  type presence = 
+    | Inherited
+    | Present
+    | Maybe
   
   type typ = 
     | TPrim of prim
@@ -118,13 +123,7 @@ module type TYP = sig
 
   and obj_typ
       
-  and prop = 
-    | PInherited of typ
-    | PPresent of typ
-    | PMaybe of typ
-    | PAbsent
-
-  type field = pat * prop 
+  type field = pat * presence * typ
 
   type typenv = (typ * kind) IdMap.t
 
@@ -135,7 +134,7 @@ module type TYP = sig
 
   val proto_pat : pat
 
-  val mk_obj_typ : field list -> obj_typ
+  val mk_obj_typ : field list -> pat -> obj_typ
 
   val fields : obj_typ -> field list
 

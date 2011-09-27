@@ -42,16 +42,8 @@ let rec simpl_equiv (typ1 : typ) (typ2 : typ) : bool =
       args1 = args2 && simpl_equiv t1 t2
     | _, _ -> false
 
-and simpl_equiv_fld (pat1, fld1) (pat2, fld2) = 
-  P.is_equal pat1 pat2 &&
-    begin match (fld1, fld2) with
-      | PPresent t1, PPresent t2
-      | PInherited t1, PInherited t2
-      | PMaybe t1, PMaybe t2 ->
-	simpl_equiv t1 t2
-      | PAbsent, PAbsent -> true
-      | _ -> false
-    end
+and simpl_equiv_fld (pat1, pres1, typ1) (pat2, pres2, typ2) = 
+  P.is_equal pat1 pat2 && pres1 = pres2 && simpl_equiv typ1 typ2
 
 exception Kind_error of string
 
@@ -141,13 +133,6 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
 		 (sprintf "not a type operator:\n%s" (string_of_typ t_op)))
     end
 
-and assert_fld_kind (env : kind_env) (_, prop) = match prop with
-  | PPresent t
-  | PInherited t
-  | PMaybe t ->
-    begin match kind_check env t with
-      | KStar -> ()
-      | k -> kind_mismatch t k KStar
-    end
-  | PAbsent ->
-    ()
+and assert_fld_kind (env : kind_env) (_, _, t) = match kind_check env t with
+  | KStar -> ()
+  | k -> kind_mismatch t k KStar

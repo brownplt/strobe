@@ -13,15 +13,16 @@ let tc_const (const : JavaScript_syntax.const) = match const with
   | JavaScript_syntax.CUndefined -> TPrim Undef 
 
 let typ_of_value (exp : exp) : typ = 
-  let mk_field f (name, exp) = (P.singleton name, PPresent (f exp)) in
+  let mk_field f (name, exp) = (P.singleton name, Present, f exp) in
   let rec f e = match e with
     | EAssertTyp (_, t, EFunc _) -> t
     | EObject (_, fs) -> 
       (* TODO: Everything else should be absent *)
       TObject 
 	(mk_obj_typ
-	   ((proto_pat, PPresent (TId "Object")) :: 
-	       (map (mk_field f) fs)))
+	   ((proto_pat, Present, TId "Object") :: 
+	       (map (mk_field f) fs))
+     P.empty)
     | EConst (_, c) -> tc_const c
     | EFunc (p, _, _, _) -> 
       raise (Not_value
@@ -31,8 +32,8 @@ let typ_of_value (exp : exp) : typ =
 	  (* TODO: as above *)
 	  TObject
 	    (mk_obj_typ
-	       ((proto_pat, PPresent (TId "Object")) 
-		:: (map (mk_field f) fields)))
+	       ((proto_pat, Present, TId "Object") 
+		:: (map (mk_field f) fields)) P.empty)
         | EConst (_, c) -> tc_const c
         | EAssertTyp (_, t, EFunc _) -> t
         | EFunc (p, _, _, _) -> 

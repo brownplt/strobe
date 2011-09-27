@@ -120,17 +120,18 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
          true_part, false_part) ->
     begin match expose_simpl_typ env (lookup_id obj env), lookup_id fld env with
       | TRef (TObject ot), TRegex pat -> 
-        let subtract (p, t) =
-          if P.is_overlapped p pat then (P.subtract p pat, t) (* perf *)
-          else (p, t) in
+        let subtract (p, pres, t) =
+          if P.is_overlapped p pat then (P.subtract p pat, pres, t) (* perf *)
+          else (p, pres, t) in
         let false_typ = tc_exp env false_part in
         let true_typ =
           let fld_typ = simpl_lookup p (tid_env env) (TObject ot) pat in
           let env = bind_typ_id "alpha" (TRegex pat) env in
           let env = bind_id fld (TId "alpha") env in
           let env = bind_id obj 
-            (TObject (mk_obj_typ ((P.var "alpha", PPresent fld_typ) ::
-                                     map subtract (fields ot)))) env in
+            (TObject (mk_obj_typ ((P.var "alpha", Present, fld_typ) ::
+                                     map subtract (fields ot))
+                      (absent_pat ot))) env in
           tc_exp env true_part in
         typ_union env true_typ false_typ
       | s, t ->
@@ -215,18 +216,16 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     typ_union env (tc_exp env e2) (tc_exp env e3)
   | EObject (p, fields) ->
     let mk_field (name, exp) = 
-      (P.singleton name, PPresent (tc_exp env exp)) in
+      (P.singleton name, Present, tc_exp env exp) in
     let get_names (name, _) names = 
       P.union names (P.singleton name) in
     let rest = List.fold_right get_names fields (P.singleton "__proto__") in
-    let rest' = P.negate rest in
     if List.mem "__proto__" (map fst fields) then
-      TObject (mk_obj_typ ((rest', PAbsent)::(map mk_field fields)))
+      TObject (mk_obj_typ (map mk_field fields) (P.negate rest))
     else
-      TObject (mk_obj_typ
-                 ((rest', PAbsent)::(P.singleton "__proto__",
-                                     PPresent (TId "Object")) 
-                  :: (map mk_field fields)))
+      TObject (mk_obj_typ ((P.singleton "__proto__", Present, TId "Object") 
+                           :: (map mk_field fields))
+                          (P.negate rest))
   | EBracket (p, obj, field) -> 
     begin match expose_simpl_typ env (tc_exp env field) with
       | TRegex pat -> inherits p env (un_null (tc_exp env obj)) pat
@@ -246,21 +245,18 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
                 typ_mismatch p (sprintf "%s affects hidden fields"
                                         (P.pretty idx_pat))
           end;
+          begin
+            if P.is_overlapped idx_pat (absent_pat o) then
+              typ_mismatch p (sprintf "Assigning to absent field")
+          end;
           let fs : field list = fields o in
-          let okfield (fld_pat, prop) = 
-            if P.is_overlapped fld_pat idx_pat
-            then match prop with
-              | PInherited s
-              | PPresent s
-              | PMaybe s -> 
-                if not (subtype env typ s) then
-                  typ_mismatch p
-                    (sprintf "field update: %s, the new value, is not subtype of %s at index %s"
-                       (string_of_typ typ) 
-                       (string_of_typ s) 
-                       (string_of_typ tfld))
-              | PAbsent -> 
-                typ_mismatch p (sprintf "Assigning to absent field") in
+          let okfield (fld_pat, pres, s) = 
+            if P.is_overlapped fld_pat idx_pat && not (subtype env typ s) then
+              typ_mismatch p
+                (sprintf "field update: %s, the new value, is not subtype of %s at index %s"
+                   (string_of_typ typ) 
+                   (string_of_typ s) 
+                   (string_of_typ tfld)) in
           let _ = List.iter okfield fs in
           tobj
         | obj, fld, typ ->

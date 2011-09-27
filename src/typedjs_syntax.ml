@@ -151,8 +151,8 @@ module Typ = struct
     | TArrow (args, ret) -> Some (args, ret)
     | _ -> None
 
-  let is_present (fld : (pat * prop)) = match fld with
-    | (_, PPresent _) -> true
+  let is_present (fld : field) = match fld with
+    | (_, Present, _) -> true
     | _ -> false
 
 end
