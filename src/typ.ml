@@ -467,7 +467,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | Some (TPrim Null) -> TPrim Undef
         | _ ->
           raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ 
-                               " in " ^ string_of_typ t))
+                               " in:\n" ^ string_of_typ orig_t))
       end
     with Invalid_parent msg -> raise (Typ_error (p, msg))
 
