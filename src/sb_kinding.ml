@@ -1,50 +1,6 @@
 open Prelude
 open Typedjs_syntax
 
-(** Decides if two types are syntactically equal. This helps subtyping. *)
-let rec simpl_equiv (typ1 : typ) (typ2 : typ) : bool =
-  match (typ1, typ2) with
-    | TTop, TTop
-    | TBot, TBot ->
-      true
-    | TPrim p1, TPrim p2 ->
-      p1 = p2
-    | TIntersect (s1, s2), TIntersect (t1, t2)
-    | TUnion (s1, s2), TUnion (t1, t2) -> 
-      simpl_equiv s1 t1 && simpl_equiv s2 t2
-    | TSource s, TSource t
-    | TSink s, TSink t
-    | TRef s, TRef t ->
-      simpl_equiv s t
-    | TApp (s1, s2s), TApp (t1, t2s) ->
-      (* for well-kinded types, for_all2 should not signal an error *)
-      simpl_equiv s1 t1 && List.for_all2 simpl_equiv s2s t2s
-    | TId x, TId y ->
-      x = y
-    | TArrow (args1, r1), TArrow (args2, r2) ->
-      List.length args1 = List.length args2
-      && List.for_all2 simpl_equiv args1 args2
-      && simpl_equiv r1 r2
-    | TRec (x, s), TRec (y, t) ->
-      x = y && simpl_equiv s t
-    | TForall (x, s1, s2), TForall (y, t1, t2) ->
-      x = y && simpl_equiv s1 t1 && simpl_equiv s2 t2
-    | TRegex pat1, TRegex pat2 ->
-      P.is_equal pat1 pat2
-    | TObject o1, TObject o2 ->
-      let flds1 = fields o1 in
-      let flds2 = fields o2 in
-      List.length flds1 = List.length flds2
-      && List.for_all2 simpl_equiv_fld flds1 flds2
-    | TFix (x1, k1, t1), TFix (x2, k2, t2) ->
-      x1 = x2 && k1 = k2 && simpl_equiv t1 t2
-    | TLambda (args1, t1), TLambda (args2, t2) ->
-      args1 = args2 && simpl_equiv t1 t2
-    | _, _ -> false
-
-and simpl_equiv_fld (pat1, pres1, typ1) (pat2, pres2, typ2) = 
-  P.is_equal pat1 pat2 && pres1 = pres2 && simpl_equiv typ1 typ2
-
 exception Kind_error of string
 
 type kind_env = kind IdMap.t
