@@ -13,7 +13,6 @@ open FormatExt
 open Lexing
 open Typedjs_dyn
 
-module Y = Dprle
 module Z= ReadTyps
 
 let parse_sb cin name =
@@ -164,6 +163,11 @@ let action_tc () : unit =
       let tr_map = mk_contract_transformers !contracts in
       transform_exprs tr_map (get_cin ()) stdout
 
+let load_idl_file filename =
+  let _ = Idl.from_channel (open_in filename) filename in
+  printf "IDL Loadied ok\n";
+  ()
+
 let action = ref action_tc
 
 let is_action_set = ref false
@@ -194,6 +198,8 @@ let main () : unit =
        "disable flow analysis (benchmarks and debugging)");
       ("-sb", Arg.Unit (set_sourcetype "sb"),
        "Parse strobe source");
+      ("-idl", Arg.String load_idl_file,
+       "loads an IDL file");
       set_simpl_cps;
       set_print_contracts;
 
