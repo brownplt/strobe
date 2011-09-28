@@ -8,25 +8,6 @@ let dummy_pos = (Lexing.dummy_pos, Lexing.dummy_pos)
 
 let desugar_typ = Sb_desugar.desugar_typ
 
-(* Necessary for equi-recursive subtyping. *)
-module TypPair = struct
-  type t = typ * typ
-  let compare = Pervasives.compare
-end
-
-module TPSet = Set.Make (TypPair)
-module TPSetExt = SetExt.Make (TPSet)
-
-
-(* Pair that were mismatched *)
-type subtype_exn =
-  | ExtraFld of field
-  | MismatchTyp of typ * typ
-  | MismatchFld of field * field
-
-exception Not_subtype of subtype_exn
-
-
   type env = {
     id_typs : typ IdMap.t; (* type of term identifiers *)
     lbl_typs : typ IdMap.t; (* types of labels *)
@@ -201,27 +182,6 @@ let extend_global_env env lst =
 	{ env with 
 	  typ_ids = IdMap.add x (t, k) env.typ_ids }
   in List.fold_left add env lst
-
-(*
-
-let df_func_of_typ syns (t : typ) : L.av list -> L.av = match t with
-  | TArrow (_, r_typ) ->
-      let r_av = L.ASet (L.rt_of_typ syns r_typ) in
-        (fun _ -> r_av)
-  | TForall (x, r_typ, TArrow (_, TId y)) when x = y ->
-      let r_av = L.ASet (L.rt_of_typ syns r_typ) in
-        (fun _ -> r_av)
-  | _ -> (fun _ -> L.any)
-
-let cf_env_of_tc_env tc_env = 
-  let fn x typ cf_env = L.bind x (L.runtime tc_env.typ_ids typ) cf_env in
-    IdMap.fold fn (id_env tc_env) L.empty_env
-
-let operator_env_of_tc_env tc_env =
-  let fn x t env = IdMap.add x (df_func_of_typ (syns tc_env) t) env in
-    IdMap.fold fn (id_env tc_env) IdMap.empty
-*)
-
 
 
 

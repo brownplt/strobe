@@ -3,12 +3,6 @@ open Typedjs_syntax
 
 exception Not_wf_typ of string
 
-type subtype_exn =
-  | ExtraFld of field
-  | MismatchTyp of typ * typ
-  | MismatchFld of field * field
-
-exception Not_subtype of subtype_exn
 
   type env
 
