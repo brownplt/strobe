@@ -130,11 +130,11 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TApp _ -> typ
 
 let rec set_global_object env cname =
-  let ci = 
+  let (ci_typ, ci_kind) = 
     try IdMap.find cname env.typ_ids
     with Not_found -> 
       raise (Not_wf_typ ("global object, " ^ cname ^ ", not found")) in
-  match ci with
+  match simpl_typ env ci_typ, ci_kind with
   | TRef (TObject o), KStar ->
     let fs = fields o in
     let add_field env (x, pres, t) =
@@ -146,7 +146,8 @@ let rec set_global_object env cname =
       else
         raise (Not_wf_typ "all fields on global must be present") in
     List.fold_left add_field env fs
-  | _ -> raise (Not_wf_typ (cname ^ " global must be an object"))
+  | t, _ -> raise (Not_wf_typ (cname ^ " global must be an object, got\n" ^
+                            string_of_typ t))
 
 open Lexing
 
@@ -239,3 +240,13 @@ and fld_assoc env (_, _, s) (_, _, t) = typ_assoc env s t
 let tid_env env = env.typ_ids
 
 let typid_env env = IdMap.map (fun (t, _) -> t) env.typ_ids
+
+
+let extend_env (trm_vars : typ IdMap.t) (typ_vars : (typ * kind) IdMap.t) env =
+  let merge_fn x left right = match (left, right) with
+    | Some _, Some _ -> failwith (sprintf "rebinding %s in the environment" x)
+    | None, Some t
+    | Some t, None -> Some t
+    | None, None -> failwith "impossible case in extend_env" in
+  { env with id_typs = IdMap.merge merge_fn env.id_typs trm_vars;
+             typ_ids = IdMap.merge merge_fn env.typ_ids typ_vars }

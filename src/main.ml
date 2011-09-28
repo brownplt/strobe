@@ -13,6 +13,8 @@ open FormatExt
 open Lexing
 open Typedjs_dyn
 
+module Unidl = Unidl.Make (P) (TypImpl)
+
 module Z= ReadTyps
 
 let parse_sb cin name =
@@ -49,6 +51,7 @@ module Input : sig
   val get_cin_name : unit -> string
   val set_cin : in_channel -> string -> unit
   val get_env : unit -> env
+  val set_env : env -> unit
   val load_env : string -> unit
   val set_global_object : string -> unit
   val set_re_test_depth : int -> unit
@@ -98,6 +101,8 @@ end = struct
   let get_env () = match !global_object with
     | None -> Typedjs_env.set_global_object !env "Global"
     | Some c -> Typedjs_env.set_global_object !env c
+
+  let set_env new_env = env := new_env
 
   let get_re_test_depth () = match !re_test_depth with
     | None -> 3
@@ -164,9 +169,10 @@ let action_tc () : unit =
       transform_exprs tr_map (get_cin ()) stdout
 
 let load_idl_file filename =
-  let _ = Idl.from_channel (open_in filename) filename in
-  printf "IDL Loadied ok\n";
-  ()
+  let idl = Idl.from_channel (open_in filename) filename in
+  let typ_vars = Unidl.unidl idl in
+  let env = get_env () in
+  set_env (extend_env IdMap.empty typ_vars env)
 
 let action = ref action_tc
 

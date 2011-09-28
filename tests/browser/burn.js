@@ -22,7 +22,7 @@ function mouse() /*:  -> {x : Int, y : Int, pressed : Bool} */ {
 		y: -1,
 		pressed: false
 	};
-	function onmove(e) /*: Event -> Undef */ {
+	function onmove(e) /*: MouseEvent -> Undef */ {
 		ob.x = e.clientX;
 		ob.y = e.clientY;
 	}

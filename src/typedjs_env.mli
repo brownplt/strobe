@@ -64,3 +64,5 @@ val inherits : pos -> env -> typ -> P.t -> typ
 val tid_env : env -> (typ * kind) IdMap.t
 
 val typid_env : env -> typ IdMap.t
+
+val extend_env : typ IdMap.t -> (typ * kind) IdMap.t -> env -> env
