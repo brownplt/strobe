@@ -156,9 +156,9 @@ let action_pretypecheck () : unit =
 
 let action_tc () : unit = 
   let _ = typecheck (get_env ()) (weave_annotations (get_typedjs ())) in
-	if get_num_typ_errors () > 0 then
+  if get_num_typ_errors () > 0 then
     exit 2
-	else
+  else
     if get_print_contracts () then
       let tr_map = mk_contract_transformers !contracts in
       transform_exprs tr_map (get_cin ()) stdout

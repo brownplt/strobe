@@ -68,7 +68,7 @@ let rec ctc_of_typ p (typ : typ) = match typ with
   | TSink t -> ctc_of_typ p t
   | _ -> 
       failwith (sprintf "cannot create a contract for the type %s"
-		  (string_of_typ typ))
+      (string_of_typ typ))
 
 let rec cc p (ctc : contract) : expr = match ctc with
   | CPred (name, expr) -> 

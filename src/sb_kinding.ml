@@ -9,9 +9,9 @@ let kind_mismatch typ calculated_kind expected_kind =
   raise 
     (Kind_error 
        (sprintf "Expected kind %s, but got kind %s for type:\n%s"
-	  (string_of_kind expected_kind)
-	  (string_of_kind calculated_kind)
-	  (string_of_typ typ)))
+    (string_of_kind expected_kind)
+    (string_of_kind calculated_kind)
+    (string_of_typ typ)))
 
 
 let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
@@ -46,7 +46,7 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
     begin 
       try IdMap.find x env
       with Not_found ->
-	raise (Kind_error (sprintf "type variable %s is unbound" x))
+  raise (Kind_error (sprintf "type variable %s is unbound" x))
     end
   | TForall (x, t1, t2) ->
     begin match kind_check env t1, kind_check (IdMap.add x KStar env) t2 with
@@ -69,24 +69,24 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
   | TApp (t_op, t_args) ->
     begin match kind_check env t_op with
       | KArrow (k_args, k_result) ->
-	begin
-	  try
-	    let check k_arg t_arg = 
-	      let k_actual = kind_check env t_arg in
-	      if k_arg = k_actual then
-		()
-	      else 
-		kind_mismatch t_arg k_actual k_arg in
-	    let _ = List.iter2 check k_args t_args in
-	    k_result
-	  with Invalid_argument _ ->
-	    raise (Kind_error
-		     (sprintf "operator expects %d args, given %d"
-			(List.length k_args) (List.length t_args)))
-	end
+  begin
+    try
+      let check k_arg t_arg = 
+        let k_actual = kind_check env t_arg in
+        if k_arg = k_actual then
+    ()
+        else 
+    kind_mismatch t_arg k_actual k_arg in
+      let _ = List.iter2 check k_args t_args in
+      k_result
+    with Invalid_argument _ ->
+      raise (Kind_error
+         (sprintf "operator expects %d args, given %d"
+      (List.length k_args) (List.length t_args)))
+  end
       | KStar ->
-	raise (Kind_error 
-		 (sprintf "not a type operator:\n%s" (string_of_typ t_op)))
+  raise (Kind_error 
+     (sprintf "not a type operator:\n%s" (string_of_typ t_op)))
     end
 
 and assert_fld_kind (env : kind_env) (_, _, t) = match kind_check env t with

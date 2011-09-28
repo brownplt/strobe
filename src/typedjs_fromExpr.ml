@@ -106,11 +106,11 @@ let rec exp (env : env) expr = match expr with
   | NewExpr (p, constr, args) ->
     (** TODO: prototypes won't work unless functions are objects *)
     ELet (p, "%newobj", ERef (p, RefCell, EObject (p, [])), (* wrong! *)
-	  ESeq 
-	    (p, 
-	     EApp (p, exp env constr,
-		   (EId (p, "%newobj")) :: (map (exp env) args)),
-	     EId (p, "%newobj")))
+    ESeq 
+      (p, 
+       EApp (p, exp env constr,
+       (EId (p, "%newobj")) :: (map (exp env) args)),
+       EId (p, "%newobj")))
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
   | InfixExpr (p, "&&", e1, e2) -> 
       EIf (p, exp env e1, exp env e2, EConst (p, S.CBool false))
@@ -136,7 +136,7 @@ let rec exp (env : env) expr = match expr with
   | AppExpr (p, obj_and_func, args) ->
     let (obj, func) = object_and_function p obj_and_func in
     ELet (p, "%this", exp env obj,
-	  EApp (p, exp env func, (EId (p, "%this")) :: (map (exp env) args)))
+    EApp (p, exp env func, (EId (p, "%this")) :: (map (exp env) args)))
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdMap.add x true env) e2)
   | TryCatchExpr (a, body, x, catch) ->
@@ -187,12 +187,12 @@ let rec exp (env : env) expr = match expr with
             EAssertTyp (p, loop_typ, 
             EFunc (p, [x], {func_loop = true;
                             func_owned = IdSet.empty },
-		   (* TODO: not fully-faithful--stopping condition missing *)
+       (* TODO: not fully-faithful--stopping condition missing *)
                    ESeq (p, exp env body, 
                          EApp (p, EId (p, "%loop"), 
                                [ ECheat (p, forin_ix_typ, EId (p, x)) ])))))],
-	  EApp (p, EId (p, "%loop"), 
-		[ ECheat (p, forin_ix_typ, EId (p, x)) ]))
+    EApp (p, EId (p, "%loop"), 
+    [ ECheat (p, forin_ix_typ, EId (p, x)) ]))
   | ParenExpr (a, e) -> EParen (a, exp env e)
 
 and match_func env expr = match expr with
@@ -226,7 +226,7 @@ and match_func env expr = match expr with
         let mutable_arg exp id =
           ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) in
         let args = "this"::args in
-		    EFunc (a, args, { func_loop = false;
+        EFunc (a, args, { func_loop = false;
                           func_owned = IdSet.empty }, 
                fold_left mutable_arg
                  (ELabel (a', "%return", exp env' body))
@@ -268,6 +268,6 @@ let from_exprjs env expr =
   exp 
     (IdMap.add "arguments" false 
        (IdSet.fold (fun x env -> IdMap.add x true env) 
-	  (dom env) IdMap.empty))
+    (dom env) IdMap.empty))
     expr
 

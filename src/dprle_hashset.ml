@@ -124,7 +124,7 @@ let filter (f : 'e -> bool) (s : 'e hashset) : 'e list =
 *)
 let split (f : 'e -> bool) (s : 'e hashset) : ('e list * 'e list) =
     fold (fun x (yes, no) -> if f x then (x::yes, no) else (yes, x::no)
-	 ) s ([], [])
+   ) s ([], [])
 
 exception EmptySet
 

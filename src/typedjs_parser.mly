@@ -51,9 +51,9 @@ field :
   | pat COLON BANG typ { W.Present (fst2 $1, $4) }
   | pat COLON typ
       { let (pat, is_regex) = $1 in
-	if is_regex then
+  if is_regex then
           W.Maybe (pat, $3)
-	else
+  else
          W.Present (pat, $3) }
   | pat COLON CARET typ { W.Inherited (fst2 $1, $4) }
   | pat COLON UNDERSCORE { W.Absent (fst2 $1) }
@@ -135,7 +135,7 @@ id_list :
 env_decl :
   | TYPE any_id LANGLE id_list RANGLE EQUALS typ 
       { EnvType (($startpos, $endpos), $2,
-		 W.Lambda (List.map (fun x -> (x, KStar)) $4, $7)) }
+     W.Lambda (List.map (fun x -> (x, KStar)) $4, $7)) }
   | TYPE any_id EQUALS typ { EnvType (($startpos, $endpos), $2, $4) }
   | VAL ID COLON typ { EnvBind (($startpos, $endpos), $2, $4) }
   | ID COLON typ { EnvBind (($startpos, $endpos), $1, W.Ref $3) }

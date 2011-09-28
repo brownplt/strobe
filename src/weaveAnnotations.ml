@@ -50,7 +50,7 @@ and weave (db : typ_db) (exp : exp) = match exp with
       | Some (ATyp wt) ->
         (* TODO(arjun): p is not the position of the annotation!!! *)
         EAssertTyp (p, desugar_typ p wt, weave_rec db exp)
-	    | Some (ACheat wt) -> ECheat (p, desugar_typ p wt, exp)
+      | Some (ACheat wt) -> ECheat (p, desugar_typ p wt, exp)
       | Some (AUpcast wt) -> 
           ESubsumption (p, desugar_typ p wt, weave_rec db exp)
       | Some (ADowncast wt) -> 

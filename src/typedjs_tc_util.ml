@@ -19,9 +19,9 @@ let typ_of_value (exp : exp) : typ =
     | EObject (_, fs) -> 
       (* TODO: Everything else should be absent *)
       TObject 
-	(mk_obj_typ
-	   ((proto_pat, Present, TId "Object") :: 
-	       (map (mk_field f) fs))
+  (mk_obj_typ
+     ((proto_pat, Present, TId "Object") :: 
+         (map (mk_field f) fs))
      P.empty)
     | EConst (_, c) -> tc_const c
     | EFunc (p, _, _, _) -> 
@@ -29,11 +29,11 @@ let typ_of_value (exp : exp) : typ =
                (sprintf "unannotated function at %s" (string_of_position p)))
     | ERef (_, RefCell, e') -> TRef begin match e' with
         | EObject (_, fields) -> 
-	  (* TODO: as above *)
-	  TObject
-	    (mk_obj_typ
-	       ((proto_pat, Present, TId "Object") 
-		:: (map (mk_field f) fields)) P.empty)
+    (* TODO: as above *)
+    TObject
+      (mk_obj_typ
+         ((proto_pat, Present, TId "Object") 
+    :: (map (mk_field f) fields)) P.empty)
         | EConst (_, c) -> tc_const c
         | EAssertTyp (_, t, EFunc _) -> t
         | EFunc (p, _, _, _) -> 

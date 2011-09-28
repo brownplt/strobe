@@ -140,8 +140,8 @@ module Typ = struct
   let rec forall_arrow (typ : typ) : (id list * typ) option = match typ with
     | TArrow _ -> Some ([], typ)
     | TForall (x, _, typ') -> begin match forall_arrow typ' with
-	| None -> None
-	| Some (xs, t) -> Some (x :: xs, t)
+  | None -> None
+  | Some (xs, t) -> Some (x :: xs, t)
     end
     | TRec (x , t) -> forall_arrow (typ_subst x typ t)
     | _ -> None

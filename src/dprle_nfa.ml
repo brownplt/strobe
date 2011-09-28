@@ -54,7 +54,7 @@ let def_eps_size        = 50
 
 type charset = Charset.set
 type symbol = Character of int
-	      | Epsilon
+        | Epsilon
 
 (** We model the transition function [delta] as a mapping [state ->
     (state -> character set)]. Epsilon transitions are modeled
@@ -97,8 +97,8 @@ let all_delta ?(create = true)
   with Not_found -> 
     if create then 
       let newmap = Hashtbl.create def_delta_size in
-	Hashtbl.replace d s1 newmap;
-	newmap
+  Hashtbl.replace d s1 newmap;
+  newmap
     else
       (Hashtbl.create 0)
 
@@ -123,11 +123,11 @@ let which_symbols ?(create = true)
     try Hashtbl.find map s2
     with Not_found ->
       if create then 
-	let newset = Charset.create_empty () in
-	  Hashtbl.replace map s2 newset;
-	  newset
+  let newset = Charset.create_empty () in
+    Hashtbl.replace map s2 newset;
+    newset
       else
-	(Charset.create_empty ())
+  (Charset.create_empty ())
 
 
 (** Get the rhs state set in the epsilon mapping [e]
@@ -146,8 +146,8 @@ let which_states ?(create = true)
   with Not_found ->
     if create then 
       let newset = Hashset.create def_eps_size in
-	Hashtbl.replace e s1 newset;
-	newset
+  Hashtbl.replace e s1 newset;
+  newset
     else
       (Hashset.create 0)
 
@@ -163,15 +163,15 @@ let copy_table (s : ('p, ('p, 'q) Hashtbl.t) Hashtbl.t)
   Hashtbl.iter 
     (fun s1 m -> 
        let old_map = try Hashtbl.find t (f s1) with
-	   Not_found -> 
-	     let newmap = Hashtbl.create def_delta_size in
-	     let _ = Hashtbl.replace t (f s1) newmap in
-	       newmap 
+     Not_found -> 
+       let newmap = Hashtbl.create def_delta_size in
+       let _ = Hashtbl.replace t (f s1) newmap in
+         newmap 
        in
-	 Hashtbl.iter
-	   (fun s2 cs -> 
-	      Hashtbl.replace old_map (f s2) cs
-	   ) m
+   Hashtbl.iter
+     (fun s2 cs -> 
+        Hashtbl.replace old_map (f s2) cs
+     ) m
     ) s 
 
 (** For all mappings [p -> q] in hashtable [a] and for all [r -> s] in
@@ -181,8 +181,8 @@ let nested_ht_iter (a : ('a, 'b) Hashtbl.t)
                    (b : ('p, 'q) Hashtbl.t)
                    (f : 'a -> 'b -> 'p -> 'q -> unit) : unit =
   Hashtbl.iter (fun p q -> 
-		  Hashtbl.iter (fun r s -> f p q r s)  b
-	       ) a
+      Hashtbl.iter (fun r s -> f p q r s)  b
+         ) a
 
 let fmap set f = 
   let newmap = Hashtbl.create (size set) in
@@ -241,8 +241,8 @@ let add_state (n : nfa) (s : state) : unit =
 *)
 let add_trans (nfa : nfa)
               (s1  : state) 
-	      (c   : symbol)
-	      (s2  : state) : unit =
+        (c   : symbol)
+        (s2  : state) : unit =
   add_state nfa s1;
   add_state nfa s2;
   match c with
@@ -257,7 +257,7 @@ let add_trans (nfa : nfa)
 *)
 let add_all_trans (nfa : nfa)
                   (s1  : state) 
-	          (s2  : state) : unit =
+            (s2  : state) : unit =
   add_state nfa s1;
   add_state nfa s2;
   let new_set = Charset.create_full () in
@@ -273,7 +273,7 @@ let add_all_trans (nfa : nfa)
 *)
 let add_set_trans (nfa : nfa)
                   (s1  : state)
-		  (cs : charset)
+      (cs : charset)
                   (s2  : state) : unit =
   add_state nfa s1;
   add_state nfa s2;
@@ -326,7 +326,7 @@ let nfa_to_dot (nfa : nfa) : string =
   let delta_step q1 rhs =
     let handle_rhs q2 charset = 
       let thecar = Charset.choose charset in
-	appf "q%d -> q%d [label=\"%d\"];\n" q1 q2 thecar 
+  appf "q%d -> q%d [label=\"%d\"];\n" q1 q2 thecar 
     in 
       Hashtbl.iter handle_rhs rhs in
 
@@ -363,9 +363,9 @@ let neighbors (nfa : nfa)
 
 module StateSet =
   Set.Make(struct 
-	     type t = state
-	     let compare = compare
-	   end)
+       type t = state
+       let compare = compare
+     end)
 
 type stateset = StateSet.t
 
@@ -379,9 +379,9 @@ let eps_closure (n : nfa) (q : state) : stateset =
   let visited = ref StateSet.empty in
   let rec walk (queue : state list) : unit = match queue with
     | x::xs when not (StateSet.mem x !visited) ->
-	let to_enqueue = to_list (which_states ~create:false n.epsilon x) in
-	  visited := StateSet.add x !visited;
-	  walk (List.rev_append xs to_enqueue)
+  let to_enqueue = to_list (which_states ~create:false n.epsilon x) in
+    visited := StateSet.add x !visited;
+    walk (List.rev_append xs to_enqueue)
     | x::xs -> walk xs
     | _ -> ()
   in
@@ -415,17 +415,17 @@ let rhs (n : nfa) (q : state) (c : int) : stateset =
 *)
 let forward_fold_nfa (f   : state -> 'a -> 'a) 
                      (nfa : nfa) 
-		     (s   : state)
-		     (acc : 'a) : 'a = 
+         (s   : state)
+         (acc : 'a) : 'a = 
   let visited = Hashset.create (size nfa.q) in
   let rec walk acc q = 
     if mem visited q then 
       acc
     else
       begin
-	add visited q;
-	let acc = f q acc in
-	  List.fold_left walk acc (neighbors nfa q)
+  add visited q;
+  let acc = f q acc in
+    List.fold_left walk acc (neighbors nfa q)
       end
   in
     walk acc s
@@ -442,8 +442,8 @@ let forward_fold_nfa (f   : state -> 'a -> 'a)
 (*   let rec walk q = *)
 (*     match q with  *)
 (*       | x::xs when not (mem visited x) -> *)
-(* 	  add visited x; *)
-(* 	  walk (List.rev_append (neighbors nfa x) xs) *)
+(*     add visited x; *)
+(*     walk (List.rev_append (neighbors nfa x) xs) *)
 (*       | x::xs -> walk xs *)
 (*       | _ -> () *)
 (*   in *)
@@ -460,7 +460,7 @@ let backward_mapping (nfa : nfa) : (state, state hashset) Hashtbl.t =
   let map s1 s2 =
     let theset = try Hashtbl.find mapping s2 with Not_found -> 
       let newset = create (def_delta_size + def_eps_size) in
-	Hashtbl.replace mapping s2 newset; newset
+  Hashtbl.replace mapping s2 newset; newset
     in
       add theset s1
   in
@@ -487,8 +487,8 @@ let backward_reachable (nfa : nfa)
   let rec walk q =
     match q with
       | x::xs when not (mem visited x) ->
-	  add visited x;
-	  walk (List.rev_append (mapped x) xs)
+    add visited x;
+    walk (List.rev_append (mapped x) xs)
       | x::xs -> walk xs
       | _ -> ()
   in
@@ -508,9 +508,9 @@ let elim_dead_states (nfa : nfa) : unit =
   let delta_iter q1 rhs =
     if mem live_states q1 then
       let rhs_iter q2 _ = if not (mem live_states q2) then
-	add dead_rhs (q1, rhs, q2) 
+  add dead_rhs (q1, rhs, q2) 
       in
-	Hashtbl.iter rhs_iter rhs
+  Hashtbl.iter rhs_iter rhs
     else
       add dead_lhs q1
   in
@@ -569,8 +569,8 @@ let copy_nfa (nfa : nfa) : nfa =
   let _ = copy_table nfa.epsilon epsilon id in 
     { nfa with delta = delta;
         epsilon = epsilon;
-	q = (Hashtbl.copy nfa.q) }
-	
+  q = (Hashtbl.copy nfa.q) }
+  
 (** Extract a subNFA from a bigger NFA
     @param nfa NFA to (partially) copy
     @param s Start state for the result
@@ -638,7 +638,7 @@ let normalize_nfa (nfa : nfa)
 (* *\) *)
 (* let intersect (m1 : nfa)  *)
 (*               (m2 : nfa) *)
-(* 	      (p1 : int hashset) : ((int, int list) Hashtbl.t * nfa) = *)
+(*         (p1 : int hashset) : ((int, int list) Hashtbl.t * nfa) = *)
 (*   let lhs = Hashtbl.create (size m2.q * size p1) in *)
 (*   let put tbl x y =  *)
 (*     let list = try Hashtbl.find tbl x with Not_found -> [] in *)
@@ -646,35 +646,35 @@ let normalize_nfa (nfa : nfa)
 (*   let cur_id = ref 0 in *)
 (*   let newstates = Hashtbl.create ((size m1.q) * (size m2.q)) in *)
 (*   let state (x,y) = (try Hashtbl.find newstates (x,y)  *)
-(* 		     with Not_found ->  *)
-(* 		       Hashtbl.replace newstates (x,y) !cur_id; *)
-(* 		       if Hashset.mem p1 x then put lhs x !cur_id; *)
-(* 		       incr cur_id; *)
-(* 		       !cur_id - 1 *)
-(* 		    ) in *)
+(*          with Not_found ->  *)
+(*            Hashtbl.replace newstates (x,y) !cur_id; *)
+(*            if Hashset.mem p1 x then put lhs x !cur_id; *)
+(*            incr cur_id; *)
+(*            !cur_id - 1 *)
+(*         ) in *)
 (*   let result = new_nfa_states (state(m1.s,m2.s)) (state(m1.f,m2.f)) in *)
 (*   let process_delta m1q1 map1 m2q1 map2 = *)
 (*     nested_ht_iter map1 map2  *)
 (*       (fun m1q2 cset1 m2q2 cset2 -> *)
-(* 	 let isect = Charset.cap cset1 cset2 in *)
-(* 	   if not (Charset.empty isect) then *)
-(* 	     add_set_trans result  *)
-(* 	       (state(m1q1,m2q1)) isect (state(m1q2,m2q2))) *)
+(*    let isect = Charset.cap cset1 cset2 in *)
+(*      if not (Charset.empty isect) then *)
+(*        add_set_trans result  *)
+(*          (state(m1q1,m2q1)) isect (state(m1q2,m2q2))) *)
 (*   in *)
 (*   let process_eps m1q1 m1qset m2q1 m2qset = *)
 (*     nested_ht_iter m1qset m2qset *)
 (*       (fun m1q2 _ m2q2 _ ->  *)
-(* 	 add_trans result (state(m1q1,m2q1)) Epsilon (state(m1q2,m2q2))) *)
+(*    add_trans result (state(m1q1,m2q1)) Epsilon (state(m1q2,m2q2))) *)
 (*   in *)
 (*   let process_eps_left m1q1 m1qset m2q _ = *)
 (*     iter (fun m1q2 ->  *)
-(* 	    add_trans result (state(m1q1,m2q)) Epsilon (state(m1q2,m2q)) *)
-(* 	 ) m1qset *)
+(*       add_trans result (state(m1q1,m2q)) Epsilon (state(m1q2,m2q)) *)
+(*    ) m1qset *)
 (*   in *)
 (*   let process_eps_right m1q _ m2q1 m2qset = *)
 (*     iter (fun m2q2 -> *)
-(* 	    add_trans result (state(m1q,m2q1)) Epsilon (state(m1q,m2q2)) *)
-(* 	 ) m2qset *)
+(*       add_trans result (state(m1q,m2q1)) Epsilon (state(m1q,m2q2)) *)
+(*    ) m2qset *)
 (*   in *)
 (*     nested_ht_iter m1.delta m2.delta process_delta; *)
 (* (\*    nested_ht_iter m1.epsilon m2.epsilon process_eps; *\) *)
@@ -702,9 +702,9 @@ let nfa_to_dfa (n : nfa) : nfa =
     try Hashtbl.find statemapping q
     with Not_found ->
       let res = !cur_q in
-	incr cur_q;
-	Hashtbl.replace statemapping q res;
-	res
+  incr cur_q;
+  Hashtbl.replace statemapping q res;
+  res
   in (* TODO: some inline comments might help here *)
   let _ = dfa.s <- (convert (eps_closure n n.s)) in
   let bigsigma = Charset.create_full () in
@@ -714,9 +714,9 @@ let nfa_to_dfa (n : nfa) : nfa =
     let process_out x = 
       let some_outbound = ref (Charset.create_empty ()) in
       let mapping = all_delta ~create:false n.delta x in
-	Hashtbl.iter (fun z y -> 
-			some_outbound := Charset.cup !some_outbound y) mapping;
-	all_outbound := Charset.cup !all_outbound !some_outbound in
+  Hashtbl.iter (fun z y -> 
+      some_outbound := Charset.cup !some_outbound y) mapping;
+  all_outbound := Charset.cup !all_outbound !some_outbound in
     let _ = StateSet.iter process_out q in
     let not_covered = Charset.minus bigsigma !all_outbound in
     let _ = add_set_trans dfa (convert q) not_covered sink_state in
@@ -727,23 +727,23 @@ let nfa_to_dfa (n : nfa) : nfa =
     let process_symbol s = 
       let rhs_states = ref (StateSet.empty) in
       let process_rhs q_rhs = 
-	rhs_states := StateSet.union !rhs_states (eps_closure n q_rhs)
+  rhs_states := StateSet.union !rhs_states (eps_closure n q_rhs)
       in
       let process_lhs q_lhs = 
-	StateSet.iter process_rhs (rhs n q_lhs s)
+  StateSet.iter process_rhs (rhs n q_lhs s)
       in
-	StateSet.iter process_lhs q;
-	res := !rhs_states :: !res;
-	add_trans dfa (convert q) (Character s) (convert !rhs_states)
+  StateSet.iter process_lhs q;
+  res := !rhs_states :: !res;
+  add_trans dfa (convert q) (Character s) (convert !rhs_states)
     in
       Charset.iter process_symbol !all_outbound;
       !res
   in
   let rec walk (q : stateset list) = match q with
     | x::xs when not (mem visited x) ->
-	add visited x;
-	let to_enqueue = process_state x in
-	  walk (List.rev_append xs to_enqueue)
+  add visited x;
+  let to_enqueue = process_state x in
+    walk (List.rev_append xs to_enqueue)
     | x::xs -> walk xs
     | _ -> ()
   in
@@ -758,11 +758,11 @@ let nfa_to_dfa (n : nfa) : nfa =
 let complement (dfa : nfa) : unit =
   let newfinal = new_state dfa in
     iter (fun q ->
-	    let rhs = which_states ~create:false dfa.epsilon q in
-	      if empty rhs then
-		add_trans dfa q Epsilon newfinal
-	      else 
-		Hashtbl.remove dfa.epsilon q) dfa.q;
+      let rhs = which_states ~create:false dfa.epsilon q in
+        if empty rhs then
+    add_trans dfa q Epsilon newfinal
+        else 
+    Hashtbl.remove dfa.epsilon q) dfa.q;
     Hashtbl.remove dfa.epsilon dfa.f;
     Hashtbl.remove dfa.epsilon newfinal;
     dfa.f <- newfinal
@@ -793,7 +793,7 @@ let concat (a  : nfa)
            (b  : nfa)  
            (p1 : state hashset) 
            (p2 : state hashset) : ((state, state) Hashtbl.t * 
-				 (state, state) Hashtbl.t * nfa) =
+         (state, state) Hashtbl.t * nfa) =
   let offset = a.next_q in
   let convert x = x + offset in
   let lhs = fmap p1 (fun x -> x) in
@@ -807,7 +807,7 @@ let concat (a  : nfa)
   let _ = copy_table a.epsilon epsilon (fun x -> x) in
   let _ = copy_table b.epsilon epsilon convert in
   let result = { s = a.s; f = (convert b.f); delta = delta; epsilon = epsilon; q = q;
-	         next_q = a.next_q + b.next_q } in
+           next_q = a.next_q + b.next_q } in
   let curset = which_states epsilon a.f in
   let _ = add curset (convert b.s) in
     (lhs, rhs, result)
@@ -841,7 +841,7 @@ let union (a : nfa)
   let _ = copy_table a.epsilon epsilon (fun x -> x) in
   let _ = copy_table b.epsilon epsilon convert in
   let result = { s = 0; f = 0; delta = delta; epsilon = epsilon; q = q;
-	         next_q = a.next_q + b.next_q } in
+           next_q = a.next_q + b.next_q } in
   let newstart = new_state result in
   let newfinal = new_state result in
     add_trans result newstart Epsilon a.s;
@@ -861,11 +861,11 @@ let union (a : nfa)
 *)
 let intersect (m1 : nfa) 
               (m2 : nfa)
-	      (p1 : state hashset) : ((state, state list) Hashtbl.t * nfa) =
+        (p1 : state hashset) : ((state, state list) Hashtbl.t * nfa) =
   let m1 = (if !Options.maxsize > 0 && size m1.q > !Options.maxsize then 
-	      minimize m1 else  m1) in
+        minimize m1 else  m1) in
   let m2 = (if !Options.maxsize > 0 && size m2.q > !Options.maxsize then 
-	      minimize m2 else m2) in
+        minimize m2 else m2) in
     
   let lhs = Hashtbl.create (size m2.q * size p1) in
   let put tbl x y = 
@@ -877,39 +877,39 @@ let intersect (m1 : nfa)
   let newstates = Hashtbl.create (size m1.q) in
 
   let state (x,y) = (try Hashtbl.find newstates (x,y) 
-		     with Not_found -> 
-		       queue := (x,y)::(!queue);
-		       Hashtbl.replace newstates (x,y) !cur_id;
-		       if Hashset.mem p1 x then put lhs x !cur_id;
-		       incr cur_id;
-		       !cur_id - 1
-		    ) in
+         with Not_found -> 
+           queue := (x,y)::(!queue);
+           Hashtbl.replace newstates (x,y) !cur_id;
+           if Hashset.mem p1 x then put lhs x !cur_id;
+           incr cur_id;
+           !cur_id - 1
+        ) in
 
   let result = new_nfa_states (state(m1.s,m2.s)) (state(m1.f,m2.f)) in
 
   let step (q1, q2) = 
     let delta_step q1' cset1 q2' cset2 =
       let charset = Charset.cap cset1 cset2 in
-	if not (Charset.empty charset) then
-	  add_set_trans result (state (q1,q2)) charset (state (q1',q2')) 
+  if not (Charset.empty charset) then
+    add_set_trans result (state (q1,q2)) charset (state (q1',q2')) 
     in
     let left_eps_step m1rhs =
       iter (fun m1q2 -> 
-	      Hashtbl.iter (fun (a,b) y -> 
-			      if a = q1 then
-				let newstate = state (m1q2, b) in
-				  add_trans result y Epsilon newstate
-			   ) newstates
-	   ) m1rhs
+        Hashtbl.iter (fun (a,b) y -> 
+            if a = q1 then
+        let newstate = state (m1q2, b) in
+          add_trans result y Epsilon newstate
+         ) newstates
+     ) m1rhs
     in
     let right_eps_step m2rhs =
       iter (fun m2q2 -> 
-	      Hashtbl.iter (fun (a,b) y -> 
-			      if b = q2 then
-				let newstate = state (a, m2q2) in
-				  add_trans result y Epsilon newstate
-			   ) newstates
-	   ) m2rhs
+        Hashtbl.iter (fun (a,b) y -> 
+            if b = q2 then
+        let newstate = state (a, m2q2) in
+          add_trans result y Epsilon newstate
+         ) newstates
+     ) m2rhs
     in
 
     let map1 = all_delta ~create:false m1.delta q1 in
@@ -945,8 +945,8 @@ exception Found_it
 let is_empty (nfa : nfa) : bool = 
   try
     forward_fold_nfa (fun n acc -> 
-			if (n = nfa.f) then raise Found_it else acc
-		     ) nfa nfa.s true
+      if (n = nfa.f) then raise Found_it else acc
+         ) nfa nfa.s true
   with Found_it -> false
 
 
@@ -991,7 +991,7 @@ let gen_string (m : nfa) : string option =
     in
     let handle_rhs q2 charset =
       let handle_char c = 
-	res := (w ^ (Charset.char_as_string c), q2)::!res in
+  res := (w ^ (Charset.char_as_string c), q2)::!res in
       Charset.iter handle_char charset 
     in
       StateSet.iter handle_eps epsset;

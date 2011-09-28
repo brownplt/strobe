@@ -88,9 +88,9 @@ let pretty_helper v =
   match v with
     | Finite set -> 
       if StringSet.cardinal set = 1 then
-	text (StringSet.choose set)
+  text (StringSet.choose set)
       else
-	StringSetExt.p_set text set
+  StringSetExt.p_set text set
     | CoFinite set ->
       if StringSet.is_empty set then
         text "Str"
