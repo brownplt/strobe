@@ -295,8 +295,11 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
           (List.fold_right2 (* well-kinded, no need to check *)
              (fun (x, k) t2 u -> typ_subst x t2 u)
              args ts u)
-      | _ -> 
-        raise (Invalid_argument "ill-kinded type application in simpl_typ")
+      | func_t ->
+        let msg = sprintf "ill-kinded type application in simpl_typ. Type is \
+                           \n%s\ntype in function position is\n%s\n"
+                          (string_of_typ typ) (string_of_typ func_t) in
+        raise (Invalid_argument msg)
       end
 
   and expose typenv typ = match typ with

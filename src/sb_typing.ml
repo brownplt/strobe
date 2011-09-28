@@ -175,7 +175,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
       | SinkCell -> TSink t
       | RefCell -> TRef t
     end
-  | EDeref (p, e) -> begin match simpl_typ env (tc_exp env e) with
+  | EDeref (p, e) -> begin match expose_simpl_typ env (tc_exp env e) with
       | TRef t -> t
       | TSource t -> t
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
