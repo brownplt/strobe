@@ -11,9 +11,8 @@
  * The Window that is really used is defined in core.tjs for now.
  */
 
-interface Window {
+interface HTMLWindow {
   attribute HTMLDocument document;
-  attribute WindowLocation location;
 
   int setTimeout(in AnyFunction func, in int timelen);
   void clearTimeout(in int timerid);
