@@ -34,13 +34,16 @@ let un_null t = match t with
   | _ -> t
 
 let check_kind p env typ : typ =
-  match kind_check env typ with
-    | KStar -> typ
-    | k ->
-      raise 
-        (Typ_error 
-           (p, sprintf "type term has kind %s; expected *" (string_of_kind k)))
-
+  try
+    match kind_check env typ with
+      | KStar -> typ
+      | k ->
+        raise (Typ_error  (p, sprintf "type term has kind %s; expected *" 
+                                      (string_of_kind k)))
+  with
+    | Sb_kinding.Kind_error msg ->
+        raise (Sb_kinding.Kind_error (string_of_position p ^ ": " ^ msg))
+  
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
 
 let rec check (env : env) (exp : exp) (typ : typ) : unit =
