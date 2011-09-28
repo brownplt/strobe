@@ -2,11 +2,14 @@
 P=`dirname $0`
 $P/run -contracts \
   -env $P/data/javascript.env \
-  -idl $P/data/dom.idl \
-  -idl $P/data/window.idl \
-  -idl $P/data/html.idl \
+  -idl $P/data/dom4.idl \
+  -idl $P/data/cssom.idl \
+  -idl $P/data/html5.idl \
   -idl $P/data/views.idl \
-  -idl $P/data/xmlhttprequest.idl \
   -idl $P/data/events.idl \
-  -global HTMLWindow \
+  -idl $P/data/typedarray.idl \
+  -idl $P/data/fileapi.idl \
+  -idl $P/data/xmlhttprequest.idl \
+  -idl $P/data/hacks.idl \
+  -global BrowserGlobal \
   $@

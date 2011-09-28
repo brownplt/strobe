@@ -22,14 +22,14 @@ function mouse() /*:  -> {x : Int, y : Int, pressed : Bool} */ {
 		y: -1,
 		pressed: false
 	};
-	function onmove(e) /*: MouseEvent -> Undef */ {
+	function onmove(e) /*: MouseEvent<> -> Undef */ {
 		ob.x = e.clientX;
 		ob.y = e.clientY;
 	}
-	function ondown(_) /*: Event -> Undef */ {
+	function ondown(_) /*: Event<> -> Undef */ {
 		ob.pressed = true;
 	}
-	function onup(_) /*: Event -> Undef */ {
+	function onup(_) /*: Event<> -> Undef */ {
 		ob.pressed = false;
 	}
 	document.addEventListener('mousemove', onmove, false);

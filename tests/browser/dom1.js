@@ -1,7 +1,5 @@
-function foo(wnd) /*: HTMLWindow -> HTMLWindow */ {
+function foo(wnd) /*: Window<> -> Window<> */ {
   return wnd.window;
 }
-//window.innerWidth + 10;
 
-//window.setTimeout(function () /*: -> Undef */ {
-//        return; }, 200);
+window.setTimeout(function (_) { return; }, 200);

@@ -1,0 +1,123 @@
+/*
+ * From http://www.whatwg.org/specs/web-apps/current-work/multipage/
+ *      the-canvas-element.html
+ */
+interface HTMLCanvasElement : HTMLElement {
+           attribute unsigned long width;
+           attribute unsigned long height;
+
+  DOMString toDataURL(optional DOMString type, any... args);
+  void toBlob(FileCallback? callback, optional DOMString type, any... args);
+
+  object? getContext(DOMString contextId, any... args);
+};
+
+interface CanvasRenderingContext2D {
+
+  // back-reference to the canvas
+  readonly attribute HTMLCanvasElement canvas;
+
+  // state
+  void save(); // push state on state stack
+  void restore(); // pop state stack and restore state
+
+  // transformations (default transform is the identity matrix)
+  void scale(double x, double y);
+  void rotate(double angle);
+  void translate(double x, double y);
+  void transform(double a, double b, double c, double d, double e, double f);
+  void setTransform(double a, double b, double c, double d, double e, double f);
+
+  // compositing
+           attribute double globalAlpha; // (default 1.0)
+           attribute DOMString globalCompositeOperation; // (default source-over)
+
+  // colors and styles
+           attribute any strokeStyle; // (default black)
+           attribute any fillStyle; // (default black)
+  CanvasGradient createLinearGradient(double x0, double y0, double x1, double y1);
+  CanvasGradient createRadialGradient(double x0, double y0, double r0, double x1, double y1, double r1);
+  CanvasPattern createPattern(HTMLImageElement image, DOMString repetition);
+  CanvasPattern createPattern(HTMLCanvasElement image, DOMString repetition);
+  CanvasPattern createPattern(HTMLVideoElement image, DOMString repetition);
+
+  // line caps/joins
+           attribute double lineWidth; // (default 1)
+           attribute DOMString lineCap; // "butt", "round", "square" (default "butt")
+           attribute DOMString lineJoin; // "round", "bevel", "miter" (default "miter")
+           attribute double miterLimit; // (default 10)
+
+  // shadows
+           attribute double shadowOffsetX; // (default 0)
+           attribute double shadowOffsetY; // (default 0)
+           attribute double shadowBlur; // (default 0)
+           attribute DOMString shadowColor; // (default transparent black)
+
+  // rects
+  void clearRect(double x, double y, double w, double h);
+  void fillRect(double x, double y, double w, double h);
+  void strokeRect(double x, double y, double w, double h);
+
+  // path API
+  void beginPath();
+  void closePath();
+  void moveTo(double x, double y);
+  void lineTo(double x, double y);
+  void quadraticCurveTo(double cpx, double cpy, double x, double y);
+  void bezierCurveTo(double cp1x, double cp1y, double cp2x, double cp2y, double x, double y);
+  void arcTo(double x1, double y1, double x2, double y2, double radius); 
+  void rect(double x, double y, double w, double h);
+  void arc(double x, double y, double radius, double startAngle, double endAngle, optional boolean anticlockwise); 
+  void fill();
+  void stroke();
+  void drawSystemFocusRing(Element element);
+  boolean drawCustomFocusRing(Element element);
+  void scrollPathIntoView();
+  void clip();
+  boolean isPointInPath(double x, double y);
+
+  // text
+           attribute DOMString font; // (default 10px sans-serif)
+           attribute DOMString textAlign; // "start", "end", "left", "right", "center" (default: "start")
+           attribute DOMString textBaseline; // "top", "hanging", "middle", "alphabetic", "ideographic", "bottom" (default: "alphabetic")
+  void fillText(DOMString text, double x, double y, optional double maxWidth);
+  void strokeText(DOMString text, double x, double y, optional double maxWidth);
+  TextMetrics measureText(DOMString text);
+
+  // drawing images
+  void drawImage(HTMLImageElement image, double dx, double dy);
+  void drawImage(HTMLImageElement image, double dx, double dy, double dw, double dh);
+  void drawImage(HTMLImageElement image, double sx, double sy, double sw, double sh, double dx, double dy, double dw, double dh);
+  void drawImage(HTMLCanvasElement image, double dx, double dy);
+  void drawImage(HTMLCanvasElement image, double dx, double dy, double dw, double dh);
+  void drawImage(HTMLCanvasElement image, double sx, double sy, double sw, double sh, double dx, double dy, double dw, double dh);
+  void drawImage(HTMLVideoElement image, double dx, double dy);
+  void drawImage(HTMLVideoElement image, double dx, double dy, double dw, double dh);
+  void drawImage(HTMLVideoElement image, double sx, double sy, double sw, double sh, double dx, double dy, double dw, double dh);
+
+  // pixel manipulation
+  ImageData createImageData(double sw, double sh);
+  ImageData createImageData(ImageData imagedata);
+  ImageData getImageData(double sx, double sy, double sw, double sh);
+  void putImageData(ImageData imagedata, double dx, double dy);
+  void putImageData(ImageData imagedata, double dx, double dy, double dirtyX, double dirtyY, double dirtyWidth, double dirtyHeight);
+};
+
+interface CanvasGradient {
+  // opaque object
+  void addColorStop(double offset, DOMString color);
+};
+
+interface CanvasPattern {
+  // opaque object
+};
+
+interface TextMetrics {
+  readonly attribute double width;
+};
+
+interface ImageData {
+  readonly attribute unsigned long width;
+  readonly attribute unsigned long height;
+  readonly attribute Uint8ClampedArray data;
+};

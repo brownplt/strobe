@@ -45,6 +45,7 @@
 
 
   // Introduced in DOM Level 2:
+  /* NOTE(arjun): efined in dom4.idl
   interface Event {
 
     // PhaseType
@@ -86,7 +87,6 @@
                                          in boolean cancelableArg, 
                                          in DOMObject detailArg);
   };
-
   // Introduced in DOM Level 2:
   interface EventTarget {
     void               addEventListener(in DOMString type, 
@@ -115,6 +115,7 @@
   interface EventListener {
     void               handleEvent(in Event evt);
   };
+ */
 
   // Introduced in DOM Level 2:
   interface DocumentEvent {

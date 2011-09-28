@@ -250,3 +250,23 @@ let extend_env (trm_vars : typ IdMap.t) (typ_vars : (typ * kind) IdMap.t) env =
     | None, None -> failwith "impossible case in extend_env" in
   { env with id_typs = IdMap.merge merge_fn env.id_typs trm_vars;
              typ_ids = IdMap.merge merge_fn env.typ_ids typ_vars }
+
+let verify_env env : unit =
+  let errors = ref false in
+  let kinding_env = IdMap.map (fun (_, k) -> k) env.typ_ids in
+  let f x (t, k) =
+    let k' = Sb_kinding.kind_check kinding_env t in
+    if k = k' then
+      ()
+    else
+      begin
+        printf "%s declared kind is %s, but calculated kind is %s.\n\
+                Type of %s is:\n%s\n"
+          x (string_of_kind k) (string_of_kind k') x (string_of_typ t);
+        errors := true
+      end in
+  IdMap.iter f env.typ_ids;
+  (* 
+  if !errors then
+    raise (Invalid_argument "ill-formed environment")
+  *)

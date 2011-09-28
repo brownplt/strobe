@@ -1,0 +1,132 @@
+// From http://dev.w3.org/2006/webapi/FileAPI/
+
+    interface FileList {
+      getter File? item(unsigned long index);
+      readonly attribute unsigned long length;
+    };
+    
+
+    interface Blob {
+      
+      readonly attribute unsigned long long size;
+      readonly attribute DOMString type;
+      
+      //slice Blob into byte-ranged chunks
+      
+      Blob slice(optional long long start,
+                 optional long long end,
+                  // NOTE(arjun): was TreatUndefinedAs
+                 [TreatNullAs=EmptyString] optional DOMString contentType); 
+    
+    };
+    
+
+
+  interface File : Blob {
+
+      readonly attribute DOMString name;
+      readonly attribute Date lastModifiedDate;
+};
+  
+
+
+
+[Constructor]
+interface FileReader: EventTarget {
+
+  // async read methods
+  void readAsArrayBuffer(Blob blob) raises (OperationNotAllowedException);
+  void readAsBinaryString(Blob blob) raises (OperationNotAllowedException);
+  void readAsText(Blob blob, optional DOMString encoding) raises (OperationNotAllowedException);
+  void readAsDataURL(Blob blob) raises (OperationNotAllowedException);
+
+  void abort();
+
+  // states
+  const unsigned short EMPTY = 0;
+  const unsigned short LOADING = 1;
+  const unsigned short DONE = 2;
+  
+  
+  readonly attribute unsigned short readyState;
+
+  // File or Blob data
+  readonly attribute any result;
+  
+  readonly attribute FileError error;
+
+  // event handler attributes
+  attribute Function onloadstart;
+  attribute Function onprogress;
+  attribute Function onload;
+  attribute Function onabort;
+  attribute Function onerror;
+  attribute Function onloadend;
+
+};
+  
+
+
+
+[Constructor]
+interface FileReaderSync {
+
+  // Synchronously return strings
+  // All methods raise FileException
+  
+  ArrayBuffer readAsArrayBuffer(Blob blob) raises (FileException);
+  DOMString readAsBinaryString(Blob blob) raises (FileException); 
+  DOMString readAsText(Blob blob, optional DOMString encoding) raises (FileException);
+  DOMString readAsDataURL(Blob blob) raises (FileException); 
+};
+
+
+
+ interface FileError {
+   // File error codes
+   
+   const unsigned short NOT_FOUND_ERR = 1;
+   const unsigned short SECURITY_ERR = 2;
+   const unsigned short ABORT_ERR = 3;
+   const unsigned short NOT_READABLE_ERR = 4;
+   const unsigned short ENCODING_ERR = 5;
+ 
+   readonly attribute unsigned short code;
+
+};
+
+
+
+ exception FileException {
+  
+  const unsigned short NOT_FOUND_ERR = 1;
+  const unsigned short SECURITY_ERR = 2;
+  const unsigned short ABORT_ERR = 3;
+  
+  const unsigned short NOT_READABLE_ERR = 4;
+  const unsigned short ENCODING_ERR = 5;
+ 
+  unsigned short code;
+  
+};
+
+
+
+  exception OperationNotAllowedException {
+   
+   const unsigned short NOT_ALLOWED_ERR = 1;
+   
+   unsigned short code;
+   
+  };
+
+
+
+/* Relies on the URL API, which is presently on a Google Doc ... */
+/*
+partial interface URL {
+
+     DOMString createObjectURL(Blob blob);
+     void revokeObjectURL(DOMString url);
+};
+*/

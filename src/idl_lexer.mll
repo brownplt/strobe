@@ -22,6 +22,7 @@ rule token = parse
    | "\r\n" { new_line lexbuf; token lexbuf }
    | "/*" { block_comment lexbuf }
    | "//"[^ '\r' '\n']* [ '\r' '\n' ] { new_line lexbuf; token lexbuf }
+   | "..." { DOTDOTDOT }
    | "(" { LPAREN }
    | ")" { RPAREN }
    | "{" { LBRACE }
@@ -40,6 +41,7 @@ rule token = parse
    | "long long" { LONGLONG }
    | "long" { LONG }
    | "boolean" { BOOLEAN }
+   | "Clamp" { CLAMP }
    | "byte" { BYTE }
    | "octet" { OCTET }
    | "float" { FLOAT }
@@ -53,11 +55,35 @@ rule token = parse
    | "optional" { OPTIONAL }
    | "attribute" { ATTRIBUTE }
    | "typedef" { TYPEDEF }
-   | "Object" { OBJECT }
+   | "object" { OBJECT }
    | "exception" { EXCEPTION }
    | "const" { CONST }
    | "=" { EQUALS }
    | "raises" { RAISES }
+   | "legacycaller" { LEGACYCALLER }
+   | "getter" { GETTER }
+   | "setter" { SETTER }
+   | "creator" { CREATOR }
+   | "deleter" { DELETER }
+   | "NoInterfaceObject" { NOINTERFACEOBJECT }
+   | "OverrideBuiltins" { OVERRIDEBUILTINS }
+   | "PutForwards" { PUTFORWARDS }
+   | "implements" { IMPLEMENTS }
+   | "stringifier" { STRINGIFIER }
+   | "NamedConstructor" { NAMEDCONSTRUCTOR }
+   | "Constructor" { CONSTRUCTOR }
+   | "ReplaceableNamedProperties" { REPLACEABLENAMEDPROPERTIES }
+   | "Replaceable" { REPLACEABLE }
+   | "Unforgeable" { UNFORGEABLE }
+   | "dictionary" { DICTIONARY }
+   | "Callback" { CALLBACK }
+   | "TreatNullAs" { TREATNULLAS }
+   | "FunctionOnly" { FUNCTIONONLY }
+   | "AllowAny" { ALLOWANY }
+   | "partial" { PARTIAL }
+   | "sequence" { SEQUENCE }
+   | "<" { LANGLE }
+   | ">" { RANGLE }
    | ['0'-'9']+ as x { INT (int_of_string x) }
    | "0x" hex+ { INT 0 }
    | eof { EOF }

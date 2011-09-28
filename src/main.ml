@@ -54,6 +54,7 @@ module Input : sig
   val set_env : env -> unit
   val load_env : string -> unit
   val set_global_object : string -> unit
+  val get_global_object : unit -> string
   val set_re_test_depth : int -> unit
   val get_re_test_depth : unit -> int
   val set_re_test_count : int -> unit
@@ -98,9 +99,11 @@ end = struct
   let get_sourcetype () = !sourcetype
   let set_sourcetype (str : string) _ = sourcetype := str
 
-  let get_env () = match !global_object with
-    | None -> Typedjs_env.set_global_object !env "Global"
-    | Some c -> Typedjs_env.set_global_object !env c
+  let get_env () = !env
+
+  let get_global_object () = match !global_object with
+    | None -> "Global"
+    | Some c -> c
 
   let set_env new_env = env := new_env
 
@@ -159,8 +162,16 @@ let action_pretypecheck () : unit =
   let typedjs = weave_annotations (get_typedjs ()) in
     Typedjs_syntax.Pretty.p_exp typedjs std_formatter
 
+let idl_defs : Idl_syntax.definition list ref = ref []
+
 let action_tc () : unit = 
-  let _ = typecheck (get_env ()) (weave_annotations (get_typedjs ())) in
+  let env = 
+    let typ_vars = Unidl.unidl !idl_defs in
+    Typedjs_env.set_global_object
+      (extend_env IdMap.empty typ_vars (get_env ()))
+      (get_global_object ()) in
+  (* verify_env env; *)
+  let _ = typecheck env (weave_annotations (get_typedjs ())) in
   if get_num_typ_errors () > 0 then
     exit 2
   else
@@ -169,10 +180,7 @@ let action_tc () : unit =
       transform_exprs tr_map (get_cin ()) stdout
 
 let load_idl_file filename =
-  let idl = Idl.from_channel (open_in filename) filename in
-  let typ_vars = Unidl.unidl idl in
-  let env = get_env () in
-  set_env (extend_env IdMap.empty typ_vars env)
+  idl_defs := !idl_defs @ Idl.from_channel (open_in filename) filename
 
 let action = ref action_tc
 
