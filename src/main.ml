@@ -15,8 +15,6 @@ open Typedjs_dyn
 
 module Unidl = Unidl.Make (P) (TypImpl)
 
-module Z= ReadTyps
-
 let parse_sb cin name =
   let lexbuf = Lexing.from_string cin in
     try 
