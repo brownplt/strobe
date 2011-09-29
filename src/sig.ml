@@ -149,6 +149,8 @@ module type TYP = sig
 
   val typ_subst : id -> typ -> typ -> typ
 
+  val parent_typ : typenv -> typ -> typ option
+
   val simpl_typ : typenv -> typ -> typ
 
   val expose : typenv -> typ -> typ

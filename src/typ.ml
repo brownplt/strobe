@@ -375,7 +375,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         end
       | false -> parent_typ' env flds'
 
-  let rec parent_typ (env : typenv) typ = 
+  let parent_typ (env : typenv) typ = 
     match expose env (simpl_typ env typ) with
       | TObject ot -> begin match !(ot.cached_parent_typ) with
     | Some cached ->

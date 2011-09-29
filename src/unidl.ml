@@ -71,9 +71,11 @@ end = struct
       (trm_vars, 
        IdMap.add name (inst_typ, KArrow ([], KStar)) typ_vars)
 
-  let from_definition (trm_vars, typ_vars) defn = match defn with
+  let from_definition x defn (trm_vars, typ_vars) = match defn with
+    | ForwardInterface _
+    | Implements  _ 
+    | PartialInterface _ -> failwith "should be processed by consolidate"
     | Module _ -> failwith "module NYI"
-    | ForwardInterface _ -> (trm_vars, typ_vars)
     | Const (_, t, x) ->
       (IdMap.add (Id.string_of_id x) (from_typ t) trm_vars, typ_vars)
     | Typedef (_, t, x) -> 
@@ -101,66 +103,59 @@ end = struct
           end
         else
           from_interface p name super members metas trm_vars typ_vars
-    | Implements (p, obj_name, super_name) ->
-      let obj_name = Id.string_of_id obj_name in
-      let super_name = Id.string_of_id super_name in
-      if not (IdMap.mem obj_name typ_vars) then
-        failwith (sprintf "%s: %s implements ... does not exist" 
-                          (string_of_position (p, p))
-                          obj_name );
-      if not (IdMap.mem super_name typ_vars) then
-        failwith (sprintf "%s: ... implements %s does not exist" 
-                          (string_of_position (p, p))
-                          super_name );
-      let (obj_typ, _) = IdMap.find obj_name typ_vars in
-      let (super_typ, _) = IdMap.find super_name typ_vars in
-      begin match (obj_typ, super_typ) with
-        | TLambda ([], TRef (TObject obj)), TLambda ([], TRef (TObject sup)) ->
-          (* TODO(arjun): remove __proto__ from sup? *)
-          let flds = fields obj @ fields sup in
-          let absent_pat = 
-            Pat.negate (fold_right (fun (pat, _, _) acc -> Pat.union pat acc) 
-                       flds Pat.empty) in
-          let obj_typ = 
-            TLambda ([], TRef (TObject (mk_obj_typ flds absent_pat))) in
-          (trm_vars, IdMap.add obj_name (obj_typ, KArrow ([], KStar)) typ_vars)
-        | _ -> failwith "strange types in implements"
-      end
-  | PartialInterface (p, name, members) ->
-      (* An IDL interface defines both a type and a value. *)
-      let name = Id.string_of_id name in
-      let self = TId name in
-      let (inst_flds, proto_flds) =  (* TODO(arjun): proto_flds, handle it *)
-        fold_right (by_member self) members ([],[]) in
-      if not (IdMap.mem name typ_vars) then
-        failwith (sprintf "%s: partial interface %s does not exist" 
-                          (string_of_position (p, p)) name);
-      begin match IdMap.find name typ_vars with
-        | (TLambda ([], TRef (TObject obj)), KArrow ([], KStar)) ->
-            let inst_flds = fields obj @ inst_flds in
-            let absent_pat = 
-              Pat.negate (fold_right (fun (pat, _, _) acc -> Pat.union pat acc) 
-                         inst_flds Pat.empty) in
-            let obj_typ = 
-              TLambda ([], TRef (TObject (mk_obj_typ inst_flds absent_pat))) in
-            (trm_vars, IdMap.add name 
-                                 (obj_typ, KArrow ([], KStar)) typ_vars)
-        | _ -> failwith "strange types in partial interface"
-      end
-  | Dictionary _ -> (trm_vars, typ_vars) (* TODO(arjun): handle it *)
+    | Dictionary _ -> (trm_vars, typ_vars) (* TODO(arjun): handle it *)
 
   let is_partial def = match def with
     | PartialInterface _
     | Implements _ -> true
     | _ -> false
 
+  let consolidate iface_map defn = match defn with
+    | Module _ -> failwith "Module NYI"
+    | ForwardInterface _ -> iface_map
+    | Exception _ -> iface_map (* TODO(arjun): handle it *)
+    | Dictionary _ -> iface_map (* TODO(arjun): handle it *)
+    | Const (_, _, x)
+    | Interface (_, x, _, _, _) 
+    | Typedef (_, _, x) -> IdMap.add (Id.string_of_id x) defn iface_map
+    | PartialInterface (p, x, ext_mems) ->
+      let x_str = Id.string_of_id x in
+      begin try  
+        match IdMap.find x_str iface_map with
+          | Interface (p, x, super, mems, metas) ->
+              IdMap.add x_str (Interface (p, x, super, mems @ ext_mems, metas))
+                iface_map
+          | _ -> 
+            let msg = sprintf "%s: partial interface extends a non-interface"
+                        (string_of_position (p, p)) in
+            raise (Invalid_argument msg)
+      with Not_found ->
+        raise (Invalid_argument (sprintf 
+          "%s: interface must come before partial interface"
+            (string_of_position (p, p))))
+      end
+    | Implements (p, obj, trait) ->
+      let obj_str = Id.string_of_id obj in
+      try match IdMap.find obj_str iface_map,
+                IdMap.find (Id.string_of_id trait) iface_map with
+            | Interface (p1, obj_name, super, mems, metas),
+              Interface (p2, _, None, trait_mems, _) ->
+                IdMap.add obj_str 
+                  (Interface (p1, obj_name, super, mems @ trait_mems, metas))
+                  iface_map
+            | _ -> raise (Invalid_argument (sprintf "%s: bad implements clause"
+                     (string_of_position (p, p))))
+      with Not_found ->
+        raise (Invalid_argument (sprintf "%s: not found" 
+          (string_of_position (p, p))))
+
   let unidl definitions = 
-    let (partials, mains) = List.partition is_partial definitions in
+    let iface_map =
+       let (parts, mains) = List.partition is_partial definitions in
+       fold_left consolidate (fold_left consolidate IdMap.empty mains) parts in
+    
     let (trm_vars, typ_vars) = 
-      (* fold_left to process top->bottom. *)
-      fold_left from_definition
-        (fold_left from_definition (IdMap.empty, IdMap.empty) mains)
-        partials in
-     IdMap.add "BrowserGlobal" (TApp (TId "Window", []), KStar) typ_vars
+      IdMap.fold from_definition iface_map (IdMap.empty, IdMap.empty) in
+    IdMap.add "BrowserGlobal" (TApp (TId "Window", []), KStar) typ_vars
 
 end
