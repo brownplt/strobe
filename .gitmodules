@@ -1,0 +1,3 @@
+[submodule "ML-LambdaJS"]
+	path = ML-LambdaJS
+	url = git@github.com:arjunguha/ML-LambdaJS.git

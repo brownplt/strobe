@@ -10,7 +10,6 @@ TAGS
 *.a
 *.o
 *.cmi
-src/LambdaJS
 obj
 *~
 .#*
