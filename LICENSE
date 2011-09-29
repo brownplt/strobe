@@ -33,6 +33,8 @@ EXCEPTIONS TO THE ABOVE LICENSE
 
 /tests contains 3rd-party code that is not covered by this license.
 
+/data contains 3rd-party code that is not covered by this license.
+
 /src/dprle_* is code authored by Pieter Hooimeijer, covered by the following
 license.
 
