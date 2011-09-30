@@ -92,7 +92,8 @@ rule token = parse
 and block_comment = parse
   | "*/" { token lexbuf }
   | '*' { block_comment lexbuf }
-  | [ '\n' '\r' ]  { block_comment lexbuf }
+  | "\r\n" { new_line lexbuf; block_comment lexbuf }
+  | [ '\n' '\r' ]  { new_line lexbuf; block_comment lexbuf }
   | [^ '\n' '\r' '*'] { block_comment lexbuf }
 
 and regexp = parse
