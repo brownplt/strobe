@@ -50,12 +50,9 @@ let rec seq expr = match expr with
         ((a2, f, FuncExpr (a2, args, e1)) :: decls, body)
   | _ -> ([], expr)
 
-let rec is_value e = match e with
-  | ConstExpr _ -> true
-  | ObjectExpr (_, flds) -> List.for_all (fun (_, _, e') -> is_value e') flds
-  | _ -> false
-
-let is_func_decl (_, _, e) = is_value e
+let is_func_decl (_, _, e) = match e with
+  | FuncExpr _ -> true
+  |  _ -> false
 
 let is_empty lst = match lst with
     [] -> true
@@ -241,20 +238,20 @@ and exp_seq env e = match e with
 
 and func_exp env (_, x, expr) = 
   let e = exp env expr in
-    (x, typ_of_value e, e)
+    (x, e)
 
-and bind_func_ref (x, t, e) rest_exp = 
+and bind_func_ref (x, e) rest_exp = 
   let p = Exp.pos e in
-    ELet (p, x, ERef (p, RefCell, ESubsumption (p, t, EBot p)), rest_exp)
+  ELet (bad_p, x, ERef (bad_p, RefCell, EBot p), rest_exp)
 
-and set_func_ref (x, t, e) rest_exp =
+and set_func_ref (x, e) rest_exp =
   let p = Exp.pos e in
     ESeq (p, ESetRef (p, EId (p, x), e), rest_exp)
   
 and block_intro env (decls, body) = match take_while is_func_decl decls with
     [], [] -> exp_seq env body
   | [], (a, x, e) :: rest ->
-      ELet (bad_p, x, ERef (bad_p, RefCell, exp env e),
+      ELet (a, x, ERef (bad_p, RefCell, exp env e),
             block_intro (IdMap.add x true env) (rest, body))
   | funcs, rest ->
       let new_ids = map snd3 funcs in

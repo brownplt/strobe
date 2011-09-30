@@ -160,7 +160,7 @@ let rec cps_exp  (exp : exp) (throw : id) (k : cont) : cpsexp = match exp with
       let throw' = new_name () in
       ret k (Lambda (k' :: throw' :: args, cps_exp body throw' (Jmp k')))
     else
-      failwith "semicps cannot yet handle unannotated functions"
+      ret k (ExternalLambda TBot)
   | ELet (_, x, e1, e2) ->
     cps' e1 throw
       (fun v1 ->

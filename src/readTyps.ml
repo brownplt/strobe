@@ -111,7 +111,9 @@ let assoc_annotations (js_ast : prog) ann_lst =
       (* TODO(arjun): also annotatable *)
     | FuncStmt (stmt_p, f, args, s) -> match ann with
       | ((p, a) :: rest) ->
-        if pos_before stmt_p p && pos_before p (stmt_pos s) then
+        (* above statement, or between arguments and opening brace *)
+        if (pos_before p stmt_p) ||
+           (pos_before stmt_p p && pos_before p (stmt_pos s)) then
           if pos_near stmt_p p then
             begin
               H.add tbl stmt_p a;

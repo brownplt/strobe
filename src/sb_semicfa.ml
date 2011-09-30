@@ -350,9 +350,9 @@ let rec calc (env : env) (heap : heap) (cpsexp : cpsexp) = match cpsexp with
         (lookup v1 node env) (lookup v2 node env)
       | Object _ -> (Absval.Set (RTSet.singleton RT.Object), heap)
       | Array _ -> (Absval.Set (RTSet.singleton RT.Object), heap)
-      | UpdateField _ -> (Absval.Set (RTSet.singleton RT.Object), heap) in
-      (* | AssertTyp (t, v) -> printf "Using a hint ...\n";      
-          (Env.runtime IdMap.empty t, heap) in *)
+      | UpdateField _ -> (Absval.Set (RTSet.singleton RT.Object), heap)
+      | AssertTyp (t, v) ->
+          (Env.runtime IdMap.empty t, heap) in
     flow (Env.bind x v env) heap cont
   | Rec (node, binds, cont) ->
     let env = 
