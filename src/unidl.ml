@@ -39,7 +39,7 @@ end = struct
       let name_pat = Pat.singleton (Id.string_of_id method_name) in
       let method_typ = TArrow (self :: (map from_typ arg_typs), 
                                from_typ result_typ) in
-      (inst_flds, (name_pat, Present, method_typ) :: proto_flds)
+      (inst_flds, (name_pat, Inherited, method_typ) :: proto_flds)
     | _ -> (inst_flds, proto_flds) (* TODO(arjun): fill *)
 
   let from_interface p name super members metas trm_vars typ_vars =
@@ -54,8 +54,9 @@ end = struct
         fold_right (by_member self) members ([],[]) in
       let proto_proto =  match super with
         | None -> TId "Object"
-        | Some super -> TApp (TId (scopedName super), []) in
-      let proto_flds =
+        (* TODO(arjun): Set proto correctly for nominality *)
+        (* | Some super -> TApp (TId (scopedName super), []) in *)
+      in let proto_flds =
         (Pat.singleton "__proto__", Present, proto_proto) :: proto_flds in
       let proto_absent_pat = 
         Pat.negate (fold_right (fun (pat, _, _) acc -> Pat.union pat acc) 
@@ -123,6 +124,7 @@ end = struct
       begin try  
         match IdMap.find x_str iface_map with
           | Interface (p, x, super, mems, metas) ->
+              (* TODO(arjun): semantics of inherited attributes? *)
               IdMap.add x_str (Interface (p, x, super, mems @ ext_mems, metas))
                 iface_map
           | _ -> 
@@ -149,11 +151,23 @@ end = struct
         raise (Invalid_argument (sprintf "%s: not found" 
           (string_of_position (p, p))))
 
+  let rec collapse x _ iface_map = match IdMap.find x iface_map with
+    | Interface (p, name, Some super, mems, metas) as rhs ->
+      let super = scopedName super in
+      let iface_map = collapse super rhs iface_map in
+      begin match IdMap.find super iface_map with
+        | Interface (_, _, None, super_mems, _) -> 
+            IdMap.add x 
+              (Interface (p, name, None, mems @ super_mems, metas)) iface_map
+        | _ -> failwith "collapse failed"
+      end
+    | _ -> iface_map
+
   let unidl definitions = 
     let iface_map =
        let (parts, mains) = List.partition is_partial definitions in
        fold_left consolidate (fold_left consolidate IdMap.empty mains) parts in
-    
+    let iface_map = IdMap.fold collapse iface_map iface_map in
     let (trm_vars, typ_vars) = 
       IdMap.fold from_definition iface_map (IdMap.empty, IdMap.empty) in
     IdMap.add "BrowserGlobal" (TApp (TId "Window", []), KStar) typ_vars
