@@ -2,12 +2,9 @@ open Prelude
 open Typedjs_syntax
 open Typedjs_env
 open Format
-open Typedjs_dyn
 open Typedjs_tc_util
 
 let consumed_owned_vars  = ref IdSet.empty
-
-let contracts : (int * typ) IntMap.t ref = ref IntMap.empty
 
 let array_idx_pat = 
   P.parse Lexing.dummy_pos
@@ -359,8 +356,6 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
   | EDowncast (p, t, e) -> 
     let t = check_kind p env t in
     let (p1, p2) = Exp.pos e in 
-    contracts := IntMap.add p1.Lexing.pos_cnum (p2.Lexing.pos_cnum, t)
-      !contracts;
     ignore (tc_exp env e);
     t
   | ETypAbs (p, x, t, e) ->

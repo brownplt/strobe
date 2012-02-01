@@ -11,7 +11,6 @@ open Exprjs_syntax
 open Format
 open FormatExt
 open Lexing
-open Typedjs_dyn
 
 module Unidl = Unidl.Make (P) (TypImpl)
 
@@ -117,9 +116,6 @@ end
 
 open Input
 
-let (set_print_contracts, get_print_contracts) =
-  mk_flag "-contracts" "insert contracts (prints to stdout)" false
-
 let (set_simpl_cps, get_simpl_cps) =
   mk_flag "-simplcps" "use simplified, but slower CPS (broken)" false
 
@@ -173,9 +169,7 @@ let action_tc () : unit =
   if get_num_typ_errors () > 0 then
     exit 2
   else
-    if get_print_contracts () then
-      let tr_map = mk_contract_transformers !contracts in
-      transform_exprs tr_map (get_cin ()) stdout
+    ()
 
 let load_idl_file filename =
   idl_defs := !idl_defs @ Idl.from_channel (open_in filename) filename
@@ -213,8 +207,6 @@ let main () : unit =
       ("-idl", Arg.String load_idl_file,
        "loads an IDL file");
       set_simpl_cps;
-      set_print_contracts;
-
     ]
     (fun s -> set_cin (open_in s) s)
     "Usage: jst [options] [file]\noptions are:\n"
