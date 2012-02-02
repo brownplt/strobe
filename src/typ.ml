@@ -612,5 +612,34 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | true, false -> s (* s <: t *)
     | false, true -> t
     | false, false -> TIntersect (s, t)
+
+  let filter_typ (pred : typ -> bool) (typ : typ) = 
+    let none_removed = ref true in
+    let rec union (typs : typ list) = match typs with
+      | t1 :: ts -> fold_right (fun s t -> TUnion (s, t)) ts t1
+      | _ -> failwith "expected non-empty list" in
+    let rec f t : typ list = match t with
+      | TUnion (s1, s2) -> f s1 @ f s2
+      | TIntersect (s1, s2) -> begin match f s1, f s2 with
+        | [], [] -> []
+        | [], typs
+        | typs, [] -> typs
+        | typs1, typs2 -> [TIntersect (union typs1, union typs2)]
+        end
+      | _ -> if pred t then 
+          [t]
+        else 
+          begin
+            none_removed := false;
+            []
+          end in
+    let typ_lst = f typ in
+    (typ_lst, !none_removed)
+
+  let is_object_typ t = match t with
+    | TObject _ -> true
+    | _ -> false
+
+  let object_typs (typ : typ) : typ list * bool = filter_typ is_object_typ typ
   
 end

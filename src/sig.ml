@@ -175,4 +175,8 @@ module type TYP = sig
 
   val pat_env : typenv -> pat IdMap.t
 
+  (** [object_typs t] returns a list of object types in a union and a flag
+      which is set if there were no other types in [t]. *)
+  val object_typs : typ -> typ list * bool
+
 end
