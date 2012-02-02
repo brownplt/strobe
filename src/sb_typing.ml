@@ -51,12 +51,12 @@ let rec check (env : env) (exp : exp) (typ : typ) : unit =
     
 and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
   | ELabel (p, lbl, e) ->
-    let s = tc_exp (bind_lbl lbl typ env) e in
+    let s = synth (bind_lbl lbl typ env) e in
     if not (subtype env s typ) then
       typ_mismatch p (sprintf "label has type %s, but body returns %s"
                               (string_of_typ typ) (string_of_typ s))
   | ELet (_, x, e1, e2) -> 
-    check (bind_id x (tc_exp env e1) env) e2 typ
+    check (bind_id x (synth env e1) env) e2 typ
   | EFunc (p, args, func_info, body) -> 
     let misowned_vars = IdSet.inter !consumed_owned_vars 
       func_info.func_owned in
@@ -106,14 +106,14 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
       List.iter (fun e -> check env e expect_elt_typ) es 
   | EParen (_, e) -> check env e typ
   | _ -> 
-    let synth_typ = tc_exp env exp in
+    let synth_typ = synth env exp in
     if not (subtype env synth_typ typ) then
       typ_mismatch (Exp.pos exp)
         (sprintf "expected %s, got %s" 
            (string_of_typ typ)
            (string_of_typ synth_typ))
 
-and tc_exp (env : env) (exp : exp) : typ = match exp with
+and synth (env : env) (exp : exp) : typ = match exp with
   (* TODO: Pure if-splitting rule; make more practical by integrating with
       flow typing. *)
   | EIf (p, EInfixOp (_, "hasfield",  EDeref (_, EId (_, obj)), (EId (_, fld))),
@@ -123,7 +123,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
         let subtract (p, pres, t) =
           if P.is_overlapped p pat then (P.subtract p pat, pres, t) (* perf *)
           else (p, pres, t) in
-        let false_typ = tc_exp env false_part in
+        let false_typ = synth env false_part in
         let true_typ =
           let fld_typ = simpl_lookup p (tid_env env) (TObject ot) pat in
           let env = bind_typ_id "alpha" (TRegex pat) env in
@@ -132,7 +132,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
             (TObject (mk_obj_typ ((P.var "alpha", Present, fld_typ) ::
                                      map subtract (fields ot))
                       (absent_pat ot))) env in
-          tc_exp env true_part in
+          synth env true_part in
         typ_union env true_typ false_typ
       | s, t ->
         raise (Typ_error (p, "expected object and string types, got " ^
@@ -145,16 +145,16 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
       lookup_id x env
     with Not_found -> raise (Typ_error (p, x ^ " is not defined")) (* severe *)
   end
-  | ELet (_, x, e1, e2) -> tc_exp (bind_id x (tc_exp env e1) env) e2
-  | ESeq (_, e1, e2) -> begin match tc_exp env e1 with
+  | ELet (_, x, e1, e2) -> synth (bind_id x (synth env e1) env) e2
+  | ESeq (_, e1, e2) -> begin match synth env e1 with
       TBot -> (* e1 will not return; no need to typecheck e2 *)
         TBot
-      | _ -> tc_exp env e2
+      | _ -> synth env e2
   end
   | EArray (p, []) -> 
     raise (Typ_error (p, "an empty array literal requires a type annotation"))
   | EArray (p, e::es) -> 
-    let (t1, ts) = tc_exp env e, map (tc_exp env) es in
+    let (t1, ts) = synth env e, map (synth env) es in
     let tarr = List.fold_right (typ_union env) ts t1 in
     begin match simpl_typ env (mk_array_typ p env tarr) with
       | TRef t -> t
@@ -162,24 +162,24 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     end
   (* Optimization to avoid reducing TArray<'a> *)
   | ERef (p1, RefCell, EArray (p2, e::es)) ->
-    let (t1, ts) = tc_exp env e, map (tc_exp env) es in
+    let (t1, ts) = synth env e, map (synth env) es in
     let tarr = List.fold_right (typ_union env) ts t1 in
     mk_array_typ p2 env tarr
   | ERef (p, k, e) ->
-    let t = tc_exp env e in
+    let t = synth env e in
     begin match k with
       | SourceCell -> TSource t
       | SinkCell -> TSink t
       | RefCell -> TRef t
     end
-  | EDeref (p, e) -> begin match expose_simpl_typ env (tc_exp env e) with
+  | EDeref (p, e) -> begin match expose_simpl_typ env (synth env e) with
       | TRef t -> t
       | TSource t -> t
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
         (string_of_typ t)))
   end 
   | ESetRef (p, e1, e2) -> 
-    let t = expose_simpl_typ env (tc_exp env e1) in
+    let t = expose_simpl_typ env (synth env e1) in
     begin match  t with
       | TRef s 
       | TSink s -> check env e2 s; t
@@ -190,7 +190,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     end
   | ELabel (p, lbl, e) -> 
     (* This is a valid assumption for JavaScript. *)
-    tc_exp (bind_lbl lbl (TPrim Undef) env) e
+    synth (bind_lbl lbl (TPrim Undef) env) e
   | EBreak (p, lbl, e) ->
     let lbl_typ = 
       try lookup_lbl lbl env
@@ -199,24 +199,24 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     check env e lbl_typ;
     TBot
   | ETryCatch (_, e1, x, e2) ->
-    let t1 = tc_exp env e1
-    and t2 = tc_exp (bind_id x TTop env) e2 in
+    let t1 = synth env e1
+    and t2 = synth (bind_id x TTop env) e2 in
     typ_union env t1 t2
   | ETryFinally (_, e1, e2) -> 
-    let _ = tc_exp env e1 in
-    tc_exp env e2
+    let _ = synth env e1 in
+    synth env e2
   | EThrow (_, e) -> 
-    let _ = tc_exp env e in
+    let _ = synth env e in
     TBot
   | ETypecast (p, rt, e) -> 
-    let t = tc_exp env e in
+    let t = synth env e in
     static env rt t
   | EIf (p, e1, e2, e3) ->
     check env e1 typ_bool;
-    typ_union env (tc_exp env e2) (tc_exp env e3)
+    typ_union env (synth env e2) (synth env e3)
   | EObject (p, fields) ->
     let mk_field (name, exp) = 
-      (P.singleton name, Present, tc_exp env exp) in
+      (P.singleton name, Present, synth env exp) in
     let get_names (name, _) names = 
       P.union names (P.singleton name) in
     let rest = List.fold_right get_names fields (P.singleton "__proto__") in
@@ -227,16 +227,16 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
                            :: (map mk_field fields))
                           (P.negate rest))
   | EBracket (p, obj, field) -> 
-    begin match expose_simpl_typ env (tc_exp env field) with
-      | TRegex pat -> inherits p env (un_null (tc_exp env obj)) pat
+    begin match expose_simpl_typ env (synth env field) with
+      | TRegex pat -> inherits p env (un_null (synth env obj)) pat
       | idx_typ -> 
         raise (Typ_error
                  (p, sprintf "index has type %s" (string_of_typ idx_typ)))
     end
   | EUpdate (p, obj, field, value) -> begin
-    let tobj = tc_exp env obj in
+    let tobj = synth env obj in
     match expose_simpl_typ env tobj, 
-      expose_simpl_typ env (tc_exp env field), tc_exp env value with
+      expose_simpl_typ env (synth env field), synth env value with
         | TObject o, (TRegex idx_pat as tfld), typ ->
           begin
             if not (P.is_subset (pat_env (tid_env env)) 
@@ -267,17 +267,17 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
           obj
           
   end
-  | EPrefixOp (p, op, e) -> tc_exp env (EApp (p, EId (p, op), [e]))
+  | EPrefixOp (p, op, e) -> synth env (EApp (p, EId (p, op), [e]))
   | EInfixOp (p, "+", e1, e2) -> 
-    begin match (tc_exp env e1, tc_exp env e2) with
+    begin match (synth env e1, synth env e2) with
       | TRegex _, _
       | _, TRegex _ -> 
         TRegex P.all
       | t1, t2 ->
-        tc_exp env (EApp (p, EId (p, "+"), [ ECheat (p, t1, e1); 
+        synth env (EApp (p, EId (p, "+"), [ ECheat (p, t1, e1); 
                                              ECheat (p, t2, e2) ]))
     end
-  | EInfixOp (p, op, e1, e2) -> tc_exp env (EApp (p, EId (p, op), [e1; e2]))
+  | EInfixOp (p, op, e1, e2) -> synth env (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> 
     let rec check_app tfun =
       begin match expose_simpl_typ env tfun with 
@@ -311,7 +311,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
                 (string_of_typ quant_typ)))
             | Some (typ_vars, (TArrow (_, r) as arrow_typ)) ->
               (* guess-work breaks bidirectionality *)
-              let arg_typs = map (tc_exp env) args in
+              let arg_typs = map (synth env) args in
               let assumed_arg_exps = 
                 List.map2 (fun e t -> ECheat (p, t, e)) args arg_typs in
               let assoc =
@@ -325,7 +325,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
               let guessed_exp = 
                 fold_left guess_typ_app (ECheat (p, quant_typ, f)) 
                   typ_vars in
-              tc_exp env (EApp (p, guessed_exp, assumed_arg_exps))
+              synth env (EApp (p, guessed_exp, assumed_arg_exps))
             | Some _ -> failwith "expected TArrow from forall_arrow"
           end
         | not_func_typ ->
@@ -334,7 +334,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
                             sprintf "expected function, got %s" 
                               (string_of_typ not_func_typ)))
       end in 
-    check_app (un_null (tc_exp env f))
+    check_app (un_null (synth env f))
   | ERec (binds, body) -> 
     (* No kinding check here, but it simply copies the type from the function.
        Let it work. (Actual reason: no position available) *)
@@ -342,7 +342,7 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
     let env = fold_left f env binds in
     let tc_bind (x, t, e) = check env e t in
     List.iter tc_bind binds;
-    tc_exp env body
+    synth env body
   | EFunc (p, args, func_info, body) -> 
     raise (Typ_error (p, "cannot calculate function type; annotation required"))
   | ESubsumption (p, t, e) ->
@@ -356,14 +356,14 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
   | EDowncast (p, t, e) -> 
     let t = check_kind p env t in
     let (p1, p2) = Exp.pos e in 
-    ignore (tc_exp env e);
+    ignore (synth env e);
     t
   | ETypAbs (p, x, t, e) ->
     (* bind_typ_id does the kinding check *)
     let env = bind_typ_id x t env in
-    TForall (x, t, tc_exp env e)
+    TForall (x, t, synth env e)
   | ETypApp (p, e, u) ->
-    begin match expose_simpl_typ env (tc_exp env e) with
+    begin match expose_simpl_typ env (synth env e) with
       | TForall (x, s, t) ->
         if subtype env u s then
           typ_subst x u t
@@ -381,10 +381,10 @@ and tc_exp (env : env) (exp : exp) : typ = match exp with
             (string_of_typ t) (string_of_typ u)))
     end
   | ECheat (p, t, _) -> t
-  | EParen (p, e) -> tc_exp env e
+  | EParen (p, e) -> synth env e
 
-and tc_exps env es = map (tc_exp env) es
+and synths env es = map (synth env) es
 
 let typecheck env exp =
-  let _ = tc_exp env exp in
+  let _ = synth env exp in
   ()
