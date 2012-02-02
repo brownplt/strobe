@@ -1,4 +1,4 @@
-var a = 4 + (/*: cheat Int*/ "not a num!");
+var a = 4 + (/*: cheat Num*/ "not a num!");
 
 a = a + 4;
 

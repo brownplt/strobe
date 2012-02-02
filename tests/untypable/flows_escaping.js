@@ -1,4 +1,4 @@
-function(x) /*: Int + Undef -> { h : (-> Undef) -> Undef } */ {
+function(x) /*: Num + Undef -> { h : (-> Undef) -> Undef } */ {
 
 
   var h = function(z) /*: (-> Undef) -> Undef */ {

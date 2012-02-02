@@ -231,7 +231,6 @@ end = struct
       | TIntersect (t1, t2) -> RTSet.union (rt t1) (rt t2)
       | TPrim (s) -> begin match s with
           | Num
-          | Int -> RTSet.singleton RT.Num
           | True
           | False -> RTSet.singleton RT.Bool
           | Null -> RTSet.singleton RT.Object

@@ -190,7 +190,7 @@ function doNoneButton() /*:  -> Undef */ {
     return;
 }
 
-function drawNewColorBand(color) /*: Int -> Undef */ {
+function drawNewColorBand(color) /*: Num -> Undef */ {
 
     switch (currentBandIndex) {
     case 0:
@@ -419,7 +419,7 @@ function containsLeadingZero(inputStr) /*: Str -> Bool */ {
     return (false);
 }
 
-function containsErroneousNonZeroDigits(inputStr, zerosStartAtPosition) /*: Str * Int -> Bool */ {
+function containsErroneousNonZeroDigits(inputStr, zerosStartAtPosition) /*: Str * Num -> Bool */ {
     var length = inputStr.length;
 
     if (length <= zerosStartAtPosition) {
@@ -465,7 +465,7 @@ function doOhmsCheck() /*:  -> Undef */ {
     } else {
         ohms.color = "#000000"; // Black.
         ohms.strikeout = false;
-        resistance = parseInt(cleanedOhms);
+        resistance = parseNum(cleanedOhms);
     }
 
     doGenerateBandColors();
@@ -490,7 +490,7 @@ function doGenerateBandColors() /*:  -> Undef */ {
             bandNumberValues[0] = 0;
         } else { // if(resistance >= 10)
             // Process the first digit.
-            digit = parseInt(digitStr.charAt(0));
+            digit = parseNum(digitStr.charAt(0));
             firstBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
             firstBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
             firstBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
@@ -501,14 +501,14 @@ function doGenerateBandColors() /*:  -> Undef */ {
             if (length == 0) {
                 digit = 0;
             } else {
-                digit = parseInt(digitStr.charAt(0));
+                digit = parseNum(digitStr.charAt(0));
             }
             secondBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
             secondBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
             secondBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
             bandNumberValues[1] = digit;
         } else { // Process the second digit.
-            digit = parseInt(digitStr.charAt(1));
+            digit = parseNum(digitStr.charAt(1));
             secondBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
             secondBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
             secondBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
@@ -539,20 +539,20 @@ function doGenerateBandColors() /*:  -> Undef */ {
                 secondBand.image = "stock_images\\Button0blackNormal.PNG";
                 secondBand.overImage = "stock_images\\Button0blackOver.PNG";
                 bandNumberValues[1] = 0;
-                digit = parseInt(digitStr.charAt(0));
+                digit = parseNum(digitStr.charAt(0));
                 thirdBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
                 thirdBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
                 thirdBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
                 bandNumberValues[2] = digit;
             } else { // Resistance is between 10 and 99.
                 // Process the first digit.
-                digit = parseInt(digitStr.charAt(0));
+                digit = parseNum(digitStr.charAt(0));
                 secondBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
                 secondBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
                 secondBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
                 bandNumberValues[1] = digit;
                 // Process the second digit.
-                digit = parseInt(digitStr.charAt(1));
+                digit = parseNum(digitStr.charAt(1));
                 thirdBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
                 thirdBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
                 thirdBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
@@ -560,19 +560,19 @@ function doGenerateBandColors() /*:  -> Undef */ {
             }
         } else { // if(resistance >= 100)
             // Process the first digit.
-            digit = parseInt(digitStr.charAt(0));
+            digit = parseNum(digitStr.charAt(0));
             firstBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
             firstBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
             firstBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
             bandNumberValues[0] = digit;
             // Process the second digit.
-            digit = parseInt(digitStr.charAt(1));
+            digit = parseNum(digitStr.charAt(1));
             secondBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
             secondBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
             secondBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";
             bandNumberValues[1] = digit;
             // Process the third digit.
-            digit = parseInt(digitStr.charAt(2));
+            digit = parseNum(digitStr.charAt(2));
             thirdBand.downImage = "stock_images\\Button" + buttonStrs[digit] + "Down.PNG";
             thirdBand.image = "stock_images\\Button" + buttonStrs[digit] + "Normal.PNG";
             thirdBand.overImage = "stock_images\\Button" + buttonStrs[digit] + "Over.PNG";

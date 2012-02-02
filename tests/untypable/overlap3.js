@@ -1,2 +1,2 @@
-function foo(o) /*: {/a(a*)/: Int, a: Bool } -> Undef*/ {
+function foo(o) /*: {/a(a*)/: Num, a: Bool } -> Undef*/ {
 }

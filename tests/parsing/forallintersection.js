@@ -1,3 +1,3 @@
-function foo(p) /*: (forall a . 'a -> 'a) & (Int -> Str) */ {
+function foo(p) /*: (forall a . 'a -> 'a) & (Num -> Str) */ {
     return String(p);
 }

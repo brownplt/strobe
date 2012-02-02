@@ -1,3 +1,3 @@
-function foo(x, y) /*: Int * Int -> Int */ {
+function foo(x, y) /*: Num * Num -> Num */ {
   return x + y;
 };

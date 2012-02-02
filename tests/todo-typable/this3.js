@@ -1,8 +1,8 @@
-function Point(x,y) /*: constructor Int * Int -> {x:Int, y:Int} */ {
+function Point(x,y) /*: constructor Num * Num -> {x:Num, y:Num} */ {
   this.x = x;
   this.y = y;
 };
-var f = function() /*: [{x:Int,y:Int}] -> Int */ {
+var f = function() /*: [{x:Num,y:Num}] -> Num */ {
     return this.x + this.y;
 };
 Point.prototype.sum = f;

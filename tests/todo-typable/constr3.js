@@ -1,13 +1,13 @@
-function Point(x, y) /*: constructor (Int * Int -> {x : Int, y : Int}) */ {
+function Point(x, y) /*: constructor (Num * Num -> {x : Num, y : Num}) */ {
     this.x = x;
     this.y = y;
   };
 
 //subtyping =) ?
-function sumPoint(pt) /*: {y : Int, x : Int} -> Int */ {
+function sumPoint(pt) /*: {y : Num, x : Num} -> Num */ {
   return pt.x + pt.y;
 }
-function sumPoint2(pt) /*: {x : Int, y : Int} -> Int */ {
+function sumPoint2(pt) /*: {x : Num, y : Num} -> Num */ {
   return pt.x + pt.y;
 }
 

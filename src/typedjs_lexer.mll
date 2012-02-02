@@ -48,7 +48,6 @@ rule token = parse
    | ">" { RANGLE }
    | "," { COMMA }
    | "Any" { ANY }
-   | "Int" { INT }
    | "Num" { NUM }
    | "Str" { STR }
    | "Bool" { BOOL }

@@ -1,4 +1,4 @@
-function Point(x, y) /*: constructor (Int * Int -> {x : Int, y : Int}) */ {
+function Point(x, y) /*: constructor (Num * Num -> {x : Num, y : Num}) */ {
     this.x = x;
     this.y = y;
 }

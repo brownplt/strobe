@@ -38,7 +38,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   type prim =
     | Num
-    | Int
     | True
     | False
     | Undef
@@ -112,7 +111,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TBot -> text "DoesNotReturn"
       | TPrim p -> text begin match p with
     | Num -> "Num"
-    | Int -> "Int"
     | True -> "True"
     | False -> "False"
     | Null -> "Null"
@@ -486,7 +484,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       let simpl_s = simpl_typ env s in
       let simpl_t = simpl_typ env t in
       match simpl_s, simpl_t with
-        | TPrim Int, TPrim Num -> cache
         | TRegex pat1, TRegex pat2 ->
           if P.is_subset (pat_env env) pat1 pat2 then cache 
             else mismatched_typ_exn (TRegex pat1) (TRegex pat2)

@@ -1,4 +1,4 @@
-function(x) /*: Int -> Undef */ {
+function(x) /*: Num -> Undef */ {
   var g = function() /*: -> Undef */ {
       x;
   };

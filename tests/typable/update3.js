@@ -1,3 +1,3 @@
-function foo(o, s) /*: {/x/: Int, /y/: Str + Int} * /y/ -> Undef */ {
+function foo(o, s) /*: {/x/: Num, /y/: Str + Num} * /y/ -> Undef */ {
     o[s] = "a string";
 }

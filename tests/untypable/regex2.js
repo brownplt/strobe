@@ -1,3 +1,3 @@
-function foo(o) /*: {/_(.*)_/: Int} -> Str */ {
+function foo(o) /*: {/_(.*)_/: Num} -> Str */ {
   return o.__proto__;
 }

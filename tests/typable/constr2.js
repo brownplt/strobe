@@ -1,6 +1,6 @@
 var lastSum = 5;
 
-function Point(x, y) /*: [ { x: ? Int, y: ? Int } ] Int * Int 
+function Point(x, y) /*: [ { x: ? Num, y: ? Num } ] Num * Num 
                       -> Undef */ {
     this.x = x;
     this.y = y;

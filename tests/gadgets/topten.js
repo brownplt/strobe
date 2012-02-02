@@ -407,7 +407,7 @@ function get_review() /*:  -> Undef */ {
     electron_button.visible = true;
 }
 
-function str_len(len) /*: Int -> Int */ {
+function str_len(len) /*: Num -> Num */ {
     if (len > 0 && len < 12) {
         len = (len * 7 + 45);
     }

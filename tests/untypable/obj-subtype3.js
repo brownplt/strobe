@@ -1,3 +1,3 @@
-function foo(o) /*: #{x: Int} -> #{/(x*)/: Int} */ {
+function foo(o) /*: #{x: Num} -> #{/(x*)/: Num} */ {
     return o;
 }

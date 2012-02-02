@@ -102,7 +102,6 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
         | None -> typ
     else TBot
   | TPrim (Num) 
-  | TPrim (Int) -> if RTSet.mem RT.Num rt then typ else TBot
   | TPrim (True)
   | TPrim (False) -> if RTSet.mem RT.Bool rt then typ else TBot
   | TPrim (Null) -> if RTSet.mem RT.Object rt then typ else TBot

@@ -1,5 +1,5 @@
-function foo() /*: -> Int + Str */ {
+function foo() /*: -> Num + Str */ {
     // Hints bind tighter than other expressions. Below, 200 is upcast so
     // we have an error on addition.
-    return /*:upcast Int + Str */ 200 + 300;
+    return /*:upcast Num + Str */ 200 + 300;
 }

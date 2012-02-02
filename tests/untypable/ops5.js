@@ -1,6 +1,6 @@
 //should have || idiom working
 
-function f(a) /*: Str + Int -> Str */ {
+function f(a) /*: Str + Num -> Str */ {
   return "hi";
 }
 

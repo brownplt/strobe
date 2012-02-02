@@ -1,2 +1,2 @@
-(function (x) /*: Int -> Int -> Str */ { return x; })("not a number")
+(function (x) /*: Num -> Num -> Str */ { return x; })("not a number")
 ("not either");

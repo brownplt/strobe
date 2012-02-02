@@ -1,2 +1,2 @@
-var bin = /*:Array<Int>*/[];
+var bin = /*:Array<Num>*/[];
 bin[0] = 3;

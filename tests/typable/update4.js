@@ -1,4 +1,4 @@
 // Assigning to star
-function foo(o, s) /*: { *: Bool, /x/: Int, /y/: Str + Int} * /(z*)/ -> Undef */ {
+function foo(o, s) /*: { *: Bool, /x/: Num, /y/: Str + Num} * /(z*)/ -> Undef */ {
     o[s] = true;
 }

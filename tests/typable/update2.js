@@ -1,3 +1,3 @@
-function foo(o, s) /*: {/x/: Int, /y/: Str + Int} * /(x|y)/ -> Undef */ {
+function foo(o, s) /*: {/x/: Num, /y/: Str + Num} * /(x|y)/ -> Undef */ {
     o[s] = 10;
 }

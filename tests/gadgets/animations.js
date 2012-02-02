@@ -37,7 +37,7 @@ limitations under the License.
  */
 var FADE_DURATION = 3000;
 /**
- * Interval (in milliseconds) between fades
+ * Numerval (in milliseconds) between fades
  */
 var FADE_INTERVAL = 6000;
 
@@ -52,10 +52,10 @@ var isPuppyTurn = true;
  */
 function View_onOpen() /*: -> Undef */ {
   // Must call initial fade effect ourselves.
-  // "view.setInterval" does not perform an initial call.
+  // "view.setNumerval" does not perform an initial call.
   fadeImages();
   // Create run forever timer
-  view.setInterval(fadeImages, FADE_INTERVAL);
+  view.setNumerval(fadeImages, FADE_INTERVAL);
 }
 
 /**

@@ -1,9 +1,9 @@
 let (move_wrapper = func (this, o) 
 /*: 
-  forall a <: {{move : ^(Int -> Bool)}} . { *: _, x : Int, __proto__: ref 'a } -> Bool
+  forall a <: {{move : ^(Num -> Bool)}} . { *: _, x : Num, __proto__: ref 'a } -> Bool
 */
 {
     !o["move"](o, 5)
 })
-let (pr = ref {move : func (this, i) /*: Int -> Bool */ { true }, __proto__: null})
+let (pr = ref {move : func (this, i) /*: Num -> Bool */ { true }, __proto__: null})
 move_wrapper(undefined, ref {x: 5, __proto__: pr})

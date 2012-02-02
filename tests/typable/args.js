@@ -1,3 +1,3 @@
-var foo = function(x, y) /*: Int * Int -> Int */ {
+var foo = function(x, y) /*: Num * Num -> Num */ {
   return x + y;
 };

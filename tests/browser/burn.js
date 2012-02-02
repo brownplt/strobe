@@ -16,7 +16,7 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, version 2 or 3.
 
-function mouse() /*:  -> {x : Int, y : Int, pressed : Bool} */ {
+function mouse() /*:  -> {x : Num, y : Num, pressed : Bool} */ {
 	var ob = {
 		x: -1,
 		y: -1,
@@ -55,7 +55,7 @@ function draw() /*:  -> {draw : ( -> Undef), init : ( -> Undef)} */ {
 		c.fillStyle = "rgb(255,255,255)";
 		c.fillRect(0, 0, w, h);
 	}
-	function modify_region(i, centerx, centery) /*: ImageData * Int * Int -> Undef */ {
+	function modify_region(i, centerx, centery) /*: ImageData * Num * Num -> Undef */ {
 		if (m.pressed) {
 			for (var y = i.height-1; y >= 0; y--) {
 				for (var x = 0; x < i.width; x++) {
@@ -143,9 +143,9 @@ function draw() /*:  -> {draw : ( -> Undef), init : ( -> Undef)} */ {
 		init: init
 	};
 }
-function timer() /*:  -> {start : (Int -> Undef)} */ {
+function timer() /*:  -> {start : (Num -> Undef)} */ {
 	var d = draw();
-	function step(_) /*: Int -> Undef */ {
+	function step(_) /*: Num -> Undef */ {
 		try {
 			d.draw();
 			setTimeout(step, 8);
@@ -154,7 +154,7 @@ function timer() /*:  -> {start : (Int -> Undef)} */ {
 //			throw err;
 		}
 	}
-	function start(_) /*: Int -> Undef */ {
+	function start(_) /*: Num -> Undef */ {
 		try {
 			d.init();
 			setTimeout(step, 1);

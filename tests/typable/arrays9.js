@@ -1,3 +1,3 @@
-function foo() /*: -> Array<Int> */ {
+function foo() /*: -> Array<Num> */ {
     return [5];
 }

@@ -1,9 +1,9 @@
-var myArr = /*: Array<Int> */[];
+var myArr = /*: Array<Num> */[];
 
 myArr[1] = 900;
 myArr[2] = 1000;
 
 // Explicit type applications below.
 var yourArr = 
-  (/*: [Str] */ /*: [Int] */ (myArr.map))
-  (function(x) /*: Int -> Str */ { return "lol"; });
+  (/*: [Str] */ /*: [Num] */ (myArr.map))
+  (function(x) /*: Num -> Str */ { return "lol"; });

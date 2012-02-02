@@ -1,3 +1,3 @@
-function foo(a) /*: Array<Array<Int>> -> Array<Array<Int>> */ {
+function foo(a) /*: Array<Array<Num>> -> Array<Array<Num>> */ {
     return a;
 }

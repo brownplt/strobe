@@ -13,7 +13,7 @@ let rec remove_this op = match op with
 %}
 
 %token <string> ID TID STRING REGEX
-%token ARROW LPAREN RPAREN ANY STAR COLON EOF INT NUM UNION STR
+%token ARROW LPAREN RPAREN ANY STAR COLON EOF NUM UNION STR
        UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
        CHEAT NULL TRUE FALSE REC INTERSECTION UNDERSCORE BAD
@@ -74,7 +74,6 @@ typ_list :
 
 arg_typ
   : ANY { W.Top }
-  | INT { W.Prim Int }
   | NUM { W.Prim Num }
   | STR { W.Str }
   | BOOL { W.Bool }
@@ -122,7 +121,6 @@ typ_ann :
 any_id :
   | ID { $1 }
   | STR { "Str" }
-  | INT { "Int" }
   | UNDEF { "Undef" }
   | BOOL { "Bool" }
   | NUM { "Num" }

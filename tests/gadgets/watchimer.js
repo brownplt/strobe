@@ -6,8 +6,8 @@
 - change the Unknown to Audioclip
 - changed correctOutput to always return Str
 - changed 8 setTimeouts to use functions, not eval strings
-- added upcast to a timer to be undefined + Int, guarded
-  call to clearInterval to make sure it is Int
+- added upcast to a timer to be undefined + Num, guarded
+  call to clearNumerval to make sure it is Num
 - initialized an int to 0
 - 3x: parsed a string to int explicitly
 - 6x: found bug - used & instead of &&.
@@ -27,7 +27,7 @@ Infer evaluation: (events - annotations found)
 var h = 0;
 var m = 0;
 var s = 0;
-var tmr = /*:upcast Undef + Int*/undefined;
+var tmr = /*:upcast Undef + Num*/undefined;
 var pause = 0;
 var done = 0;
 var prevSelect = 0;
@@ -114,7 +114,7 @@ function blink() /*:  -> Undef */{
 	}
 	pause++;
 }
-function correctOutput(h) /*: (Int + Str) -> Str */{
+function correctOutput(h) /*: (Num + Str) -> Str */{
 	if(h < 10 && h > 0){
 		h = "0" + h;
 	}
@@ -159,7 +159,7 @@ function stopCount() /*:  -> Undef */{
 	stop.enabled = false;
 	blinky.visible = true;
 	blinky2.visible = true;
-	clearInterval(t);
+	clearNumerval(t);
 
 
 	if(modeSwitch.image == "timerTAB.png"){
@@ -193,10 +193,10 @@ function clearOff() /*:  -> Undef */{clear.opacity = event.value;}
 //----------------------- stopwatch ends here ------------------------------
 
 //---------------------------- Timer Starts Here --------------------------
-function fasterEdit(whichEdit) /*: Int -> Undef */{
+function fasterEdit(whichEdit) /*: Num -> Undef */{
 	switch(whichEdit){
 		case 0: // stop increasing or decreasing when left mouse button released
-			if (typeof tmr === "number") clearInterval(tmr);
+			if (typeof tmr === "number") clearNumerval(tmr);
 			break;
 		case 1:
 			increaseSec();
@@ -391,7 +391,7 @@ function coolHover() /*:  -> Undef */{
 	r = setTimeout(coolHover, 601);
 }
 function stopCoolHover() /*:  -> Undef */{
-	clearInterval(r);
+	clearNumerval(r);
 	hover.rotation = 0;
 	hover.opacity = 0;
 }
@@ -454,7 +454,7 @@ function alarm() /*:  -> Undef */{
 	alarming.play();
 	stopAlarmSound.focus();
 }
-function mediaStateChange(media, state) /*: Audioclip * Int -> Undef */{
+function mediaStateChange(media, state) /*: Audioclip * Num -> Undef */{
 	if(state == gddSoundStateStopped){
 	      m = setTimeout(function() /*:  -> Undef */ { alarming.play(); }, 400);
   	}
@@ -467,7 +467,7 @@ function rotateAlarmButton() /*:  -> Undef */{
 }
 function stopAlarm() /*:  -> Undef */{
     if (typeof alarming === "undefined") {} else { framework.audio.stop(alarming); }
-	clearInterval(m);
+	clearNumerval(m);
 	view.beginAnimation(rotateAlarmButton, 0, 90, 500);
 	// flushing the stuff begins below
 	h = 0;
@@ -479,7 +479,7 @@ function stopAlarm() /*:  -> Undef */{
 	stopAlarmSound.enabled = false;
 	modeSwitch.focus();
 }
-function triSelect(whichEdit) /*: Int -> Undef */{
+function triSelect(whichEdit) /*: Num -> Undef */{
 	var mailMan=0; // variable named mailman after its only purpose - to take value from whichEdit and pass it to prevSelect
 
 	switch(whichEdit){
@@ -541,8 +541,8 @@ function triDeselect() /*:  -> Undef */{
 		editCancel(prevSelect);
 	}
 }
-//keyboard functionality(setting the timer currently the only use) /*: Int -> Undef */
-function editOn(whichEdit) /*: Int -> Undef */{
+//keyboard functionality(setting the timer currently the only use) /*: Num -> Undef */
+function editOn(whichEdit) /*: Num -> Undef */{
 	switch(whichEdit){
 		case 1:
 			secEdit.visible = true;
@@ -569,7 +569,7 @@ function editOn(whichEdit) /*: Int -> Undef */{
 	triSelect(whichEdit);
 }
 
-function clearInitialTime(whichEdit) /*: Int -> Undef */{
+function clearInitialTime(whichEdit) /*: Num -> Undef */{
 	switch(whichEdit){
 		case 1:
 			secEdit.value = "";
@@ -582,7 +582,7 @@ function clearInitialTime(whichEdit) /*: Int -> Undef */{
 			break;
 	}
 }
-function limitEdit(whichEdit) /*: Int -> Undef */{
+function limitEdit(whichEdit) /*: Num -> Undef */{
 	switch(whichEdit){
 		case 1:
 			if((secEdit.value.length == 2 || (event.keyCode < 48 || event.keyCode > 57)) && (event.keyCode != 8)){
@@ -601,7 +601,7 @@ function limitEdit(whichEdit) /*: Int -> Undef */{
 			break;
 	}
 }
-function exitAlternate(whichEdit) /*: Int -> Undef */{
+function exitAlternate(whichEdit) /*: Num -> Undef */{
 	limitEdit(whichEdit);
 	if(event.keyCode == 13){
 		editOff(whichEdit);
@@ -665,7 +665,7 @@ function exitAlternate(whichEdit) /*: Int -> Undef */{
 			break;
 	}
 }
-function editCancel(whichEdit) /*: Int -> Undef */{
+function editCancel(whichEdit) /*: Num -> Undef */{
 	switch(whichEdit){
 		case 1:
 			secEdit.visible = false;
@@ -688,12 +688,12 @@ function editCancel(whichEdit) /*: Int -> Undef */{
 	}
 	prevSelect = 0;
 }
-function editOff(whichEdit) /*: Int -> Undef */{
+function editOff(whichEdit) /*: Num -> Undef */{
 	switch(whichEdit){
 		case 1:
 			if(secEdit.value != "")
 			{
-				s = parseInt(secEdit.value);
+				s = parseNum(secEdit.value);
 			}
 			secEdit.visible = false;
 			secEdit.enabled = false;
@@ -743,7 +743,7 @@ function editOff(whichEdit) /*: Int -> Undef */{
 			break;
 		case 2:
 			if(minEdit.value != ""){
-				m = parseInt(minEdit.value);
+				m = parseNum(minEdit.value);
 			}
 			minEdit.visible = false;
 			minEdit.enabled = false;
@@ -793,7 +793,7 @@ function editOff(whichEdit) /*: Int -> Undef */{
 			break;
 		case 3:
 			if(hrsEdit.value != ""){
-				h = parseInt(hrsEdit.value);
+				h = parseNum(hrsEdit.value);
 			}
 			hours.enabled = true;
 			hours.visible = true;
@@ -840,7 +840,7 @@ function editOff(whichEdit) /*: Int -> Undef */{
 	modeSwitch.focus();
 
 }
-function clearSpecific(whichOne) /*: Int -> Undef */{
+function clearSpecific(whichOne) /*: Num -> Undef */{
 	if(clear.opacity == 255){
 		switch(whichOne){
 			case 1:

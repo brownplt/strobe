@@ -15,7 +15,7 @@ end = struct
     | Long _ 
     | LongLong _
     | Octet
-    | Byte -> TPrim Int
+    | Byte -> TPrim Num
     | Float
     | Double -> TPrim Num
     | DOMString -> TRegex Pat.all

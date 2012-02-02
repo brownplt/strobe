@@ -37,7 +37,7 @@ var QUALITY_X = 6,
 
     input = /*:upcast Undef + HTMLInputElement*/undefined, text="",
 
-    isUserInteracting = false, pointers = [[0.0]];
+    isUserNumeracting = false, pointers = [[0.0]];
 
 function init() /*: -> Undef */ {
 
@@ -63,8 +63,8 @@ function init() /*: -> Undef */ {
     var imageHeightMap = contextHeightMap.getImageData(0, 0, WIDTH, HEIGHT);
     dataHeightMap = imageHeightMap.data;
 
-    buffer1 = /*:Int*/[];
-    buffer2 = /*:Int*/[];
+    buffer1 = /*:Num*/[];
+    buffer2 = /*:Num*/[];
 
     for (var i = 0; i < SIZE; i++) {
 
@@ -115,7 +115,7 @@ function onDocumentMouseDown(event) /*: Event -> Undef */ {
 
     event.preventDefault();
 
-    isUserInteracting = true;
+    isUserNumeracting = true;
 
     input.focus();
 
@@ -135,19 +135,19 @@ function onDocumentMouseMove(event) /*: Event -> Undef */  {
 
 function onDocumentMouseUp(event) /*: Event -> Undef */  {
 
-    isUserInteracting = false;
+    isUserNumeracting = false;
 
 }
 
 function onDocumentMouseOut(event) /*: Event -> Undef */  {
 
-    isUserInteracting = false;
+    isUserNumeracting = false;
 
 }
 
 function onDocumentTouchStart(event) /*: Event -> Undef */  {
 
-    isUserInteracting = true;
+    isUserNumeracting = true;
 
     event.preventDefault();
 
@@ -181,7 +181,7 @@ function onDocumentTouchEnd(event) /*: Event -> Undef */  {
 
     event.preventDefault();
 
-    isUserInteracting = false;
+    isUserNumeracting = false;
 
 }
 
@@ -198,7 +198,7 @@ function onDocumentKeyPress(event) /*: Event -> Undef */  {
 
 //
 
-function emit(x, y) /*: ((Int + Num) * (Int + Num) -> Undef) */ {
+function emit(x, y) /*: ((Num + Num) * (Num + Num) -> Undef) */ {
 
     buffer1[Math.floor(x) + (Math.floor(y + 40) * WIDTH)] = 256;
 
@@ -234,11 +234,11 @@ function processText() /*: -> Undef */ {
 
 }
 
-function loop(_) /*: Int -> Undef */ {
+function loop(_) /*: Num -> Undef */ {
 
     var x=0, y=0, yz=0, pixel=0, index=0;
 
-    if (isUserInteracting) {
+    if (isUserNumeracting) {
 
         for (var i = 0; i < pointers.length; i++) {
 
@@ -275,12 +275,12 @@ function loop(_) /*: Int -> Undef */ {
 
     // Parallax
     // Thx: http://pixelero.wordpress.com/2009/07/05/belousovzhabotinsky-with-perspective/
-    var indices = /*:Int*/[];
+    var indices = /*:Num*/[];
 
     for (x = 0; x < WIDTH; x++) {
 
-        var levels = /*:Int*/[];
-        var pixels = /*:Int*/[];
+        var levels = /*:Num*/[];
+        var pixels = /*:Num*/[];
 
         for (y = 0; y < HEIGHT; y++) {
 
@@ -307,5 +307,5 @@ function loop(_) /*: Int -> Undef */ {
 }
 
 init();
-setInterval(loop, Math.floor(1000 / 60));
+setNumerval(loop, Math.floor(1000 / 60));
 

@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-function onTextClick() /*: -> Int */ {
+function onTextClick() /*: -> Num */ {
   view.alert(HELLO_WORLD);
   return 200;
 }

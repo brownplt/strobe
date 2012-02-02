@@ -1,6 +1,6 @@
 function foo(o, s) 
-/*:   { __proto__: {y: Bool, __proto__: Object, z: _ }, y: _, z: _, x: Int} 
+/*:   { __proto__: {y: Bool, __proto__: Object, z: _ }, y: _, z: _, x: Num} 
     * /(x|(y|z))/ 
-   -> Int + Bool + Undef */ {
+   -> Num + Bool + Undef */ {
     return o[s];
 }

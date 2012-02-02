@@ -87,7 +87,6 @@ module type TYP = sig
 
   type prim =
     | Num
-    | Int
     | True
     | False
     | Undef

@@ -14,8 +14,8 @@ var bTimer = 0, secTimer = 0; //FIX: = 0
 function setDefaultOptions() /*: -> Undef */
 {
     // FIX: this used to use setters and broke with "expected l-value"
-    options.putDefaultValue("breakInterval", 35); //35 min
-    options.putDefaultValue("microInterval", 10); //10 min
+    options.putDefaultValue("breakNumerval", 35); //35 min
+    options.putDefaultValue("microNumerval", 10); //10 min
     options.putDefaultValue("breakDuration", 240);//sec
     options.putDefaultValue("microDuration", 30); //sec
     options.putDefaultValue("idleMin", 3); //sec
@@ -25,11 +25,11 @@ function setDefaultOptions() /*: -> Undef */
 }
 
 setDefaultOptions();
-var bCount = /*:downcast Int */(options.getValue("breakInterval")); // FIX: getters/setters
-var mCount = /*:downcast Int */(options.getValue("microInterval"));
+var bCount = /*:downcast Num */(options.getValue("breakNumerval")); // FIX: getters/setters
+var mCount = /*:downcast Num */(options.getValue("microNumerval"));
 
 
-function smallestCount() /*: -> Int */ // FIX: we do not lift functions
+function smallestCount() /*: -> Num */ // FIX: we do not lift functions
 {
 	if(bCount < mCount) return bCount;
 	else return mCount;
@@ -68,7 +68,7 @@ function onUnload() /*: -> Undef */
 function viewOnOpen() /*: -> Undef */
 {
 	setLabels();
-	bTimer = setInterval( updateCount, secTime );
+	bTimer = setNumerval( updateCount, secTime );
 	updateCountText();
 	bCount--; //first timer fire (in 1 sec) will display decremented value
 	mCount--;
@@ -82,19 +82,19 @@ function updateCount() /*: -> Undef */
 	if(minimized) dispInCaption();
 	if(bCount <= 0)
 	{
-            bCount = /*:downcast Int*/(options.getValue("breakInterval"));  // needs to be above the showAlert() since a break can be declined
+            bCount = /*:downcast Num*/(options.getValue("breakNumerval"));  // needs to be above the showAlert() since a break can be declined
 		var title = RBreak;
 		var desc  = takeRBreak;
-		showAlert(title, desc, /*:downcast Int*/(options.getValue("breakDuration")));
-		mCount = /*:downcast Int*/(options.getValue("microInterval"));  // reset micro time, so it doesnt happen right after a long break
+		showAlert(title, desc, /*:downcast Num*/(options.getValue("breakDuration")));
+		mCount = /*:downcast Num*/(options.getValue("microNumerval"));  // reset micro time, so it doesnt happen right after a long break
 		updateCountText();
 	}
 	if(mCount <= 0)
 	{
 		var title = MBreak;
 		var desc  = takeMBreak;
-		showAlert(title, desc, /*:downcast Int */(options.getValue("microDuration")));
-		mCount = /*:downcast Int*/(options.getValue("microInterval"));
+		showAlert(title, desc, /*:downcast Num */(options.getValue("microDuration")));
+		mCount = /*:downcast Num*/(options.getValue("microNumerval"));
 		if(mCount >= bCount)
 		{
 			mCount = mCount + bCount; //resume micro breaks after full break
@@ -118,7 +118,7 @@ function userActive() /*: -> Bool */
 {
 	if((cursor.x == framework.system.cursor.position.x) && (cursor.y == framework.system.cursor.position.y)) // mouse idle
 	{
-            if(idleCycles < /*:downcast Int*/(options.getValue("idleMin")))
+            if(idleCycles < /*:downcast Num*/(options.getValue("idleMin")))
 		{
 			idleCycles++;
 			return true;
@@ -150,38 +150,38 @@ function displayOptions() /*: -> Undef */
 	sectxt2.innerText = secText;
 
 
-	bTime.value = /*:downcast Int*/(options.getValue("breakInterval")).toStr();
-	mTime.value = /*:downcast Int*/(options.getValue("microInterval")).toStr();	
-	bDuration.value = /*:downcast Int*/(options.getValue("breakDuration")).toStr();
-	mDuration.value = /*:downcast Int*/(options.getValue("microDuration")).toStr();
+	bTime.value = /*:downcast Num*/(options.getValue("breakNumerval")).toStr();
+	mTime.value = /*:downcast Num*/(options.getValue("microNumerval")).toStr();	
+	bDuration.value = /*:downcast Num*/(options.getValue("breakDuration")).toStr();
+	mDuration.value = /*:downcast Num*/(options.getValue("microDuration")).toStr();
 	usetimeout.value = /*:downcast Bool*/(options.getValue("useTimeout"));
 	allowpostpone.value = /*:downcast Bool*/(options.getValue("allowPostpone"));
-        postponetime.value = /*:downcast Int*/(options.getValue("postponeTime")).toStr();
+        postponetime.value = /*:downcast Num*/(options.getValue("postponeTime")).toStr();
 }
 
 function updateOptions() /*: -> Undef */
 {
-    options.putValue("breakInterval", parseInt(bTime.value));
-    options.putValue("microInterval", parseInt(mTime.value));
-    options.putValue("breakDuration", parseInt(bDuration.value));
-    options.putValue("microDuration", parseInt(mDuration.value));
+    options.putValue("breakNumerval", parseNum(bTime.value));
+    options.putValue("microNumerval", parseNum(mTime.value));
+    options.putValue("breakDuration", parseNum(bDuration.value));
+    options.putValue("microDuration", parseNum(mDuration.value));
     options.putValue("useTimeout", usetimeout.value);
     options.putValue("allowPostpone", allowpostpone.value);
-    options.putValue("postponeTime", parseInt(postponetime.value));
+    options.putValue("postponeTime", parseNum(postponetime.value));
 }
 
-function showAlert(title, desc, time) /*: Str * Str * Int -> Undef */
+function showAlert(title, desc, time) /*: Str * Str * Num -> Undef */
 {
-	clearInterval(bTimer);
-	if(time == /*:downcast Int*/ (options.getValue("microDuration"))) alert(title); //microbreak
+	clearNumerval(bTimer);
+	if(time == /*:downcast Num*/ (options.getValue("microDuration"))) alert(title); //microbreak
 	else if(/*:downcast Bool*/(options.getValue("allowPostpone")))
 	{
-		if(!confirm(willTakeBreak + " " + /*:downcast Int*/(options.getValue("postponeTime")) + " " + minText + ")")) //postpone the rest break
+		if(!confirm(willTakeBreak + " " + /*:downcast Num*/(options.getValue("postponeTime")) + " " + minText + ")")) //postpone the rest break
 		{
-			bCount = /*:downcast Int*/(options.getValue("postponeTime")); //postpone
-			mCount += /*:downcast Int*/(options.getValue("postponeTime")); //push back micro too
+			bCount = /*:downcast Num*/(options.getValue("postponeTime")); //postpone
+			mCount += /*:downcast Num*/(options.getValue("postponeTime")); //push back micro too
 			updateCountText();
-			bTimer = setInterval( updateCount, secTime );
+			bTimer = setNumerval( updateCount, secTime );
 			return;
 		}
 		//else take the rest break
@@ -201,7 +201,7 @@ function showAlert(title, desc, time) /*: Str * Str * Int -> Undef */
 	if(!debug) cnArea.removeAllContentItems();
 }
 
-function configureBar(title, desc, time) /*: Str * Str * Int -> Undef */
+function configureBar(title, desc, time) /*: Str * Str * Num -> Undef */
 {
 	progbar.enabled = true;
 	progbar.visible = true;
@@ -214,7 +214,7 @@ function configureBar(title, desc, time) /*: Str * Str * Int -> Undef */
 	secBar = time;
 	progbar.max = time;
 	progbar.value = time;
-	secTimer = setInterval(updateBar, oneSec);
+	secTimer = setNumerval(updateBar, oneSec);
 }
 
 function updateBar() /*: -> Undef */
@@ -229,7 +229,7 @@ function updateBar() /*: -> Undef */
 	progbar.value = secBar;
 
 //update the notification window
-	if(secBar%(/*:downcast Int*/(options.getValue("microDuration"))-1) == 0)
+	if(secBar%(/*:downcast Num*/(options.getValue("microDuration"))-1) == 0)
 	{
 		newItem.snippet = randNotification(secBar);
 		if(debug) alert(newItem.snippet);
@@ -240,8 +240,8 @@ function updateBar() /*: -> Undef */
 
 function stopBar() /*: -> Undef */
 {
-	clearInterval(secTimer);
-	bTimer = setInterval( updateCount, secTime );
+	clearNumerval(secTimer);
+	bTimer = setNumerval( updateCount, secTime );
 	progbar.enabled =false;
 	progbar.visible = false;
 	breakcount.visible = false;
@@ -251,7 +251,7 @@ function stopBar() /*: -> Undef */
 
 }
 
-function randNotification(timeLeft) /*: Int -> Str */
+function randNotification(timeLeft) /*: Num -> Str */
 {
 	if(timeLeft == 0) return backToWorkText;
 	else
@@ -280,8 +280,8 @@ function dispFull() /*: -> Undef */
 
 function stop() /*: -> Undef */
 {
-	clearInterval(bTimer);
-	clearInterval(secTimer);
+	clearNumerval(bTimer);
+	clearNumerval(secTimer);
 }
 
 function sizeBar() /*: -> Undef */
@@ -297,7 +297,7 @@ function toggleAllowPostpone() /*: -> Undef */
 
 }
 
-function mouseOverNow(button, on) /*: Int * Bool -> Undef */
+function mouseOverNow(button, on) /*: Num * Bool -> Undef */
 {
 	if(on)
 	{
@@ -311,9 +311,9 @@ function mouseOverNow(button, on) /*: Int * Bool -> Undef */
 	}
 }
 
-function earlyBreak(type) /*: Int -> Undef */
+function earlyBreak(type) /*: Num -> Undef */
 {
-	clearInterval(bTimer);
+	clearNumerval(bTimer);
 	if(type == 1) mCount = 0;
 	else bCount = 0;
 	updateCount();

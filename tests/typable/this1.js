@@ -1,4 +1,4 @@
-var f = function(a) /*: [{x: Str}] Int -> Str */ {
+var f = function(a) /*: [{x: Str}] Num -> Str */ {
   return this.x;
 };
 

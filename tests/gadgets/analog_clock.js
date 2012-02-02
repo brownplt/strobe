@@ -1,10 +1,10 @@
 options.putDefaultValue("SecondHand", 1);
-var _SecondInterval = 0,
+var _SecondNumerval = 0,
     _minimized = false;
 
 var _SecondHandFade = 0;
 
-var _UpdateSecondHandInterval = 0,
+var _UpdateSecondHandNumerval = 0,
     _BounceRotationIncrement = 1.8,
     _NewRotation = 0.0; // Claudiu: changed to number
 
@@ -15,9 +15,9 @@ function _view_onopen() /*:  -> Undef */ {
 function _view_onminimize() /*:  -> Undef */ {
     _minimized = true;
     d();
-    if (_SecondInterval != 0) {
-        clearInterval(_SecondInterval);
-        _SecondInterval = 0;
+    if (_SecondNumerval != 0) {
+        clearNumerval(_SecondNumerval);
+        _SecondNumerval = 0;
     }
 }
 function _view_onrestore() /*:  -> Undef */ {
@@ -37,10 +37,10 @@ function _view_onpopout() /*:  -> Undef */ {
 function d() /*:  -> Undef */ {
   var a = new Date(undefined); // Claudiu : added undefined
     if (_minimized) {
-        var b = /*:upcast Str + Int */(/*:is Int */(a.getHours()));
+        var b = /*:upcast Str + Num */(/*:is Num */(a.getHours()));
         if (b > 12) b = b - 12;
         if (b < 10) b = "0" + b;
-        var c = /*:upcast Str + Int */(a.getMinutes());
+        var c = /*:upcast Str + Num */(a.getMinutes());
         if (c < 10) c = "0" + c;
         view.caption = b + ":" + c;
     } else {
@@ -68,22 +68,22 @@ function h(a) /*: Date -> Undef */ {
 }
 
 function l(a) /*: Date -> Undef */ {
-    if (_UpdateSecondHandInterval != 0) {
-        clearInterval(_UpdateSecondHandInterval);
-        _UpdateSecondHandInterval = 0;
+    if (_UpdateSecondHandNumerval != 0) {
+        clearNumerval(_UpdateSecondHandNumerval);
+        _UpdateSecondHandNumerval = 0;
     }
     var b = a.getMilliseconds() + a.getSeconds() * 1000;
     _NewRotation = b * 0.0060;
     SecondHand.rotation = _NewRotation + _BounceRotationIncrement;
-    _UpdateSecondHandInterval = setInterval(m, 50);
+    _UpdateSecondHandNumerval = setNumerval(m, 50);
 }
 function m() /*:  -> Undef */ {
     SecondHand.rotation = _NewRotation;
 }
 function f() /*:  -> Undef */ {
-    if (_SecondInterval != 0) {
-        clearInterval(_SecondInterval);
-        _SecondInterval = 0;
+    if (_SecondNumerval != 0) {
+        clearNumerval(_SecondNumerval);
+        _SecondNumerval = 0;
     }
     //switch (options("SecondHand")) {
     //Claudiu : options is callable?? or a bug
@@ -94,12 +94,12 @@ function f() /*:  -> Undef */ {
     case 2:
         g(true);
         e();
-        _SecondInterval = setInterval(e, 25);
+        _SecondNumerval = setNumerval(e, 25);
         //break;
     case 1:
         g(true);
         e();
-        _SecondInterval = setInterval(e, 1000);
+        _SecondNumerval = setNumerval(e, 1000);
         //break;
     }
 }

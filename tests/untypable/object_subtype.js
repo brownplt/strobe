@@ -1,3 +1,3 @@
-function foo(o) /*: {/([a-z])/ : Int, /("foo"|("bar"))/: Str} -> {/(([a-y])*)/ : Num} */ {
+function foo(o) /*: {/([a-z])/ : Num, /("foo"|("bar"))/: Str} -> {/(([a-y])*)/ : Num} */ {
     return o;
 }

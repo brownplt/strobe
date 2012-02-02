@@ -268,15 +268,6 @@ and synth (env : env) (exp : exp) : typ = match exp with
           
   end
   | EPrefixOp (p, op, e) -> synth env (EApp (p, EId (p, op), [e]))
-  | EInfixOp (p, "+", e1, e2) -> 
-    begin match (synth env e1, synth env e2) with
-      | TRegex _, _
-      | _, TRegex _ -> 
-        TRegex P.all
-      | t1, t2 ->
-        synth env (EApp (p, EId (p, "+"), [ ECheat (p, t1, e1); 
-                                             ECheat (p, t2, e2) ]))
-    end
   | EInfixOp (p, op, e1, e2) -> synth env (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> 
     let rec check_app tfun =

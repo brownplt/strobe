@@ -1,4 +1,4 @@
-var f = function(x) /*: Int -> Int */ {
+var f = function(x) /*: Num -> Num */ {
     return x; };
 
 var g = function(x) /*: Num -> Num */ {

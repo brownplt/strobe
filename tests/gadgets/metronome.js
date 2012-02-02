@@ -9,7 +9,7 @@ var AUDIO_CLIP_URI = "tick.wav";
 
 function on_viewOpen() /*: -> Undef */ {
   options.putDefaultValue("bpm",100);
-  bpm = /*:downcast Int */(options.getValue("bpm"));
+  bpm = /*:downcast Num */(options.getValue("bpm"));
   bpm_display.innerText = bpm.toStr();
   //pluginHelper.onAddCustomMenuItems = onAddCustomMenuItems;
 }
@@ -25,8 +25,8 @@ function onMoreGadgetsClick(_ /* Arjun: ignored arg */) /*: { } -> Undef */ {
 function onStart() /*: -> Undef */ {
   if(flag == 0) {
     onStop();
-    var time = parseInt((60/bpm)*1000.0, undefined);
-    timer = setInterval(onPlay,time);
+    var time = parseNum((60/bpm)*1000.0, undefined);
+    timer = setNumerval(onPlay,time);
     btn.image = "stop.png";
     btn.overImage = "stop_over.png";
     btn.downImage = "stop_over.png";
@@ -43,7 +43,7 @@ function onStart() /*: -> Undef */ {
 
 function onStop() /*: -> Undef */ {
   if(timer != 0) { // Arjun: null --> 0
-    clearInterval(timer);
+    clearNumerval(timer);
     timer = 0;
   }
 }
@@ -83,7 +83,7 @@ function onPlay() /*: -> Undef */ {
   }
 }
 
-function onAudioStateChange(audioClip, state) /*: Audioclip * Int -> Undef */ {
+function onAudioStateChange(audioClip, state) /*: Audioclip * Num -> Undef */ {
   if (state == gddSoundStateStopped) {
     stoppedAudio();
     curAudioClip_ = undefined; // Claudiu: null -> undefined

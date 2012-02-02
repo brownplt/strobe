@@ -136,7 +136,7 @@ function speakText(str) /*: Str -> Undef */ {
     isSpeakingText = true;
     previewButton.caption = "Stop";
 
-    checkTextSpeakingStatusToken = setInterval(checkTextSpeakingStatus, 500);
+    checkTextSpeakingStatusToken = setNumerval(checkTextSpeakingStatus, 500);
 }
 
 
@@ -151,7 +151,7 @@ function checkTextSpeakingStatus() /*:  -> Undef */ {
         enableButtonsAfterSpeakingText();
         isSpeakingText = false;
 
-        clearInterval(checkTextSpeakingStatusToken);
+        clearNumerval(checkTextSpeakingStatusToken);
     }
 }
 
@@ -285,7 +285,7 @@ function readTextFile(filePath) /*: Str -> Undef */ {
     readFileButton.caption = "Stop";
     isReadingTextFile = true;
 
-    checkTextFileReadingStatusToken = setInterval(checkTextFileReadingStatus, 500);
+    checkTextFileReadingStatusToken = setNumerval(checkTextFileReadingStatus, 500);
 
 }
 
@@ -302,7 +302,7 @@ function checkTextFileReadingStatus() /*:  -> Undef */ {
         readFileButton.caption = "Read File";
         isReadingTextFile = false;
 
-        clearInterval(checkTextFileReadingStatusToken);
+        clearNumerval(checkTextFileReadingStatusToken);
     }
 }
 
@@ -393,7 +393,7 @@ function stopSpeaking() /*:  -> Undef */ {
     speaker.AudioOutputStream = null;
     speaker = null;
 
-    clearInterval(checkTextSpeakingStatusToken);
+    clearNumerval(checkTextSpeakingStatusToken);
 
     enableButtonsAfterSpeakingText();
     previewButton.caption = "Preview voice";
@@ -450,7 +450,7 @@ function stopReadingTextFile() /*:  -> Undef */ {
     speaker = null;
 
     enableButtonsAfterReadingTextFile();
-    clearInterval(checkTextFileReadingStatusToken);
+    clearNumerval(checkTextFileReadingStatusToken);
 
     readFileButton.caption = "Read File";
     isReadingTextFile = false;

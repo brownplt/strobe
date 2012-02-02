@@ -39,7 +39,7 @@ function b64_hmac_sha1(key, data) /*: Str * Str -> Str */ {
  * Calculate the SHA-A of an array of big-endian words, and a bit length
  */
 
-function core_sha1(x, len) /*: Array<Int> * Int -> Array<Int> */ { /* append padding */
+function core_sha1(x, len) /*: Array<Num> * Num -> Array<Num> */ { /* append padding */
     x[len >> 5] |= 0x80 << (24 - len % 32);
     x[((len + 64 >> 9) << 4) + 15] = len;
 
@@ -83,7 +83,7 @@ function core_sha1(x, len) /*: Array<Int> * Int -> Array<Int> */ { /* append pad
  * iteration
  */
 
-function sha1_ft(t, b, c, d) /*: Int * Int * Int * Int -> Int */ {
+function sha1_ft(t, b, c, d) /*: Num * Num * Num * Num -> Num */ {
     if (t < 20) return (b & c) | ((~b) & d);
     if (t < 40) return b ^ c ^ d;
     if (t < 60) return (b & c) | (b & d) | (c & d);
@@ -94,7 +94,7 @@ function sha1_ft(t, b, c, d) /*: Int * Int * Int * Int -> Int */ {
  * Determine the appropriate additive constant for the current iteration
  */
 
-function sha1_kt(t) /*: Int -> Int */ {
+function sha1_kt(t) /*: Num -> Num */ {
     return (t < 20) ? 1/*518500249*/ : (t < 40) ? 1/*859775393*/ : (t < 60) ? /*-189400758*/8 : /*-89949751*/4;
 }
 
@@ -102,7 +102,7 @@ function sha1_kt(t) /*: Int -> Int */ {
  * Calculate the HMAC-SHA1 of a key and some data
  */
 
-function core_hmac_sha1(key, data) /*: Str * Str -> Array<Int> */ {
+function core_hmac_sha1(key, data) /*: Str * Str -> Array<Num> */ {
     var bkey = str2binb(key);
     if (bkey.length > 16) bkey = core_sha1(bkey, key.length * chrsz);
 
@@ -122,7 +122,7 @@ function core_hmac_sha1(key, data) /*: Str * Str -> Array<Int> */ {
  * to work around bugs in some JS interpreters.
  */
 
-function safe_add(x, y) /*: Int * Int -> Int */ {
+function safe_add(x, y) /*: Num * Num -> Num */ {
     var lsw = (x & 0xFFFF) + (y & 0xFFFF);
     var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
     return (msw << 16) | (lsw & 0xFFFF);
@@ -132,7 +132,7 @@ function safe_add(x, y) /*: Int * Int -> Int */ {
  * Bitwise rotate a 32-bit number to the left.
  */
 
-function rol(num, cnt) /*: Int * Int -> Int */ {
+function rol(num, cnt) /*: Num * Num -> Num */ {
     return (num << cnt) | (num >>> (32 - cnt));
 }
 
@@ -141,8 +141,8 @@ function rol(num, cnt) /*: Int * Int -> Int */ {
  * In 8-bit function, characters >255 have their hi-byte silently ignored.
  */
 
-function str2binb(str) /*: Str -> Array<Int> */ {
-    var bin = /*:Int*/[];
+function str2binb(str) /*: Str -> Array<Num> */ {
+    var bin = /*:Num*/[];
     var mask = (1 << chrsz) - 1;
     bin[0] = 3;
     for (var i = 0; i < str.length * chrsz; i += chrsz) {
@@ -159,7 +159,7 @@ function str2binb(str) /*: Str -> Array<Int> */ {
  * Convert an array of big-endian words to a base-64 string
  */
 
-function binb2b64(binarray) /*: Array<Int> -> Str */ {
+function binb2b64(binarray) /*: Array<Num> -> Str */ {
     var tab = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     var str = "";
     for (var i = 0; i < binarray.length * 4; i += 3) {

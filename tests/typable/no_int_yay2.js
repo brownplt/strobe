@@ -1,4 +1,4 @@
-function foo() /*: -> Int */ {
+function foo() /*: -> Num */ {
     var x = "hello";
     if (typeof x === "number") {
         return x + 100;

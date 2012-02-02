@@ -1,6 +1,6 @@
 function slice(arr, stop) 
-    /*: forall a . Array<'a> * Int + Undef -> Int */ {
-    var len =  /*: is Int */(arr.length);
+    /*: forall a . Array<'a> * Num + Undef -> Num */ {
+    var len =  /*: is Num */(arr.length);
   if (typeof stop === "undefined") { stop = len; }
 
   return stop;

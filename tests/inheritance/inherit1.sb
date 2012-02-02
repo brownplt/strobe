@@ -1,6 +1,6 @@
 let (pt_proto =
         ref {move : func(this, x) 
-             /*: forall a <: {x : Int} . ['a] Int -> 'a */ {
+             /*: forall a <: {x : Num} . ['a] Num -> 'a */ {
                  this := !this["x" = prim("+", !this["x"], 5)];
                  this
              }})

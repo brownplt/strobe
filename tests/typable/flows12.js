@@ -1,8 +1,8 @@
-function expectInt(x) /*: Int -> Int */ {
+function expectNum(x) /*: Num -> Num */ {
     return x;
 }
 
-var x = /*:upcast Undef + Int */ undefined;
-var y = expectInt(200);
-expectInt(y);
+var x = /*:upcast Undef + Num */ undefined;
+var y = expectNum(200);
+expectNum(y);
   

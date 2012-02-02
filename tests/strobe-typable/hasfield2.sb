@@ -1,4 +1,4 @@
-func (obj, fx) /*: [{ /x|y|z/ : ? Int }] /x/ -> Int */ {
+func (obj, fx) /*: [{ /x|y|z/ : ? Num }] /x/ -> Num */ {
   if (prim('hasfield',!obj, fx))
     obj[fx]
   else

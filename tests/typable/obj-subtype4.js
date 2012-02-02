@@ -1,5 +1,5 @@
 function foo(o) 
-/*: #{x:Int, y: Bool} -> 
-    #{x: Int} */ {
+/*: #{x:Num, y: Bool} -> 
+    #{x: Num} */ {
     return o;
 }

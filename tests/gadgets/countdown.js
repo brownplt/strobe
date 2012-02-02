@@ -92,8 +92,8 @@ function makeTomorrow(d) /*:  Date -> Date */ {
 // All data will be non-negative. Use "isPassed" to determine the relation
 // between the dates.
 function getDateDiff(start, end)
-  /*: Date * Date -> { isPassed : Bool, msec : Int, seconds : Int,
-                       minutes : Int, hours : Int, days : Int } */
+  /*: Date * Date -> { isPassed : Bool, msec : Num, seconds : Num,
+                       minutes : Num, hours : Num, days : Num } */
 {
   var diff = (end.valueOf() - start.valueOf());
 

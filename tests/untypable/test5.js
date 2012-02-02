@@ -1,1 +1,1 @@
-function (x) /*: Int -> Int */ { return "HAH"; };
+function (x) /*: Num -> Num */ { return "HAH"; };

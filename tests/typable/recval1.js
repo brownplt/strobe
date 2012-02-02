@@ -1,4 +1,4 @@
 var obj = {
   _x : 20,
-  getX: function() /*: -> Int */ { return obj._x; }
+  getX: function() /*: -> Num */ { return obj._x; }
 };

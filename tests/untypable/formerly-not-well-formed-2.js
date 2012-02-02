@@ -1,1 +1,1 @@
-function () /*: Int -> Undef */ { return; };
+function () /*: Num -> Undef */ { return; };

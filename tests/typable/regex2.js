@@ -1,3 +1,3 @@
-function foo(o) /*: { /__(.*)/ : Int, /_/: Bool} -> Bool + Undef */ {
+function foo(o) /*: { /__(.*)/ : Num, /_/: Bool} -> Bool + Undef */ {
   return o._;
 }

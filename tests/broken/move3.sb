@@ -1,12 +1,12 @@
 let (pr = ref {__proto__: null, move : 
                func (this, dist) 
                /*: rec x . (forall a <: {{ move : ^('x) }} .
-                            forall b <: {{ move : _, x : Int, __proto__: ref 'a }} . ([ref 'b] Int -> ref 'b)) */ {
+                            forall b <: {{ move : _, x : Num, __proto__: ref 'a }} . ([ref 'b] Num -> ref 'b)) */ {
                                 ref (upcast /*: 'b */ { __proto__: !this["__proto__"], x : prim("+", !this["x"], dist) })
             }})
 let (obj = ref { x : 5, __proto__: pr })
 !obj["move"]</*: {{ __proto__ : Null, * : _,
                     move : (rec x . (forall a <: {{ move : ^('x) }} .
-                                     forall b <: {{ x : Int, move: _, __proto__: ref 'a }} . ([ref 'b] Int -> 'b))) }} */></*: {{ *: _, x : Int, __proto__ : ref {{ __proto__ : Null, * : _,
+                                     forall b <: {{ x : Num, move: _, __proto__: ref 'a }} . ([ref 'b] Num -> 'b))) }} */></*: {{ *: _, x : Num, __proto__ : ref {{ __proto__ : Null, * : _,
                     move : (rec x . (forall a <: {{ move : ^('x) }} .
-                                     forall b <: {{ x : Int, move: _, __proto__: ref 'a }} . ([ref 'b] Int -> 'b))) }} }} */>(obj, 10)
+                                     forall b <: {{ x : Num, move: _, __proto__: ref 'a }} . ([ref 'b] Num -> 'b))) }} }} */>(obj, 10)

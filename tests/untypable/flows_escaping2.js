@@ -1,6 +1,6 @@
-function(x) /*: Int + Undef -> { h : (-> Undef) -> Undef } */ {
+function(x) /*: Num + Undef -> { h : (-> Undef) -> Undef } */ {
 
-  var g = function() /*: -> Int */ {
+  var g = function() /*: -> Num */ {
     return x;
   };
   x = 90;

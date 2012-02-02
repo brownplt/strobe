@@ -1,3 +1,3 @@
-function foo(o) /*: { * : Int, __proto__: BAD } -> Int + Undef */ {
+function foo(o) /*: { * : Num, __proto__: BAD } -> Num + Undef */ {
     return o.x;
 }

@@ -35,14 +35,14 @@ function abs(x) /*: Num -> Num */ {
 
 // this two functions were promoted to be global
 // to make firefoxs jit happy - URGH
-function clamp(x, min, max) /*: (Num + Int) * Int * Int -> (Num + Int) */{
+function clamp(x, min, max) /*: (Num + Num) * Num * Num -> (Num + Num) */{
     if(x < min) return min;
     if(x > max) return max-1;
     return x;
 }
 
 // this is basically where the magic happens
-function drawLight(canvas, ctx, normals, textureData, directionlut, shiny, specularity, lx, ly, lz) /*: HTMLCanvasElement * CanvasRenderingContext2D * Array<(Num + Int)> * Array<Int> * Array<Num> * Int * Num * Int * Int * Int -> Undef */ {
+function drawLight(canvas, ctx, normals, textureData, directionlut, shiny, specularity, lx, ly, lz) /*: HTMLCanvasElement * CanvasRenderingContext2D * Array<(Num + Num)> * Array<Num> * Array<Num> * Num * Num * Num * Num * Num -> Undef */ {
     var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     var data = imgData.data;
     var i = 0;
@@ -99,7 +99,7 @@ function drawLight(canvas, ctx, normals, textureData, directionlut, shiny, specu
 }
 
 
-function normalmap(canvasId, texture, normalmap, specularity, shiny) /*: Str * Str * Str * Num * Int -> Undef */ {
+function normalmap(canvasId, texture, normalmap, specularity, shiny) /*: Str * Str * Str * Num * Num -> Undef */ {
 
     var canvas = /*:downcast HTMLCanvasElement + Undef*/(document.getElementById(canvasId));
     if(canvas.getContext == undefined) {
@@ -129,7 +129,7 @@ function normalmap(canvasId, texture, normalmap, specularity, shiny) /*: Str * S
     }
 
     var normals = /*:Num*/ [];
-    var textureData = /*:upcast Undef + Array<Int>*/undefined;
+    var textureData = /*:upcast Undef + Array<Num>*/undefined;
     var directionlut = /*:upcast Undef + Array<Num>*/undefined;
 
     // assume lz is always 100

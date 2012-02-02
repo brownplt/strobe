@@ -1,5 +1,5 @@
-function foo() /*: -> Int */ {
-    var x = /*:upcast Int + Str */ "hello";
+function foo() /*: -> Num */ {
+    var x = /*:upcast Num + Str */ "hello";
     if (typeof x === "number") {
         return x + 100;
     }

@@ -1,2 +1,2 @@
-function foo(o) /*: {/ab(a*)cd/ : Int, /a(b*)aacd(.*)/: Str} -> Undef */ {
+function foo(o) /*: {/ab(a*)cd/ : Num, /a(b*)aacd(.*)/: Str} -> Undef */ {
 }

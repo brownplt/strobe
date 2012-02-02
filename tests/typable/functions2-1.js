@@ -2,7 +2,7 @@ function() /*: -> Undef */ {
 var x = 300;
 var y = 900;
 
-function foo(x) /*:Int -> Int */ {
+function foo(x) /*:Num -> Num */ {
     return x;
 }
 

@@ -1,3 +1,3 @@
-function foo(o) /*: #{o : Int} -> #{o : Int + Bool}  */ {
+function foo(o) /*: #{o : Num} -> #{o : Num + Bool}  */ {
     return o;
 }

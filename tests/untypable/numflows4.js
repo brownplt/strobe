@@ -1,5 +1,5 @@
-var f = function() /*: -> Int */ { return 3; };
-var a = /*:upcast Str + Int */13;
+var f = function() /*: -> Num */ { return 3; };
+var a = /*:upcast Str + Num */13;
 a -= f();
 
 
