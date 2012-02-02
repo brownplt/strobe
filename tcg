@@ -1,5 +1,5 @@
 #!/bin/bash
 P=`dirname $0`
-$P/run $JSTFLAGS -contracts -env $P/data/javascript.env -env $P/data/gg.env -global View $@
+$P/run $JSTFLAGS -env $P/data/javascript.env -env $P/data/gg.env -global View $@
 
 
