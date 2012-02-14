@@ -55,7 +55,7 @@ end = struct
       let proto_proto =  match super with
         | None -> TId "Object"
         (* TODO(arjun): Set proto correctly for nominality *)
-        (* | Some super -> TApp (TId (scopedName super), []) in *)
+        | Some super -> failwith "What to do here?" (* TApp (TId (scopedName super), []) *)
       in let proto_flds =
         (Pat.singleton "__proto__", Present, proto_proto) :: proto_flds in
       let proto_absent_pat = 

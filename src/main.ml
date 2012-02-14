@@ -156,6 +156,7 @@ let action_pretypecheck () : unit =
   let typedjs = weave_annotations (get_typedjs ()) in
     Typedjs_syntax.Pretty.p_exp typedjs std_formatter
 
+let full_idl_defs : Full_idl_syntax.definition list ref = ref []
 let idl_defs : Idl_syntax.definition list ref = ref []
 
 let action_tc () : unit = 
@@ -172,7 +173,12 @@ let action_tc () : unit =
     ()
 
 let load_idl_file filename =
-  idl_defs := !idl_defs @ Idl.from_channel (open_in filename) filename
+  let full_idl = Idl.from_channel (open_in filename) filename in
+  full_idl_defs := !full_idl_defs @ full_idl;
+  idl_defs := !idl_defs @ Simplify_idl.from_full full_idl
+
+let compile_env () : unit = 
+  Print_full_idl.print_defs !full_idl_defs
 
 let action = ref action_tc
 
@@ -206,6 +212,8 @@ let main () : unit =
        "Parse strobe source");
       ("-idl", Arg.String load_idl_file,
        "loads an IDL file");
+      ("-compile-env", Arg.Unit (set_action compile_env),
+       "Generate environment from IDL");
       set_simpl_cps;
     ]
     (fun s -> set_cin (open_in s) s)
