@@ -94,7 +94,6 @@ rule token = parse
    | "func" { FUNC }
    | "let" { LET }
    | "letrec" { REC }
-   | "delete" { DELETE }
    | "[" { LBRACK }
    | "]" { RBRACK }
    | "=" { EQUALS }
