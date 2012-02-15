@@ -8,7 +8,7 @@ let print_defs defs =
     vert [horz [name; text "{"];
           horz [text " "; vert items];
           horz [text "}"]] in
-  let rec print_defs defs = (List.map print_def (sort_defs defs))
+  let rec print_defs defs = (List.map (fun d -> squish [print_def d; text ";\n"]) (sort_defs defs))
   and sort_defs defs = List.sort (fun d1 d2 -> 
     let order def = match def with
       | Include _ -> 0
@@ -30,7 +30,7 @@ let print_defs defs =
     | ForwardInterface (_, _, id1), ForwardInterface (_, _, id2)
     | Exception (_, _, id1, _, _), Exception (_, _, id2, _, _)
     | Implements (_, _, id1, _), Implements (_, _, id2, _)
-    | Const (_, _, _, id1), Const (_, _, _, id2)
+    | Const (_, _, _, id1, _), Const (_, _, _, id2, _)
     | Dictionary (_, _, id1, _, _), Dictionary (_, _, id2, _, _)
     | PartialInterface (_, _, id1, _), PartialInterface (_, _, id2, _)
     | Callback (_, _, id1, _, _), Callback (_, _, id2, _, _)
@@ -56,7 +56,7 @@ let print_defs defs =
         (print_mems mems)
     | ForwardInterface(p, metas, id) -> 
       vert [print_metas metas;
-            horz [text "interface"; print_id id; text ";"]]
+            horz [text "interface"; print_id id]]
     | Exception(p, metas, id, parent, mems) -> 
       namedBraces (vert [print_metas metas;
                          horz [text "exception"; print_id id; print_parent parent]])
@@ -64,9 +64,9 @@ let print_defs defs =
     | Implements(p, metas, id, parent) ->
       vert [print_metas metas;
             horz [print_id id; text "implements"; print_id parent]]
-    | Const(p, metas, typ, id) -> 
+    | Const(p, metas, typ, id, value) -> 
       vert [print_metas metas;
-            horz [text "const"; print_id id; text ":"; print_typ typ]]
+            horz [text "const"; print_typ typ; print_id id; text "="; print_exp value]]
     | Dictionary(p, metas, id, parent, mems) -> 
       namedBraces (vert [print_metas metas;
                          horz [text "dictionary"; print_id id; print_parent parent]])
@@ -104,7 +104,7 @@ let print_defs defs =
                                              parens (listOf (List.map print_arg args))]
     | Constructor args -> squish [text "Constructor";
                                   parens (listOf (List.map print_arg args))]
-    | SizeOf id -> squish [text "size_of"; parens (print_id id)]
+    | SizeOf id -> horz [squish [text "size_of"; parens (print_id id)]]
     | ReplaceableNamedProperties -> text "ReplaceableNamedProperties"
     | Unforgeable -> text "Unforgeable"
     | Replaceable -> text "Replaceable"
@@ -120,10 +120,10 @@ let print_defs defs =
     | Uuid uuid -> squish [text "uuid"; parens (text uuid)]
     | ImplicitJSContext -> text "implicit_jscontext"
     | AttrNoArgs id -> print_id id
-    | AttrArgList (id, args) -> squish [print_id id; parens (listOf (List.map print_arg args))]
+    | AttrArgList (id, args) -> squish [print_id id; parens (listOf (List.map print_exp args))]
     | AttrNamedIdent(name,id) -> squish [print_id name; text "="; print_id id]
     | AttrNamedArgList (name, id, args) -> squish [print_id name; text "=";
-                                                   print_id id; parens (listOf (List.map print_arg args))]
+                                                   print_id id; parens (listOf (List.map print_exp args))]
   and print_unsigned u = match u with
     | Unsigned -> text "unsigned"
     | NoUnsigned -> empty
@@ -145,7 +145,7 @@ let print_defs defs =
     | Array t -> squish [print_typ t; text "[]"]
     | Ques t -> squish [print_typ t; text "?"]
     | Sequence t -> squish [text "sequence"; angles (print_typ t)]
-  and print_mems mems = List.map print_mem (sort_members mems)
+  and print_mems mems = List.map (fun m -> squish [print_mem m; text ";"]) (sort_members mems)
   and sort_members mems = List.sort (fun m1 m2 -> 
     let order mem = match mem with
       | ConstMember _ -> 0
@@ -173,7 +173,7 @@ let print_defs defs =
                | IsStringifier -> text "stringifier"
                | _ -> empty);
                print_typ typ;
-               squish [print_id id; text ";"]]]
+               print_id id]]
     | Operation(p, metas, stringifier, quals, ret, name, args) ->
       vert [print_metas metas;
             horz
@@ -191,10 +191,10 @@ let print_defs defs =
                   (match name with
                   | None -> empty
                   | Some id -> squish [text " "; print_id id]);
-                  parens (listOf (List.map print_arg args)); text ";"]]]
+                  parens (listOf (List.map print_arg args))]]]
     | ConstMember(p, metas, typ, id, value) ->
       vert [print_metas metas;
-            horz [text "const"; print_typ typ; print_id id; text "="; print_exp value; text ";"]]
+            horz [text "const"; print_typ typ; print_id id; text "="; print_exp value]]
     | Stringifier(p, metas) ->
       vert [print_metas metas; text "stringifier;"]
   and print_exp e = 
@@ -233,17 +233,23 @@ let print_defs defs =
       | BinOp(l, o, r) -> horz [helper l ePrec; binOp o; helper r ePrec]
       | UnOp(o, e) -> horz[unOp o; helper e ePrec]
       | Ident n -> print_scoped n
-      | IntLit i -> text (string_of_int i)
+      | IntLit i -> text (Int64.to_string i)
       | FloatLit f -> text (string_of_float f)
       | String s -> squish[text "\""; text s; text "\""]
       | Bool b -> if b then text "true" else text "false") in
     helper e 0
-  and print_arg (inout, metas, typ, id) =
+  and print_arg (inout, metas, typ, variadic, id, def) =
     horz [print_metas metas;
           (match inout with
           | InParam -> text "in"
           | OutParam -> text "out"
           | InOutParam -> text "inout");
           print_typ typ;
-          print_id id]
+          (match variadic with
+          | Single -> empty
+          | Variadic -> text "...");
+          (match def with
+          | None -> print_id id
+          | Some e -> horz [print_id id; text "="; print_exp e])
+         ]
   in vert (print_defs defs) std_formatter

@@ -16,6 +16,11 @@
                 "false" , FALSE ;
                 "noscript" , NOSCRIPT ;
                 "optional_argc" , OPTIONAL_ARGC ;
+                (* "PRUnichar" , PRUnichar ; *)
+                (* "PRUint32" , PRUint32 ; *)
+                (* "PRInt32" , PRInt32 ; *)
+                (* "PRUint16" , PRUint16 ; *)
+                (* "PRInt16" , PRInt16 ; *)
                 "size_is" , SIZE_IS ;
                 "inherit" , INHERIT ;
                 "interface" , INTERFACE ;
@@ -29,8 +34,8 @@
                 "octet" , OCTET ;
                 "float" , FLOAT ;
                 "double" , DOUBLE ;
-                "DOMString" , DOMSTRING ;
-                "Date" , DATE ;
+                (* "DOMString" , DOMSTRING ; *)
+                (* "Date" , DATE ; *)
                 "any" , ANY ;
                 "unsigned" , UNSIGNED ;
                 "readonly" , READONLY ;
@@ -38,7 +43,7 @@
                 "optional" , OPTIONAL ;
                 "attribute" , ATTRIBUTE ;
                 "typedef" , TYPEDEF ;
-                "object" , OBJECT ;
+                (* "object" , OBJECT ; *)
                 "exception" , EXCEPTION ;
                 "const" , CONST ;
                 "raises" , RAISES ;
@@ -88,12 +93,12 @@ let integer = '-'?(('0'(['0'-'7']*|['X' 'x']['0'-'9' 'A'-'F' 'a'-'f']+))|(['1'-'
 let float = '-'?((['0'-'9']+'.'['0'-'9']*|['0'-'9']*'.'['0'-'9']+)(['E' 'e']['+' '-']?['0'-'9']+)?|['0'-'9']+['E' 'e']['+' '-']?['0'-'9']+)
 
 rule token = parse
-   | blank + { token lexbuf }
+   | blank+ { token lexbuf }
    | '\n' { new_line lexbuf; token lexbuf }
    | '\r' { new_line lexbuf; token lexbuf }
    | "\r\n" { new_line lexbuf; token lexbuf }
    | "/*" { block_comment lexbuf }
-   | "%{" { cpp_comment lexbuf }
+   | "%{" [^ '\r' '\n']* { cpp_comment lexbuf }
    | "//"[^ '\r' '\n']* [ '\r' '\n' ] { new_line lexbuf; token lexbuf }
    | "..." { DOTDOTDOT }
    | "(" { LPAREN }
@@ -109,12 +114,12 @@ rule token = parse
    | "?" { QUES }
    | ";" { SEMI }
    | "=" { EQUALS }
-   | "uuid(" (uuid as u) ")" { UUID u }
+   | "uuid" blank* '(' blank* (uuid as u) blank* ")" { UUID u }
    | "#include" { INCLUDE }
    | '\"' (double_quoted_string_char * as s) '\"' { STRING s }
    | "<" { LANGLE }
    | ">" { RANGLE }
-   | integer as x { INTLIT (int_of_string x) }
+   | integer as x { INTLIT (Int64.of_string x) }
    | float as f { FLOATLIT (float_of_string f) }
    | '|' { BAR }
    | '^' { XOR }
@@ -128,7 +133,7 @@ rule token = parse
    | '/' { DIVIDE }
    | '%' { MOD }
    | eof { EOF }
-   | "native" blank+ (ident as id) "(" [^ ')'] * ")" { NATIVE id }
+   | "native" blank+ (ident as id) blank* "(" [^ ')'] * ")" { NATIVE id }
    | ident as id { 
      try
        Hashtbl.find keyword_table id
@@ -147,7 +152,7 @@ and block_comment = parse
   | [^ '\n' '\r' '*'] { block_comment lexbuf }
 
 and cpp_comment = parse
-  | "%}" { token lexbuf }
+  | "%}" [^ '\r' '\n']* { token lexbuf }
   | "\r\n" { new_line lexbuf; cpp_comment lexbuf }
   | [ '\n' '\r' ]  { new_line lexbuf; cpp_comment lexbuf }
   | [^ '\n' '\r'] { cpp_comment lexbuf }

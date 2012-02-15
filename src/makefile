@@ -1,5 +1,5 @@
 .PHONY = debug prof opt clean
-OCAMLBUILD = ocamlbuild -build-dir ../obj -quiet
+OCAMLBUILD = ocamlbuild -build-dir ../obj -quiet  -cflags -annot -menhir "menhir --stdlib \"C:\cygwin\usr\local\share\menhir\""
 
 $(shell mkdir -p ../obj)
 
@@ -17,5 +17,3 @@ opt:
 
 clean:
 	rm -rf ../run ../obj
-	
-

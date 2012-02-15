@@ -23,6 +23,10 @@ type paramDirection =
   | OutParam
   | InOutParam
 
+type variadic =
+  | Single
+  | Variadic
+
 type scopedName = 
   | RelativeName of id list
   | AbsoluteName of id list
@@ -50,7 +54,7 @@ type expr =
   | BinOp of expr * binop * expr
   | UnOp of unop * expr
   | Ident of scopedName
-  | IntLit of int
+  | IntLit of int64
   | FloatLit of float
   | String of string
   | Bool of bool
@@ -59,7 +63,7 @@ and binop =
 and unop =
   | UPlus | UMinus | UTilde
 
-type argument = paramDirection * meta list * typ * id
+type argument = paramDirection * meta list * typ * variadic * id * expr option
 
 and meta =
   | NoInterfaceObject
@@ -83,8 +87,8 @@ and meta =
   | Uuid of string
   | ImplicitJSContext
   | AttrNoArgs of id
-  | AttrArgList of id * argument list
-  | AttrNamedArgList of id * id * argument list
+  | AttrArgList of id * expr list
+  | AttrNamedArgList of id * id * expr list
   | AttrNamedIdent of id * id
 
 type qualifiers = { static : bool;
@@ -108,7 +112,7 @@ type definition =
   | ForwardInterface of pos * meta list * id
   | Exception of pos * meta list * id * scopedName option * interfaceMember list
   | Implements of pos * meta list * id * id
-  | Const of pos * meta list * typ * id
+  | Const of pos * meta list * typ * id * expr
   | Dictionary of pos * meta list * id * scopedName option * interfaceMember list
   | PartialInterface of pos * meta list * id * interfaceMember list
   (* NON-STANDARD DEFINITIONS *)

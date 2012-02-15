@@ -2,9 +2,15 @@
 
 open Full_idl_syntax
 
+let find_attr attr attrs =
+  let at = AttrNoArgs (Id.id_of_string attr) in
+  List.exists (fun a -> a == at) attrs
 let ifaceMemWithAttrs mem attrs = match mem with
   | Attribute(p, _, ro, s, t, id) -> Attribute(p, attrs, ro, s, t, id)
-  | Operation(p, _, s, q, ret, id, args) -> Operation(p, attrs, s, q, ret, id, args)
+  | Operation(p, _, s, q, ret, id, args) -> 
+    let q' = if (find_attr "getter" attrs) then {q with getter = true} else q in
+    let q' = if (find_attr "setter" attrs) then {q' with setter = true} else q' in
+    Operation(p, attrs, s, q', ret, id, args)
   | ConstMember(p, _, t, id, value) -> ConstMember(p, attrs, t, id, value)
   | Stringifier(p, _) -> Stringifier(p, attrs)
 let defWithAttrs def attrs = match def with
@@ -14,7 +20,7 @@ let defWithAttrs def attrs = match def with
   | ForwardInterface(p, _, id) -> ForwardInterface(p, attrs, id)
   | Exception(p, _, id, parent, mems) -> Exception(p, attrs, id, parent, mems)
   | Implements(p, _, id, impl) -> Implements(p, attrs, id, impl)
-  | Const(p, _, typ, id) -> Const(p, attrs, typ, id)
+  | Const(p, _, typ, id, value) -> Const(p, attrs, typ, id, value)
   | Dictionary(p, _, id, parent, mems) -> Dictionary(p, attrs, id, parent, mems)
   | PartialInterface(p, _, id, mems) -> PartialInterface(p, attrs, id, mems)
   | Include(p, _, file) -> Include(p, attrs, file)
@@ -28,10 +34,10 @@ let noQualifiers = {static=false;getter=false;setter=false;
 %token <string> STRING
 %token <string> UUID
 %token <string> NATIVE
-%token <int> INTLIT
+%token <int64> INTLIT
 %token <float> FLOATLIT
 %token MODULE INTERFACE LBRACE RBRACE SEMI SHORT LONG BOOLEAN
-       BYTE OCTET FLOAT DOUBLE DOMSTRING OBJECT DATE ANY QUES LRBRACK
+       BYTE OCTET FLOAT DOUBLE ANY QUES LRBRACK
        UNSIGNED READONLY VOID COMMA IN OUT INOUT OPTIONAL LPAREN RPAREN EOF
        ATTRIBUTE LBRACK RBRACK TYPEDEF EXCEPTION CONST EQUALS RAISES
        COLON COLONCOLON DOTDOTDOT LEGACYCALLER GETTER SETTER CREATOR DELETER
@@ -41,11 +47,9 @@ let noQualifiers = {static=false;getter=false;setter=false;
        ALLOWANY PARTIAL SEQUENCE LANGLE RANGLE CLAMP NOSCRIPT OPTIONAL_ARGC
        INCLUDE SCRIPTABLE IMPLICIT_JSCONTEXT INHERIT STATIC ENUM SIZE_IS
        BAR XOR AND SHLEFT SHRIGHT PLUS MINUS TILDE TIMES DIVIDE MOD TRUE FALSE
+       (* PRUint32 PRInt32 PRUint16 PRInt16 PRUnichar *)
 
 %type <Full_idl_syntax.definition list> idlFile
-
-(* %nonassoc FallbackAttrSyntax *)
-(* %nonassoc KnownAttrSyntax *)
 
 %left BAR
 %left XOR
@@ -112,6 +116,25 @@ definition:
   | MODULE name=ID defs=delimited(LBRACE, ilist(definition), RBRACE) SEMI
     { Module ($startpos, [], name, defs) }
   | INTERFACE ID SEMI { ForwardInterface ($startpos, [], $2) }
+  | c=const { let (p, m, t, id, e) = c in Const(p,m,t,id,e) }
+
+%inline identOrKeyword:
+  | CONSTRUCTOR { Id.id_of_string "Constructor" }
+  | id=identOrKeywordNotConstructor { id }
+
+%inline identOrKeywordNotConstructor:
+  | id=ID { id }
+  (* | OBJECT { Printf.printf "KW(object)\n"; Id.id_of_string "object" } *)
+  | DICTIONARY { Id.id_of_string "dictionary" }
+  | PARTIAL { Id.id_of_string "partial" }
+  | CREATOR { Id.id_of_string "creator" }
+  (* | PRUint32 { Printf.printf "KW(PRUint32)\n"; Id.id_of_string "PRUint32" } *)
+  (* | PRInt32 { Printf.printf "KW(PRInt32)\n"; Id.id_of_string "PRInt32" } *)
+  (* | PRUint16 { Printf.printf "KW(PRUint16)\n"; Id.id_of_string "PRUint16" } *)
+  (* | PRInt16 { Printf.printf "KW(PRInt16)\n"; Id.id_of_string "PRInt16" } *)
+  (* | PRUnichar { Printf.printf "KW(PRUnichar)\n"; Id.id_of_string "PRUnichar" } *)
+  | GETTER { Id.id_of_string "getter" }
+  | SETTER { Id.id_of_string "setter" }
 
 callbackOrInterface:
   | CALLBACK callbackRestOrInterface { $2 }
@@ -127,7 +150,7 @@ callbackRestOrInterface:
   }
 
 callbackRest:
-  | name=ID EQUALS ret=returnType args=delimited(LPAREN, argumentList, RPAREN) SEMI
+  | name=identOrKeyword EQUALS ret=returnType args=delimited(LPAREN, argumentList, RPAREN) SEMI
       { Callback($startpos, [], name, args, ret) }
 
 interface:
@@ -142,7 +165,7 @@ interfaceMembers:
   | mems=ilist(extAttrIfaceMemList(interfaceMember)) { mems }
 
 interfaceMember:
-  | const { $1 }
+  | c=const { let (p,m,t,id,c) = c in ConstMember(p,m,t,id,c) }
   | attributeOrOperation { $1 }
 
 dictionary:
@@ -153,7 +176,7 @@ dictionaryMembers:
   | mems=ilist(extAttrDictList(dictionaryMember)) { mems }
 
 dictionaryMember:
-  | ty=typeDecl name=ID ioption(default) SEMI
+  | ty=typeDecl name=identOrKeyword ioption(default) SEMI
       { Attribute($startpos, [], NoReadOnly, IsNormal, ty, name) } (* default? *)
 
 default:
@@ -175,14 +198,14 @@ inheritance:
   | { None }
 
 scopedName:
-  | absoluteScopedName { $1 }
-  | relativeScopedName { $1 }
+  | n=absoluteScopedName { n }
+  | n=relativeScopedName { n }
 absoluteScopedName:
-  | COLONCOLON ID scopedNameParts { AbsoluteName ($2::$3) }
+  | COLONCOLON id=identOrKeyword parts=scopedNameParts { AbsoluteName (id::parts) }
 relativeScopedName:
-  | ID scopedNameParts { RelativeName ($1::$2) }
+  | id=identOrKeyword parts=scopedNameParts { RelativeName (id::parts) }
 scopedNameParts:
-  | COLONCOLON ID scopedNameParts { $2::$3 }
+  | COLONCOLON id=identOrKeyword parts=scopedNameParts { id::parts }
   | { [] }
 
 enum:
@@ -190,8 +213,8 @@ enum:
       { Enum($startpos, [], name, mems) }
 
 typedef:
-  | TYPEDEF extendedAttributeList typeDecl ID SEMI
-      { Typedef ($startpos, [], $3, $4) } (* extendedAttributeList? *)
+  | TYPEDEF attrs=extendedAttributeList ty=typeDecl id=ID SEMI
+      { Typedef ($startpos, [], ty, id) } (* extendedAttributeList? *)
   | NATIVE SEMI
       { Typedef ($startpos, [], Any, Id.id_of_string $1) }
 
@@ -200,8 +223,8 @@ implementsStatement:
       { Implements($startpos, [], $1, $3) }
 
 const:
-  | CONST constType ID EQUALS constValue SEMI
-      { ConstMember($startpos, [], $2, $3, $5) }
+  | CONST cty=constType id=ID EQUALS cval=constValue SEMI
+      { ($startpos, [], cty, id, cval) }
 
 constValue:
   | expr { $1 }
@@ -258,7 +281,7 @@ stringifierAttributeOrOperation:
   | SEMI { Stringifier($startpos, []) }
 
 attribute:
-  | INHERIT? readonly=iboption(READONLY) ATTRIBUTE ty=typeDecl name=ID SEMI
+  | INHERIT? readonly=iboption(READONLY) ATTRIBUTE ty=typeDecl name=identOrKeyword SEMI
       { Attribute($startpos, [], (if readonly then ReadOnly else NoReadOnly), IsNormal, ty, name) }
 
 operation:
@@ -271,31 +294,45 @@ operation:
 raisesClause:
   | RAISES delimited(LPAREN, separated_list(COMMA, ID), RPAREN) { () }
 
-qualifiers:
+qualifiers: (* NOTE: Experimentally checked for these combinations; others are possible *)
   | STATIC { {noQualifiers with static=true} }
-  | specials { $1 }
-
-specials:
-  | GETTER specials { {$2 with getter = true} }
-  | SETTER specials { {$2 with setter = true} }
-  | CREATOR specials { {$2 with creator = true} }
-  | DELETER specials { {$2 with deleter = true} }
-  | LEGACYCALLER specials { {$2 with legacyCaller = true} }
+  | GETTER { {noQualifiers with getter=true} }
+  | LEGACYCALLER GETTER { {noQualifiers with legacyCaller=true; getter=true} }
+  | SETTER { {noQualifiers with setter=true} }
+  | SETTER CREATOR { {noQualifiers with setter=true; creator=true} }
+  | CREATOR { {noQualifiers with creator=true} }
+  | DELETER { {noQualifiers with deleter=true} }
   | { noQualifiers }
+(*   | specials { $1 } *)
+
+(* specials: *)
+(*   | GETTER specials { {$2 with getter = true} } *)
+(*   | SETTER specials { {$2 with setter = true} } *)
+(*   | CREATOR specials { {$2 with creator = true} } *)
+(*   | DELETER specials { {$2 with deleter = true} } *)
+(*   | LEGACYCALLER specials { {$2 with legacyCaller = true} } *)
+(*   | { noQualifiers } *)
 
 operationRest:
-  | ret=returnType name=ID? args=delimited(LPAREN, argumentList, RPAREN) raisesClause? SEMI
+  | ret=returnType name=identOrKeyword? args=delimited(LPAREN, argumentList, RPAREN) raisesClause? SEMI
       { Operation($startpos, [], IsNormal, noQualifiers, ret, name, args) }
 
 argumentList:
  | args=separated_list(COMMA, argument) { args }
 
 argument:
-  | arg=extAttrArgList(optionalOrRequiredArgument) { let (m, (io, ty, id)) = arg in (io, m, ty, id) }
+  | arg=extAttrArgList(optionalOrRequiredArgument) { 
+    let (m, (io, opt, ty, dots, id, def)) = arg in 
+    if opt then (io, Optional::m, ty, dots, id, def)
+    else (io, m, ty, dots, id, def) }
 
 optionalOrRequiredArgument:
-  | io=inout iboption(OPTIONAL) ty=typeDecl id=ID default { (io, ty, id) } (* TODO *)
-  | io=inout ty=typeDecl iboption(DOTDOTDOT) id=ID { (io, ty, id) } (* TODO!! *)
+  | io=inout OPTIONAL ty=typeDecl id=identOrKeyword def=default? { (io, true, ty, Single, id, def) }
+  | io=inout ty=typeDecl dots=dots id=identOrKeyword { (io, false, ty, dots, id, None) }
+
+%inline dots:
+  | DOTDOTDOT { Variadic }
+  | { Single }
 
 inout:
   | IN { InParam }
@@ -304,22 +341,21 @@ inout:
   | { InParam }
 
 exceptionMember:
-  | const { $1 }
+  | c=const { let (p,m,t,id,e) = c in ConstMember(p,m,t,id,e) }
   | exceptionField { $1 }
 
 exceptionField:
-  | typeDecl ID SEMI { Attribute($startpos, [], NoReadOnly, IsNormal, $1, $2) }
+  | ty=typeDecl id=ID SEMI { Attribute($startpos, [], NoReadOnly, IsNormal, ty, id) }
 
 extendedAttributeList:
   | attrs=delimited(LBRACK, iseparated_nonempty_list(COMMA, extendedAttribute), RBRACK) { attrs }
   | { [] }
 
 extendedAttribute:
-  | extendedAttributeNoArgs { $1 } (* %prec KnownAttrSyntax *)
-  | extendedAttributeArgList { $1 } (* %prec KnownAttrSyntax *)
-  | extendedAttributeNamedArgList { $1 } (* %prec KnownAttrSyntax *)
-  | extendedAttributeIdent { $1 } (* %prec KnownAttrSyntax *)
-  | unknownAttribute { $1 } (* %prec FallbackAttrSyntax *)
+  | extendedAttributeNoArgs { $1 } 
+  | extendedAttributeArgList { $1 } 
+  | extendedAttributeNamedArgList { $1 } 
+  | extendedAttributeIdent { $1 } 
 
 typeDecl:
   | singleType { $1 }
@@ -339,11 +375,10 @@ singleType:
 
 nonAnyType:
   | primitiveType typeSuffix { ($2 $1) }
-  | DOMSTRING typeSuffix { ($2 DOMString) }
-  | scopedName typeSuffix { ($2 (Name ($1))) }
-  | SEQUENCE LANGLE typeDecl RANGLE QUES? { Sequence $3 }
-  | OBJECT typeSuffix { ($2 Object) }
-  | DATE typeSuffix { ($2 Date) }
+  (* | DOMSTRING typeSuffix { ($2 DOMString) } *)
+  | SEQUENCE LANGLE t=typeDecl RANGLE q=iboption(QUES) { if q then Ques (Sequence t) else Sequence t }
+  (* | OBJECT typeSuffix { ($2 Object) } *)
+  (* | DATE typeSuffix { ($2 Date) } *)
 
 constType:
   | ty=primitiveType readonly=iboption(QUES) { if readonly then Ques ty else ty }
@@ -351,15 +386,34 @@ constType:
 primitiveType:
   | unsignedIntegerType { $1 }
   | BOOLEAN { Boolean }
-  | BYTE { Byte }
   | OCTET { Octet }
   | FLOAT { Float }
   | DOUBLE { Double }
+  (* | PRUnichar { Octet } *)
+  | id=identOrKeyword { 
+    match (Id.string_of_id id) with
+    | "PRUnichar" -> Octet
+    | "PRUint32" -> Long Unsigned
+    | "PRInt32" -> Long NoUnsigned
+    | "PRUint16" -> Short Unsigned
+    | "PRInt16" -> Short NoUnsigned
+    | "DOMString" -> DOMString
+    | "object" -> Object
+    | "Date" -> Date
+    | _ -> Name (RelativeName[id])
+  }
 
 unsignedIntegerType:
   | unsigned=iboption(UNSIGNED) ty=integerType { ty (if unsigned then Unsigned else NoUnsigned) }
+  (* | PRUint32 { Long Unsigned } *)
+  (* | PRInt32 { Long NoUnsigned } *)
+  (* | PRUint16 { Short Unsigned } *)
+  (* | PRInt16 { Short NoUnsigned } *)
 
 integerType:
+  | BYTE { (fun u -> match u with | Unsigned -> Octet | NoUnsigned -> Byte) } 
+  (* According to a comment in typedarray.idl, the 'unsigned byte' type doesn't exist,
+     but is equivalent to octet *)
   | SHORT { (fun u -> Short u) }
   | LONG longopt=iboption(LONG) { if longopt then (fun u -> LongLong u) else (fun u -> Long u) }
 
@@ -377,9 +431,9 @@ returnType:
   | VOID { Void }
 
 extendedAttributeNoArgs:
+  | CONST { AttrNoArgs (Id.id_of_string "const") }
   | NOINTERFACEOBJECT { NoInterfaceObject }
   | OVERRIDEBUILTINS { OverrideBuiltins }
-  | CONSTRUCTOR { Constructor ([]) }
   | REPLACEABLENAMEDPROPERTIES { ReplaceableNamedProperties }
   | REPLACEABLE { Replaceable }
   | UNFORGEABLE { Unforgeable }
@@ -391,38 +445,29 @@ extendedAttributeNoArgs:
   | OPTIONAL_ARGC { OptionalArgc }
   | SCRIPTABLE { Scriptable }
   | IMPLICIT_JSCONTEXT { ImplicitJSContext }
+  | CONSTRUCTOR { Constructor [] }
+  | id=identOrKeywordNotConstructor { AttrNoArgs id }
 (* | ID *)
 
 extendedAttributeArgList:
   | UUID { Uuid ($1) }
   | CONSTRUCTOR args=delimited(LPAREN, argumentList, RPAREN) { Constructor args }
   | SIZE_IS arg=delimited(LPAREN, ID, RPAREN) { SizeOf arg }
+  | id=identOrKeywordNotConstructor args=delimited(LPAREN, separated_list(COMMA, expr), RPAREN) { AttrArgList (id, args) }
 (* | ID delimited(LPAREN, argumentList, RPAREN) *)
 
 extendedAttributeIdent:
-  | PUTFORWARDS EQUALS ID { PutForwards $3 }
+  | PUTFORWARDS EQUALS id=ID { PutForwards id }
   | TREATNULLAS EQUALS typeDecl { TreatNullAs $3 }
   | CALLBACK EQUALS FUNCTIONONLY { MCallbackFunctionOnly }
+  | name=identOrKeyword EQUALS id=identOrKeyword { AttrNamedIdent(name, id) }
 (* | ID EQUALS ID *)
 
 extendedAttributeNamedArgList:
   | NAMEDCONSTRUCTOR EQUALS name=ID args=delimited(LPAREN, argumentList, RPAREN) { NamedConstructor(name,args) }
+  | name=identOrKeyword EQUALS id=identOrKeyword args=delimited(LPAREN, separated_list(COMMA, expr), RPAREN) { AttrNamedArgList (name,id,args) }
 
 
-unknownAttribute:
-  | unknownAttributeNoArgs { $1 }
-  | unknownAttributeArgList { $1 }
-  | unknownAttributeIdent { $1 }
-  | unknownAttributeNamedArgList { $1 }
-
-unknownAttributeNoArgs:
-  | ID { AttrNoArgs $1 }
-unknownAttributeArgList:
-  | id=ID args=delimited(LPAREN, argumentList, RPAREN) { AttrArgList (id, args) }
-unknownAttributeIdent:
-  | ID EQUALS ID { AttrNamedIdent($1, $3) }
-unknownAttributeNamedArgList:
-  | name=ID EQUALS id=ID args=delimited(LPAREN, argumentList, RPAREN) { AttrNamedArgList (name,id,args) }
 
 
 

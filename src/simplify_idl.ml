@@ -16,7 +16,7 @@ let from_full (src : F.definition list) : S.definition list =
     | F.ForwardInterface(p, _, id) -> Some (S.ForwardInterface (p, id))
     | F.Exception(p, _, id, parent, mems) -> Some (S.Exception (p, id, translate_mems mems))
     | F.Implements(p, _, id, parent) -> Some (S.Implements(p, id, parent))
-    | F.Const(p, _, typ, id) -> Some (S.Const (p, translate_typ typ, id))
+    | F.Const(p, _, typ, id, _) -> Some (S.Const (p, translate_typ typ, id))
     | F.Dictionary(p, _, id, _, mems) -> Some (S.Dictionary(p, id, translate_mems mems))
     | F.PartialInterface(p, _, id, mems) -> Some (S.PartialInterface(p, id, translate_mems mems))
     | _ -> None
@@ -56,7 +56,7 @@ let from_full (src : F.definition list) : S.definition list =
     | F.ReadOnly -> S.ReadOnly
     | F.NoReadOnly -> S.NoReadOnly
   and translate_arg arg : S.typ =
-    let (_, _, t, _) = arg in translate_typ t
+    let (_, _, t, _, _, _) = arg in translate_typ t
   and translate_args args : S.typ list = List.map translate_arg args
   and translate_meta (m : F.meta) : S.meta option =
     match m with
