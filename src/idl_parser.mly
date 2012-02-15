@@ -122,17 +122,22 @@ definition:
   | CONSTRUCTOR { Id.id_of_string "Constructor" }
   | id=identOrKeywordNotConstructor { id }
 
+%inline identOrKeywordNotSpecial:
+  | CONSTRUCTOR { Id.id_of_string "Constructor" }
+  | id=identOrKeywordNotConstructorOrSpecial { id }
+
 %inline identOrKeywordNotConstructor:
+  | id=specialsAsKeyword { id }
+  | id=identOrKeywordNotConstructorOrSpecial { id }
+
+%inline identOrKeywordNotConstructorOrSpecial:
   | id=ID { id }
   (* | OBJECT { Printf.printf "KW(object)\n"; Id.id_of_string "object" } *)
   | DICTIONARY { Id.id_of_string "dictionary" }
   | PARTIAL { Id.id_of_string "partial" }
+
+%inline specialsAsKeyword:
   | CREATOR { Id.id_of_string "creator" }
-  (* | PRUint32 { Printf.printf "KW(PRUint32)\n"; Id.id_of_string "PRUint32" } *)
-  (* | PRInt32 { Printf.printf "KW(PRInt32)\n"; Id.id_of_string "PRInt32" } *)
-  (* | PRUint16 { Printf.printf "KW(PRUint16)\n"; Id.id_of_string "PRUint16" } *)
-  (* | PRInt16 { Printf.printf "KW(PRInt16)\n"; Id.id_of_string "PRInt16" } *)
-  (* | PRUnichar { Printf.printf "KW(PRUnichar)\n"; Id.id_of_string "PRUnichar" } *)
   | GETTER { Id.id_of_string "getter" }
   | SETTER { Id.id_of_string "setter" }
 
@@ -285,21 +290,15 @@ attribute:
       { Attribute($startpos, [], (if readonly then ReadOnly else NoReadOnly), IsNormal, ty, name) }
 
 operation:
-  | qualifiers operationRest {
-    match $2 with
-    | Operation(_, m, stringifier, _, ret, id, args) -> Operation($startpos, m, stringifier, $1, ret, id, args)
-    | _ -> failwith "Impossible"
-  }
+  | q=qualifiers op=operationRest { op $startpos q }
 
 raisesClause:
   | RAISES delimited(LPAREN, separated_list(COMMA, ID), RPAREN) { () }
 
-qualifiers: (* NOTE: Experimentally checked for these combinations; others are possible *)
+%inline qualifiers: (* NOTE: Experimentally checked for these combinations; others are possible *)
   | STATIC { {noQualifiers with static=true} }
-  | GETTER { {noQualifiers with getter=true} }
-  | LEGACYCALLER GETTER { {noQualifiers with legacyCaller=true; getter=true} }
-  | SETTER { {noQualifiers with setter=true} }
-  | SETTER CREATOR { {noQualifiers with setter=true; creator=true} }
+  | legacy=iboption(LEGACYCALLER) GETTER { {noQualifiers with legacyCaller=legacy; getter=true} }
+  | SETTER creator=iboption(CREATOR) { {noQualifiers with setter=true; creator=creator} }
   | CREATOR { {noQualifiers with creator=true} }
   | DELETER { {noQualifiers with deleter=true} }
   | { noQualifiers }
@@ -315,7 +314,7 @@ qualifiers: (* NOTE: Experimentally checked for these combinations; others are p
 
 operationRest:
   | ret=returnType name=identOrKeyword? args=delimited(LPAREN, argumentList, RPAREN) raisesClause? SEMI
-      { Operation($startpos, [], IsNormal, noQualifiers, ret, name, args) }
+      { (fun start quals -> Operation(start, [], IsNormal, quals, ret, name, args)) }
 
 argumentList:
  | args=separated_list(COMMA, argument) { args }
@@ -390,7 +389,7 @@ primitiveType:
   | FLOAT { Float }
   | DOUBLE { Double }
   (* | PRUnichar { Octet } *)
-  | id=identOrKeyword { 
+  | id=identOrKeywordNotSpecial { 
     match (Id.string_of_id id) with
     | "PRUnichar" -> Octet
     | "PRUint32" -> Long Unsigned
