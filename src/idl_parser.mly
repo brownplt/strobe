@@ -33,7 +33,7 @@ let noQualifiers = {static=false;getter=false;setter=false;
 %token <Id.t> ID 
 %token <string> STRING
 %token <string> UUID
-%token <string> NATIVE
+%token <string * string> NATIVE
 %token <int64> INTLIT
 %token <float> FLOATLIT
 %token MODULE INTERFACE LBRACE RBRACE SEMI SHORT LONG BOOLEAN
@@ -44,7 +44,7 @@ let noQualifiers = {static=false;getter=false;setter=false;
        NOINTERFACEOBJECT OVERRIDEBUILTINS PUTFORWARDS IMPLEMENTS
        STRINGIFIER NAMEDCONSTRUCTOR CONSTRUCTOR REPLACEABLENAMEDPROPERTIES
        UNFORGEABLE REPLACEABLE DICTIONARY CALLBACK TREATNULLAS FUNCTIONONLY
-       ALLOWANY PARTIAL SEQUENCE LANGLE RANGLE CLAMP NOSCRIPT OPTIONAL_ARGC
+       ALLOWANY PARTIAL SEQUENCE LANGLE RANGLE CLAMP NOSCRIPT OPTIONAL_ARGC NOTXPCOM RETVAL
        INCLUDE SCRIPTABLE IMPLICIT_JSCONTEXT INHERIT STATIC ENUM SIZE_IS
        BAR XOR AND SHLEFT SHRIGHT PLUS MINUS TILDE TIMES DIVIDE MOD TRUE FALSE
        (* PRUint32 PRInt32 PRUint16 PRInt16 PRUnichar *)
@@ -120,10 +120,14 @@ definition:
 
 %inline identOrKeyword:
   | CONSTRUCTOR { Id.id_of_string "Constructor" }
+  | NOTXPCOM { Id.id_of_string "notxpcom" }
+  | RETVAL { Id.id_of_string "retval" }
   | id=identOrKeywordNotConstructor { id }
 
 %inline identOrKeywordNotSpecial:
   | CONSTRUCTOR { Id.id_of_string "Constructor" }
+  | NOTXPCOM { Id.id_of_string "notxpcom" }
+  | RETVAL { Id.id_of_string "retval" }
   | id=identOrKeywordNotConstructorOrSpecial { id }
 
 %inline identOrKeywordNotConstructor:
@@ -220,8 +224,8 @@ enum:
 typedef:
   | TYPEDEF attrs=extendedAttributeList ty=typeDecl id=ID SEMI
       { Typedef ($startpos, [], ty, id) } (* extendedAttributeList? *)
-  | NATIVE SEMI
-      { Typedef ($startpos, [], Any, Id.id_of_string $1) }
+  | nat=NATIVE SEMI
+      { let (id, natid) = nat in Typedef ($startpos, [], Native natid, Id.id_of_string id) }
 
 implementsStatement:
   | ID IMPLEMENTS ID SEMI
@@ -445,6 +449,8 @@ extendedAttributeNoArgs:
   | SCRIPTABLE { Scriptable }
   | IMPLICIT_JSCONTEXT { ImplicitJSContext }
   | CONSTRUCTOR { Constructor [] }
+  | NOTXPCOM { NotXPCOM }
+  | RETVAL { Retval }
   | id=identOrKeywordNotConstructor { AttrNoArgs id }
 (* | ID *)
 

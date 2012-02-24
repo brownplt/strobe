@@ -49,6 +49,7 @@ type typ =
   | Array of typ
   | Ques of typ
   | Sequence of typ
+  | Native of string
 
 type expr =
   | BinOp of expr * binop * expr
@@ -81,7 +82,9 @@ and meta =
   | AllowAny
   | Clamp
   | Scriptable
+  | NotXPCOM
   | NoScript
+  | Retval
   | Optional
   | OptionalArgc
   | Uuid of string

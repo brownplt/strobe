@@ -125,15 +125,45 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   parens (horz [typ t; text "<"; horz (intersperse (text ",") (map typ ts));
         text ">"])
       | TRegex pat -> text (P.pretty pat)
-      | TUnion (t1, t2) -> horz [typ t1; text "+"; typ t2]
-      | TIntersect (t1, t2) -> horz [typ t1; text "&"; typ t2]
+      | TUnion (t1, t2) ->
+        let rec collectUnions t = match t with
+          | TUnion (t1, t2) -> collectUnions t1 @ collectUnions t2
+          | _ -> [t] in
+        let unions = collectUnions t in
+        begin match unions with
+        | []
+        | [_] -> text "IMPOSSIBLE"
+        | [t1;t2] -> parens (horz [typ t1; text "+"; typ t2])
+        | t::ts -> parens (vert ((horz [text " "; typ t]) :: List.map (fun t -> horz [text "+"; typ t]) ts))
+        end
+      | TIntersect (t1, t2) -> (* horz [typ t1; text "&"; typ t2] *)
+        let rec collectIntersections t = match t with
+          | TIntersect (t1, t2) -> collectIntersections t1 @ collectIntersections t2
+          | _ -> [t] in
+        let intersections = collectIntersections t in
+        begin match intersections with
+        | []
+        | [_] -> text "IMPOSSIBLE"
+        | [t1;t2] -> parens (horz [typ t1; text "&"; typ t2])
+        | t::ts -> parens (vert ((horz [text " "; typ t]) :: List.map (fun t -> horz [text "&"; typ t]) ts))
+        end
       | TArrow (tt::arg_typs, r_typ) ->
+        let multiLine = List.exists (fun at -> match at with 
+            TArrow _ | TObject _ -> true | _ -> false) arg_typs in
+        let rec pairOff ls = match ls with
+          | [] -> []
+          | [_] -> ls
+          | a::b::ls -> horz [a;b] :: pairOff ls in
+        let argTexts = 
+          (intersperse (text "*") 
+             (map (fun at -> begin match at with
+             | TArrow _ -> parens (typ at)
+             | _ -> typ at 
+             end) arg_typs)) in
         horz[ brackets (typ tt);
-              horz (intersperse (text "*") 
-                      (map (fun at -> begin match at with
-                        | TArrow _ -> parens (typ at)
-                        | _ -> typ at 
-                      end) arg_typs));
+              (if multiLine 
+               then vert (pairOff (text " " :: argTexts)) 
+               else horz argTexts) ;
               text "->";
               typ r_typ ]
       | TArrow (arg_typs, r_typ) ->

@@ -51,6 +51,7 @@ let from_full (src : F.definition list) : S.definition list =
     | F.Array t -> S.Array (translate_typ t)
     | F.Ques t -> S.Ques (translate_typ t)
     | F.Sequence t -> S.Ques (translate_typ t)
+    | F.Native _ -> S.Any
   and translate_ro ro : S.readOnly =
     match ro with
     | F.ReadOnly -> S.ReadOnly

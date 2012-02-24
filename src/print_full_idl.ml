@@ -3,41 +3,43 @@ open Full_idl_syntax
 open Format
 open FormatExt
 
+let sort_defs defs = List.stable_sort (fun d1 d2 -> 
+  let order def = match def with
+    | Include _ -> 0
+    | Typedef _ -> 1
+    | ForwardInterface _ -> 2
+    | Enum _ -> 3
+    | Callback _ -> 4
+    | Const _ -> 5
+    | Exception _ -> 6
+    | Dictionary _ -> 7
+    | Module _ -> 8
+    | Interface _ -> 9
+    | PartialInterface _ -> 10
+    | Implements _ -> 11
+  in match d1, d2 with
+  | Module (_, _, id1, _), Module (_, _, id2, _) 
+  | Typedef (_, _, _, id1), Typedef (_, _, _, id2)
+  | Interface (_, _, id1, _, _, _), Interface (_, _, id2, _, _, _)
+  | ForwardInterface (_, _, id1), ForwardInterface (_, _, id2)
+  | Exception (_, _, id1, _, _), Exception (_, _, id2, _, _)
+  | Implements (_, _, id1, _), Implements (_, _, id2, _)
+  | Const (_, _, _, id1, _), Const (_, _, _, id2, _)
+  | Dictionary (_, _, id1, _, _), Dictionary (_, _, id2, _, _)
+  | PartialInterface (_, _, id1, _), PartialInterface (_, _, id2, _)
+  | Callback (_, _, id1, _, _), Callback (_, _, id2, _, _)
+  | Enum (_, _, id1, _), Enum (_, _, id2, _) -> compare (Id.string_of_id id1) (Id.string_of_id id2)
+  | Include (_, _, file1), Include (_, _, file2) -> compare file1 file2
+  | _, _ -> compare (order d1) (order d2)
+) defs
+
+
 let print_defs defs = 
   let namedBraces name items =
     vert [horz [name; text "{"];
           horz [text " "; vert items];
           horz [text "}"]] in
   let rec print_defs defs = (List.map (fun d -> squish [print_def d; text ";\n"]) (sort_defs defs))
-  and sort_defs defs = List.sort (fun d1 d2 -> 
-    let order def = match def with
-      | Include _ -> 0
-      | Typedef _ -> 1
-      | ForwardInterface _ -> 2
-      | Enum _ -> 3
-      | Callback _ -> 4
-      | Const _ -> 5
-      | Exception _ -> 6
-      | Dictionary _ -> 7
-      | Module _ -> 8
-      | Interface _ -> 9
-      | PartialInterface _ -> 10
-      | Implements _ -> 11
-    in match d1, d2 with
-    | Module (_, _, id1, _), Module (_, _, id2, _) 
-    | Typedef (_, _, _, id1), Typedef (_, _, _, id2)
-    | Interface (_, _, id1, _, _, _), Interface (_, _, id2, _, _, _)
-    | ForwardInterface (_, _, id1), ForwardInterface (_, _, id2)
-    | Exception (_, _, id1, _, _), Exception (_, _, id2, _, _)
-    | Implements (_, _, id1, _), Implements (_, _, id2, _)
-    | Const (_, _, _, id1, _), Const (_, _, _, id2, _)
-    | Dictionary (_, _, id1, _, _), Dictionary (_, _, id2, _, _)
-    | PartialInterface (_, _, id1, _), PartialInterface (_, _, id2, _)
-    | Callback (_, _, id1, _, _), Callback (_, _, id2, _, _)
-    | Enum (_, _, id1, _), Enum (_, _, id2, _) -> compare (Id.string_of_id id1) (Id.string_of_id id2)
-    | Include (_, _, file1), Include (_, _, file2) -> compare file1 file2
-    | _, _ -> compare (order d1) (order d2)
-  ) defs
   and print_def def = match def with
     | Module(p, metas, id, defs) -> 
       namedBraces (vert [print_metas metas;
@@ -113,6 +115,8 @@ let print_defs defs =
     | TreatNullAs t -> squish [text "TreatNullAs="; print_typ t]
     | AllowAny -> text "AllowAny"
     | NoScript -> text "noscript"
+    | NotXPCOM -> text "notxpcom"
+    | Retval -> text "retval"
     | Optional -> text "optional"
     | OptionalArgc -> text "optional_argc"
     | Clamp -> text "Clamp"
@@ -145,8 +149,9 @@ let print_defs defs =
     | Array t -> squish [print_typ t; text "[]"]
     | Ques t -> squish [print_typ t; text "?"]
     | Sequence t -> squish [text "sequence"; angles (print_typ t)]
+    | Native t -> squish[text "native"; parens (text t)]
   and print_mems mems = List.map (fun m -> squish [print_mem m; text ";"]) (sort_members mems)
-  and sort_members mems = List.sort (fun m1 m2 -> 
+  and sort_members mems = List.stable_sort (fun m1 m2 -> 
     let order mem = match mem with
       | ConstMember _ -> 0
       | Attribute _ -> 1

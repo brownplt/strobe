@@ -178,7 +178,13 @@ let load_idl_file filename =
   idl_defs := !idl_defs @ Simplify_idl.from_full full_idl
 
 let compile_env () : unit = 
-  Print_full_idl.print_defs !full_idl_defs
+  full_idl_defs := Sanitize.resolve_typedefs (Sanitize.remove_dupes !full_idl_defs);
+  (match (Sanitize.sanity_check !full_idl_defs) with
+  | [] -> Printf.printf "All native types are properly non-scriptable\n"
+  | ids -> Printf.printf "Found identifiers that are native but not noscript!\n";
+    List.iter (fun id -> Printf.printf "  %s\n" id) ids);
+  Print_full_idl.print_defs !full_idl_defs;
+  Create_env.print_env !full_idl_defs
 
 let action = ref action_tc
 

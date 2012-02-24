@@ -15,6 +15,8 @@
                 "true" , TRUE ;
                 "false" , FALSE ;
                 "noscript" , NOSCRIPT ;
+                "notxpcom" , NOTXPCOM ;
+                "retval" , RETVAL ;
                 "optional_argc" , OPTIONAL_ARGC ;
                 (* "PRUnichar" , PRUnichar ; *)
                 (* "PRUint32" , PRUint32 ; *)
@@ -133,7 +135,7 @@ rule token = parse
    | '/' { DIVIDE }
    | '%' { MOD }
    | eof { EOF }
-   | "native" blank+ (ident as id) blank* "(" [^ ')'] * ")" { NATIVE id }
+   | "native" blank+ (ident as id) blank* "(" ([^ '(' ')' '\n']* as natid) ")" { NATIVE (id, natid) }
    | ident as id { 
      try
        Hashtbl.find keyword_table id
