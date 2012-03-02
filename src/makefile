@@ -1,9 +1,9 @@
 .PHONY = debug prof opt clean
-OCAMLBUILD = ocamlbuild -build-dir ../obj -quiet  -cflags -annot -menhir "menhir --stdlib \"C:\cygwin\usr\local\share\menhir\""
+OCAMLBUILD = ocamlbuild -build-dir ../obj -quiet -cflags -annot
 
 $(shell mkdir -p ../obj)
 
-all: 
+all:
 	$(OCAMLBUILD) main.d.byte
 	ln -sf obj/main.d.byte ../run
 
