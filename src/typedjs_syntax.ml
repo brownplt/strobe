@@ -33,7 +33,7 @@ module TypImpl = Typ.Make (P)
 
 include TypImpl
 
-let typ_bool = TUnion (TPrim (True), TPrim (False))
+let typ_bool = TUnion (TPrim "True", TPrim "False")
 
 let any_fld = P.all
 
@@ -92,7 +92,7 @@ module WritTyp = struct
   type t = 
     | Str
     | Bool
-    | Prim of prim
+    | Prim of string
     | Union of t * t
     | Inter of t * t
     | Arrow of t option * t list * t (** [Arrow (this, args, result)] *)

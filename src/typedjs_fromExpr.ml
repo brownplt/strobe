@@ -142,7 +142,7 @@ let rec exp (env : env) expr = match expr with
       ETryFinally (a, exp env body, exp env finally)
   | ThrowExpr (a, e) -> EThrow (a, exp env e)
   | WhileExpr (a, e1, e2) ->
-      let loop_typ = TArrow ([], TPrim Undef) in
+      let loop_typ = TArrow ([], TPrim "Undef") in
         ERec ([("%loop", loop_typ,
                 EAssertTyp (a, loop_typ, 
                             EFunc (a, [], { func_loop = true;
@@ -153,7 +153,7 @@ let rec exp (env : env) expr = match expr with
                             EConst (a, S.CUndefined)))))],
               EApp (a, EId (a, "%loop"), []))
   | DoWhileExpr (a, body_e, test_e) ->
-      let loop_typ = TArrow ([], TPrim Undef) in
+      let loop_typ = TArrow ([], TPrim "Undef") in
         ERec ([("%loop", loop_typ,
                 EAssertTyp (a, loop_typ,
                 EFunc (a, [], { func_loop = true;
@@ -179,7 +179,7 @@ let rec exp (env : env) expr = match expr with
   | FuncStmtExpr (p, _, _, _) ->
       raise (Not_well_formed (p, "funcasdasdtion is missing a type annotation"))
   | ForInExpr (p, x, obj, body) ->
-    let loop_typ = TArrow ([forin_ix_typ], TPrim Undef) in
+    let loop_typ = TArrow ([forin_ix_typ], TPrim "Undef") in
     ERec ([("%loop", loop_typ,
             EAssertTyp (p, loop_typ, 
             EFunc (p, [x], {func_loop = true;

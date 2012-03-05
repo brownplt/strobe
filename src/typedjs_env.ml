@@ -69,7 +69,7 @@ let typ_union env = TypImpl.typ_union env.typ_ids
 let typ_intersect env = TypImpl.typ_intersect env.typ_ids
 
 let simpl_static env (typ : typ) (rt : RT.t) : typ = match rt with
-  | RT.Num -> typ_union env (TPrim Num) typ
+  | RT.Num -> typ_union env (TPrim "Num") typ
   | RT.Re _ -> typ_union env (TRegex any_fld) typ
   | RT.Bool -> typ_union env typ_bool typ
   | RT.Function ->
@@ -79,7 +79,7 @@ let simpl_static env (typ : typ) (rt : RT.t) : typ = match rt with
   | RT.Object -> (* TODO(arjun): This should be a type operator invocation *)
     typ_union env (TObject (mk_obj_typ
                               [(proto_pat, Present, TId "Object")] P.empty)) typ
-  | RT.Undefined -> typ_union env (TPrim Undef) typ
+  | RT.Undefined -> typ_union env (TPrim "Undef") typ
 
 let rtany = 
   RTSetExt.from_list
@@ -101,12 +101,13 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
         | Some re -> TRegex re
         | None -> typ
     else TBot
-  | TPrim (Num) 
-  | TPrim (True)
-  | TPrim (False) -> if RTSet.mem RT.Bool rt then typ else TBot
-  | TPrim (Null) -> if RTSet.mem RT.Object rt then typ else TBot
-  | TPrim (Undef) -> 
+  | TPrim "Num"
+  | TPrim "True"
+  | TPrim "False" -> if RTSet.mem RT.Bool rt then typ else TBot
+  | TPrim "Null" -> if RTSet.mem RT.Object rt then typ else TBot
+  | TPrim "Undef" -> 
     if RTSet.mem RT.Undefined rt then typ else TBot
+  | TPrim s -> failwith ("**" ^ s ^ "**")
   (* any other app will be an object from a constructor *)
   | TRef (TObject _) -> if RTSet.mem RT.Object rt then typ else TBot
   | TObject _ -> failwith "Static got a functional object"

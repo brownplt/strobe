@@ -33,13 +33,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   module Pat = Pat
   type pat = P.t
 
-  type prim =
-    | Num
-    | True
-    | False
-    | Undef
-    | Null
-
   type kind = 
     | KStar
     | KArrow of kind list * kind
@@ -50,7 +43,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | Maybe
   
   type typ = 
-    | TPrim of prim
+    | TPrim of string
     | TUnion of typ * typ
     | TIntersect of typ * typ
     | TArrow of typ list * typ
@@ -106,13 +99,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     let rec typ t  = match t with
       | TTop -> text "Any"
       | TBot -> text "DoesNotReturn"
-      | TPrim p -> text begin match p with
-    | Num -> "Num"
-    | True -> "True"
-    | False -> "False"
-    | Null -> "Null"
-    | Undef -> "Undef"
-      end
+      | TPrim p -> text p
       | TLambda (args, t) -> 
   let p (x, k) = horz [ text x; text "::"; kind k ] in
   horz [ text "Lambda "; horz (map p args); text "."; typ t ]
@@ -391,7 +378,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
        match P.is_subset (pat_env env) proto_pat pat with
       | true -> begin match pres with
         | Present -> begin match expose env (simpl_typ env fld) with
-          | TPrim Null -> Some (TPrim Null)
+          | TPrim "Null" -> Some (TPrim "Null")
           | TSource p
           | TRef p -> Some (expose env (simpl_typ env p))
           | _ -> raise (Invalid_parent ("__proto__ is "^ (string_of_typ fld)))
@@ -417,7 +404,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TObject ot ->
           begin match parent_typ env t with
             | None
-            | Some (TPrim Null) ->
+            | Some (TPrim "Null") ->
               let f (pat, pres, _) = match pres with
                 | Inherited
                 | Present -> Some pat
@@ -485,14 +472,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
               (L.filter_map sel ot.fields)
               (match parent_typ env t with
                 | None
-                | Some (TPrim Null) -> TBot
+                | Some (TPrim "Null") -> TBot
                 | Some parent_typ -> 
             inherits p env parent_typ 
               (P.intersect pat (maybe_pats ot)))
           | _ -> failwith "lookup non-object"
                end
       else begin match parent_typ env t with
-        | Some (TPrim Null) -> TPrim Undef
+        | Some (TPrim "Null") -> TPrim "Undef"
         | _ ->
           raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ 
                                " in:\n" ^ string_of_typ orig_t))

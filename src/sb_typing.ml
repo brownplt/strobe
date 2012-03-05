@@ -24,10 +24,10 @@ let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 let string_of_exp = FormatExt.to_string Typedjs_syntax.Pretty.p_exp
 
 let un_null t = match t with
-  | TUnion (TPrim (Undef), t') -> t'
-  | TUnion (t', TPrim (Undef)) -> t'
-  | TUnion (TPrim (Null), t') -> t'
-  | TUnion (t', TPrim (Null)) -> t'
+  | TUnion (TPrim "Undef", t') -> t'
+  | TUnion (t', TPrim "Undef") -> t'
+  | TUnion (TPrim "Null", t') -> t'
+  | TUnion (t', TPrim "Null") -> t'
   | _ -> t
 
 let check_kind p env typ : typ =
@@ -190,7 +190,7 @@ and synth (env : env) (exp : exp) : typ = match exp with
     end
   | ELabel (p, lbl, e) -> 
     (* This is a valid assumption for JavaScript. *)
-    synth (bind_lbl lbl (TPrim Undef) env) e
+    synth (bind_lbl lbl (TPrim "Undef") env) e
   | EBreak (p, lbl, e) ->
     let lbl_typ = 
       try lookup_lbl lbl env

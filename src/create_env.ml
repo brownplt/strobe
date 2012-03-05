@@ -156,14 +156,14 @@ let print_env defs =
     | Byte 
     | Octet
     | Float
-    | Double -> TPrim Num
-    | Boolean -> TUnion ((TPrim True), (TPrim False))
+    | Double -> TPrim "Num"
+    | Boolean -> TUnion (TPrim "True", TPrim "False")
     | DOMString -> TId "DOMString"
     | Date -> TId "Date"
     | Object -> TObject (mk_obj_typ [] P.all)
     | Any -> TTop
-    | Void -> TPrim Undef
-    | Ques t -> TUnion ((TPrim Null), (trans_typ tt t))
+    | Void -> TPrim "Undef"
+    | Ques t -> TUnion (TPrim "Null", trans_typ tt t)
     | Native s -> TId s
     | Name n -> begin match n with
       | RelativeName [id] -> TId (Id.string_of_id id)

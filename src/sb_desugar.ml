@@ -37,7 +37,7 @@ let assert_overlap pat1 pat2 = match P.example (P.intersect pat1 pat2) with
 let rec typ (writ_typ : W.t) : typ = match writ_typ with
   | W.Str -> TRegex P.all
   | W.Prim p -> TPrim p
-  | W.Bool -> TUnion (TPrim True, TPrim False)
+  | W.Bool -> TUnion (TPrim "True", TPrim "False")
   | W.Union (t1, t2) -> TUnion (typ t1, typ t2)
   | W.Inter (t1, t2) -> TIntersect (typ t1, typ t2)
   | W.Arrow (None, args, r) -> TArrow (map typ args, typ r)

@@ -84,14 +84,6 @@ module type TYP = sig
 
   type pat = Pat.t
 
-
-  type prim =
-    | Num
-    | True
-    | False
-    | Undef
-    | Null
-
   type kind = 
     | KStar
     | KArrow of kind list * kind
@@ -102,7 +94,7 @@ module type TYP = sig
     | Maybe
   
   type typ = 
-    | TPrim of prim
+    | TPrim of string
     | TUnion of typ * typ
     | TIntersect of typ * typ
     | TArrow of typ list * typ

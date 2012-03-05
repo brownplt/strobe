@@ -74,13 +74,13 @@ typ_list :
 
 arg_typ
   : ANY { W.Top }
-  | NUM { W.Prim Num }
+  | NUM { W.Prim "Num" }
   | STR { W.Str }
   | BOOL { W.Bool }
-  | TRUE { W.Prim True }
-  | FALSE { W.Prim False }
-  | UNDEF { W.Prim Undef }
-  | NULL { W.Prim Null }
+  | TRUE { W.Prim "True" }
+  | FALSE { W.Prim "False" }
+  | UNDEF { W.Prim "Undef" }
+  | NULL { W.Prim "Null" }
   | REGEX { W.Pat (P.parse $startpos $1) }
   | arg_typ UNION arg_typ { W.Union ($1, $3) }
   | arg_typ INTERSECTION arg_typ { W.Inter ($1, $3) }

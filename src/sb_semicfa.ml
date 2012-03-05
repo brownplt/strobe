@@ -230,11 +230,12 @@ end = struct
       | TUnion (t1, t2) -> RTSet.union (rt t1) (rt t2)
       | TIntersect (t1, t2) -> RTSet.union (rt t1) (rt t2)
       | TPrim (s) -> begin match s with
-          | Num
-          | True
-          | False -> RTSet.singleton RT.Bool
-          | Null -> RTSet.singleton RT.Object
-          | Undef -> RTSet.singleton RT.Undefined
+          | "Num"
+          | "True"
+          | "False" -> RTSet.singleton RT.Bool
+          | "Null" -> RTSet.singleton RT.Object
+          | "Undef" -> RTSet.singleton RT.Undefined
+          | _ -> rtany (* TODO(arjun): print a warning? *)
       end
       | TRegex pat -> RTSet.singleton (RT.Re pat)
       | TObject _ -> RTSet.singleton RT.Object

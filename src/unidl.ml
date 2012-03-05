@@ -15,18 +15,18 @@ end = struct
     | Long _ 
     | LongLong _
     | Octet
-    | Byte -> TPrim Num
+    | Byte -> TPrim "Num"
     | Float
-    | Double -> TPrim Num
+    | Double -> TPrim "Num"
     | DOMString -> TRegex Pat.all
-    | Date -> TPrim Null (* TODO(arjun): wrong *)
+    | Date -> TPrim "Null" (* TODO(arjun): wrong *)
     | Any -> TTop
-    | Boolean -> TUnion (TPrim True, TPrim False)
+    | Boolean -> TUnion (TPrim "True", TPrim "False")
     | Object -> TTop
     | Name n -> TApp (TId (scopedName n), [])
-    | Void -> TPrim Undef (* TUnion (TPrim Null, TPrim Undef) *)
+    | Void -> TPrim "Undef" 
     | Array t' -> TApp (TId "Array", [from_typ t'])
-    | Ques t' -> TUnion (from_typ t', TPrim Undef)
+    | Ques t' -> TUnion (from_typ t', TPrim "Undef")
     | Sequence t' -> TApp (TId "Array", [from_typ t']) (* TODO(arjun): WRONG *)
 
   
