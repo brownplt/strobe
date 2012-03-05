@@ -5,6 +5,9 @@ exception Kind_error of string
 
 type kind_env = kind IdMap.t
 
+let valid_prims = 
+  ref (IdSetExt.from_list [ "Null"; "Undef"; "True"; "False"; "Num" ])
+
 let kind_mismatch typ calculated_kind expected_kind = 
   raise 
     (Kind_error 
@@ -17,8 +20,12 @@ let kind_mismatch typ calculated_kind expected_kind =
 let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
   | TTop
   | TBot
-  | TRegex _
-  | TPrim _ -> KStar
+  | TRegex _ -> KStar
+  | TPrim s -> 
+    if IdSet.mem s !valid_prims then 
+      KStar
+    else
+      raise (Kind_error (s ^ " is not a primitive type"))
   | TUnion (t1, t2)
   | TIntersect (t1, t2) ->
     begin match kind_check env t1, kind_check env t2 with
