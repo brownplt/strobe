@@ -12,11 +12,11 @@ let rec remove_this op = match op with
 
 %}
 
-%token <string> ID TID STRING REGEX
-%token ARROW LPAREN RPAREN ANY STAR COLON EOF NUM UNION STR
-       UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
+%token <string> ID TID STRING REGEX PRIM
+%token ARROW LPAREN RPAREN ANY STAR COLON EOF UNION STR
+       BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
-       CHEAT NULL TRUE FALSE REC INTERSECTION UNDERSCORE BAD
+       CHEAT TRUE FALSE REC INTERSECTION UNDERSCORE BAD
        HASHBRACE EQUALS TYPE QUES BANG TYPREC TYPLAMBDA THICKARROW
        COLONCOLON CARET LLBRACE RRBRACE REF
 
@@ -74,13 +74,9 @@ typ_list :
 
 arg_typ
   : ANY { W.Top }
-  | NUM { W.Prim "Num" }
+  | PRIM { W.Prim $1 }
   | STR { W.Str }
   | BOOL { W.Bool }
-  | TRUE { W.Prim "True" }
-  | FALSE { W.Prim "False" }
-  | UNDEF { W.Prim "Undef" }
-  | NULL { W.Prim "Null" }
   | REGEX { W.Pat (P.parse $startpos $1) }
   | arg_typ UNION arg_typ { W.Union ($1, $3) }
   | arg_typ INTERSECTION arg_typ { W.Inter ($1, $3) }
@@ -120,10 +116,9 @@ typ_ann :
 
 any_id :
   | ID { $1 }
+  | PRIM { $1 }
   | STR { "Str" }
-  | UNDEF { "Undef" }
   | BOOL { "Bool" }
-  | NUM { "Num" }
 
 id_list :
   | { [] }
