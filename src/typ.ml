@@ -3,8 +3,6 @@ open Sig
 
 module L = ListExt
 
-
-
 module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   exception Typ_error of pos * string
@@ -30,7 +28,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       end
 
   let get_num_typ_errors () = !num_typ_errors
-
 
   module P = Pat
   module Pat = Pat
@@ -381,10 +378,10 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   let pat_env (env : typenv) : pat IdMap.t =
     let select_pat_bound (x, (t, _)) = match t with
       | TRegex p -> Some (x, p)
-  | _ -> None in
-      L.fold_right (fun (x,p) env -> IdMap.add x p env)
-  (L.filter_map select_pat_bound (IdMap.bindings env))
-  IdMap.empty
+      | _ -> None in
+    L.fold_right (fun (x,p) env -> IdMap.add x p env)
+      (L.filter_map select_pat_bound (IdMap.bindings env))
+      IdMap.empty
 
   exception Invalid_parent of string
 
@@ -545,18 +542,18 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | TRef s, TSource t -> subtype cache s t
         | TRef s, TSink t -> subtype cache t s
         | TForall (x1, s1, t1), TForall (x2, s2, t2) -> 
-    (* Kernel rule *)
-    (* TODO: ensure s1 = s2 *)
-    let cache' = subt env (subt env cache s1 s2) s2 s1 in
-    let t2 = typ_subst x2 (TId x1) t2 in
+          (* Kernel rule *)
+          (* TODO: ensure s1 = s2 *)
+          let cache' = subt env (subt env cache s1 s2) s2 s1 in
+          let t2 = typ_subst x2 (TId x1) t2 in
           let env' = IdMap.add x1 (s1, KStar) env in
-    subt env' cache' t1 t2
+          subt env' cache' t1 t2
         | _, TTop -> cache
         | TBot, _ -> cache
-  | TLambda ([(x, KStar)], s), TLambda ([(y, KStar)], t) ->
-    let env = IdMap.add x (TTop, KStar) env in
-    let env = IdMap.add y (TTop, KStar) env in
-    subt env cache s t
+        | TLambda ([(x, KStar)], s), TLambda ([(y, KStar)], t) ->
+          let env = IdMap.add x (TTop, KStar) env in
+          let env = IdMap.add y (TTop, KStar) env in
+          subt env cache s t
         | _ -> mismatched_typ_exn s t
 
   (* Check that an "extra" field is inherited *)
