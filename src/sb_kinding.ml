@@ -5,8 +5,7 @@ exception Kind_error of string
 
 type kind_env = kind IdMap.t
 
-let valid_prims = 
-  ref (IdSetExt.from_list [ "Null"; "Undef"; "True"; "False"; "Num" ])
+let valid_prims = ref (IdSetExt.from_list [ ])
 
 let new_prim_typ (s : string) : unit =
   if IdSet.mem s !valid_prims then

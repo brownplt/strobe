@@ -182,6 +182,9 @@ let extend_global_env env lst =
         let k = kind_check env t in
         { env with 
           typ_ids = IdMap.add x (t, k) env.typ_ids }
+    | EnvPrim (p, s) ->
+      Sb_kinding.new_prim_typ  s;
+      env
   in List.fold_left add env lst
 
 

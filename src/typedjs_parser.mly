@@ -18,7 +18,7 @@ let rec remove_this op = match op with
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
        CHEAT TRUE FALSE REC INTERSECTION UNDERSCORE BAD
        HASHBRACE EQUALS TYPE QUES BANG TYPREC TYPLAMBDA THICKARROW
-       COLONCOLON CARET LLBRACE RRBRACE REF
+       COLONCOLON CARET LLBRACE RRBRACE REF PRIMITIVE
 
 %right UNION INTERSECTION THICKARROW REF
 %left LANGLE
@@ -134,6 +134,7 @@ env_decl :
   | ID COLON typ { EnvBind (($startpos, $endpos), $1, W.Ref $3) }
   | OPERATOR STRING COLON typ 
       { EnvBind (($startpos, $endpos), $2, remove_this $4) }
+  | PRIMITIVE PRIM { EnvPrim (($startpos, $endpos), $2) }
 
 env_decls
   : { [] }
