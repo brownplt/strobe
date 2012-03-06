@@ -19,16 +19,16 @@ let print_env outch env : unit =
   vert (List.concat 
           [[text "Types of term identifiers:"];
            List.map (fun (id, t) -> 
-             horz [text id; text ":"; Pretty.typ t]) (IdMapExt.to_list env.id_typs);
+             horz [text id; text "="; Pretty.typ t]) (IdMapExt.to_list env.id_typs);
            [text ""; text "Primitive types:"];
            List.map text (Sb_kinding.list_prims ());
            [text ""; text "Types of labels:"];
            List.map (fun (id, t) -> 
-             horz[text id; text ":"; Pretty.typ t]) (IdMapExt.to_list env.lbl_typs);
+             horz[text id; text "="; Pretty.typ t]) (IdMapExt.to_list env.lbl_typs);
            [text ""; text "Bounded type variables:"];
            List.map (fun (id, (t, k)) -> 
              horz[text id; 
-                  vert [horz [text ":"; Pretty.typ t];
+                  vert [horz [text "="; Pretty.typ t];
                         horz [text "::"; text (string_of_kind k)]]]) (IdMapExt.to_list env.typ_ids)]) 
     (Format.formatter_of_out_channel outch)
 

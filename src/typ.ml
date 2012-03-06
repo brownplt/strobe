@@ -107,7 +107,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         horz [ text "Fix "; text x; text "::"; kind k; typ t ]
       | TApp (t, ts) ->
         (match ts with
-        | [] -> typ t
+        | [] -> horz [typ t; text "<>"]
         | _ -> parens (horz [typ t; angles (horz (intersperse (text ",") (map typ ts)))]))
       | TRegex pat -> text (P.pretty pat)
       | TUnion (t1, t2) ->
@@ -467,25 +467,27 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       let t = expose env (simpl_typ env orig_t) in
       if P.is_subset (pat_env env) pat (inherit_guard_pat env t) then
         begin match t with
-          | TObject ot -> 
-            let sel (f_pat, _, f_prop) =
-              if P.is_overlapped f_pat pat then Some f_prop
-              else None in
-            L.fold_right (fun s t -> typ_union env s t)
-              (L.filter_map sel ot.fields)
-              (match parent_typ env t with
-                | None
-                | Some (TPrim "Null") -> TBot
-                | Some parent_typ -> 
-            inherits p env parent_typ 
-              (P.intersect pat (maybe_pats ot)))
-          | _ -> failwith "lookup non-object"
-               end
+        | TObject ot -> 
+          let sel (f_pat, _, f_prop) =
+            if P.is_overlapped f_pat pat then Some f_prop
+            else None in
+          L.fold_right (fun s t -> typ_union env s t)
+            (L.filter_map sel ot.fields)
+            (match parent_typ env t with
+            | None
+            | Some (TPrim "Null") -> TBot
+            | Some parent_typ -> 
+              let check_parent_pat = (P.intersect pat (maybe_pats ot)) in
+              (* Printf.printf "pat: %s\nmaybe_pat:%s\nintersect: %s%!" (P.pretty pat) (P.pretty (maybe_pats ot)) (P.pretty check_parent_pat); *)
+              inherits p env parent_typ check_parent_pat
+            )
+        | _ -> failwith "lookup non-object"
+        end
       else begin match parent_typ env t with
-        | Some (TPrim "Null") -> TPrim "Undef"
-        | _ ->
-          raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ 
-                               " in:\n" ^ string_of_typ orig_t))
+      | Some (TPrim "Null") -> TPrim "Undef"
+      | _ ->
+        raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ 
+          " in:\n" ^ string_of_typ orig_t))
       end
     with Invalid_parent msg -> raise (Typ_error (p, msg))
 

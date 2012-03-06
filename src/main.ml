@@ -177,6 +177,13 @@ let load_idl_file filename =
   full_idl_defs := !full_idl_defs @ full_idl;
   idl_defs := !idl_defs @ Simplify_idl.from_full full_idl
 
+let load_new_idl_file filename =
+  let full_idl = Idl.from_channel (open_in filename) filename in
+  full_idl_defs := !full_idl_defs @ full_idl
+
+let print_env () : unit =
+  print_env stdout (get_env())
+
 let compile_env () : unit =
   full_idl_defs := Sanitize.resolve_partials
     (Sanitize.resolve_typedefs (Sanitize.remove_dupes !full_idl_defs));
@@ -185,12 +192,21 @@ let compile_env () : unit =
   (* | ids -> Printf.printf "Found identifiers that are native but not noscript!\n"; *)
   (*   List.iter (fun id -> Printf.printf "  %s\n" id) ids); *)
   (* Print_full_idl.print_defs !full_idl_defs; *)
-  let (iids, idlEnv) = (Create_env.create_env !full_idl_defs) in
-  List.iter (fun iid -> Sb_kinding.new_prim_typ iid) iids;
-  set_env (extend_env idlEnv IdMap.empty (get_env ()))
+  let (iids, idlEnv, compsType) = (Create_env.create_env !full_idl_defs) in
+  List.iter Sb_kinding.new_prim_typ iids;
 
-let print_env () : unit =
-  print_env stdout (get_env())
+  set_env (List.fold_left (fun env (name, _, typ) -> 
+    match (P.singleton_string name) with
+    | Some name -> 
+      (* Printf.printf "Adding %s : %s to environment%!" name (string_of_typ typ); *)
+      bind_typ_id name typ env
+    | None -> 
+      Printf.printf "Got a pattern that isn't a singleton: %s%!" (P.pretty name);
+      env (* BSL: Should never happen *)) (get_env ()) idlEnv);
+  set_env (bind_id "Components" (TSource compsType) (get_env ()))
+  (* Printf.printf "****************************************\nDone compiling environment%!"; *)
+  (* set_env (extend_env idlEnv IdMap.empty (get_env ())) *)
+
 
 let action = ref action_tc
 
@@ -223,6 +239,8 @@ let main () : unit =
       ("-sb", Arg.Unit (set_sourcetype "sb"),
        "Parse strobe source");
       ("-idl", Arg.String load_idl_file,
+       "loads an IDL file");
+      ("-newidl", Arg.String load_new_idl_file,
        "loads an IDL file");
       ("-compile-env", Arg.Unit compile_env,
        "Generate environment from IDL");

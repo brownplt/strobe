@@ -96,7 +96,7 @@ let sanity_check defs =
   in List.concat (List.map check_def defs)
 
 let remove_dupes defs =
-  let sorted = Print_full_idl.sort_defs defs in
+  let sorted = (* Print_full_idl.sort_defs *) defs in
   let rec remove_next defs = match defs with
     | d1::((d2::rest) as tail) ->
       let equals = begin match d1, d2 with

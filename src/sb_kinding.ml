@@ -61,7 +61,7 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
     begin 
       try IdMap.find x env
       with Not_found ->
-  raise (Kind_error (sprintf "type variable %s is unbound" x))
+        raise (Kind_error (sprintf "type variable %s is unbound" x))
     end
   | TForall (x, t1, t2) ->
     begin match kind_check env t1, kind_check (IdMap.add x KStar env) t2 with

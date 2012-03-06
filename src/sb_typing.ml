@@ -349,7 +349,7 @@ and synth (env : env) (exp : exp) : typ = match exp with
         | not_func_typ -> 
           (* even in an intersection, this should count as a genuine error *)
           raise (Typ_error (p,
-                            sprintf "WTF?? expected function, got %s" 
+                            sprintf "expected function, got %s" 
                               (string_of_typ not_func_typ)))
       end in 
     check_app (un_null (synth env f))

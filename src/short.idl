@@ -1,0 +1,101 @@
+[scriptable, uuid(00000000-0000-0000-c000-000000000046)]
+interface nsISupports {
+  void QueryInterface(in any uuid, 
+                      [iid_is(uuid),retval] out any result);
+  [noscript, notxpcom] any AddRef();
+  [noscript, notxpcom] any Release();
+};
+
+[scriptable, uuid(c8c0a080-0868-11d3-915f-d9d889d48e3c)]
+interface nsIFile : nsISupports
+{
+    const unsigned long NORMAL_FILE_TYPE = 0;
+    const unsigned long DIRECTORY_TYPE   = 1;
+
+    void append(in Str node);
+    [noscript] void appendNative(in Str node);
+
+    void normalize();
+
+    [unsafe] void create(in unsigned long type, in unsigned long permissions);
+
+    attribute Str leafName;
+    [noscript] attribute Str nativeLeafName;
+
+    void copyTo(in nsIFile newParentDir, in Str newName);
+    [noscript] void CopyToNative(in nsIFile newParentDir, in Str newName);
+
+    void copyToFollowingLinks(in nsIFile newParentDir, in Str newName);
+    [noscript] void copyToFollowingLinksNative(in nsIFile newParentDir, in Str newName);
+
+    void moveTo(in nsIFile newParentDir, in Str newName);
+    [noscript] void moveToNative(in nsIFile newParentDir, in Str newName);
+
+    void remove(in boolean recursive);
+
+    attribute unsigned long permissions;
+    attribute unsigned long permissionsOfLink;
+
+    attribute long long lastModifiedTime;
+    attribute long long lastModifiedTimeOfLink;
+
+    attribute long long fileSize;
+    readonly attribute long long fileSizeOfLink;
+
+    readonly attribute Str target;
+    [noscript] readonly attribute Str nativeTarget;
+    readonly attribute Str path;
+    [noscript] readonly attribute Str nativePath;
+
+    boolean exists();
+    boolean isWritable();
+    boolean isReadable();
+    boolean isExecutable();
+    boolean isHidden();
+    boolean isDirectory();
+    boolean isFile();
+    boolean isSymlink();
+    boolean isSpecial();
+
+    [unsafe] void createUnique(in unsigned long type, in unsigned long permissions);
+    nsIFile clone();
+
+    boolean equals(in nsIFile inFile);
+
+    boolean contains(in nsIFile inFile, in boolean recur);
+
+    readonly attribute nsIFile parent;
+};
+
+[scriptable, uuid(4b731983-9542-49f4-b16b-de68ad1c2068)]
+interface nsIPrivateBrowsingService : nsISupports
+{
+    [PrivateBrowsingCheck] attribute boolean privateBrowsingEnabled;
+
+    readonly attribute boolean autoStarted;
+
+    readonly attribute boolean lastChangedByCommandLine;
+
+    void removeDataFromDomain(in Str aDomain);
+};
+[scriptable, uuid(baedc96a-9cee-4b6b-9160-90d257b3c8ef)]
+interface nsIJSID : nsISupports
+{
+    readonly attribute Str  name;
+    readonly attribute Str  number;
+    readonly attribute boolean valid;
+
+    boolean equals(in nsIJSID other);
+
+    void initialize(in Str idString);
+
+    Str toString();
+
+    [notxpcom] const_nsID_ptr getID();
+};
+[scriptable, uuid(bf5eb086-9eaa-4694-aec3-fe4aac6119bd)]
+interface nsIJSCID : nsIJSID
+{
+    [implicit_jscontext,optional_argc] any createInstance([optional] in any iid);
+    [implicit_jscontext,optional_argc] any getService([optional] in any iid);
+};

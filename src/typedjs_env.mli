@@ -48,6 +48,8 @@ exception Not_wf_typ of string
 
   val bind_typ : env -> typ -> env * typ
 
+  val bind_typ_id : id -> typ -> env -> env
+
 
 val parse_env : in_channel -> string -> env_decl list
 
