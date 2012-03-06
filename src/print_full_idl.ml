@@ -120,6 +120,7 @@ let rec print_defs defs =
     | Optional -> text "optional"
     | OptionalArgc -> text "optional_argc"
     | PrivateBrowsingCheck -> text "PrivateBrowsingCheck"
+    | QueryInterfaceType -> text "QueryInterfaceType"
     | Unsafe -> text "unsafe"
     | Clamp -> text "Clamp"
     | Scriptable -> text "Scriptable"

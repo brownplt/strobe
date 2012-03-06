@@ -49,19 +49,21 @@ let create_env defs =
   let isScriptable metas = List.exists (fun m -> m = Scriptable) metas in
   let isPrivateBrowsingCheck metas = List.exists (fun m -> m = PrivateBrowsingCheck) metas in
   let isUnsafe metas = List.exists (fun m -> m = Unsafe) metas in
+  let isQueryInterfaceType metas = List.exists (fun m -> m = QueryInterfaceType) metas in
   let isRetval metas = List.exists (fun m -> m = Retval) metas in
   let rec trans_toplevel defs =
-    let interfaces = (filterNone (List.map (trans_def TBot) (defs))) in
-    let (iids, componentsAndCID, compType) = build_components (defs) in
-    (iids, (interfaces @ componentsAndCID), compType)
+    let (iids, componentsAndCID, compType, queryInterfaceType) = build_components (defs) in
+    let interfaces = (filterNone (List.map (trans_def TBot queryInterfaceType) (defs))) in
+    let iids = List.map (fun iid -> (P.singleton iid, Present, TSource (TObject (mk_obj_typ [(proto_pat, Present, TId "nsIJSIID")] (P.negate proto_pat))))) iids in
+    ([], (componentsAndCID :: iids @ interfaces), compType)
   and trans_defs tt defs = 
-    let interfaces = (filterNone (List.map (trans_def tt) (defs))) in
-    let (_, componentsAndCID, _) = build_components (defs) in
-    let allFields = interfaces @ componentsAndCID in
+    let (_, componentsAndCID, _, queryInterfaceType) = build_components (defs) in
+    let interfaces = (filterNone (List.map (trans_def tt queryInterfaceType) (defs))) in
+    let allFields = componentsAndCID :: interfaces in
     let catchallPat = match allFields with
       | [] -> P.all
       | hd::tl -> P.negate (List.fold_left P.union (fst3 hd) (List.map fst3 tl)) in
-    TSource ((* TRef *) (TObject (mk_obj_typ (interfaces @ componentsAndCID) catchallPat)))
+    TSource ((* TRef *) (TObject (mk_obj_typ allFields catchallPat)))
   and build_components defs = 
     let interfaceToIIDFieldAndFun def =
       match def with
@@ -70,8 +72,8 @@ let create_env defs =
         then None
         else let iidName = (Id.string_of_id name) ^ "_IID" in
              Some (iidName,
-                   (idToPat name, Present, TPrim iidName),
-                   TArrow ([TId "nsIJSCID"; TPrim iidName], (* TSource *) (TId (Id.string_of_id name))))
+                   (idToPat name, Present, TId iidName),
+                   (fun tself -> TArrow ([tself; TId iidName], (TId (Id.string_of_id name)))))
       | _ -> None in
     let unzip3 abcs =
       let rec helper abcs aas bbs ccs =
@@ -90,38 +92,30 @@ let create_env defs =
       TSource ((* TRef *) (TObject (mk_obj_typ [(P.singleton "interfaces", Present, compInterface);
                                           (P.singleton "classes", Present, compClasses);
                                           proto] P.empty))) in
-    let queryInterfaceType = match funs with
+    let queryInterfaceType tself = match funs with
       | [] -> TBot (* absurd *)
-      | [ty] -> ty
-      | f::fs -> List.fold_left (fun f acc -> TIntersect (f, acc)) f fs in
-    let jscidType = 
-      TSource ((* TRef *) (TObject (mk_obj_typ 
-                                [(P.singleton "getService", Present, queryInterfaceType);
-                                 (P.singleton "createInstance", Present, queryInterfaceType);
-                                 (proto_pat, Present, (TId "nsIJSID"))]
-                                P.empty))) in
+      | [ty] -> ty tself
+      | f::fs -> List.fold_left (fun acc f -> TIntersect (f tself, acc)) (f tself) fs in
     (iids,
-     [(P.singleton "nsIJSCID", Present, jscidType);
-      (P.singleton "Components", Present, componentsType)],
-     componentsType)
-  and trans_def tt def = match def with
+     (P.singleton "Components", Present, componentsType),
+     componentsType, queryInterfaceType)
+  and trans_def tt queryInterfaceType def = match def with
     | Module (_, metas, name, defs) -> Some (idToPat name, Present, trans_defs tt defs)
     | Typedef _ -> None
     | Interface (_, metas, name, parent, members, isCallback) -> 
-      let transfields = trans_fields (TId (Id.string_of_id name)) members in
+      let tself = (TId (Id.string_of_id name)) in
+      let transfields = trans_fields tself (queryInterfaceType tself) members in
       let catchallPat = P.negate (List.fold_left P.union proto_pat (List.map fst3 transfields)) in
       let ifaceTyp = match parent with
         | None -> 
           let proto = (proto_pat, Present, (TId "Object")) in
-          TRec ("self", TSource ((* TRef  *)(TObject (mk_obj_typ (proto::transfields) catchallPat))))
+          TSource ((* TRef  *)(TObject (mk_obj_typ (proto::transfields) catchallPat)))
         | Some pName -> match pName with
           | RelativeName [id] -> 
-            TRec ("self",
-                  TSource ((* TRef *) 
+            TSource ((* TRef *) 
                     (TObject (mk_obj_typ ((proto_pat, Present, (TId (Id.string_of_id id)))
-                                          :: transfields) catchallPat))))
-          | _ -> TRec ("self",
-                       TSource ((* TRef *) (TObject (mk_obj_typ transfields catchallPat)))) (* absurd, won't happen *)
+                                          :: transfields) catchallPat)))
+          | _ -> TSource ((* TRef *) (TObject (mk_obj_typ transfields catchallPat))) (* absurd, won't happen *)
       in
       Some (idToPat name, Present, ifaceTyp)
     | ForwardInterface _ -> None
@@ -133,48 +127,45 @@ let create_env defs =
     | Callback _
     | Enum _
     | Include _ -> None
-  and trans_fields tt fields = filterNone (List.map (trans_field tt) fields)
-  and trans_field tt field = 
-    let tself = TId "self" in match field with
+  and trans_fields tt queryInterfaceType fields = filterNone (List.map (trans_field tt queryInterfaceType) fields)
+  and trans_field tself queryInterfaceType field = match field with
     | Attribute (_, metas, readOnly, stringifier, typ, name) ->
       if (isNoScript metas) then None
       else if (isPrivateBrowsingCheck metas) then Some (idToPat name, Present, (TPrim "True"))
       else if (isUnsafe metas) then Some (idToPat name, Present, TPrim "Unsafe")
-      else let t = trans_typ tt typ in 
+      else if (isQueryInterfaceType metas) then Some (idToPat name, Present, queryInterfaceType)
+      else let t = trans_typ typ in 
            let t = match readOnly with
              | NoReadOnly -> t
              | ReadOnly -> TSource t in
            Some (idToPat name, Present, t)
     | Operation (_, metas, stringifier, quals, typ, nameOpt, args) -> 
+      let returnField typ = match nameOpt with None -> None | Some name -> Some (idToPat name, Present, typ) in
       if (isNoScript metas) then None
-      else if (isUnsafe metas) then 
-        (match nameOpt with None -> None | Some name -> Some (idToPat name, Present, TPrim "Unsafe"))
-      else begin match nameOpt with
-      | None -> None (* return to this *)
-      | Some name -> 
-        match List.rev args with
-        | [] -> Some (idToPat name, Present, TArrow ([tself], trans_typ tt typ))
+      else if (isUnsafe metas) then returnField (TPrim "Unsafe")
+      else if (isQueryInterfaceType metas) then returnField queryInterfaceType
+      else returnField
+        (match List.rev args with
+        | [] -> TArrow ([tself], trans_typ typ)
         | lastArg::revArgs ->
         let (_, lastMetas, lastTyp, _, _, _) = lastArg in
         if (isRetval lastMetas) 
-        then Some (idToPat name, Present,
-                   TArrow (tself :: List.map (trans_arg tt) (List.rev revArgs), trans_typ tt lastTyp))
-        else Some (idToPat name, Present, 
-                   TArrow (tself :: List.map (trans_arg tt) args, trans_typ tt typ))
-      end
+        then TArrow (tself :: List.map (trans_arg tself) (List.rev revArgs), trans_typ lastTyp)
+        else TArrow (tself :: List.map (trans_arg tself) args, trans_typ typ)
+        )
     | ConstMember (_, metas, typ, id, value) -> 
       if (isNoScript metas)
       then None
-      else Some (idToPat id, Present, TSource (trans_typ tt typ))
+      else Some (idToPat id, Present, TSource (trans_typ typ))
     | Stringifier (_, metas) -> None
   and trans_arg tt (direction, metas, typ, variadic, id, defaultOpt) = 
     match direction with
-    | InParam -> trans_typ tt typ
+    | InParam -> trans_typ typ
     | OutParam -> 
-      TRef (TObject (mk_obj_typ [(P.singleton "value", Present, TSink (trans_typ tt typ))] P.empty))
+      TRef (TObject (mk_obj_typ [(P.singleton "value", Present, TSink (trans_typ typ))] P.empty))
     | InOutParam -> 
-      TRef (TObject (mk_obj_typ [(P.singleton "value", Present, (trans_typ tt typ))] P.empty))
-  and trans_typ tt typ = match typ with
+      TRef (TObject (mk_obj_typ [(P.singleton "value", Present, (trans_typ typ))] P.empty))
+  and trans_typ typ = match typ with
     | Short Unsigned 
     | Short NoUnsigned
     | Long Unsigned
@@ -191,15 +182,13 @@ let create_env defs =
     | Object -> TRef (TObject (mk_obj_typ [] P.all))
     | Any -> TTop
     | Void -> TPrim "Undef"
-    | Ques t -> TUnion (TPrim "Null", trans_typ tt t)
+    | Ques t -> TUnion (TPrim "Null", trans_typ t)
     | Native s -> TId s
     | Name n -> begin match n with
-      | RelativeName [id] -> 
-        let ret = TId (Id.string_of_id id) in
-        if ret = tt then TId "self" else ret
-      | _ -> TId "unknown"
+      | RelativeName [id] -> TId (Id.string_of_id id)
+      | _ -> TId "##unknown##"
     end
     | Array _
-    | Sequence _ -> TId "unknown"
+    | Sequence _ -> TId "##unknown##"
   in (trans_toplevel defs)
 

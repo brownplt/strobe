@@ -1,7 +1,7 @@
 [scriptable, uuid(00000000-0000-0000-c000-000000000046)]
 interface nsISupports {
-  void QueryInterface(in any uuid, 
-                      [iid_is(uuid),retval] out any result);
+  [QueryInterfaceType] void QueryInterface(in any uuid, 
+                                           [iid_is(uuid),retval] out any result);
   [noscript, notxpcom] any AddRef();
   [noscript, notxpcom] any Release();
 };
@@ -96,6 +96,12 @@ interface nsIJSID : nsISupports
 [scriptable, uuid(bf5eb086-9eaa-4694-aec3-fe4aac6119bd)]
 interface nsIJSCID : nsIJSID
 {
-    [implicit_jscontext,optional_argc] any createInstance([optional] in any iid);
-    [implicit_jscontext,optional_argc] any getService([optional] in any iid);
+  [implicit_jscontext,optional_argc,QueryInterfaceType] any createInstance([optional] in any iid);
+  [implicit_jscontext,optional_argc,QueryInterfaceType] any getService([optional] in any iid);
 };
+
+[scriptable, uuid(e76ec564-a080-4705-8609-384c755ec91e)]
+interface nsIJSIID : nsIJSID
+{
+};
+

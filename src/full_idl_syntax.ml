@@ -85,6 +85,7 @@ and meta =
   | NotXPCOM
   | NoScript
   | PrivateBrowsingCheck
+  | QueryInterfaceType
   | Unsafe
   | Retval
   | Optional

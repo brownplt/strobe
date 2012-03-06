@@ -51,6 +51,14 @@ let bind_typ_id (x : id) (t : typ) (env : env) =
   { env with 
     typ_ids = IdMap.add x (t, k) env.typ_ids }
 
+let bind_recursive_types (xts : (id * typ) list) (env : env) =
+  let env' = 
+    List.fold_left
+      (fun env (x, t) -> {env with typ_ids = IdMap.add x (t, KStar) env.typ_ids})
+      env 
+      xts in
+  List.fold_left (fun env (x, t) -> bind_typ_id x t env) env' xts
+
 let lookup_id x env = IdMap.find x env.id_typs
 
 let lookup_lbl x env = IdMap.find x env.lbl_typs

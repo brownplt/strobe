@@ -17,6 +17,7 @@
                 "noscript" , NOSCRIPT ;
                 "notxpcom" , NOTXPCOM ;
                 "PrivateBrowsingCheck" , PRIVATEBROWSINGCHECK ;
+                "QueryInterfaceType" , QUERYINTERFACETYPE ;
                 "unsafe" , UNSAFE ;
                 "retval" , RETVAL ;
                 "optional_argc" , OPTIONAL_ARGC ;

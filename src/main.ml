@@ -184,6 +184,9 @@ let load_new_idl_file filename =
 let print_env () : unit =
   print_env stdout (get_env())
 
+let print_idl () : unit =
+  Print_full_idl.print_defs !full_idl_defs
+
 let compile_env () : unit =
   full_idl_defs := Sanitize.resolve_partials
     (Sanitize.resolve_typedefs (Sanitize.remove_dupes !full_idl_defs));
@@ -195,14 +198,10 @@ let compile_env () : unit =
   let (iids, idlEnv, compsType) = (Create_env.create_env !full_idl_defs) in
   List.iter Sb_kinding.new_prim_typ iids;
 
-  set_env (List.fold_left (fun env (name, _, typ) -> 
+  set_env (bind_recursive_types (ListExt.filter_map (fun (name, _, typ) -> 
     match (P.singleton_string name) with
-    | Some name -> 
-      (* Printf.printf "Adding %s : %s to environment%!" name (string_of_typ typ); *)
-      bind_typ_id name typ env
-    | None -> 
-      Printf.printf "Got a pattern that isn't a singleton: %s%!" (P.pretty name);
-      env (* BSL: Should never happen *)) (get_env ()) idlEnv);
+    | Some name -> Some (name, typ)
+    | None -> None) idlEnv) (get_env ()));
   set_env (bind_id "Components" (TSource compsType) (get_env ()))
   (* Printf.printf "****************************************\nDone compiling environment%!"; *)
   (* set_env (extend_env idlEnv IdMap.empty (get_env ())) *)
@@ -242,6 +241,8 @@ let main () : unit =
        "loads an IDL file");
       ("-newidl", Arg.String load_new_idl_file,
        "loads an IDL file");
+      ("-print-idl", Arg.Unit print_idl,
+       "Print the current IDL data");
       ("-compile-env", Arg.Unit compile_env,
        "Generate environment from IDL");
       ("-print-env", Arg.Unit print_env,
