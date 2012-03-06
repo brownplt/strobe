@@ -10,3 +10,5 @@ exception Kind_error of string
 val new_prim_typ : string -> unit
 
 val kind_check : kind IdMap.t -> typ -> kind
+
+val list_prims : unit -> string list

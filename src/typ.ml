@@ -99,15 +99,16 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     let rec typ t  = match t with
       | TTop -> text "Any"
       | TBot -> text "DoesNotReturn"
-      | TPrim p -> text p
+      | TPrim p -> text ("@" ^ p)
       | TLambda (args, t) -> 
-  let p (x, k) = horz [ text x; text "::"; kind k ] in
-  horz [ text "Lambda "; horz (map p args); text "."; typ t ]
+        let p (x, k) = horz [ text x; text "::"; kind k ] in
+        horz [ text "Lambda "; horz (map p args); text "."; typ t ]
       | TFix (x, k, t) -> 
-  horz [ text "Fix "; text x; text "::"; kind k; typ t ]
+        horz [ text "Fix "; text x; text "::"; kind k; typ t ]
       | TApp (t, ts) ->
-  parens (horz [typ t; text "<"; horz (intersperse (text ",") (map typ ts));
-        text ">"])
+        (match ts with
+        | [] -> typ t
+        | _ -> parens (horz [typ t; angles (horz (intersperse (text ",") (map typ ts)))]))
       | TRegex pat -> text (P.pretty pat)
       | TUnion (t1, t2) ->
         let rec collectUnions t = match t with
@@ -151,10 +152,10 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
               text "->";
               typ r_typ ]
       | TArrow (arg_typs, r_typ) ->
-  horz[ horz (intersperse (text "*") 
+        horz[ horz (intersperse (text "*") 
                       (map (fun at -> begin match at with
-                        | TArrow _ -> parens (typ at)
-                        | _ -> typ at 
+                      | TArrow _ -> parens (typ at)
+                      | _ -> typ at 
                       end) arg_typs));
               text "->";
               typ r_typ ]
@@ -383,7 +384,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
           | TRef p -> Some (expose env (simpl_typ env p))
           | _ -> raise (Invalid_parent ("__proto__ is "^ (string_of_typ fld)))
           end
-        | _ -> raise (Invalid_parent "__proto__ must be present or hidden")
+        | _ -> raise (Invalid_parent ("Looking for field " ^ (P.pretty pat) ^ " and __proto__ must be present or hidden"))
         end
       | false -> parent_typ' env flds'
 
@@ -421,13 +422,15 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   let inherit_guard_pat env typ = match typ with
     | TObject ot -> begin match !(ot.cached_guard_pat) with
-  | None -> let pat = calc_inherit_guard_pat env typ in
-      ot.cached_guard_pat := Some pat;
-      pat
-  | Some pat -> pat
+      | None -> let pat = calc_inherit_guard_pat env typ in
+                ot.cached_guard_pat := Some pat;
+                pat
+      | Some pat -> pat
     end
-    | t -> raise (Invalid_argument ("expected object type, got " ^
-               (string_of_typ t)))
+    | t -> 
+      Printf.printf "Expected object type, got:\n%s\n" (string_of_typ t);
+      raise (Invalid_argument ("expected object type, got " ^
+                                  (string_of_typ t)))
 
   let maybe_pats ot = 
     let f (pat, pres, _) acc = match pres with
@@ -520,7 +523,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
                   with Invalid_argument _ -> mismatched_typ_exn s t
                 end
               | TId x, t -> 
-          subtype cache (fst2 (IdMap.find x env)) t
+                (try
+                   subtype cache (fst2 (IdMap.find x env)) t
+                 with Not_found -> Printf.printf "Cannot find %s in environment\n" x; raise Not_found)
         | TObject obj1, TObject obj2 ->
             subtype_object env cache obj1 obj2
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'

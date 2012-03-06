@@ -249,7 +249,7 @@ end = struct
         try rt_of_typ ids (IdMap.find x ids)
         with Not_found -> failwith (sprintf "tid %s not found in rt_of_typ" x)
       end
-      | TRec (_, t) -> rt t
+      | TRec (x, s) -> rt_of_typ (IdMap.add x t ids) s
       | TApp (t1, t2) -> rtany
       | TFix _
       | TLambda _ -> failwith "runtime type test on TFix / TLambda"

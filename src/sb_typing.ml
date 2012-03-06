@@ -35,7 +35,8 @@ let check_kind p env typ : typ =
     match kind_check env typ with
       | KStar -> typ
       | k ->
-        raise (Typ_error  (p, sprintf "type term has kind %s; expected *" 
+        raise (Typ_error  (p, sprintf "type %s has kind %s; expected *" 
+                                      (string_of_typ typ)
                                       (string_of_kind k)))
   with
     | Sb_kinding.Kind_error msg ->
@@ -63,7 +64,20 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
     consumed_owned_vars := IdSet.union !consumed_owned_vars
       func_info.func_owned;
     let owned_vars = IdSet.diff func_info.func_owned misowned_vars in
-    let expected_typ = check_kind p env typ in
+    let rec extract_arrow t = match t with
+      | TArrow _ -> Some t
+      | TUnion (t1, t2) -> 
+        let r1 = extract_arrow t1 in
+        let r2 = extract_arrow t2 in
+        (match r1, r2 with
+        | Some r, None
+        | None, Some r -> Some r
+        | _ -> None) 
+      | TForall _ -> Some t (* BSL : This seems incomplete; extract_arrow won't descend under a Forall *)
+      | _ -> None in
+    let expected_typ = match extract_arrow (check_kind p env (expose_simpl_typ env typ)) with
+      | Some t -> t
+      | None -> raise (Typ_error (p, sprintf "Ambiguous arrow type for Func")) in
     begin match bind_typ env (expose_simpl_typ env expected_typ) with
       | (env, TArrow (arg_typs, result_typ)) ->
         if not (List.length arg_typs = List.length args) then
@@ -181,6 +195,7 @@ and synth (env : env) (exp : exp) : typ = match exp with
   | ESetRef (p, e1, e2) -> 
     let t = expose_simpl_typ env (synth env e1) in
     begin match  t with
+      | TRef (TPrim "Unsafe") -> t (* BSL: PUNTING ON ASSIGNMENT TO UNSAFE *)
       | TRef s 
       | TSink s -> check env e2 s; t
       | s -> typ_mismatch p
@@ -212,8 +227,12 @@ and synth (env : env) (exp : exp) : typ = match exp with
     let t = synth env e in
     static env rt t
   | EIf (p, e1, e2, e3) ->
-    check env e1 typ_bool;
-    typ_union env (synth env e2) (synth env e3)
+    (match synth env e1 with
+    | TPrim "True" -> synth env e2
+    | TPrim "False" -> synth env e3
+    | t when subtype env t typ_bool ->
+      typ_union env (synth env e2) (synth env e3)
+    | _ -> raise (Typ_error (p, "Got non-bool type for condition of if expression")))
   | EObject (p, fields) ->
     let mk_field (name, exp) = 
       (P.singleton name, Present, synth env exp) in
@@ -295,6 +314,14 @@ and synth (env : env) (exp : exp) : typ = match exp with
                   with | Typ_error _ -> r1
                 end
               with | Typ_error _ -> check_app t2)
+        | TUnion (t1, t2) ->
+          let typ_or_err t = with_typ_exns (fun () -> try Some (check_app t) with Typ_error _ -> None) in
+          let r1 = typ_or_err t1 in
+          let r2 = typ_or_err t2 in
+          (match r1, r2 with
+          | Some r, None
+          | None, Some r -> r
+          | _ -> raise (Typ_error (p, sprintf "Ambiguous union of functions")))
         | (TForall _) as quant_typ -> 
           begin match Typ.forall_arrow quant_typ with
             | None -> 
@@ -319,10 +346,10 @@ and synth (env : env) (exp : exp) : typ = match exp with
               synth env (EApp (p, guessed_exp, assumed_arg_exps))
             | Some _ -> failwith "expected TArrow from forall_arrow"
           end
-        | not_func_typ ->
+        | not_func_typ -> 
           (* even in an intersection, this should count as a genuine error *)
           raise (Typ_error (p,
-                            sprintf "expected function, got %s" 
+                            sprintf "WTF?? expected function, got %s" 
                               (string_of_typ not_func_typ)))
       end in 
     check_app (un_null (synth env f))
@@ -335,7 +362,9 @@ and synth (env : env) (exp : exp) : typ = match exp with
     List.iter tc_bind binds;
     synth env body
   | EFunc (p, args, func_info, body) -> 
-    raise (Typ_error (p, "cannot calculate function type; annotation required"))
+    (* BSL: Synthesizing Ext *)
+    check env exp (TId "Ext") ;
+    (TId "Ext")
   | ESubsumption (p, t, e) ->
     let t = check_kind p env t in
     check env e t;
@@ -346,7 +375,6 @@ and synth (env : env) (exp : exp) : typ = match exp with
     t
   | EDowncast (p, t, e) -> 
     let t = check_kind p env t in
-    let (p1, p2) = Exp.pos e in 
     ignore (synth env e);
     t
   | ETypAbs (p, x, t, e) ->

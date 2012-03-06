@@ -47,6 +47,7 @@ let noQualifiers = {static=false;getter=false;setter=false;
        ALLOWANY PARTIAL SEQUENCE LANGLE RANGLE CLAMP NOSCRIPT OPTIONAL_ARGC NOTXPCOM RETVAL
        INCLUDE SCRIPTABLE IMPLICIT_JSCONTEXT INHERIT STATIC ENUM SIZE_IS
        BAR XOR AND SHLEFT SHRIGHT PLUS MINUS TILDE TIMES DIVIDE MOD TRUE FALSE
+       PRIVATEBROWSINGCHECK UNSAFE
        (* PRUint32 PRInt32 PRUint16 PRInt16 PRUnichar *)
 
 %type <Full_idl_syntax.definition list> idlFile
@@ -122,12 +123,16 @@ definition:
   | CONSTRUCTOR { Id.id_of_string "Constructor" }
   | NOTXPCOM { Id.id_of_string "notxpcom" }
   | RETVAL { Id.id_of_string "retval" }
+  | UNSAFE { Id.id_of_string "unsafe" }
+  | PRIVATEBROWSINGCHECK { Id.id_of_string "PrivateBrowsingCheck" }
   | id=identOrKeywordNotConstructor { id }
 
 %inline identOrKeywordNotSpecial:
   | CONSTRUCTOR { Id.id_of_string "Constructor" }
   | NOTXPCOM { Id.id_of_string "notxpcom" }
   | RETVAL { Id.id_of_string "retval" }
+  | UNSAFE { Id.id_of_string "unsafe" }
+  | PRIVATEBROWSINGCHECK { Id.id_of_string "PrivateBrowsingCheck" }
   | id=identOrKeywordNotConstructorOrSpecial { id }
 
 %inline identOrKeywordNotConstructor:
@@ -444,6 +449,8 @@ extendedAttributeNoArgs:
   | ALLOWANY { AllowAny }
   | CLAMP { Clamp }
   | NOSCRIPT { NoScript }
+  | PRIVATEBROWSINGCHECK { PrivateBrowsingCheck }
+  | UNSAFE { Unsafe }
   | OPTIONAL {Optional}
   | OPTIONAL_ARGC { OptionalArgc }
   | SCRIPTABLE { Scriptable }

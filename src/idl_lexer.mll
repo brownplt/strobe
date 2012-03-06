@@ -16,6 +16,8 @@
                 "false" , FALSE ;
                 "noscript" , NOSCRIPT ;
                 "notxpcom" , NOTXPCOM ;
+                "PrivateBrowsingCheck" , PRIVATEBROWSINGCHECK ;
+                "unsafe" , UNSAFE ;
                 "retval" , RETVAL ;
                 "optional_argc" , OPTIONAL_ARGC ;
                 (* "PRUnichar" , PRUnichar ; *)

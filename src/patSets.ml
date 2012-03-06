@@ -93,7 +93,7 @@ let pretty_helper v =
   StringSetExt.p_set text set
     | CoFinite set ->
       if StringSet.is_empty set then
-        text "Str"
+        text "/.*/"
       else
         horz [ squish [ text "-"; StringSetExt.p_set text set; text "-" ] ]
 
