@@ -55,7 +55,7 @@ let create_env defs =
     let (iids, componentsAndCID, compType, queryInterfaceType) = build_components (defs) in
     let interfaces = (filterNone (List.map (trans_def TBot queryInterfaceType) (defs))) in
     let iids = List.map (fun iid -> (P.singleton iid, Present, TSource (TObject (mk_obj_typ [(proto_pat, Present, TId "nsIJSIID")] (P.negate proto_pat))))) iids in
-    ([], (componentsAndCID :: iids @ interfaces), compType)
+    ((componentsAndCID :: iids @ interfaces), TId "Components")
   and trans_defs tt defs = 
     let (_, componentsAndCID, _, queryInterfaceType) = build_components (defs) in
     let interfaces = (filterNone (List.map (trans_def tt queryInterfaceType) (defs))) in

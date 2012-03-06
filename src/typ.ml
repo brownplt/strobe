@@ -95,6 +95,16 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     and pr_kind k = match k with
       | KArrow _ -> parens (kind k)
       | _ -> kind k
+        
+    let hnest n (p : printer) (fmt : formatter) : unit =
+      pp_open_hvbox fmt n;
+      p fmt;
+      pp_close_box fmt ()
+
+    let print_space fmt = pp_print_space fmt ()
+
+    let hvert (p : printer list) (fmt : formatter) : unit =
+      hnest 2 (squish (intersperse print_space p)) fmt
 
     let rec typ t  = match t with
       | TTop -> text "Any"
@@ -102,9 +112,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TPrim p -> text ("@" ^ p)
       | TLambda (args, t) -> 
         let p (x, k) = horz [ text x; text "::"; kind k ] in
-        horz [ text "Lambda "; horz (map p args); text "."; typ t ]
+        hvert [horz [text "Lambda"; horz (map p args); text "."]; typ t ]
       | TFix (x, k, t) -> 
-        horz [ text "Fix "; text x; text "::"; kind k; typ t ]
+        hvert [horz [text "Fix"; text x; text "::"; kind k; text "."]; typ t ]
       | TApp (t, ts) ->
         (match ts with
         | [] -> horz [typ t; text "<>"]
@@ -118,8 +128,11 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         begin match unions with
         | []
         | [_] -> text "IMPOSSIBLE"
-        | [t1;t2] -> parens (horz [typ t1; text "+"; typ t2])
-        | t::ts -> parens (vert ((horz [text " "; typ t]) :: List.map (fun t -> horz [text "+"; typ t]) ts))
+        | [t1;t2] -> parens (hnest 0 (squish [squish [horz [typ t1; text "+"]]; 
+                                              print_space; typ t2]))
+        | t::ts -> parens (hnest (-1) 
+                             (squish (intersperse print_space 
+                                        ((horz [empty; typ t]) :: List.map (fun t -> horz [text "+"; typ t]) ts))))
         end
       | TIntersect (t1, t2) -> (* horz [typ t1; text "&"; typ t2] *)
         let rec collectIntersections t = match t with
@@ -129,8 +142,11 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         begin match intersections with
         | []
         | [_] -> text "IMPOSSIBLE"
-        | [t1;t2] -> parens (horz [typ t1; text "&"; typ t2])
-        | t::ts -> parens (vert ((horz [text " "; typ t]) :: List.map (fun t -> horz [text "&"; typ t]) ts))
+        | [t1;t2] -> parens (hnest 0 (squish [squish [horz [typ t1; text "&"]]; 
+                                              print_space; typ t2]))
+        | t::ts -> parens (hnest (-1) 
+                             (squish (intersperse print_space 
+                                        ((horz [empty; typ t]) :: List.map (fun t -> horz [text "&"; typ t]) ts))))
         end
       | TArrow (tt::arg_typs, r_typ) ->
         let multiLine = List.exists (fun at -> match at with 
@@ -142,7 +158,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         let argTexts = 
           (intersperse (text "*") 
              (map (fun at -> begin match at with
-             | TArrow _ -> parens (typ at)
+             | TArrow _ -> parens (horz [typ at])
              | _ -> typ at 
              end) arg_typs)) in
         horz[ brackets (typ tt);
@@ -161,12 +177,12 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
               typ r_typ ]
       | TObject flds -> 
         let abs = horz [ text (P.pretty flds.absent_pat); text ": _" ] in
-        braces (vert (map pat (flds.fields) @ [abs]))
+        braces (hnest 0 (squish (intersperse print_space (map pat (flds.fields) @ [abs]))))
       | TRef s -> horz [ text "Ref"; parens (typ s) ]
       | TSource s -> horz [ text "Src"; parens (typ s) ]
       | TSink s -> horz [ text "Snk"; parens (typ s) ]
       | TForall (x, s, t) -> 
-        horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
+        hvert [ horz [text "forall"; text x; text "<:"; typ s; text "."]; typ t ]
       | TId x -> text x
       | TRec (x, t) -> horz [ text "rec"; text x; text "."; typ t ]
   
@@ -175,11 +191,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             | Present -> text "!"
             | Maybe -> text "?"
             | Inherited -> text "^" in
-          horz [ text (P.pretty k); text ":"; pretty_pres; typ p; text "," ]
+          horz [ text (P.pretty k); squish [text ":"; pretty_pres]; typ p; text "," ]
   end
 
   let string_of_typ = FormatExt.to_string Pretty.typ
   let string_of_kind = FormatExt.to_string Pretty.kind
+
+  let pretty_typ = Pretty.typ
+  let pretty_kind = Pretty.kind
 
   let proto_str = "__proto__"
     
@@ -478,7 +497,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             | Some (TPrim "Null") -> TBot
             | Some parent_typ -> 
               let check_parent_pat = (P.intersect pat (maybe_pats ot)) in
-              (* Printf.printf "pat: %s\nmaybe_pat:%s\nintersect: %s%!" (P.pretty pat) (P.pretty (maybe_pats ot)) (P.pretty check_parent_pat); *)
+              (* Printf.printf "pat: %s\nmaybe_pat:%s\nintersect: %s@." (P.pretty pat) (P.pretty (maybe_pats ot)) (P.pretty check_parent_pat); *)
               inherits p env parent_typ check_parent_pat
             )
         | _ -> failwith "lookup non-object"

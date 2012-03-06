@@ -195,15 +195,13 @@ let compile_env () : unit =
   (* | ids -> Printf.printf "Found identifiers that are native but not noscript!\n"; *)
   (*   List.iter (fun id -> Printf.printf "  %s\n" id) ids); *)
   (* Print_full_idl.print_defs !full_idl_defs; *)
-  let (iids, idlEnv, compsType) = (Create_env.create_env !full_idl_defs) in
-  List.iter Sb_kinding.new_prim_typ iids;
-
+  let (idlEnv, compsType) = (Create_env.create_env !full_idl_defs) in
   set_env (bind_recursive_types (ListExt.filter_map (fun (name, _, typ) -> 
     match (P.singleton_string name) with
     | Some name -> Some (name, typ)
     | None -> None) idlEnv) (get_env ()));
   set_env (bind_id "Components" (TSource compsType) (get_env ()))
-  (* Printf.printf "****************************************\nDone compiling environment%!"; *)
+  (* Printf.printf "****************************************\nDone compiling environment@."; *)
   (* set_env (extend_env idlEnv IdMap.empty (get_env ())) *)
 
 

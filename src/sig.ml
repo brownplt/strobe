@@ -121,6 +121,9 @@ module type TYP = sig
   val string_of_typ : typ -> string
   val string_of_kind : kind -> string
 
+  val pretty_typ : typ -> FormatExt.printer
+  val pretty_kind : kind -> FormatExt.printer
+
   val proto_str : string
 
   val proto_pat : pat
