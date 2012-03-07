@@ -102,13 +102,12 @@ let rec exp (env : env) expr = match expr with
       EBracket (a, EDeref (a, to_object a (exp env e1)),
                 to_string a (exp env e2))
   | NewExpr (p, constr, args) ->
-    (** TODO: prototypes won't work unless functions are objects *)
-    ELet (p, "%newobj", ERef (p, RefCell, EObject (p, [])), (* wrong! *)
-    ESeq 
-      (p, 
-       EApp (p, exp env constr,
-       (EId (p, "%newobj")) :: (map (exp env) args)),
-       EId (p, "%newobj")))
+    ELet (p, "%newobj", ERef (p, RefCell, EObject (p, [])), (* still need to set __proto__ *)
+          ESeq 
+            (p, 
+             EApp (p, EBracket(p, EDeref(p, exp env constr), EConst(p, JavaScript_syntax.CString "-*- code -*-")),
+                   (EId (p, "%newobj")) :: (map (exp env) args)),
+             EId (p, "%newobj")))
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
   | InfixExpr (p, "&&", e1, e2) -> 
       EIf (p, exp env e1, exp env e2, EConst (p, S.CBool false))
@@ -134,7 +133,8 @@ let rec exp (env : env) expr = match expr with
   | AppExpr (p, obj_and_func, args) ->
     let (obj, func) = object_and_function p obj_and_func in
     ELet (p, "%this", exp env obj,
-    EApp (p, exp env func, (EId (p, "%this")) :: (map (exp env) args)))
+          EApp (p, EBracket(p, EDeref(p, exp env func), EConst(p, JavaScript_syntax.CString "-*- code -*-")),
+                (EId (p, "%this")) :: (map (exp env) args)))
   | LetExpr (a, x, e1, e2) ->
       ELet (a, x, exp env e1, exp (IdMap.add x true env) e2)
   | TryCatchExpr (a, body, x, catch) ->
@@ -224,11 +224,14 @@ and match_func env expr = match expr with
         let mutable_arg exp id =
           ELet (a, id, ERef (a, RefCell, EId (a, id)), exp) in
         let args = "this"::args in
-        EFunc (a, args, { func_loop = false;
-                          func_owned = IdSet.empty }, 
-               fold_left mutable_arg
-                 (ELabel (a', "%return", exp env' body))
-                 args)
+        ERef(a, RefCell, 
+             EObject(a, [("-*- code -*-",
+                          EFunc (a, args, { func_loop = false;
+                                            func_owned = IdSet.empty }, 
+                                 fold_left mutable_arg
+                                   (ELabel (a', "%return", exp env' body))
+                                   args));
+                         ("__proto__", EDeref(a, EId (a, "Object")))])) (* TODO: Make this Function *)
   | FuncExpr (a, _, _) ->
       failwith ("expected a LabelledExpr at " ^ string_of_position a)
   | _ -> failwith "hamg --- really should not fail anymore"
@@ -243,7 +246,7 @@ and func_exp env (_, x, expr) =
 
 and bind_func_ref (x, e) rest_exp = 
   let p = Exp.pos e in
-  ELet (bad_p, x, ERef (bad_p, RefCell, EBot p), rest_exp)
+  ELet (bad_p, x, ERef (bad_p, RefCell, EAssertTyp(p, TId "Ext", EBot p)), rest_exp)
 
 and set_func_ref (x, e) rest_exp =
   let p = Exp.pos e in

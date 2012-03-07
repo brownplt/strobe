@@ -493,9 +493,13 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             | None
             | Some (TPrim "Null") -> TBot
             | Some parent_typ -> 
-              let check_parent_pat = (P.intersect pat (maybe_pats ot)) in
-              (* Printf.printf "pat: %s\nmaybe_pat:%s\nintersect: %s@." (P.pretty pat) (P.pretty (maybe_pats ot)) (P.pretty check_parent_pat); *)
-              inherits p env parent_typ check_parent_pat
+              if (simpl_equiv orig_t (expose env (simpl_typ env parent_typ))) 
+              then orig_t
+              else begin
+                let check_parent_pat = (P.intersect pat (maybe_pats ot)) in
+                (* Printf.printf "pat: %s\nmaybe_pat:%s\nintersect: %s\norig_t: %s\nparent_typ:%s\n\n" (P.pretty pat) (P.pretty (maybe_pats ot)) (P.pretty check_parent_pat) (string_of_typ orig_t)(string_of_typ (expose env (simpl_typ env parent_typ))); *)
+                inherits p env parent_typ check_parent_pat
+              end
             )
         | _ -> failwith "lookup non-object"
         end

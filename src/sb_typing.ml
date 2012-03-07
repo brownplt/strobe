@@ -43,6 +43,39 @@ let check_kind p env typ : typ =
   
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
 
+let extract_ref env t = 
+  let rec helper t = match expose_simpl_typ env t with
+    | TRef _ as t -> Some t
+    | TUnion (t1, t2) -> 
+      let r1 = helper t1 in
+      let r2 = helper t2 in
+      (match r1, r2 with
+      | Some r, None
+      | None, Some r -> Some r
+      | _ -> None) 
+    | TForall _ -> Some t (* BSL : This seems incomplete; extract_ref won't descend under a Forall *)
+    | _ -> (* (printf "ERef: Got to %s\n" (string_of_typ t)); *) None in
+  match helper t with
+  | Some t -> t
+  | None -> raise (Typ_error ((Lexing.dummy_pos, Lexing.dummy_pos), sprintf "Ambiguous ref type"))
+
+let extract_arrow env t = 
+  let rec helper t = match expose_simpl_typ env t with
+    | TArrow _ as t -> Some t
+    | TUnion (t1, t2) -> 
+      let r1 = helper t1 in
+      let r2 = helper t2 in
+      (match r1, r2 with
+      | Some r, None
+      | None, Some r -> Some r
+      | _ -> None) 
+    | TForall _ -> Some t (* BSL : This seems incomplete; extract_arrow won't descend under a Forall *)
+    | _ -> None in
+  match helper t with
+  | Some t -> t
+  | None -> raise (Typ_error ((Lexing.dummy_pos, Lexing.dummy_pos), sprintf "Ambiguous arrow type for Func"))
+
+
 let rec check (env : env) (exp : exp) (typ : typ) : unit =
   try check' env exp typ
   (* typ_mismatch normally records the error and proceeds. If we're in a
@@ -63,21 +96,7 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
     consumed_owned_vars := IdSet.union !consumed_owned_vars
       func_info.func_owned;
     let owned_vars = IdSet.diff func_info.func_owned misowned_vars in
-    let rec extract_arrow t = match t with
-      | TArrow _ -> Some t
-      | TUnion (t1, t2) -> 
-        let r1 = extract_arrow t1 in
-        let r2 = extract_arrow t2 in
-        (match r1, r2 with
-        | Some r, None
-        | None, Some r -> Some r
-        | _ -> None) 
-      | TForall _ -> Some t (* BSL : This seems incomplete; extract_arrow won't descend under a Forall *)
-      | _ -> None in
-    let expected_typ = match extract_arrow (check_kind p env (expose_simpl_typ env typ)) with
-      | Some t -> t
-      | None -> raise (Typ_error (p, sprintf "Ambiguous arrow type for Func")) in
-    begin match bind_typ env (expose_simpl_typ env expected_typ) with
+    begin match bind_typ env (expose_simpl_typ env (check_kind p env (expose_simpl_typ env typ))) with
       | (env, TArrow (arg_typs, result_typ)) ->
         if not (List.length arg_typs = List.length args) then
           typ_mismatch p
@@ -101,12 +120,13 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
         raise (Typ_error (p, sprintf "invalid type annotation on a function: %s"
           (string_of_typ t)))
     end
-  | ERef (p, ref_kind, e) -> begin match ref_kind, simpl_typ env typ with
+  | ERef (p, ref_kind, e) -> 
+    begin match ref_kind, extract_ref env (check_kind p env (expose_simpl_typ env typ)) with
     | SourceCell, TSource t
     | SinkCell, TSink t
     | RefCell, TRef t -> check env e t
-    | _  -> typ_mismatch p (* TODO(arjun): error msg *)
-             (sprintf "expected %s, got %s" (string_of_typ typ) "TODO")
+    | _, t  -> typ_mismatch p (* TODO(arjun): error msg *)
+             (sprintf "!!expected %s, got %s" (string_of_typ t) (string_of_typ (synth env e)))
     end
   | EArray (p, es) ->
       let expect_elt_typ = 
@@ -118,6 +138,23 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
            (sprintf "expected Array<%s>" (string_of_typ expect_elt_typ)));
       List.iter (fun e -> check env e expect_elt_typ) es 
   | EParen (_, e) -> check env e typ
+  | EObject (p, fields) -> begin match simpl_typ env typ with
+    | TObject _ as t -> 
+      let absPat = P.negate (List.fold_left P.union P.empty 
+                               (List.map (fun (f, _) -> P.singleton f) fields)) in
+      let newObjTyp = TObject (mk_obj_typ 
+                                 (List.map (fun (fieldName, fieldExp) -> 
+                                   let fieldTyp = (inherits p env t (P.singleton fieldName)) in
+                                   check env fieldExp fieldTyp;
+                                   (P.singleton fieldName, Present, fieldTyp)) fields)
+                                 absPat) in
+      if not (subtype env newObjTyp typ) then
+        typ_mismatch (Exp.pos exp)
+          (sprintf "expected %s, got %s" 
+             (string_of_typ typ)
+             (string_of_typ newObjTyp))
+    | _ -> typ_mismatch p (sprintf "expected TObject, got %s" (string_of_typ typ))
+  end
   | _ -> 
     let synth_typ = synth env exp in
     if not (subtype env synth_typ typ) then
@@ -185,7 +222,7 @@ and synth (env : env) (exp : exp) : typ = match exp with
       | SinkCell -> TSink t
       | RefCell -> TRef t
     end
-  | EDeref (p, e) -> begin match expose_simpl_typ env (synth env e) with
+  | EDeref (p, e) -> begin match extract_ref env (expose_simpl_typ env (synth env e)) with
       | TRef t -> t
       | TSource t -> t
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
