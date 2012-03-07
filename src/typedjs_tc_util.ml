@@ -20,28 +20,28 @@ let typ_of_value (exp : exp) : typ =
     | EObject (_, fs) -> 
       (* TODO: Everything else should be absent *)
       TObject 
-  (mk_obj_typ
-     ((proto_pat, Present, TId "Object") :: 
-         (map (mk_field f) fs))
-     P.empty)
+        (mk_obj_typ
+           ((proto_pat, Present, TId "Object") :: 
+               (map (mk_field f) fs))
+           P.empty)
     | EConst (_, c) -> tc_const c
     | EFunc (p, _, _, _) -> 
       raise (Not_value
                (sprintf "unannotated function at %s" (string_of_position p)))
     | ERef (_, RefCell, e') -> TRef begin match e' with
-        | EObject (_, fields) -> 
+      | EObject (_, fields) -> 
     (* TODO: as above *)
-    TObject
-      (mk_obj_typ
-         ((proto_pat, Present, TId "Object") 
-    :: (map (mk_field f) fields)) P.empty)
-        | EConst (_, c) -> tc_const c
-        | EAssertTyp (_, t, EFunc _) -> t
-        | EFunc (p, _, _, _) -> 
-          raise (Not_value
-                   (sprintf "unannotated function at %s"
-                      (string_of_position p)))
-        | _ -> raise (Not_value  (FormatExt.to_string Pretty.p_exp e'))
-      end
-    | _ -> raise (Not_value (FormatExt.to_string Pretty.p_exp e)) in
-    f exp
+        TObject
+          (mk_obj_typ
+             ((proto_pat, Present, TId "Object") 
+              :: (map (mk_field f) fields)) P.empty)
+      | EConst (_, c) -> tc_const c
+      | EAssertTyp (_, t, EFunc _) -> t
+      | EFunc (p, _, _, _) -> 
+        raise (Not_value
+                 (sprintf "unannotated function at %s"
+                    (string_of_position p)))
+      | _ -> raise (Not_value  (string_of_exp e'))
+    end
+    | _ -> raise (Not_value (string_of_exp e)) in
+  f exp

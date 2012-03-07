@@ -176,7 +176,7 @@ let create_env defs =
     | Octet
     | Float
     | Double -> TPrim "Num"
-    | Boolean -> TUnion (TPrim "True", TPrim "False")
+    | Boolean -> typ_bool
     | DOMString -> TId "DOMString"
     | Date -> TId "Date"
     | Object -> TRef (TObject (mk_obj_typ [] P.all))
@@ -188,7 +188,7 @@ let create_env defs =
       | RelativeName [id] -> TId (Id.string_of_id id)
       | _ -> TId "##unknown##"
     end
-    | Array _
-    | Sequence _ -> TId "##unknown##"
+    | Array t
+    | Sequence t -> TApp (TId "Array", [trans_typ t])
   in (trans_toplevel defs)
 

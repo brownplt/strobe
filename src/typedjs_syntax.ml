@@ -196,7 +196,9 @@ module Exp = struct
     | EParen (p, _) -> p
 end
 
-module Pretty = struct
+module Pretty : sig
+  val exp : exp -> FormatExt.printer
+end = struct
 
   open Format
   open FormatExt
@@ -266,12 +268,10 @@ module Pretty = struct
   and rec_bind (x, t, e) = 
     parens (horz [text x; text ":"; typ t; exp e])
 
-  let p_exp = exp
-   
 end
 
 
-let string_of_exp = FormatExt.to_string Pretty.p_exp
+let string_of_exp = FormatExt.to_string Pretty.exp
 
 let assigned_free_vars (e : exp) = 
   let rec exp : exp -> IdSet.t = function

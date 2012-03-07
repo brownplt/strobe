@@ -21,8 +21,6 @@ let disable_flows () = is_flows_enabled := false
 let rec skip n l = if n == 0 then l else (skip (n-1) (List.tl l))
 let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 
-let string_of_exp = FormatExt.to_string Typedjs_syntax.Pretty.p_exp
-
 let un_null t = match t with
   | TUnion (TPrim "Undef", t') -> t'
   | TUnion (t', TPrim "Undef") -> t'

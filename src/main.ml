@@ -154,7 +154,7 @@ let weave_annotations typedjs =
 
 let action_pretypecheck () : unit =
   let typedjs = weave_annotations (get_typedjs ()) in
-    Typedjs_syntax.Pretty.p_exp typedjs std_formatter
+    Typedjs_syntax.Pretty.exp typedjs std_formatter
 
 let full_idl_defs : Full_idl_syntax.definition list ref = ref []
 let idl_defs : Idl_syntax.definition list ref = ref []
