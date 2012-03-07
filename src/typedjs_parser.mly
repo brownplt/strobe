@@ -9,7 +9,13 @@ let rec remove_this op = match op with
   | W.Arrow (_, aa, r) -> W.Arrow (None, aa, r)
   | W.Inter (t1, t2) -> W.Inter (remove_this t1, remove_this t2)
   | W.Forall (x, s, t) -> W.Forall (x, s, remove_this t)
+  | W.Ref (W.Object (W.Present(_, t)::fields)) -> remove_this t
   | _ -> failwith "remove_this : illegal argument"
+
+let wrapArrow (thistype, args, ret) =
+  W.Ref( W.Object ([W.Present(P.singleton "-*- code -*-", W.Arrow (thistype, args, ret));
+                    W.Present(proto_pat, W.Id "Object"); (* ADDING THIS CAUSES AN ERROR "Object is unbound" *)
+                    W.Star(None)]))
 
 %}
 
@@ -92,9 +98,12 @@ arg_typ
 
 typ 
   : arg_typ { $1 }
-  | args ARROW typ { W.Arrow (Some W.Top, $1, $3) }
-  | LBRACK typ RBRACK args ARROW typ { W.Arrow (Some $2, $4, $6) }
-  | LBRACK RBRACK args ARROW typ { W.Arrow (None, $3, $5) }
+  | args ARROW typ { wrapArrow (Some W.Top, $1, $3) }
+  | LBRACK typ RBRACK args ARROW typ { wrapArrow (Some $2, $4, $6) }
+  | LBRACK RBRACK args ARROW typ { wrapArrow (None, $3, $5) }
+  | args THICKARROW typ { W.Arrow (Some W.Top, $1, $3) }
+  | LBRACK typ RBRACK args THICKARROW typ { W.Arrow (Some $2, $4, $6) }
+  | LBRACK RBRACK args THICKARROW typ { W.Arrow (None, $3, $5) }
   | FORALL ID LTCOLON typ DOT typ { W.Forall ($2, $4, $6) }
   | FORALL ID DOT typ { W.Forall ($2, W.Top, $4) }
   | REC ID DOT typ { W.Rec ($2, $4) }

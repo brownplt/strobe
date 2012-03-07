@@ -16,8 +16,7 @@ type env = {
   typ_ids: (typ * kind) IdMap.t; (* bounded type variables *)
 }
 
-let print_env outch env : unit =
-  let fmt = (Format.formatter_of_out_channel outch) in
+let print_env env fmt : unit =
   vert [text "Types of term identifiers:";
         vert (List.map (fun (id, t) -> 
           horz [text id; text "="; (TypImpl.Pretty.typ t)]) (IdMapExt.to_list env.id_typs));
@@ -279,13 +278,13 @@ let typid_env env = IdMap.map (fun (t, _) -> t) env.typ_ids
 
 
 let extend_env (trm_vars : typ IdMap.t) (typ_vars : (typ * kind) IdMap.t) env =
-  let merge_fn x left right = match (left, right) with
-    | Some _, Some _ -> failwith (sprintf "rebinding %s in the environment" x)
+  let merge_fn toStr x left right = match (left, right) with
+    | Some t1, Some t2 -> failwith (sprintf "rebinding %s in the environment: currently has type %s and trying to add type %s" x (toStr t1) (toStr t2))
     | None, Some t
     | Some t, None -> Some t
     | None, None -> failwith "impossible case in extend_env" in
-  { env with id_typs = IdMap.merge merge_fn env.id_typs trm_vars;
-    typ_ids = IdMap.merge merge_fn env.typ_ids typ_vars }
+  { env with id_typs = IdMap.merge (merge_fn string_of_typ) env.id_typs trm_vars;
+    typ_ids = IdMap.merge (merge_fn (fun (t, _) -> string_of_typ t)) env.typ_ids typ_vars }
 
 let verify_env env : unit =
   let errors = ref false in

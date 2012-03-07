@@ -182,7 +182,7 @@ let load_new_idl_file filename =
   full_idl_defs := !full_idl_defs @ full_idl
 
 let print_env () : unit =
-  print_env stdout (get_env())
+  print_env (get_env()) std_formatter
 
 let print_idl () : unit =
   Print_full_idl.print_defs !full_idl_defs

@@ -64,6 +64,10 @@ let create_env defs =
       | [] -> P.all
       | hd::tl -> P.negate (List.fold_left P.union (fst3 hd) (List.map fst3 tl)) in
     TSource ((* TRef *) (TObject (mk_obj_typ allFields catchallPat)))
+  and wrapArrow t =
+    TRef(TObject(mk_obj_typ [(P.singleton "-*- code -*-", Present, t);
+                             (proto_pat, Present, TId "Object")]
+                   (P.negate (P.union (P.singleton "-*- code -*-") proto_pat))))
   and build_components defs = 
     let interfaceToIIDFieldAndFun def =
       match def with
@@ -94,8 +98,8 @@ let create_env defs =
                                           proto] P.empty))) in
     let queryInterfaceType tself = match funs with
       | [] -> TBot (* absurd *)
-      | [ty] -> ty tself
-      | f::fs -> List.fold_left (fun acc f -> TIntersect (f tself, acc)) (f tself) fs in
+      | [ty] -> wrapArrow (ty tself)
+      | f::fs -> wrapArrow (List.fold_left (fun acc f -> TIntersect (f tself, acc)) (f tself) fs) in
     (iids,
      (P.singleton "Components", Present, componentsType),
      componentsType, queryInterfaceType)
@@ -146,12 +150,12 @@ let create_env defs =
       else if (isQueryInterfaceType metas) then returnField queryInterfaceType
       else returnField
         (match List.rev args with
-        | [] -> TArrow ([tself], trans_typ typ)
+        | [] -> wrapArrow (TArrow ([tself], trans_typ typ))
         | lastArg::revArgs ->
         let (_, lastMetas, lastTyp, _, _, _) = lastArg in
         if (isRetval lastMetas) 
-        then TArrow (tself :: List.map (trans_arg tself) (List.rev revArgs), trans_typ lastTyp)
-        else TArrow (tself :: List.map (trans_arg tself) args, trans_typ typ)
+        then wrapArrow (TArrow (tself :: List.map (trans_arg tself) (List.rev revArgs), trans_typ lastTyp))
+        else wrapArrow (TArrow (tself :: List.map (trans_arg tself) args, trans_typ typ))
         )
     | ConstMember (_, metas, typ, id, value) -> 
       if (isNoScript metas)

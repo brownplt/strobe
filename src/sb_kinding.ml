@@ -62,7 +62,12 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
     begin 
       try IdMap.find x env
       with Not_found ->
-        raise (Kind_error (sprintf "type variable %s is unbound" x))
+        let strfmt = Format.str_formatter in
+        let envText = (IdMap.iter (fun id k -> FormatExt.horz [FormatExt.text id; 
+                                                               FormatExt.text "="; 
+                                                               Pretty.kind k] strfmt) env); 
+          Format.flush_str_formatter() in
+        raise (Kind_error (sprintf "type variable %s is unbound in env:\n%s" x envText))
     end
   | TForall (x, t1, t2) ->
     begin match kind_check env t1, kind_check (IdMap.add x KStar env) t2 with

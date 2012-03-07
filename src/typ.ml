@@ -161,20 +161,26 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
              | TArrow _ -> parens (horz [typ at])
              | _ -> typ at 
              end) arg_typs)) in
-        horz[ brackets (typ tt);
-              (if multiLine 
-               then vert (pairOff (text " " :: argTexts)) 
-               else horz argTexts) ;
-              text "->";
-              typ r_typ ]
+        hnest 0
+          (squish
+             [ brackets (typ tt);
+               (if multiLine 
+                then vert (pairOff (text " " :: argTexts)) 
+                else horz argTexts) ;
+               print_space;
+               horz [text "->";
+                     typ r_typ ]])
       | TArrow (arg_typs, r_typ) ->
-        horz[ horz (intersperse (text "*") 
-                      (map (fun at -> begin match at with
-                      | TArrow _ -> parens (typ at)
-                      | _ -> typ at 
-                      end) arg_typs));
-              text "->";
-              typ r_typ ]
+        hnest 0
+          (squish
+             [ horz (intersperse (text "*") 
+                       (map (fun at -> begin match at with
+                       | TArrow _ -> parens (typ at)
+                       | _ -> typ at 
+                       end) arg_typs));
+               print_space;
+               horz [text "->";
+                     typ r_typ ]])
       | TObject flds -> 
         let abs = horz [ text (P.pretty flds.absent_pat); text ": _" ] in
         braces (hnest 0 (squish (intersperse print_space (map pat (flds.fields) @ [abs]))))

@@ -43,9 +43,12 @@ let check_kind p env typ : typ =
   
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
 
-let extract_ref env t = 
+let extract_ref msg p env t = 
   let rec helper t = match expose_simpl_typ env t with
+    | TPrim _ as t -> Some t
     | TRef _ as t -> Some t
+    | TSource _ as t -> Some t
+    | TSink _ as t -> Some t
     | TUnion (t1, t2) -> 
       let r1 = helper t1 in
       let r2 = helper t2 in
@@ -54,10 +57,10 @@ let extract_ref env t =
       | None, Some r -> Some r
       | _ -> None) 
     | TForall _ -> Some t (* BSL : This seems incomplete; extract_ref won't descend under a Forall *)
-    | _ -> (* (printf "ERef: Got to %s\n" (string_of_typ t)); *) None in
+    | _ -> (* (printf "%s: Got to %s\n" msg (string_of_typ t)); *) None in
   match helper t with
   | Some t -> t
-  | None -> raise (Typ_error ((Lexing.dummy_pos, Lexing.dummy_pos), sprintf "Ambiguous ref type"))
+  | None -> raise (Typ_error (p, sprintf "%s: Ambiguous ref type for type %s" msg (string_of_typ t)))
 
 let extract_arrow env t = 
   let rec helper t = match expose_simpl_typ env t with
@@ -96,7 +99,7 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
     consumed_owned_vars := IdSet.union !consumed_owned_vars
       func_info.func_owned;
     let owned_vars = IdSet.diff func_info.func_owned misowned_vars in
-    begin match bind_typ env (expose_simpl_typ env (check_kind p env (expose_simpl_typ env typ))) with
+    begin match bind_typ env (extract_arrow env (expose_simpl_typ env (check_kind p env (expose_simpl_typ env typ)))) with
       | (env, TArrow (arg_typs, result_typ)) ->
         if not (List.length arg_typs = List.length args) then
           typ_mismatch p
@@ -121,7 +124,7 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
           (string_of_typ t)))
     end
   | ERef (p, ref_kind, e) -> 
-    begin match ref_kind, extract_ref env (check_kind p env (expose_simpl_typ env typ)) with
+    begin match ref_kind, extract_ref "ERef" p env (check_kind p env (expose_simpl_typ env typ)) with
     | SourceCell, TSource t
     | SinkCell, TSink t
     | RefCell, TRef t -> check env e t
@@ -222,7 +225,7 @@ and synth (env : env) (exp : exp) : typ = match exp with
       | SinkCell -> TSink t
       | RefCell -> TRef t
     end
-  | EDeref (p, e) -> begin match extract_ref env (expose_simpl_typ env (synth env e)) with
+  | EDeref (p, e) -> begin match extract_ref "EDeref" p env (expose_simpl_typ env (synth env e)) with
       | TRef t -> t
       | TSource t -> t
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^

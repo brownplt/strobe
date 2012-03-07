@@ -74,4 +74,4 @@ val extend_env : typ IdMap.t -> (typ * kind) IdMap.t -> env -> env
 
 val verify_env : env -> unit
 
-val print_env : out_channel -> env -> unit
+val print_env : env -> FormatExt.printer
