@@ -191,7 +191,7 @@ module Env : sig
   val is_owned : id -> t -> bool
   val bind : id -> Absval.t -> t -> t
   val from_typ_env : Typedjs_env.env -> IdSet.t -> t
-  val runtime : typ IdMap.t -> typ -> Absval.t
+  val runtime : TypImpl.typ IdMap.t -> TypImpl.typ -> Absval.t
 end = struct
 
   type t = {
@@ -222,14 +222,14 @@ end = struct
 
   module TypEnv = Typedjs_env
 
-  let rec rt_of_typ ids (t : Typedjs_syntax.typ) : RTSet.t =
+  let rec rt_of_typ ids (t : TypImpl.typ) : RTSet.t =
     let open Typedjs_syntax in
     let rt = rt_of_typ ids in
     match t with
-      | TArrow _ -> RTSet.singleton RT.Function
-      | TUnion (t1, t2) -> RTSet.union (rt t1) (rt t2)
-      | TIntersect (t1, t2) -> RTSet.union (rt t1) (rt t2)
-      | TPrim (s) -> begin match s with
+      | TypImpl.TArrow _ -> RTSet.singleton RT.Function
+      | TypImpl.TUnion (t1, t2) -> RTSet.union (rt t1) (rt t2)
+      | TypImpl.TIntersect (t1, t2) -> RTSet.union (rt t1) (rt t2)
+      | TypImpl.TPrim (s) -> begin match s with
           | "Num"
           | "True"
           | "False" -> RTSet.singleton RT.Bool
@@ -237,22 +237,22 @@ end = struct
           | "Undef" -> RTSet.singleton RT.Undefined
           | _ -> rtany (* TODO(arjun): print a warning? *)
       end
-      | TRegex pat -> RTSet.singleton (RT.Re pat)
-      | TObject _ -> RTSet.singleton RT.Object
-      | TRef t -> rt t
-      | TSource t -> rt t
-      | TSink t -> rt t
-      | TTop -> rtany
-      | TBot -> RTSet.empty
-      | TForall _ -> rtany
-      | TId x -> begin
+      | TypImpl.TRegex pat -> RTSet.singleton (RT.Re pat)
+      | TypImpl.TObject _ -> RTSet.singleton RT.Object
+      | TypImpl.TRef t -> rt t
+      | TypImpl.TSource t -> rt t
+      | TypImpl.TSink t -> rt t
+      | TypImpl.TTop -> rtany
+      | TypImpl.TBot -> RTSet.empty
+      | TypImpl.TForall _ -> rtany
+      | TypImpl.TId x -> begin
         try rt_of_typ ids (IdMap.find x ids)
         with Not_found -> failwith (sprintf "tid %s not found in rt_of_typ" x)
       end
-      | TRec (x, s) -> rt_of_typ (IdMap.add x t ids) s
-      | TApp (t1, t2) -> rtany
-      | TFix _
-      | TLambda _ -> failwith "runtime type test on TFix / TLambda"
+      | TypImpl.TRec (x, s) -> rt_of_typ (IdMap.add x t ids) s
+      | TypImpl.TApp (t1, t2) -> rtany
+      | TypImpl.TFix _
+      | TypImpl.TLambda _ -> failwith "runtime type test on TFix / TLambda"
 
   let runtime ids t : Absval.t = Absval.Set (rt_of_typ ids t)
 
@@ -487,9 +487,9 @@ let semicfa owned_ids typ_env exp =
   let open Sb_semicps in
   let cpsexp = cps_exp exp "#exn" (Jmp "#ret") in
   (* TBot is the wrong type *)
-  let env = Env.bind "#ret" (Absval.Val (ExternalLambda Typedjs_syntax.TBot)) 
+  let env = Env.bind "#ret" (Absval.Val (ExternalLambda TypImpl.TBot)) 
     env in
-  let env = Env.bind "#exn" (Absval.Val (ExternalLambda Typedjs_syntax.TBot)) 
+  let env = Env.bind "#exn" (Absval.Val (ExternalLambda TypImpl.TBot)) 
     env in
   flow env heap cpsexp;
   Annotate.a_exp exp

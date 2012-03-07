@@ -1,5 +1,6 @@
 open Prelude
 open Typedjs_syntax
+open TypImpl
 open Typedjs_env
 open Format
 open Typedjs_tc_util

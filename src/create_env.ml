@@ -3,7 +3,7 @@ open Full_idl_syntax
 open Format
 open FormatExt
 open Typedjs_syntax
-
+open TypImpl
 
 let sort_defs defs = List.stable_sort (fun d1 d2 -> 
   let order def = match def with

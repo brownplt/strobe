@@ -167,7 +167,7 @@ let action_tc () : unit =
       (get_global_object ()) in
   (* verify_env env; *)
   let _ = typecheck env (weave_annotations (get_typedjs ())) in
-  if get_num_typ_errors () > 0 then
+  if TypImpl.get_num_typ_errors () > 0 then
     exit 2
   else
     ()
@@ -200,7 +200,7 @@ let compile_env () : unit =
     match (P.singleton_string name) with
     | Some name -> Some (name, typ)
     | None -> None) idlEnv) (get_env ()));
-  set_env (bind_id "Components" (TSource compsType) (get_env ()))
+  set_env (bind_id "Components" (TypImpl.TSource compsType) (get_env ()))
   (* Printf.printf "****************************************\nDone compiling environment@."; *)
   (* set_env (extend_env idlEnv IdMap.empty (get_env ())) *)
 
@@ -263,7 +263,7 @@ with
     Failure s ->  eprintf "%s\n" s; exit 3
   | Not_well_formed (p, s) ->
       eprintf "%s not well-formed:\n%s\n" (string_of_position p) s; exit 2
-  | Typ_error (p, s) ->
+  | TypImpl.Typ_error (p, s) ->
       eprintf "fatal type error at %s: %s\n" (string_of_position p) s; exit 2
   | Sb_kinding.Kind_error s ->
       eprintf "type error (kinding): %s\n" s; exit 2

@@ -118,11 +118,13 @@ module type TYP = sig
 
   type typenv = (typ * kind) IdMap.t
 
+  module Pretty : sig
+    val typ : typ -> FormatExt.printer
+    val kind : kind -> FormatExt.printer
+  end
+
   val string_of_typ : typ -> string
   val string_of_kind : kind -> string
-
-  val pretty_typ : typ -> FormatExt.printer
-  val pretty_kind : kind -> FormatExt.printer
 
   val proto_str : string
 

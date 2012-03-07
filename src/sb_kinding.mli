@@ -1,5 +1,6 @@
 open Prelude
 open Typedjs_syntax
+open TypImpl
 
 exception Kind_error of string
 

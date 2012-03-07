@@ -2,6 +2,7 @@ open Prelude
 open Typedjs_syntax
 open Exprjs_syntax
 open Typedjs_env
+open TypImpl
 open Typedjs_tc_util
 
 module H = Hashtbl

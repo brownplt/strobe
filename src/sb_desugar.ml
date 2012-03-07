@@ -1,5 +1,6 @@
 open Prelude
 open Typedjs_syntax
+open TypImpl
 
 module W = WritTyp
 module List = ListExt

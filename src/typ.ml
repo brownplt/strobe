@@ -197,9 +197,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   let string_of_typ = FormatExt.to_string Pretty.typ
   let string_of_kind = FormatExt.to_string Pretty.kind
 
-  let pretty_typ = Pretty.typ
-  let pretty_kind = Pretty.kind
-
   let proto_str = "__proto__"
     
   let proto_pat = P.singleton proto_str
