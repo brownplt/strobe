@@ -45,7 +45,8 @@ let expose_simpl_typ env typ = expose env (simpl_typ env typ)
 
 let extract_ref msg p env t = 
   let rec helper t = match expose_simpl_typ env t with
-    | TPrim _ as t -> Some t
+    | TPrim "Unsafe" as t -> Some t
+    | TPrim _  -> None
     | TRef _ as t -> Some t
     | TSource _ as t -> Some t
     | TSink _ as t -> Some t
@@ -56,6 +57,13 @@ let extract_ref msg p env t =
       | Some r, None
       | None, Some r -> Some r
       | _ -> None) 
+    | TIntersect (t1, t2) -> 
+      let r1 = helper t1 in
+      let r2 = helper t2 in
+      (match r1, r2 with
+      | Some r, None
+      | None, Some r -> Some r
+      | _ -> None)
     | TForall _ -> Some t (* BSL : This seems incomplete; extract_ref won't descend under a Forall *)
     | _ -> (* (printf "%s: Got to %s\n" msg (string_of_typ t)); *) None in
   match helper t with
@@ -225,14 +233,14 @@ and synth (env : env) (exp : exp) : typ = match exp with
       | SinkCell -> TSink t
       | RefCell -> TRef t
     end
-  | EDeref (p, e) -> begin match extract_ref "EDeref" p env (expose_simpl_typ env (synth env e)) with
+  | EDeref (p, e) -> begin match extract_ref "EDeref" p env (expose_simpl_typ env (check_kind p env (expose_simpl_typ env (synth env e)))) with
       | TRef t -> t
       | TSource t -> t
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
         (string_of_typ t)))
   end 
   | ESetRef (p, e1, e2) -> 
-    let t = expose_simpl_typ env (synth env e1) in
+    let t = extract_ref "ESetRef" p env (expose_simpl_typ env (synth env e1)) in
     begin match  t with
       | TRef (TPrim "Unsafe") -> t (* BSL: PUNTING ON ASSIGNMENT TO UNSAFE *)
       | TRef s 

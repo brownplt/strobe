@@ -4,11 +4,31 @@ open Format
 open FormatExt
 
 let resolve_typedefs defs =
+  let finalMeta = AttrNoArgs(Id.id_of_string "final") in
   let (tds, defs) = List.partition (fun d -> match d with Typedef _ -> true | _ -> false) defs in
-  let typedefs =  IdMapExt.from_list
+  let (fwds, defs) = List.partition (fun d -> match d with ForwardInterface _ -> true | _ -> false) defs in
+  let unknownFwds = ListExt.filter_map (fun f -> match f with 
+    | ForwardInterface (_, _, id) -> 
+      if (not (List.exists (fun d -> match d with
+      | Interface(_, _, id', _, _, _) -> id = id'
+      | _ -> false) defs))
+      then Some (Id.string_of_id id, ([finalMeta], Any))
+      else None
+    | _ -> None) fwds in      
+  let typedefs = 
     (List.map (fun d -> match d with
-    | Typedef(_, metas, t, id) -> (Id.string_of_id id, (metas, t))
+    | Typedef(_, metas, t, id) ->
+      begin match t with
+      | Native _ ->
+        let findStrings strs = 
+          List.exists (fun s -> List.exists (fun m -> m = AttrNoArgs(Id.id_of_string s)) metas) strs in
+        if (findStrings ["domstring"; "utf8string"; "cstring"; "string"]) 
+        then (Id.string_of_id id, (finalMeta::metas, DOMString))
+        else (Id.string_of_id id, (finalMeta::metas, Any))
+      | _ -> (Id.string_of_id id, (metas, t))
+      end
     | _ -> failwith "absurd") tds) in
+  let typedefs = IdMapExt.from_list (typedefs @ unknownFwds) in
   let rec resolve_typ ty =
     match ty with
     | Sequence t -> Sequence (resolve_typ t)
@@ -17,9 +37,16 @@ let resolve_typedefs defs =
     | Name (RelativeName [id]) ->
       (try
          let (metas, ret) = (IdMap.find (Id.string_of_id id) typedefs) in
-         if ret != ty && not (List.exists (fun m -> m = AttrNoArgs(Id.id_of_string "final")) metas)
+         if ret != ty && not (List.exists (fun m -> m = finalMeta) metas)
          then resolve_typ ret
-         else ty
+         else ret
+       with Not_found -> ty)
+    | DOMString ->
+      (try
+         let (metas, ret) = (IdMap.find "DOMString" typedefs) in
+         if ret != ty && not (List.exists (fun m -> m = finalMeta) metas)
+         then resolve_typ ret
+         else ret
        with Not_found -> ty)
     | _ -> ty in
   let rec resolve_def def =

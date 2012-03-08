@@ -181,7 +181,7 @@ let create_env defs =
     | Float
     | Double -> TPrim "Num"
     | Boolean -> typ_bool
-    | DOMString -> TId "DOMString"
+    | DOMString -> TId "Str"
     | Date -> TId "Date"
     | Object -> TRef (TObject (mk_obj_typ [] P.all))
     | Any -> TTop
@@ -189,7 +189,13 @@ let create_env defs =
     | Ques t -> TUnion (TPrim "Null", trans_typ t)
     | Native s -> TId s
     | Name n -> begin match n with
-      | RelativeName [id] -> TId (Id.string_of_id id)
+      | RelativeName [id] -> begin match (Id.string_of_id id) with
+        | "wstring"
+        | "string"
+        | "wchar"
+        | "char" -> TId "Str"
+        | id -> TId id
+      end
       | _ -> TId "##unknown##"
     end
     | Array t

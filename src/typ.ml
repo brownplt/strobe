@@ -47,6 +47,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TUnion of typ * typ
     | TIntersect of typ * typ
     | TArrow of typ list * typ
+    (* | TArrow of typ list * typ option * typ (\* args (including <this>), optional variadic arg, return typ *\) *)
     | TObject of obj_typ
     | TRegex of pat
     | TRef of typ

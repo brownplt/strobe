@@ -1,0 +1,3 @@
+#!/bin/bash
+
+../run -env ../data/javascript.env -newidl ../data/all-idls.idl -compile-env $@
