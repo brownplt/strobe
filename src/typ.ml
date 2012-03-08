@@ -132,29 +132,31 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TRegex pat -> text (P.pretty pat)
       | TUnion (t1, t2) ->
         let rec collectUnions t = match t with
-          | TUnion (t1, t2) -> collectUnions t1 @ collectUnions t2
-          | _ -> [t] in
+          | TUnion (t1, t2) -> 
+            let (t1h, t1s) = collectUnions t1 in
+            let (t2h, t2s) = collectUnions t2 in
+            (t1h, t1s @ (t2h :: t2s))
+          | _ -> (t, []) in
         let unions = collectUnions t in
         begin match unions with
-        | []
-        | [_] -> text "IMPOSSIBLE"
-        | [t1;t2] -> parens (hnestOrHorz 0 [squish [horz [typ t1; text "+"]]; 
+        | (t1, [t2]) -> parens (hnestOrHorz 0 [squish [horz [typ t1; text "+"]]; 
                                             if horzOnly then typ t2 else horz[empty;typ t2]])
-        | t::ts -> parens (hnest (-1) 
+        | (t, ts) -> parens (hnest (-1) 
                              (squish (intersperse print_space 
                                         ((horz [empty; typ t]) :: List.map (fun t -> horz [text "+"; typ t]) ts))))
         end
       | TIntersect (t1, t2) -> (* horz [typ t1; text "&"; typ t2] *)
         let rec collectIntersections t = match t with
-          | TIntersect (t1, t2) -> collectIntersections t1 @ collectIntersections t2
-          | _ -> [t] in
+          | TIntersect (t1, t2) -> 
+            let (t1h, t1s) = collectIntersections t1 in
+            let (t2h, t2s) = collectIntersections t2 in
+            (t1h, t1s @ (t2h :: t2s))
+          | _ -> (t, []) in
         let intersections = collectIntersections t in
         begin match intersections with
-        | []
-        | [_] -> text "IMPOSSIBLE"
-        | [t1;t2] -> parens (hnest 0 (squish [squish [horz [typ t1; text "&"]]; 
+        | (t1, [t2]) -> parens (hnest 0 (squish [squish [horz [typ t1; text "&"]]; 
                                               if horzOnly then typ t2 else horz[empty;typ t2]]))
-        | t::ts -> parens (hnest (-1) 
+        | (t, ts) -> parens (hnest (-1) 
                              (squish (intersperse print_space 
                                         ((horz [empty; typ t]) :: List.map (fun t -> horz [text "&"; typ t]) ts))))
         end
