@@ -82,6 +82,12 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   module TPSet = Set.Make (TypPair)
   module TPSetExt = SetExt.Make (TPSet)
 
+
+  let proto_str = "__proto__"
+    
+  let proto_pat = P.singleton proto_str
+  
+
   module Pretty = struct
 
     open Format
@@ -106,7 +112,11 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     let hvert (p : printer list) (fmt : formatter) : unit =
       hnest 2 (squish (intersperse print_space p)) fmt
 
-    let rec typ t  = match t with
+    let rec typ t = typ' false t
+    and typ' horzOnly t = 
+      let typ = typ' horzOnly in 
+      let hnestOrHorz n = if horzOnly then horz else (fun ps -> hnest n (squish ps)) in
+      match t with
       | TTop -> text "Any"
       | TBot -> text "DoesNotReturn"
       | TPrim p -> text ("@" ^ p)
@@ -128,8 +138,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         begin match unions with
         | []
         | [_] -> text "IMPOSSIBLE"
-        | [t1;t2] -> parens (hnest 0 (squish [squish [horz [typ t1; text "+"]]; 
-                                              print_space; typ t2]))
+        | [t1;t2] -> parens (hnestOrHorz 0 [squish [horz [typ t1; text "+"]]; 
+                                            if horzOnly then typ t2 else horz[empty;typ t2]])
         | t::ts -> parens (hnest (-1) 
                              (squish (intersperse print_space 
                                         ((horz [empty; typ t]) :: List.map (fun t -> horz [text "+"; typ t]) ts))))
@@ -143,13 +153,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | []
         | [_] -> text "IMPOSSIBLE"
         | [t1;t2] -> parens (hnest 0 (squish [squish [horz [typ t1; text "&"]]; 
-                                              print_space; typ t2]))
+                                              if horzOnly then typ t2 else horz[empty;typ t2]]))
         | t::ts -> parens (hnest (-1) 
                              (squish (intersperse print_space 
                                         ((horz [empty; typ t]) :: List.map (fun t -> horz [text "&"; typ t]) ts))))
         end
       | TArrow (tt::arg_typs, r_typ) ->
-        let multiLine = List.exists (fun at -> match at with 
+        let multiLine = horzOnly ||
+          List.exists (fun at -> match at with 
             TArrow _ | TObject _ -> true | _ -> false) arg_typs in
         let rec pairOff ls = match ls with
           | [] -> []
@@ -158,32 +169,41 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         let argTexts = 
           (intersperse (text "*") 
              (map (fun at -> begin match at with
-             | TArrow _ -> parens (horz [typ at])
-             | _ -> typ at 
+             | TArrow _ -> parens (horz [typ' true at])
+             | _ -> typ' true at 
              end) arg_typs)) in
-        hnest 0
-          (squish
-             [ brackets (typ tt);
-               (if multiLine 
-                then vert (pairOff (text " " :: argTexts)) 
-                else horz argTexts) ;
-               print_space;
-               horz [text "->";
-                     typ r_typ ]])
+        hnestOrHorz 0
+          [ squish [brackets (typ tt); 
+                    (if multiLine 
+                     then vert (pairOff (text " " :: argTexts)) 
+                     else horz (empty::argTexts))] ;
+            horz [text "->"; typ r_typ ]]
       | TArrow (arg_typs, r_typ) ->
-        hnest 0
-          (squish
-             [ horz (intersperse (text "*") 
+        let argText = horz (intersperse (text "*") 
                        (map (fun at -> begin match at with
-                       | TArrow _ -> parens (typ at)
-                       | _ -> typ at 
-                       end) arg_typs));
-               print_space;
-               horz [text "->";
-                     typ r_typ ]])
+                       | TArrow _ -> parens (typ' true at)
+                       | _ -> typ' true at 
+                       end) arg_typs)) in
+        hnestOrHorz 0 [ argText; horz [text "->"; typ r_typ ]]
       | TObject flds -> 
-        let abs = horz [ text (P.pretty flds.absent_pat); text ": _" ] in
-        braces (hnest 0 (squish (intersperse print_space (map pat (flds.fields) @ [abs]))))
+        let isFunctionObject fieldList =
+          let findField namePat = 
+            try
+              let (_, _, typ) = 
+                List.find (fun (n, p, _) -> (p = Present && n = namePat)) fieldList in
+              (true, Some typ)
+            with Not_found -> (false, None) in
+          let (hasProto, _) = findField proto_pat in
+          let (hasCode, codeTyp) = findField (P.singleton "-*- code -*-") in
+          if ((List.length fieldList) = 2 && hasProto && hasCode)
+          then codeTyp
+          else None in
+        (match isFunctionObject (flds.fields) with
+        | Some arrTyp -> horz [squish [text "{|"; typ' true arrTyp; text "|}"]]
+        | None ->
+          let abs = horz [ text (P.pretty flds.absent_pat); text ": _" ] in
+          braces (hnestOrHorz 0 (intersperse print_space (map pat (flds.fields) @ [abs])))
+        )
       | TRef s -> horz [ text "Ref"; parens (typ s) ]
       | TSource s -> horz [ text "Src"; parens (typ s) ]
       | TSink s -> horz [ text "Snk"; parens (typ s) ]
@@ -203,10 +223,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   let string_of_typ = FormatExt.to_string Pretty.typ
   let string_of_kind = FormatExt.to_string Pretty.kind
 
-  let proto_str = "__proto__"
-    
-  let proto_pat = P.singleton proto_str
-  
   let absent_pat ot = ot.absent_pat
 
   let mk_obj_typ (fs: field list) (absent_pat : pat): obj_typ = 
