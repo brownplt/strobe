@@ -28,3 +28,9 @@ let rec filter_map (f : 'a -> 'b option) (xs : 'a list) : 'b list =
   | None -> filter_map f xs'
   | Some y -> y :: (filter_map f xs')
 
+let split_at (n : int) (l : 'a list) : ('a list * 'a list) =
+  let rec helper n (revhd, tl) = match n, tl with
+    | 0, _ 
+    | _, [] -> ((List.rev revhd), tl)
+    | _, hd::tl' -> helper (n-1) (hd::revhd, tl')
+  in helper n ([], l)

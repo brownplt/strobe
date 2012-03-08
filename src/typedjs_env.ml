@@ -139,6 +139,7 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TPrim "Null" -> if RTSet.mem RT.Object rt then typ else TBot
   | TPrim "Undef" -> 
     if RTSet.mem RT.Undefined rt then typ else TBot
+  | TPrim "Unsafe" -> TPrim "Unsafe"
   | TPrim s -> failwith ("**" ^ s ^ "**")
   (* any other app will be an object from a constructor *)
   | TRef (TObject _) -> if RTSet.mem RT.Object rt then typ else TBot
@@ -258,9 +259,12 @@ let rec typ_assoc (env : env) (typ1 : typ) (typ2 : typ) =
     | TSink s, TSink t
     | TRef s, TRef t ->
       typ_assoc env s t
-    | TArrow (args1, r1), TArrow (args2, r2) ->
+    | TArrow (args1, v1, r1), TArrow (args2, v2, r2) ->
       List.fold_left assoc_merge
-        (typ_assoc env r1 r2)
+        ((fun base -> match v1, v2 with
+        | Some v1, Some v2 -> assoc_merge (typ_assoc env v1 v2) base
+        | _ -> base)
+            (typ_assoc env r1 r2))
         (List.map2_noerr (typ_assoc env) args1 args2)
     | TRec (x, s), TRec (y, t) ->
       (* could do better here, renaming*)

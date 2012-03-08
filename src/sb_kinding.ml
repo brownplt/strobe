@@ -49,11 +49,12 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
       | KStar -> KStar
       | k -> kind_mismatch t k KStar
     end
-  | TArrow (arg_typs, result_typ) ->
+  | TArrow (arg_typs, varargs, result_typ) ->
     let assert_kind t = match kind_check env t with
       | KStar -> ()
       | k -> kind_mismatch t k KStar in
     List.iter assert_kind (result_typ :: arg_typs);
+    (match varargs with None -> () | Some v -> assert_kind v);
     KStar
   | TObject o ->
     List.iter (assert_fld_kind env) (fields o);

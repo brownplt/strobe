@@ -77,7 +77,7 @@ let create_env defs =
         else let iidName = (Id.string_of_id name) ^ "_IID" in
              Some (iidName,
                    (idToPat name, Present, TId iidName),
-                   (fun tself -> TArrow ([tself; TId iidName], (TId (Id.string_of_id name)))))
+                   (fun tself -> TArrow ([tself; TId iidName], None, (TId (Id.string_of_id name)))))
       | _ -> None in
     let unzip3 abcs =
       let rec helper abcs aas bbs ccs =
@@ -150,12 +150,12 @@ let create_env defs =
       else if (isQueryInterfaceType metas) then returnField queryInterfaceType
       else returnField
         (match List.rev args with
-        | [] -> wrapArrow (TArrow ([tself], trans_typ typ))
+        | [] -> wrapArrow (TArrow ([tself], None, trans_typ typ))
         | lastArg::revArgs ->
         let (_, lastMetas, lastTyp, _, _, _) = lastArg in
         if (isRetval lastMetas) 
-        then wrapArrow (TArrow (tself :: List.map (trans_arg tself) (List.rev revArgs), trans_typ lastTyp))
-        else wrapArrow (TArrow (tself :: List.map (trans_arg tself) args, trans_typ typ))
+        then wrapArrow (TArrow (tself :: List.map (trans_arg tself) (List.rev revArgs), None, trans_typ lastTyp))
+        else wrapArrow (TArrow (tself :: List.map (trans_arg tself) args, None, trans_typ typ))
         )
     | ConstMember (_, metas, typ, id, value) -> 
       if (isNoScript metas)

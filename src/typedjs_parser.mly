@@ -6,14 +6,14 @@ open TypImpl
 module W = Typedjs_syntax.WritTyp
 
 let rec remove_this op = match op with
-  | W.Arrow (_, aa, r) -> W.Arrow (None, aa, r)
+  | W.Arrow (_, aa, v, r) -> W.Arrow (None, aa, v, r)
   | W.Inter (t1, t2) -> W.Inter (remove_this t1, remove_this t2)
   | W.Forall (x, s, t) -> W.Forall (x, s, remove_this t)
   | W.Ref (W.Object (W.Present(_, t)::fields)) -> remove_this t
   | _ -> failwith "remove_this : illegal argument"
 
-let wrapArrow (thistype, args, ret) =
-  W.Ref( W.Object ([W.Present(P.singleton "-*- code -*-", W.Arrow (thistype, args, ret));
+let wrapArrow (thistype, args, var, ret) =
+  W.Ref( W.Object ([W.Present(P.singleton "-*- code -*-", W.Arrow (thistype, args, var, ret));
                     W.Present(proto_pat, W.Id "Object"); (* ADDING THIS CAUSES AN ERROR "Object is unbound" *)
                     W.Star(None)]))
 
@@ -25,7 +25,7 @@ let wrapArrow (thistype, args, ret) =
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
        CHEAT REC INTERSECTION UNDERSCORE BAD
        HASHBRACE EQUALS TYPE QUES BANG TYPREC TYPLAMBDA THICKARROW
-       COLONCOLON CARET LLBRACE RRBRACE REF PRIMITIVE
+       COLONCOLON CARET LLBRACE RRBRACE REF PRIMITIVE DOTS
 
 %right UNION INTERSECTION THICKARROW REF
 %left LANGLE
@@ -44,9 +44,10 @@ kind :
   | kind THICKARROW kind { KArrow ([$1], $3) }
 
 args
-  :  { [] }
-  | arg_typ { [$1] }
-  | arg_typ STAR args { $1 :: $3 }
+  :  { ([], None) }
+  | arg_typ { ([$1], None) }
+  | arg_typ DOTS { ([], Some $1) }
+  | arg_typ STAR args { let (args, var) = $3 in (($1 :: args), var) }
 
 pat :
   | REGEX { (P.parse $startpos $1, true) }
@@ -98,12 +99,12 @@ arg_typ
 
 typ 
   : arg_typ { $1 }
-  | args ARROW typ { wrapArrow (Some W.Top, $1, $3) }
-  | LBRACK typ RBRACK args ARROW typ { wrapArrow (Some $2, $4, $6) }
-  | LBRACK RBRACK args ARROW typ { wrapArrow (None, $3, $5) }
-  | args THICKARROW typ { W.Arrow (Some W.Top, $1, $3) }
-  | LBRACK typ RBRACK args THICKARROW typ { W.Arrow (Some $2, $4, $6) }
-  | LBRACK RBRACK args THICKARROW typ { W.Arrow (None, $3, $5) }
+  | args ARROW typ { let (args, var) = $1 in wrapArrow (Some W.Top, args, var, $3) }
+  | LBRACK typ RBRACK args ARROW typ { let (args, var) = $4 in wrapArrow (Some $2, args, var, $6) }
+  | LBRACK RBRACK args ARROW typ { let (args, var) = $3 in wrapArrow (None, args, var, $5) }
+  | args THICKARROW typ { let (args, var) = $1 in W.Arrow (Some W.Top, args, var, $3) }
+  | LBRACK typ RBRACK args THICKARROW typ { let (args, var) = $4 in W.Arrow (Some $2, args, var, $6) }
+  | LBRACK RBRACK args THICKARROW typ { let (args, var) = $3 in W.Arrow (None, args, var, $5) }
   | FORALL ID LTCOLON typ DOT typ { W.Forall ($2, $4, $6) }
   | FORALL ID DOT typ { W.Forall ($2, W.Top, $4) }
   | REC ID DOT typ { W.Rec ($2, $4) }

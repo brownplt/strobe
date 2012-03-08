@@ -30,6 +30,7 @@ rule token = parse
    | "/*" { block_comment lexbuf }
    | "//"[^ '\r' '\n']* [ '\r' '\n' ] { new_line lexbuf; token lexbuf }
 
+   | "..." { DOTS }
    | "->" { ARROW }
    | "=>" { THICKARROW }
    | "(" { LPAREN }

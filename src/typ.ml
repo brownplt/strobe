@@ -46,8 +46,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TPrim of string
     | TUnion of typ * typ
     | TIntersect of typ * typ
-    | TArrow of typ list * typ
-    (* | TArrow of typ list * typ option * typ (\* args (including <this>), optional variadic arg, return typ *\) *)
+    | TArrow of typ list * typ option * typ (* args (including <this>), optional variadic arg, return typ *)
     | TObject of obj_typ
     | TRegex of pat
     | TRef of typ
@@ -161,7 +160,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
                              (squish (intersperse print_space 
                                         ((horz [empty; typ t]) :: List.map (fun t -> horz [text "&"; typ t]) ts))))
         end
-      | TArrow (tt::arg_typs, r_typ) ->
+      | TArrow (tt::arg_typs, varargs, r_typ) ->
         let multiLine = horzOnly ||
           List.exists (fun at -> match at with 
             TArrow _ | TObject _ -> true | _ -> false) arg_typs in
@@ -169,24 +168,30 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
           | [] -> []
           | [_] -> ls
           | a::b::ls -> horz [a;b] :: pairOff ls in
+        let vararg = match varargs with
+          | None -> []
+          | Some t -> [horz[squish [parens(horz[typ' true t]); text "..."]]] in
         let argTexts = 
           (intersperse (text "*") 
-             (map (fun at -> begin match at with
+             ((map (fun at -> begin match at with
              | TArrow _ -> parens (horz [typ' true at])
              | _ -> typ' true at 
-             end) arg_typs)) in
+             end) arg_typs) @ vararg)) in
         hnestOrHorz 0
           [ squish [brackets (typ tt); 
                     (if multiLine 
                      then vert (pairOff (text " " :: argTexts)) 
                      else horz (empty::argTexts))] ;
             horz [text "->"; typ r_typ ]]
-      | TArrow (arg_typs, r_typ) ->
+      | TArrow (arg_typs, varargs, r_typ) ->
+        let vararg = match varargs with
+          | None -> []
+          | Some t -> [horz[squish [parens(horz[typ' true t]); text "..."]]] in
         let argText = horz (intersperse (text "*") 
-                       (map (fun at -> begin match at with
-                       | TArrow _ -> parens (typ' true at)
-                       | _ -> typ' true at 
-                       end) arg_typs)) in
+                              ((map (fun at -> begin match at with
+                              | TArrow _ -> parens (horz [typ' true at])
+                              | _ -> typ' true at 
+                              end) arg_typs) @ vararg)) in
         hnestOrHorz 0 [ argText; horz [text "->"; typ r_typ ]]
       | TObject flds -> 
         let isFunctionObject fieldList =
@@ -267,7 +272,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TIntersect (t1, t2)
       | TUnion (t1, t2) ->
   union (free_typ_ids t1) (free_typ_ids t2)
-      | TArrow (ss, t) 
+      | TArrow (ss, v, t) ->
+        unions (free_typ_ids t :: (match v with None -> empty | Some v -> free_typ_ids v) :: (map free_typ_ids ss))
       | TApp (t, ss) ->
   unions (free_typ_ids t :: (map free_typ_ids ss))
       | TObject o -> unions (L.map (fun (_, _, t) -> free_typ_ids t) o.fields)
@@ -286,8 +292,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
     | TIntersect (t1, t2) ->
       TIntersect (typ_subst x s t1, typ_subst x s t2)
-    | TArrow (t2s, t3)  ->
-      TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
+    | TArrow (t2s, v, t3)  ->
+      let opt_map f v = match v with None -> None | Some v -> Some (f v) in
+      TArrow (map (typ_subst x s) t2s, opt_map (typ_subst x s) v, typ_subst x s t3)
     | TObject o ->
         TObject (mk_obj_typ (map (third3 (typ_subst x s)) o.fields) 
                             o.absent_pat)
@@ -379,10 +386,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       simpl_equiv s1 t1 && List.for_all2 simpl_equiv s2s t2s
     | TId x, TId y ->
       x = y
-    | TArrow (args1, r1), TArrow (args2, r2) ->
+    | TArrow (args1, v1, r1), TArrow (args2, v2, r2) ->
       List.length args1 = List.length args2
       && List.for_all2 simpl_equiv args1 args2
       && simpl_equiv r1 r2
+      && (match v1, v2 with
+      | None, None -> true
+      | Some v1, Some v2 -> simpl_equiv v1 v2
+      | _ -> false)
     | TRec (x, s), TRec (y, t) ->
       x = y && simpl_equiv s t
     | TForall (x, s1, s2), TForall (y, t1, t2) ->
@@ -564,15 +575,21 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             try subtype cache s t1
             with Not_subtype _ -> subtype cache s t2
           end
-        | TArrow (args1, r1), TArrow (args2, r2) ->
-                begin
-                  try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
-                  with Invalid_argument _ -> mismatched_typ_exn s t
-                end
-              | TId x, t -> 
-                (try
-                   subtype cache (fst2 (IdMap.find x env)) t
-                 with Not_found -> Printf.printf "Cannot find %s in environment\n" x; raise Not_found)
+        | TArrow (args1, v1, r1), TArrow (args2, v2, r2) ->
+          begin
+            match v1, v2 with
+            | None, None ->
+              (try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
+               with Invalid_argument _ -> mismatched_typ_exn s t)
+            | Some v1, Some v2 ->
+              (try List.fold_left2 subtype cache (r1 :: args2 @ [v2]) (r2 :: args1 @ [v1])
+               with Invalid_argument _ -> mismatched_typ_exn s t)
+            | _ -> mismatched_typ_exn s t
+          end
+        | TId x, t -> 
+          (try
+             subtype cache (fst2 (IdMap.find x env)) t
+           with Not_found -> Printf.printf "Cannot find %s in environment\n" x; raise Not_found)
         | TObject obj1, TObject obj2 ->
             subtype_object env cache obj1 obj2
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'

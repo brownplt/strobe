@@ -45,11 +45,11 @@ let expose_simpl_typ env typ = expose env (simpl_typ env typ)
 
 let extract_ref msg p env t = 
   let rec helper t = match expose_simpl_typ env t with
-    | TPrim "Unsafe" as t -> Some t
     | TPrim _  -> None
     | TRef _ as t -> Some t
     | TSource _ as t -> Some t
     | TSink _ as t -> Some t
+    | TRec _ as t -> helper (simpl_typ env t)
     | TUnion (t1, t2) -> 
       let r1 = helper t1 in
       let r2 = helper t2 in
@@ -108,7 +108,7 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
       func_info.func_owned;
     let owned_vars = IdSet.diff func_info.func_owned misowned_vars in
     begin match bind_typ env (extract_arrow env (expose_simpl_typ env (check_kind p env (expose_simpl_typ env typ)))) with
-      | (env, TArrow (arg_typs, result_typ)) ->
+      | (env, TArrow (arg_typs, None, result_typ)) ->
         if not (List.length arg_typs = List.length args) then
           typ_mismatch p
             (sprintf "given %d argument names, but %d argument types"
@@ -118,6 +118,21 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
           let bind_arg env x t = bind_id x t env in
           let env = List.fold_left2 bind_arg env args arg_typs in
           let env = clear_labels env in
+          let body = 
+            if !is_flows_enabled then
+              Sb_semicfa.semicfa owned_vars env body 
+            else 
+              body in
+          (* printf "Owned = %s\n" (FormatExt.to_string
+            (IdSetExt.p_set FormatExt.text) func_info.func_owned);
+          printf "Rewritten to:\n%s\n\n\n" (string_of_exp body);  *)
+          check env body result_typ
+      | (env, TArrow (arg_typs, Some vararg_typ, result_typ)) ->
+        let bind_arg env x t = bind_id x t env in
+        let bind_vararg env x = bind_arg env x vararg_typ in
+        let (req_args, var_args) = ListExt.split_at (List.length arg_typs) args in
+        let env = List.fold_left2 bind_arg env req_args arg_typs in
+        let env = List.fold_left bind_vararg env var_args in
           let body = 
             if !is_flows_enabled then
               Sb_semicfa.semicfa owned_vars env body 
@@ -338,7 +353,7 @@ and synth (env : env) (exp : exp) : typ = match exp with
   | EApp (p, f, args) -> 
     let rec check_app tfun =
       begin match expose_simpl_typ env tfun with 
-        | TArrow (expected_typs, result_typ) ->
+        | TArrow (expected_typs, None, result_typ) -> 
           let args = fill (List.length expected_typs - List.length args) 
             (EConst (p, JavaScript_syntax.CUndefined)) args in
           begin
@@ -347,6 +362,19 @@ and synth (env : env) (exp : exp) : typ = match exp with
               typ_mismatch p
                 (sprintf "arity-mismatch:  %d args expected, but %d given"
                    (List.length expected_typs) (List.length args))
+          end;
+          result_typ
+        | TArrow (expected_typs, Some vararg_typ, result_typ) -> 
+          if (List.length expected_typs > List.length args) then
+            let args = fill (List.length expected_typs - List.length args) 
+              (EConst (p, JavaScript_syntax.CUndefined)) args in
+            List.iter2 (check env) args expected_typs
+          else begin
+            let (req_args, var_args) = ListExt.split_at (List.length expected_typs) args in
+            let req_args = fill (List.length expected_typs - List.length req_args)
+              (EConst (p, JavaScript_syntax.CUndefined)) req_args in
+            List.iter2 (check env) req_args expected_typs;
+            List.iter (fun t -> check env t vararg_typ) var_args
           end;
           result_typ
         | TIntersect (t1, t2) -> 
@@ -374,13 +402,13 @@ and synth (env : env) (exp : exp) : typ = match exp with
             | None -> 
               raise (Typ_error (p, sprintf "expected function, got %s"
                 (string_of_typ quant_typ)))
-            | Some (typ_vars, (TArrow (_, r) as arrow_typ)) ->
+            | Some (typ_vars, (TArrow (_, _, r) as arrow_typ)) -> 
               (* guess-work breaks bidirectionality *)
               let arg_typs = map (synth env) args in
               let assumed_arg_exps = 
                 List.map2 (fun e t -> ECheat (p, t, e)) args arg_typs in
               let assoc =
-                typ_assoc env arrow_typ (TArrow (arg_typs, r)) in
+                typ_assoc env arrow_typ (TArrow (arg_typs, None, r)) in
               let guess_typ_app exp typ_var = 
                 try
                   let guessed_typ = IdMap.find typ_var assoc in
@@ -409,9 +437,12 @@ and synth (env : env) (exp : exp) : typ = match exp with
     List.iter tc_bind binds;
     synth env body
   | EFunc (p, args, func_info, body) -> 
+    (* let env = List.fold_left (fun env id -> bind_id id (TId "Ext") env) env args in *)
+    (* TArrow(List.map (fun _ -> (TId "Ext")) args, None, synth env body) *)
     (* BSL: Synthesizing Ext *)
-    check env exp (TId "Ext") ;
-    (TId "Ext")
+    let arrowTyp = TArrow([TId "Ext"], Some (TId "Ext"), TId "Ext") in
+    check env exp arrowTyp;
+    arrowTyp
   | ESubsumption (p, t, e) ->
     let t = check_kind p env t in
     check env e t;

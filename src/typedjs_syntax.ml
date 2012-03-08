@@ -95,7 +95,7 @@ module WritTyp = struct
     | Prim of string
     | Union of t * t
     | Inter of t * t
-    | Arrow of t option * t list * t (** [Arrow (this, args, result)] *)
+    | Arrow of t option * t list * t option * t (** [Arrow (this, args, varargs, result)] *)
     | Object of f list
     | Pat of TypImpl.pat
     | Ref of t
@@ -147,9 +147,9 @@ module Typ = struct
     | TypImpl.TRec (x , t) -> forall_arrow (TypImpl.typ_subst x typ t)
     | _ -> None
 
-  let rec match_func_typ (typ : TypImpl.typ) : (TypImpl.typ list * TypImpl.typ) option = match typ with
+  let rec match_func_typ (typ : TypImpl.typ) : (TypImpl.typ list * TypImpl.typ option * TypImpl.typ) option = match typ with
     | TypImpl.TForall (_, _, t) -> match_func_typ t
-    | TypImpl.TArrow (args, ret) -> Some (args, ret)
+    | TypImpl.TArrow (args, varargs, ret) -> Some (args, varargs, ret)
     | _ -> None
 
   let is_present (fld : TypImpl.field) = match fld with
