@@ -1,0 +1,46 @@
+[scriptable]
+partial interface I2
+{
+
+  [unsafe] const PRInt32 num1 = 34;
+
+};
+
+
+
+[scriptable]
+partial interface I3
+{
+  [unsafe] void doSomethingElse(in PRUint32 a);
+
+  [unsafe] attribute PRInt32 changeMe;
+};
+
+[scriptable]
+partial interface I1
+{
+
+  void f5(in AString moose);
+
+  AString calcSomething(in AString foo, in PRInt32 cows);
+
+  PRInt32 f3(in AString foo);
+
+  [unsafe] void f2(in AString foo);
+
+};
+
+[scriptable]
+partial interface I1
+{
+  void f2(in AString foo);
+
+  void f6(inout AString horse);
+};
+
+
+[scriptable]
+partial interface I1
+{
+  [unsafe] void f6(inout AString horse);
+};

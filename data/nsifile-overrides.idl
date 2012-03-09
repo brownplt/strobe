@@ -1,0 +1,17 @@
+[scriptable]
+partial interface nsIFile
+{
+
+  [unsafe] void create(in unsigned long type, in unsigned long permissions);
+
+  [unsafe] void copyTo(in nsIFile newParentDir, in AString newName);
+
+  [unsafe] void copyToFollowingLinks(in nsIFile newParentDir, in AString newName);
+
+  [unsafe] void remove(in boolean recursive);
+
+  [unsafe] void createUnique(in unsigned long type, in unsigned long permissions);
+
+  [unsafe] void moveTo(in nsIFile newParentDir, in AString newName);
+
+};

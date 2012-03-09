@@ -1,0 +1,30 @@
+[scriptable]
+interface I3 {
+
+  AString doSomething();
+
+  const AString wee = "whee!";
+
+  void doSomethingElse(in PRUint32 a);
+
+  PRInt32 whoo(in AString hoo);
+
+  attribute PRInt32 changeMe;
+
+};
+
+[scriptable]
+interface I2 : IP {
+
+  const PRInt32 num1 = 34;
+
+};
+
+
+
+[scriptable]
+interface I1 {
+
+  void f2(in AString foo);
+
+};
