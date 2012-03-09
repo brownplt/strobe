@@ -34,17 +34,17 @@ let sort_defs defs = List.stable_sort (fun d1 d2 ->
 ) defs
 
 
-let print_defs defs = 
+let rec print_defs defs = 
   let namedBraces name items =
     vert [horz [name; text "{"];
           horz [text " "; vert items];
           horz [text "}"]] in
-  let rec print_defs defs = (List.map (fun d -> squish [print_def d; text ";\n"]) (sort_defs defs))
+  let rec print_defs_helper defs = (List.map (fun d -> squish [print_def d; text ";\n"]) (sort_defs defs))
   and print_def def = match def with
     | Module(p, metas, id, defs) -> 
       namedBraces (vert [print_metas metas;
                          horz [text "Module"; print_id id]]) 
-        (print_defs defs)
+        (print_defs_helper defs)
     | Typedef(p, metas, typ, id) -> 
       vert [print_metas metas;
             horz [text "typedef"; print_typ typ; print_id id]]
@@ -119,6 +119,9 @@ let print_defs defs =
     | Retval -> text "retval"
     | Optional -> text "optional"
     | OptionalArgc -> text "optional_argc"
+    | PrivateBrowsingCheck -> text "PrivateBrowsingCheck"
+    | QueryInterfaceType -> text "QueryInterfaceType"
+    | Unsafe -> text "unsafe"
     | Clamp -> text "Clamp"
     | Scriptable -> text "Scriptable"
     | Uuid uuid -> squish [text "uuid"; parens (text uuid)]
@@ -257,4 +260,4 @@ let print_defs defs =
           | None -> print_id id
           | Some e -> horz [print_id id; text "="; print_exp e])
          ]
-  in vert (print_defs defs) std_formatter
+  in vert (print_defs_helper defs) std_formatter

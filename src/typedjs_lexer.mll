@@ -22,9 +22,6 @@ let escape_sequence = [^ '\r' '\n'] | ('x' hex hex) | ('u' hex hex hex hex)
 
 let double_quoted_string_char = [^ '\r' '\n' '"' '\\'] | ('\\' escape_sequence)
 
-
-(* NOTE: Do not use @@ or ; as tokens. They are used by the test-case parser,
-   which is particularly naive. *)
 rule token = parse
    | blank + { token lexbuf }
    | '\n' { new_line lexbuf; token lexbuf }
@@ -33,6 +30,7 @@ rule token = parse
    | "/*" { block_comment lexbuf }
    | "//"[^ '\r' '\n']* [ '\r' '\n' ] { new_line lexbuf; token lexbuf }
 
+   | "..." { DOTS }
    | "->" { ARROW }
    | "=>" { THICKARROW }
    | "(" { LPAREN }
@@ -48,13 +46,14 @@ rule token = parse
    | ">" { RANGLE }
    | "," { COMMA }
    | "Any" { ANY }
-   | "Num" { NUM }
    | "Str" { STR }
    | "Bool" { BOOL }
-   | "True" { TRUE }
-   | "False" { FALSE }
-   | "Undef" { UNDEF }
-   | "Null" { NULL }
+   | "Num" { PRIM "Num" }
+   | "True" { PRIM "True" }
+   | "False" { PRIM "False" }
+   | "Undef" { PRIM "Undef" }
+   | "Null" { PRIM "Null" }
+   | "@" (ident as x) { PRIM x }
    | "_" { UNDERSCORE }
    | "BAD" { BAD }
    | "ref" { REF }
@@ -80,6 +79,7 @@ rule token = parse
    | "^" { CARET }
    | "!" { BANG }
    | "rec" { REC }
+   | "primitive" { PRIMITIVE }
    | eof { EOF }
    | ident as x { ID x }
    | '"' (double_quoted_string_char* as x) '"' { STRING x }

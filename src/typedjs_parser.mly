@@ -2,23 +2,30 @@
 
 open Prelude
 open Typedjs_syntax
+open TypImpl
 module W = Typedjs_syntax.WritTyp
 
 let rec remove_this op = match op with
-  | W.Arrow (_, aa, r) -> W.Arrow (None, aa, r)
+  | W.Arrow (_, aa, v, r) -> W.Arrow (None, aa, v, r)
   | W.Inter (t1, t2) -> W.Inter (remove_this t1, remove_this t2)
   | W.Forall (x, s, t) -> W.Forall (x, s, remove_this t)
+  | W.Ref (W.Object (W.Present(_, t)::fields)) -> remove_this t
   | _ -> failwith "remove_this : illegal argument"
+
+let wrapArrow (thistype, args, var, ret) =
+  W.Ref( W.Object ([W.Present(P.singleton "-*- code -*-", W.Arrow (thistype, args, var, ret));
+                    W.Present(proto_pat, W.Id "Object"); (* ADDING THIS CAUSES AN ERROR "Object is unbound" *)
+                    W.Star(None)]))
 
 %}
 
-%token <string> ID TID STRING REGEX
-%token ARROW LPAREN RPAREN ANY STAR COLON EOF NUM UNION STR
-       UNDEF BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
+%token <string> ID TID STRING REGEX PRIM
+%token ARROW LPAREN RPAREN ANY STAR COLON EOF UNION STR
+       BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
-       CHEAT NULL TRUE FALSE REC INTERSECTION UNDERSCORE BAD
+       CHEAT REC INTERSECTION UNDERSCORE BAD
        HASHBRACE EQUALS TYPE QUES BANG TYPREC TYPLAMBDA THICKARROW
-       COLONCOLON CARET LLBRACE RRBRACE REF
+       COLONCOLON CARET LLBRACE RRBRACE REF PRIMITIVE DOTS
 
 %right UNION INTERSECTION THICKARROW REF
 %left LANGLE
@@ -37,9 +44,10 @@ kind :
   | kind THICKARROW kind { KArrow ([$1], $3) }
 
 args
-  :  { [] }
-  | arg_typ { [$1] }
-  | arg_typ STAR args { $1 :: $3 }
+  :  { ([], None) }
+  | arg_typ { ([$1], None) }
+  | arg_typ DOTS { ([], Some $1) }
+  | arg_typ STAR args { let (args, var) = $3 in (($1 :: args), var) }
 
 pat :
   | REGEX { (P.parse $startpos $1, true) }
@@ -74,13 +82,9 @@ typ_list :
 
 arg_typ
   : ANY { W.Top }
-  | NUM { W.Prim Num }
+  | PRIM { W.Prim $1 }
   | STR { W.Str }
   | BOOL { W.Bool }
-  | TRUE { W.Prim True }
-  | FALSE { W.Prim False }
-  | UNDEF { W.Prim Undef }
-  | NULL { W.Prim Null }
   | REGEX { W.Pat (P.parse $startpos $1) }
   | arg_typ UNION arg_typ { W.Union ($1, $3) }
   | arg_typ INTERSECTION arg_typ { W.Inter ($1, $3) }
@@ -95,9 +99,12 @@ arg_typ
 
 typ 
   : arg_typ { $1 }
-  | args ARROW typ { W.Arrow (Some W.Top, $1, $3) }
-  | LBRACK typ RBRACK args ARROW typ { W.Arrow (Some $2, $4, $6) }
-  | LBRACK RBRACK args ARROW typ { W.Arrow (None, $3, $5) }
+  | args ARROW typ { let (args, var) = $1 in wrapArrow (Some W.Top, args, var, $3) }
+  | LBRACK typ RBRACK args ARROW typ { let (args, var) = $4 in wrapArrow (Some $2, args, var, $6) }
+  | LBRACK RBRACK args ARROW typ { let (args, var) = $3 in wrapArrow (None, args, var, $5) }
+  | args THICKARROW typ { let (args, var) = $1 in W.Arrow (Some W.Top, args, var, $3) }
+  | LBRACK typ RBRACK args THICKARROW typ { let (args, var) = $4 in W.Arrow (Some $2, args, var, $6) }
+  | LBRACK RBRACK args THICKARROW typ { let (args, var) = $3 in W.Arrow (None, args, var, $5) }
   | FORALL ID LTCOLON typ DOT typ { W.Forall ($2, $4, $6) }
   | FORALL ID DOT typ { W.Forall ($2, W.Top, $4) }
   | REC ID DOT typ { W.Rec ($2, $4) }
@@ -120,10 +127,9 @@ typ_ann :
 
 any_id :
   | ID { $1 }
+  | PRIM { $1 }
   | STR { "Str" }
-  | UNDEF { "Undef" }
   | BOOL { "Bool" }
-  | NUM { "Num" }
 
 id_list :
   | { [] }
@@ -139,6 +145,7 @@ env_decl :
   | ID COLON typ { EnvBind (($startpos, $endpos), $1, W.Ref $3) }
   | OPERATOR STRING COLON typ 
       { EnvBind (($startpos, $endpos), $2, remove_this $4) }
+  | PRIMITIVE PRIM { EnvPrim (($startpos, $endpos), $2) }
 
 env_decls
   : { [] }

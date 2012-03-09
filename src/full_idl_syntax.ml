@@ -84,6 +84,9 @@ and meta =
   | Scriptable
   | NotXPCOM
   | NoScript
+  | PrivateBrowsingCheck
+  | QueryInterfaceType
+  | Unsafe
   | Retval
   | Optional
   | OptionalArgc

@@ -3,8 +3,6 @@ open Sig
 
 module L = ListExt
 
-
-
 module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   exception Typ_error of pos * string
@@ -31,17 +29,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   let get_num_typ_errors () = !num_typ_errors
 
-
   module P = Pat
   module Pat = Pat
   type pat = P.t
-
-  type prim =
-    | Num
-    | True
-    | False
-    | Undef
-    | Null
 
   type kind = 
     | KStar
@@ -53,10 +43,10 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | Maybe
   
   type typ = 
-    | TPrim of prim
+    | TPrim of string
     | TUnion of typ * typ
     | TIntersect of typ * typ
-    | TArrow of typ list * typ
+    | TArrow of typ list * typ option * typ (* args (including <this>), optional variadic arg, return typ *)
     | TObject of obj_typ
     | TRegex of pat
     | TRef of typ
@@ -92,6 +82,12 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   module TPSet = Set.Make (TypPair)
   module TPSetExt = SetExt.Make (TPSet)
 
+
+  let proto_str = "__proto__"
+    
+  let proto_pat = P.singleton proto_str
+  
+
   module Pretty = struct
 
     open Format
@@ -105,83 +101,122 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     and pr_kind k = match k with
       | KArrow _ -> parens (kind k)
       | _ -> kind k
+        
+    let hnest n (p : printer) (fmt : formatter) : unit =
+      pp_open_hvbox fmt n;
+      p fmt;
+      pp_close_box fmt ()
 
-    let rec typ t  = match t with
+    let print_space fmt = pp_print_space fmt ()
+
+    let hvert (p : printer list) (fmt : formatter) : unit =
+      hnest 2 (squish (intersperse print_space p)) fmt
+
+    let rec typ t = typ' false t
+    and typ' horzOnly t = 
+      let typ = typ' horzOnly in 
+      let hnestOrHorz n = if horzOnly then horz else (fun ps -> hnest n (squish ps)) in
+      match t with
       | TTop -> text "Any"
       | TBot -> text "DoesNotReturn"
-      | TPrim p -> text begin match p with
-    | Num -> "Num"
-    | True -> "True"
-    | False -> "False"
-    | Null -> "Null"
-    | Undef -> "Undef"
-      end
+      | TPrim p -> text ("@" ^ p)
       | TLambda (args, t) -> 
-  let p (x, k) = horz [ text x; text "::"; kind k ] in
-  horz [ text "Lambda "; horz (map p args); text "."; typ t ]
+        let p (x, k) = horz [ text x; text "::"; kind k ] in
+        hvert [horz [text "Lambda"; horz (map p args); text "."]; typ t ]
       | TFix (x, k, t) -> 
-  horz [ text "Fix "; text x; text "::"; kind k; typ t ]
+        hvert [horz [text "Fix"; text x; text "::"; kind k; text "."]; typ t ]
       | TApp (t, ts) ->
-  parens (horz [typ t; text "<"; horz (intersperse (text ",") (map typ ts));
-        text ">"])
+        (match ts with
+        | [] -> horz [typ t; text "<>"]
+        | _ -> parens (horz [typ t; angles (horz (intersperse (text ",") (map typ ts)))]))
       | TRegex pat -> text (P.pretty pat)
       | TUnion (t1, t2) ->
         let rec collectUnions t = match t with
-          | TUnion (t1, t2) -> collectUnions t1 @ collectUnions t2
-          | _ -> [t] in
+          | TUnion (t1, t2) -> 
+            let (t1h, t1s) = collectUnions t1 in
+            let (t2h, t2s) = collectUnions t2 in
+            (t1h, t1s @ (t2h :: t2s))
+          | _ -> (t, []) in
         let unions = collectUnions t in
         begin match unions with
-        | []
-        | [_] -> text "IMPOSSIBLE"
-        | [t1;t2] -> parens (horz [typ t1; text "+"; typ t2])
-        | t::ts -> parens (vert ((horz [text " "; typ t]) :: List.map (fun t -> horz [text "+"; typ t]) ts))
+        | (t1, [t2]) -> parens (hnestOrHorz 0 [squish [horz [typ t1; text "+"]]; 
+                                            if horzOnly then typ t2 else horz[empty;typ t2]])
+        | (t, ts) -> parens (hnest (-1) 
+                             (squish (intersperse print_space 
+                                        ((horz [empty; typ t]) :: List.map (fun t -> horz [text "+"; typ t]) ts))))
         end
       | TIntersect (t1, t2) -> (* horz [typ t1; text "&"; typ t2] *)
         let rec collectIntersections t = match t with
-          | TIntersect (t1, t2) -> collectIntersections t1 @ collectIntersections t2
-          | _ -> [t] in
+          | TIntersect (t1, t2) -> 
+            let (t1h, t1s) = collectIntersections t1 in
+            let (t2h, t2s) = collectIntersections t2 in
+            (t1h, t1s @ (t2h :: t2s))
+          | _ -> (t, []) in
         let intersections = collectIntersections t in
         begin match intersections with
-        | []
-        | [_] -> text "IMPOSSIBLE"
-        | [t1;t2] -> parens (horz [typ t1; text "&"; typ t2])
-        | t::ts -> parens (vert ((horz [text " "; typ t]) :: List.map (fun t -> horz [text "&"; typ t]) ts))
+        | (t1, [t2]) -> parens (hnest 0 (squish [squish [horz [typ t1; text "&"]]; 
+                                              if horzOnly then typ t2 else horz[empty;typ t2]]))
+        | (t, ts) -> parens (hnest (-1) 
+                             (squish (intersperse print_space 
+                                        ((horz [empty; typ t]) :: List.map (fun t -> horz [text "&"; typ t]) ts))))
         end
-      | TArrow (tt::arg_typs, r_typ) ->
-        let multiLine = List.exists (fun at -> match at with 
+      | TArrow (tt::arg_typs, varargs, r_typ) ->
+        let multiLine = horzOnly ||
+          List.exists (fun at -> match at with 
             TArrow _ | TObject _ -> true | _ -> false) arg_typs in
         let rec pairOff ls = match ls with
           | [] -> []
           | [_] -> ls
           | a::b::ls -> horz [a;b] :: pairOff ls in
+        let vararg = match varargs with
+          | None -> []
+          | Some t -> [horz[squish [parens(horz[typ' true t]); text "..."]]] in
         let argTexts = 
           (intersperse (text "*") 
-             (map (fun at -> begin match at with
-             | TArrow _ -> parens (typ at)
-             | _ -> typ at 
-             end) arg_typs)) in
-        horz[ brackets (typ tt);
-              (if multiLine 
-               then vert (pairOff (text " " :: argTexts)) 
-               else horz argTexts) ;
-              text "->";
-              typ r_typ ]
-      | TArrow (arg_typs, r_typ) ->
-  horz[ horz (intersperse (text "*") 
-                      (map (fun at -> begin match at with
-                        | TArrow _ -> parens (typ at)
-                        | _ -> typ at 
-                      end) arg_typs));
-              text "->";
-              typ r_typ ]
+             ((map (fun at -> begin match at with
+             | TArrow _ -> parens (horz [typ' true at])
+             | _ -> typ' true at 
+             end) arg_typs) @ vararg)) in
+        hnestOrHorz 0
+          [ squish [brackets (typ tt); 
+                    (if multiLine 
+                     then vert (pairOff (text " " :: argTexts)) 
+                     else horz (empty::argTexts))] ;
+            horz [text "->"; typ r_typ ]]
+      | TArrow (arg_typs, varargs, r_typ) ->
+        let vararg = match varargs with
+          | None -> []
+          | Some t -> [horz[squish [parens(horz[typ' true t]); text "..."]]] in
+        let argText = horz (intersperse (text "*") 
+                              ((map (fun at -> begin match at with
+                              | TArrow _ -> parens (horz [typ' true at])
+                              | _ -> typ' true at 
+                              end) arg_typs) @ vararg)) in
+        hnestOrHorz 0 [ argText; horz [text "->"; typ r_typ ]]
       | TObject flds -> 
-        let abs = horz [ text (P.pretty flds.absent_pat); text ": _" ] in
-        braces (vert (map pat (flds.fields) @ [abs]))
+        let isFunctionObject fieldList =
+          let findField namePat = 
+            try
+              let (_, _, typ) = 
+                List.find (fun (n, p, _) -> (p = Present && n = namePat)) fieldList in
+              (true, Some typ)
+            with Not_found -> (false, None) in
+          let (hasProto, _) = findField proto_pat in
+          let (hasCode, codeTyp) = findField (P.singleton "-*- code -*-") in
+          if ((List.length fieldList) = 2 && hasProto && hasCode)
+          then codeTyp
+          else None in
+        (match isFunctionObject (flds.fields) with
+        | Some arrTyp -> horz [squish [text "{|"; typ' true arrTyp; text "|}"]]
+        | None ->
+          let abs = horz [ text (P.pretty flds.absent_pat); text ": _" ] in
+          braces (hnestOrHorz 0 (intersperse print_space (map pat (flds.fields) @ [abs])))
+        )
       | TRef s -> horz [ text "Ref"; parens (typ s) ]
       | TSource s -> horz [ text "Src"; parens (typ s) ]
       | TSink s -> horz [ text "Snk"; parens (typ s) ]
       | TForall (x, s, t) -> 
-        horz [ text "forall"; text x; text "<:"; typ s; text "."; typ t ]
+        hvert [ horz [text "forall"; text x; text "<:"; typ s; text "."]; typ t ]
       | TId x -> text x
       | TRec (x, t) -> horz [ text "rec"; text x; text "."; typ t ]
   
@@ -190,16 +225,12 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             | Present -> text "!"
             | Maybe -> text "?"
             | Inherited -> text "^" in
-          horz [ text (P.pretty k); text ":"; pretty_pres; typ p; text "," ]
+          horz [ text (P.pretty k); squish [text ":"; pretty_pres]; typ p; text "," ]
   end
 
   let string_of_typ = FormatExt.to_string Pretty.typ
   let string_of_kind = FormatExt.to_string Pretty.kind
 
-  let proto_str = "__proto__"
-    
-  let proto_pat = P.singleton proto_str
-  
   let absent_pat ot = ot.absent_pat
 
   let mk_obj_typ (fs: field list) (absent_pat : pat): obj_typ = 
@@ -241,7 +272,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TIntersect (t1, t2)
       | TUnion (t1, t2) ->
   union (free_typ_ids t1) (free_typ_ids t2)
-      | TArrow (ss, t) 
+      | TArrow (ss, v, t) ->
+        unions (free_typ_ids t :: (match v with None -> empty | Some v -> free_typ_ids v) :: (map free_typ_ids ss))
       | TApp (t, ss) ->
   unions (free_typ_ids t :: (map free_typ_ids ss))
       | TObject o -> unions (L.map (fun (_, _, t) -> free_typ_ids t) o.fields)
@@ -260,8 +292,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
     | TIntersect (t1, t2) ->
       TIntersect (typ_subst x s t1, typ_subst x s t2)
-    | TArrow (t2s, t3)  ->
-      TArrow (map (typ_subst x s) t2s, typ_subst x s t3)
+    | TArrow (t2s, v, t3)  ->
+      let opt_map f v = match v with None -> None | Some v -> Some (f v) in
+      TArrow (map (typ_subst x s) t2s, opt_map (typ_subst x s) v, typ_subst x s t3)
     | TObject o ->
         TObject (mk_obj_typ (map (third3 (typ_subst x s)) o.fields) 
                             o.absent_pat)
@@ -353,10 +386,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       simpl_equiv s1 t1 && List.for_all2 simpl_equiv s2s t2s
     | TId x, TId y ->
       x = y
-    | TArrow (args1, r1), TArrow (args2, r2) ->
+    | TArrow (args1, v1, r1), TArrow (args2, v2, r2) ->
       List.length args1 = List.length args2
       && List.for_all2 simpl_equiv args1 args2
       && simpl_equiv r1 r2
+      && (match v1, v2 with
+      | None, None -> true
+      | Some v1, Some v2 -> simpl_equiv v1 v2
+      | _ -> false)
     | TRec (x, s), TRec (y, t) ->
       x = y && simpl_equiv s t
     | TForall (x, s1, s2), TForall (y, t1, t2) ->
@@ -381,10 +418,10 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   let pat_env (env : typenv) : pat IdMap.t =
     let select_pat_bound (x, (t, _)) = match t with
       | TRegex p -> Some (x, p)
-  | _ -> None in
-      L.fold_right (fun (x,p) env -> IdMap.add x p env)
-  (L.filter_map select_pat_bound (IdMap.bindings env))
-  IdMap.empty
+      | _ -> None in
+    L.fold_right (fun (x,p) env -> IdMap.add x p env)
+      (L.filter_map select_pat_bound (IdMap.bindings env))
+      IdMap.empty
 
   exception Invalid_parent of string
 
@@ -394,12 +431,12 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
        match P.is_subset (pat_env env) proto_pat pat with
       | true -> begin match pres with
         | Present -> begin match expose env (simpl_typ env fld) with
-          | TPrim Null -> Some (TPrim Null)
+          | TPrim "Null" -> Some (TPrim "Null")
           | TSource p
           | TRef p -> Some (expose env (simpl_typ env p))
           | _ -> raise (Invalid_parent ("__proto__ is "^ (string_of_typ fld)))
           end
-        | _ -> raise (Invalid_parent "__proto__ must be present or hidden")
+        | _ -> raise (Invalid_parent ("Looking for field " ^ (P.pretty pat) ^ " and __proto__ must be present or hidden"))
         end
       | false -> parent_typ' env flds'
 
@@ -420,7 +457,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TObject ot ->
           begin match parent_typ env t with
             | None
-            | Some (TPrim Null) ->
+            | Some (TPrim "Null") ->
               let f (pat, pres, _) = match pres with
                 | Inherited
                 | Present -> Some pat
@@ -437,13 +474,15 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   let inherit_guard_pat env typ = match typ with
     | TObject ot -> begin match !(ot.cached_guard_pat) with
-  | None -> let pat = calc_inherit_guard_pat env typ in
-      ot.cached_guard_pat := Some pat;
-      pat
-  | Some pat -> pat
+      | None -> let pat = calc_inherit_guard_pat env typ in
+                ot.cached_guard_pat := Some pat;
+                pat
+      | Some pat -> pat
     end
-    | t -> raise (Invalid_argument ("expected object type, got " ^
-               (string_of_typ t)))
+    | t -> 
+      Printf.printf "Expected object type, got:\n%s\n" (string_of_typ t);
+      raise (Invalid_argument ("expected object type, got " ^
+                                  (string_of_typ t)))
 
   let maybe_pats ot = 
     let f (pat, pres, _) acc = match pres with
@@ -480,25 +519,31 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       let t = expose env (simpl_typ env orig_t) in
       if P.is_subset (pat_env env) pat (inherit_guard_pat env t) then
         begin match t with
-          | TObject ot -> 
-            let sel (f_pat, _, f_prop) =
-              if P.is_overlapped f_pat pat then Some f_prop
-              else None in
-            L.fold_right (fun s t -> typ_union env s t)
-              (L.filter_map sel ot.fields)
-              (match parent_typ env t with
-                | None
-                | Some (TPrim Null) -> TBot
-                | Some parent_typ -> 
-            inherits p env parent_typ 
-              (P.intersect pat (maybe_pats ot)))
-          | _ -> failwith "lookup non-object"
-               end
+        | TObject ot -> 
+          let sel (f_pat, _, f_prop) =
+            if P.is_overlapped f_pat pat then Some f_prop
+            else None in
+          L.fold_right (fun s t -> typ_union env s t)
+            (L.filter_map sel ot.fields)
+            (match parent_typ env t with
+            | None
+            | Some (TPrim "Null") -> TBot
+            | Some parent_typ -> 
+              if (simpl_equiv orig_t (expose env (simpl_typ env parent_typ))) 
+              then orig_t
+              else begin
+                let check_parent_pat = (P.intersect pat (maybe_pats ot)) in
+                (* Printf.printf "pat: %s\nmaybe_pat:%s\nintersect: %s\norig_t: %s\nparent_typ:%s\n\n" (P.pretty pat) (P.pretty (maybe_pats ot)) (P.pretty check_parent_pat) (string_of_typ orig_t)(string_of_typ (expose env (simpl_typ env parent_typ))); *)
+                inherits p env parent_typ check_parent_pat
+              end
+            )
+        | _ -> failwith "lookup non-object"
+        end
       else begin match parent_typ env t with
-        | Some (TPrim Null) -> TPrim Undef
-        | _ ->
-          raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ 
-                               " in:\n" ^ string_of_typ orig_t))
+      | Some (TPrim "Null") -> TPrim "Undef"
+      | _ ->
+        raise (Typ_error (p, "lookup hidden field with " ^ (P.pretty pat) ^ 
+          " in:\n" ^ string_of_typ orig_t))
       end
     with Invalid_parent msg -> raise (Typ_error (p, msg))
 
@@ -530,13 +575,21 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             try subtype cache s t1
             with Not_subtype _ -> subtype cache s t2
           end
-        | TArrow (args1, r1), TArrow (args2, r2) ->
-                begin
-                  try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
-                  with Invalid_argument _ -> mismatched_typ_exn s t
-                end
-              | TId x, t -> 
-          subtype cache (fst2 (IdMap.find x env)) t
+        | TArrow (args1, v1, r1), TArrow (args2, v2, r2) ->
+          begin
+            match v1, v2 with
+            | None, None ->
+              (try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
+               with Invalid_argument _ -> mismatched_typ_exn s t)
+            | Some v1, Some v2 ->
+              (try List.fold_left2 subtype cache (r1 :: args2 @ [v2]) (r2 :: args1 @ [v1])
+               with Invalid_argument _ -> mismatched_typ_exn s t)
+            | _ -> mismatched_typ_exn s t
+          end
+        | TId x, t -> 
+          (try
+             subtype cache (fst2 (IdMap.find x env)) t
+           with Not_found -> Printf.printf "Cannot find %s in environment\n" x; raise Not_found)
         | TObject obj1, TObject obj2 ->
             subtype_object env cache obj1 obj2
         | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
@@ -545,18 +598,18 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | TRef s, TSource t -> subtype cache s t
         | TRef s, TSink t -> subtype cache t s
         | TForall (x1, s1, t1), TForall (x2, s2, t2) -> 
-    (* Kernel rule *)
-    (* TODO: ensure s1 = s2 *)
-    let cache' = subt env (subt env cache s1 s2) s2 s1 in
-    let t2 = typ_subst x2 (TId x1) t2 in
+          (* Kernel rule *)
+          (* TODO: ensure s1 = s2 *)
+          let cache' = subt env (subt env cache s1 s2) s2 s1 in
+          let t2 = typ_subst x2 (TId x1) t2 in
           let env' = IdMap.add x1 (s1, KStar) env in
-    subt env' cache' t1 t2
+          subt env' cache' t1 t2
         | _, TTop -> cache
         | TBot, _ -> cache
-  | TLambda ([(x, KStar)], s), TLambda ([(y, KStar)], t) ->
-    let env = IdMap.add x (TTop, KStar) env in
-    let env = IdMap.add y (TTop, KStar) env in
-    subt env cache s t
+        | TLambda ([(x, KStar)], s), TLambda ([(y, KStar)], t) ->
+          let env = IdMap.add x (TTop, KStar) env in
+          let env = IdMap.add y (TTop, KStar) env in
+          subt env cache s t
         | _ -> mismatched_typ_exn s t
 
   (* Check that an "extra" field is inherited *)

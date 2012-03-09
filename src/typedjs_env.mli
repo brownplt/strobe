@@ -1,5 +1,6 @@
 open Prelude
 open Typedjs_syntax
+open TypImpl
 
 exception Not_wf_typ of string
 
@@ -15,6 +16,8 @@ exception Not_wf_typ of string
   val bind_lbl : id -> typ -> env -> env
 
   val bind_typ_id : id -> typ -> env -> env
+
+  val bind_recursive_types : (id * typ) list -> env -> env
 
   val lookup_id : id -> env -> typ
 
@@ -48,6 +51,8 @@ exception Not_wf_typ of string
 
   val bind_typ : env -> typ -> env * typ
 
+  val bind_typ_id : id -> typ -> env -> env
+
 
 val parse_env : in_channel -> string -> env_decl list
 
@@ -68,3 +73,5 @@ val typid_env : env -> typ IdMap.t
 val extend_env : typ IdMap.t -> (typ * kind) IdMap.t -> env -> env
 
 val verify_env : env -> unit
+
+val print_env : env -> FormatExt.printer

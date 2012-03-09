@@ -15,18 +15,18 @@ end = struct
     | Long _ 
     | LongLong _
     | Octet
-    | Byte -> TPrim Num
+    | Byte -> TPrim "Num"
     | Float
-    | Double -> TPrim Num
+    | Double -> TPrim "Num"
     | DOMString -> TRegex Pat.all
-    | Date -> TPrim Null (* TODO(arjun): wrong *)
+    | Date -> TPrim "Null" (* TODO(arjun): wrong *)
     | Any -> TTop
-    | Boolean -> TUnion (TPrim True, TPrim False)
+    | Boolean -> TUnion (TPrim "True", TPrim "False")
     | Object -> TTop
     | Name n -> TApp (TId (scopedName n), [])
-    | Void -> TPrim Undef (* TUnion (TPrim Null, TPrim Undef) *)
+    | Void -> TPrim "Undef" 
     | Array t' -> TApp (TId "Array", [from_typ t'])
-    | Ques t' -> TUnion (from_typ t', TPrim Undef)
+    | Ques t' -> TUnion (from_typ t', TPrim "Undef")
     | Sequence t' -> TApp (TId "Array", [from_typ t']) (* TODO(arjun): WRONG *)
 
   
@@ -37,7 +37,7 @@ end = struct
       ((name_pat, Present, from_typ attr_typ) :: inst_flds, proto_flds)
     | Operation (_, result_typ, method_name, arg_typs) ->
       let name_pat = Pat.singleton (Id.string_of_id method_name) in
-      let method_typ = TArrow (self :: (map from_typ arg_typs), 
+      let method_typ = TArrow (self :: (map from_typ arg_typs), None,
                                from_typ result_typ) in
       (inst_flds, (name_pat, Inherited, method_typ) :: proto_flds)
     | _ -> (inst_flds, proto_flds) (* TODO(arjun): fill *)
@@ -98,7 +98,7 @@ end = struct
               let name = Id.string_of_id name in
               let t = 
                 TLambda ([], 
-                  TArrow (TTop :: map from_typ argtyps, from_typ rtyp)) in
+                  TArrow (TTop :: map from_typ argtyps, None, from_typ rtyp)) in
               (trm_vars, IdMap.add name (t, KArrow ([], KStar)) typ_vars)
             | _ -> failwith "catastrophe in unidl.ml"
           end

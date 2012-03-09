@@ -1,5 +1,6 @@
 open Prelude
 open Typedjs_syntax 
+open TypImpl
 
 type node = int
 

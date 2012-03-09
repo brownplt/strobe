@@ -1,5 +1,6 @@
 open Prelude
 open Typedjs_syntax
+open TypImpl
 open Typedjs_env
 open Format
 open Typedjs_tc_util
@@ -21,13 +22,11 @@ let disable_flows () = is_flows_enabled := false
 let rec skip n l = if n == 0 then l else (skip (n-1) (List.tl l))
 let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 
-let string_of_exp = FormatExt.to_string Typedjs_syntax.Pretty.p_exp
-
 let un_null t = match t with
-  | TUnion (TPrim (Undef), t') -> t'
-  | TUnion (t', TPrim (Undef)) -> t'
-  | TUnion (TPrim (Null), t') -> t'
-  | TUnion (t', TPrim (Null)) -> t'
+  | TUnion (TPrim "Undef", t') -> t'
+  | TUnion (t', TPrim "Undef") -> t'
+  | TUnion (TPrim "Null", t') -> t'
+  | TUnion (t', TPrim "Null") -> t'
   | _ -> t
 
 let check_kind p env typ : typ =
@@ -35,13 +34,58 @@ let check_kind p env typ : typ =
     match kind_check env typ with
       | KStar -> typ
       | k ->
-        raise (Typ_error  (p, sprintf "type term has kind %s; expected *" 
+        raise (Typ_error  (p, sprintf "type %s has kind %s; expected *" 
+                                      (string_of_typ typ)
                                       (string_of_kind k)))
   with
     | Sb_kinding.Kind_error msg ->
         raise (Sb_kinding.Kind_error (string_of_position p ^ ": " ^ msg))
   
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
+
+let extract_ref msg p env t = 
+  let rec helper t = match expose_simpl_typ env t with
+    | TPrim _  -> None
+    | TRef _ as t -> Some t
+    | TSource _ as t -> Some t
+    | TSink _ as t -> Some t
+    | TRec _ as t -> helper (simpl_typ env t)
+    | TUnion (t1, t2) -> 
+      let r1 = helper t1 in
+      let r2 = helper t2 in
+      (match r1, r2 with
+      | Some r, None
+      | None, Some r -> Some r
+      | _ -> None) 
+    | TIntersect (t1, t2) -> 
+      let r1 = helper t1 in
+      let r2 = helper t2 in
+      (match r1, r2 with
+      | Some r, None
+      | None, Some r -> Some r
+      | _ -> None)
+    | TForall _ -> Some t (* BSL : This seems incomplete; extract_ref won't descend under a Forall *)
+    | _ -> (* (printf "%s: Got to %s\n" msg (string_of_typ t)); *) None in
+  match helper t with
+  | Some t -> t
+  | None -> raise (Typ_error (p, sprintf "%s: Ambiguous ref type for type %s" msg (string_of_typ t)))
+
+let extract_arrow env t = 
+  let rec helper t = match expose_simpl_typ env t with
+    | TArrow _ as t -> Some t
+    | TUnion (t1, t2) -> 
+      let r1 = helper t1 in
+      let r2 = helper t2 in
+      (match r1, r2 with
+      | Some r, None
+      | None, Some r -> Some r
+      | _ -> None) 
+    | TForall _ -> Some t (* BSL : This seems incomplete; extract_arrow won't descend under a Forall *)
+    | _ -> None in
+  match helper t with
+  | Some t -> t
+  | None -> raise (Typ_error ((Lexing.dummy_pos, Lexing.dummy_pos), sprintf "Ambiguous arrow type for Func"))
+
 
 let rec check (env : env) (exp : exp) (typ : typ) : unit =
   try check' env exp typ
@@ -63,9 +107,8 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
     consumed_owned_vars := IdSet.union !consumed_owned_vars
       func_info.func_owned;
     let owned_vars = IdSet.diff func_info.func_owned misowned_vars in
-    let expected_typ = check_kind p env typ in
-    begin match bind_typ env (expose_simpl_typ env expected_typ) with
-      | (env, TArrow (arg_typs, result_typ)) ->
+    begin match bind_typ env (extract_arrow env (expose_simpl_typ env (check_kind p env (expose_simpl_typ env typ)))) with
+      | (env, TArrow (arg_typs, None, result_typ)) ->
         if not (List.length arg_typs = List.length args) then
           typ_mismatch p
             (sprintf "given %d argument names, but %d argument types"
@@ -84,16 +127,32 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
             (IdSetExt.p_set FormatExt.text) func_info.func_owned);
           printf "Rewritten to:\n%s\n\n\n" (string_of_exp body);  *)
           check env body result_typ
+      | (env, TArrow (arg_typs, Some vararg_typ, result_typ)) ->
+        let bind_arg env x t = bind_id x t env in
+        let bind_vararg env x = bind_arg env x vararg_typ in
+        let (req_args, var_args) = ListExt.split_at (List.length arg_typs) args in
+        let env = List.fold_left2 bind_arg env req_args arg_typs in
+        let env = List.fold_left bind_vararg env var_args in
+          let body = 
+            if !is_flows_enabled then
+              Sb_semicfa.semicfa owned_vars env body 
+            else 
+              body in
+          (* printf "Owned = %s\n" (FormatExt.to_string
+            (IdSetExt.p_set FormatExt.text) func_info.func_owned);
+          printf "Rewritten to:\n%s\n\n\n" (string_of_exp body);  *)
+          check env body result_typ
       | _, t -> 
         raise (Typ_error (p, sprintf "invalid type annotation on a function: %s"
           (string_of_typ t)))
     end
-  | ERef (p, ref_kind, e) -> begin match ref_kind, simpl_typ env typ with
+  | ERef (p, ref_kind, e) -> 
+    begin match ref_kind, extract_ref "ERef" p env (check_kind p env (expose_simpl_typ env typ)) with
     | SourceCell, TSource t
     | SinkCell, TSink t
     | RefCell, TRef t -> check env e t
-    | _  -> typ_mismatch p (* TODO(arjun): error msg *)
-             (sprintf "expected %s, got %s" (string_of_typ typ) "TODO")
+    | _, t  -> typ_mismatch p (* TODO(arjun): error msg *)
+             (sprintf "!!expected %s, got %s" (string_of_typ t) (string_of_typ (synth env e)))
     end
   | EArray (p, es) ->
       let expect_elt_typ = 
@@ -105,6 +164,23 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
            (sprintf "expected Array<%s>" (string_of_typ expect_elt_typ)));
       List.iter (fun e -> check env e expect_elt_typ) es 
   | EParen (_, e) -> check env e typ
+  | EObject (p, fields) -> begin match simpl_typ env typ with
+    | TObject _ as t -> 
+      let absPat = P.negate (List.fold_left P.union P.empty 
+                               (List.map (fun (f, _) -> P.singleton f) fields)) in
+      let newObjTyp = TObject (mk_obj_typ 
+                                 (List.map (fun (fieldName, fieldExp) -> 
+                                   let fieldTyp = (inherits p env t (P.singleton fieldName)) in
+                                   check env fieldExp fieldTyp;
+                                   (P.singleton fieldName, Present, fieldTyp)) fields)
+                                 absPat) in
+      if not (subtype env newObjTyp typ) then
+        typ_mismatch (Exp.pos exp)
+          (sprintf "expected %s, got %s" 
+             (string_of_typ typ)
+             (string_of_typ newObjTyp))
+    | _ -> typ_mismatch p (sprintf "expected TObject, got %s" (string_of_typ typ))
+  end
   | _ -> 
     let synth_typ = synth env exp in
     if not (subtype env synth_typ typ) then
@@ -172,15 +248,16 @@ and synth (env : env) (exp : exp) : typ = match exp with
       | SinkCell -> TSink t
       | RefCell -> TRef t
     end
-  | EDeref (p, e) -> begin match expose_simpl_typ env (synth env e) with
+  | EDeref (p, e) -> begin match extract_ref "EDeref" p env (expose_simpl_typ env (check_kind p env (expose_simpl_typ env (synth env e)))) with
       | TRef t -> t
       | TSource t -> t
       | t -> raise (Typ_error (p, "cannot read an expression of type " ^
         (string_of_typ t)))
   end 
   | ESetRef (p, e1, e2) -> 
-    let t = expose_simpl_typ env (synth env e1) in
+    let t = extract_ref "ESetRef" p env (expose_simpl_typ env (synth env e1)) in
     begin match  t with
+      | TRef (TPrim "Unsafe") -> t (* BSL: PUNTING ON ASSIGNMENT TO UNSAFE *)
       | TRef s 
       | TSink s -> check env e2 s; t
       | s -> typ_mismatch p
@@ -190,7 +267,7 @@ and synth (env : env) (exp : exp) : typ = match exp with
     end
   | ELabel (p, lbl, e) -> 
     (* This is a valid assumption for JavaScript. *)
-    synth (bind_lbl lbl (TPrim Undef) env) e
+    synth (bind_lbl lbl (TPrim "Undef") env) e
   | EBreak (p, lbl, e) ->
     let lbl_typ = 
       try lookup_lbl lbl env
@@ -212,8 +289,12 @@ and synth (env : env) (exp : exp) : typ = match exp with
     let t = synth env e in
     static env rt t
   | EIf (p, e1, e2, e3) ->
-    check env e1 typ_bool;
-    typ_union env (synth env e2) (synth env e3)
+    (match synth env e1 with
+    | TPrim "True" -> synth env e2
+    | TPrim "False" -> synth env e3
+    | t when subtype env t typ_bool ->
+      typ_union env (synth env e2) (synth env e3)
+    | _ -> raise (Typ_error (p, "Got non-bool type for condition of if expression")))
   | EObject (p, fields) ->
     let mk_field (name, exp) = 
       (P.singleton name, Present, synth env exp) in
@@ -272,7 +353,7 @@ and synth (env : env) (exp : exp) : typ = match exp with
   | EApp (p, f, args) -> 
     let rec check_app tfun =
       begin match expose_simpl_typ env tfun with 
-        | TArrow (expected_typs, result_typ) ->
+        | TArrow (expected_typs, None, result_typ) -> 
           let args = fill (List.length expected_typs - List.length args) 
             (EConst (p, JavaScript_syntax.CUndefined)) args in
           begin
@@ -281,6 +362,19 @@ and synth (env : env) (exp : exp) : typ = match exp with
               typ_mismatch p
                 (sprintf "arity-mismatch:  %d args expected, but %d given"
                    (List.length expected_typs) (List.length args))
+          end;
+          result_typ
+        | TArrow (expected_typs, Some vararg_typ, result_typ) -> 
+          if (List.length expected_typs > List.length args) then
+            let args = fill (List.length expected_typs - List.length args) 
+              (EConst (p, JavaScript_syntax.CUndefined)) args in
+            List.iter2 (check env) args expected_typs
+          else begin
+            let (req_args, var_args) = ListExt.split_at (List.length expected_typs) args in
+            let req_args = fill (List.length expected_typs - List.length req_args)
+              (EConst (p, JavaScript_syntax.CUndefined)) req_args in
+            List.iter2 (check env) req_args expected_typs;
+            List.iter (fun t -> check env t vararg_typ) var_args
           end;
           result_typ
         | TIntersect (t1, t2) -> 
@@ -295,18 +389,26 @@ and synth (env : env) (exp : exp) : typ = match exp with
                   with | Typ_error _ -> r1
                 end
               with | Typ_error _ -> check_app t2)
+        | TUnion (t1, t2) ->
+          let typ_or_err t = with_typ_exns (fun () -> try Some (check_app t) with Typ_error _ -> None) in
+          let r1 = typ_or_err t1 in
+          let r2 = typ_or_err t2 in
+          (match r1, r2 with
+          | Some r, None
+          | None, Some r -> r
+          | _ -> raise (Typ_error (p, sprintf "Ambiguous union of functions")))
         | (TForall _) as quant_typ -> 
           begin match Typ.forall_arrow quant_typ with
             | None -> 
               raise (Typ_error (p, sprintf "expected function, got %s"
                 (string_of_typ quant_typ)))
-            | Some (typ_vars, (TArrow (_, r) as arrow_typ)) ->
+            | Some (typ_vars, (TArrow (_, _, r) as arrow_typ)) -> 
               (* guess-work breaks bidirectionality *)
               let arg_typs = map (synth env) args in
               let assumed_arg_exps = 
                 List.map2 (fun e t -> ECheat (p, t, e)) args arg_typs in
               let assoc =
-                typ_assoc env arrow_typ (TArrow (arg_typs, r)) in
+                typ_assoc env arrow_typ (TArrow (arg_typs, None, r)) in
               let guess_typ_app exp typ_var = 
                 try
                   let guessed_typ = IdMap.find typ_var assoc in
@@ -319,7 +421,7 @@ and synth (env : env) (exp : exp) : typ = match exp with
               synth env (EApp (p, guessed_exp, assumed_arg_exps))
             | Some _ -> failwith "expected TArrow from forall_arrow"
           end
-        | not_func_typ ->
+        | not_func_typ -> 
           (* even in an intersection, this should count as a genuine error *)
           raise (Typ_error (p,
                             sprintf "expected function, got %s" 
@@ -335,7 +437,12 @@ and synth (env : env) (exp : exp) : typ = match exp with
     List.iter tc_bind binds;
     synth env body
   | EFunc (p, args, func_info, body) -> 
-    raise (Typ_error (p, "cannot calculate function type; annotation required"))
+    (* let env = List.fold_left (fun env id -> bind_id id (TId "Ext") env) env args in *)
+    (* TArrow(List.map (fun _ -> (TId "Ext")) args, None, synth env body) *)
+    (* BSL: Synthesizing Ext *)
+    let arrowTyp = TArrow([TId "Ext"], Some (TId "Ext"), TId "Ext") in
+    check env exp arrowTyp;
+    arrowTyp
   | ESubsumption (p, t, e) ->
     let t = check_kind p env t in
     check env e t;
@@ -346,7 +453,6 @@ and synth (env : env) (exp : exp) : typ = match exp with
     t
   | EDowncast (p, t, e) -> 
     let t = check_kind p env t in
-    let (p1, p2) = Exp.pos e in 
     ignore (synth env e);
     t
   | ETypAbs (p, x, t, e) ->

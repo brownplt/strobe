@@ -1,5 +1,7 @@
 open Prelude
 open Typedjs_syntax
+open FormatExt
+open TypImpl
 
 module List = ListExt
 exception Not_wf_typ of string
@@ -13,6 +15,28 @@ type env = {
   lbl_typs : typ IdMap.t; (* types of labels *)
   typ_ids: (typ * kind) IdMap.t; (* bounded type variables *)
 }
+
+let print_env env fmt : unit =
+  vert [text "Types of term identifiers:";
+        vert (List.map (fun (id, t) -> 
+          horz [text id; text "="; (TypImpl.Pretty.typ t)]) (IdMapExt.to_list env.id_typs));
+        empty; 
+        text "Primitive types:";
+        vert (List.map text (Sb_kinding.list_prims ()));
+        empty; 
+        text "Types of labels:";
+        vert (List.map (fun (id, t) -> horz[text id; text "="; (TypImpl.Pretty.typ t)]) 
+                (IdMapExt.to_list env.lbl_typs));
+        empty; 
+        text "Bounded type variables:";
+        vert (List.map (fun (id, (t, k)) -> 
+          horz [text id; 
+                vert [horz [text "="; (TypImpl.Pretty.typ t)];
+                      horz [text "::"; TypImpl.Pretty.kind k]]]) (IdMapExt.to_list env.typ_ids));
+        empty
+       ] 
+    fmt;
+  Format.pp_print_flush fmt ()
 
 
 let empty_env = { 
@@ -32,6 +56,14 @@ let bind_typ_id (x : id) (t : typ) (env : env) =
   let k = kind_check env t in
   { env with 
     typ_ids = IdMap.add x (t, k) env.typ_ids }
+
+let bind_recursive_types (xts : (id * typ) list) (env : env) =
+  let env' = 
+    List.fold_left
+      (fun env (x, t) -> {env with typ_ids = IdMap.add x (t, KStar) env.typ_ids})
+      env 
+      xts in
+  List.fold_left (fun env (x, t) -> bind_typ_id x t env) env' xts
 
 let lookup_id x env = IdMap.find x env.id_typs
 
@@ -69,21 +101,21 @@ let typ_union env = TypImpl.typ_union env.typ_ids
 let typ_intersect env = TypImpl.typ_intersect env.typ_ids
 
 let simpl_static env (typ : typ) (rt : RT.t) : typ = match rt with
-  | RT.Num -> typ_union env (TPrim Num) typ
+  | RT.Num -> typ_union env (TPrim "Num") typ
   | RT.Re _ -> typ_union env (TRegex any_fld) typ
   | RT.Bool -> typ_union env typ_bool typ
   | RT.Function ->
     (* TODO(arjun): This should be a type operator invocation *)
     typ_union env (TObject (mk_obj_typ
-      [(proto_pat, Present, TId "Function")] P.empty)) typ 
+                              [(proto_pat, Present, TId "Function")] P.empty)) typ 
   | RT.Object -> (* TODO(arjun): This should be a type operator invocation *)
     typ_union env (TObject (mk_obj_typ
-      [(proto_pat, Present, TId "Object")] P.empty)) typ
-  | RT.Undefined -> typ_union env (TPrim Undef) typ
+                              [(proto_pat, Present, TId "Object")] P.empty)) typ
+  | RT.Undefined -> typ_union env (TPrim "Undef") typ
 
 let rtany = 
   RTSetExt.from_list
-  [ RT.Num; RT.Re any_fld; RT.Bool; RT.Function; RT.Object; RT.Undefined ]
+    [ RT.Num; RT.Re any_fld; RT.Bool; RT.Function; RT.Object; RT.Undefined ]
 
 let is_re rt = match rt with RT.Re _ -> true | _ -> false
 
@@ -101,13 +133,15 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
         | Some re -> TRegex re
         | None -> typ
     else TBot
-  | TPrim (Num) 
-  | TPrim (True)
-  | TPrim (False) -> if RTSet.mem RT.Bool rt then typ else TBot
-  | TPrim (Null) -> if RTSet.mem RT.Object rt then typ else TBot
-  | TPrim (Undef) -> 
-      if RTSet.mem RT.Undefined rt then typ else TBot
-        (* any other app will be an object from a constructor *)
+  | TPrim "Num"
+  | TPrim "True"
+  | TPrim "False" -> if RTSet.mem RT.Bool rt then typ else TBot
+  | TPrim "Null" -> if RTSet.mem RT.Object rt then typ else TBot
+  | TPrim "Undef" -> 
+    if RTSet.mem RT.Undefined rt then typ else TBot
+  | TPrim "Unsafe" -> TPrim "Unsafe"
+  | TPrim s -> failwith ("**" ^ s ^ "**")
+  (* any other app will be an object from a constructor *)
   | TRef (TObject _) -> if RTSet.mem RT.Object rt then typ else TBot
   | TObject _ -> failwith "Static got a functional object"
   | TRef t -> TRef t
@@ -117,10 +151,10 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TIntersect (s, t) -> typ_intersect cs (static cs rt s) (static cs rt t)
   | TForall _ -> typ
   | TTop -> 
-      if RTSet.equal rt rtany then
-        TTop
-      else (* TODO: no arrow type that is the supertype of all arrows *)
-        List.fold_left (simpl_static cs) TBot (RTSetExt.to_list rt)
+    if RTSet.equal rt rtany then
+      TTop
+    else (* TODO: no arrow type that is the supertype of all arrows *)
+      List.fold_left (simpl_static cs) TBot (RTSetExt.to_list rt)
   | TId _ -> typ
   | TRec (x, t) -> let t' = TRec (x, static cs rt t) in
                    (match t' with TRec (_, TBot) -> TBot | typ -> typ)
@@ -134,37 +168,37 @@ let rec set_global_object env cname =
     with Not_found -> 
       raise (Not_wf_typ ("global object, " ^ cname ^ ", not found")) in
   match simpl_typ env ci_typ, ci_kind with
-  | TRef (TObject o), KStar ->
-    let fs = fields o in
-    let add_field env (x, pres, t) =
-      if pres = Present then
-        match P.singleton_string x with
-          | Some s -> bind_id s (TRef t) env
-          | None -> 
-            raise (Not_wf_typ (cname ^ " field was a regex in global"))
-      else
-        raise (Not_wf_typ "all fields on global must be present") in
-    List.fold_left add_field env fs
-  | t, _ -> raise (Not_wf_typ (cname ^ " global must be an object, got\n" ^
-                            string_of_typ t))
+    | TRef (TObject o), KStar ->
+      let fs = fields o in
+      let add_field env (x, pres, t) =
+        if pres = Present then
+          match P.singleton_string x with
+            | Some s -> bind_id s (TRef t) env
+            | None -> 
+              raise (Not_wf_typ (cname ^ " field was a regex in global"))
+        else
+          raise (Not_wf_typ "all fields on global must be present") in
+      List.fold_left add_field env fs
+    | t, _ -> raise (Not_wf_typ (cname ^ " global must be an object, got\n" ^
+                                   string_of_typ t))
 
 open Lexing
 
 let parse_env (cin : in_channel) (name : string) : env_decl list =
   let lexbuf = Lexing.from_channel cin in
-    try
-      lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with 
-                                      Lexing.pos_fname = name };
-      Typedjs_parser.env Typedjs_lexer.token lexbuf
-    with
-      | Failure "lexing: empty token" ->
-          failwith (sprintf "error lexing environment at %s"
-                      (string_of_position 
-                         (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
-      | Typedjs_parser.Error ->
-          failwith (sprintf "error parsing environment at %s"
-                      (string_of_position 
-                         (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+  try
+    lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with 
+      Lexing.pos_fname = name };
+    Typedjs_parser.env Typedjs_lexer.token lexbuf
+  with
+    | Failure "lexing: empty token" ->
+      failwith (sprintf "error lexing environment at %s"
+                  (string_of_position 
+                     (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+    | Typedjs_parser.Error ->
+      failwith (sprintf "error parsing environment at %s"
+                  (string_of_position 
+                     (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
 
 let extend_global_env env lst =
   let add env decl = match decl with
@@ -175,12 +209,15 @@ let extend_global_env env lst =
         bind_id x (desugar_typ p typ) env
     | EnvType (p, x, writ_typ) ->
       if IdMap.mem x env.typ_ids then
-  raise (Not_wf_typ (sprintf "the type %s is already defined" x))
+        raise (Not_wf_typ (sprintf "the type %s is already defined" x))
       else
-  let t = desugar_typ p writ_typ in
-  let k = kind_check env t in
-  { env with 
-    typ_ids = IdMap.add x (t, k) env.typ_ids }
+        let t = desugar_typ p writ_typ in
+        let k = kind_check env t in
+        { env with 
+          typ_ids = IdMap.add x (t, k) env.typ_ids }
+    | EnvPrim (p, s) ->
+      Sb_kinding.new_prim_typ  s;
+      env
   in List.fold_left add env lst
 
 
@@ -216,16 +253,19 @@ let rec typ_assoc (env : env) (typ1 : typ) (typ2 : typ) =
       let flds1 = fields o1 in
       let flds2 = fields o2 in
       List.fold_left assoc_merge
-  IdMap.empty
-  (List.map2_noerr (fld_assoc env) flds1 flds2)
+        IdMap.empty
+        (List.map2_noerr (fld_assoc env) flds1 flds2)
     | TSource s, TSource t
     | TSink s, TSink t
     | TRef s, TRef t ->
       typ_assoc env s t
-    | TArrow (args1, r1), TArrow (args2, r2) ->
+    | TArrow (args1, v1, r1), TArrow (args2, v2, r2) ->
       List.fold_left assoc_merge
-  (typ_assoc env r1 r2)
-  (List.map2_noerr (typ_assoc env) args1 args2)
+        ((fun base -> match v1, v2 with
+        | Some v1, Some v2 -> assoc_merge (typ_assoc env v1 v2) base
+        | _ -> base)
+            (typ_assoc env r1 r2))
+        (List.map2_noerr (typ_assoc env) args1 args2)
     | TRec (x, s), TRec (y, t) ->
       (* could do better here, renaming*)
       typ_assoc env s t
@@ -242,13 +282,13 @@ let typid_env env = IdMap.map (fun (t, _) -> t) env.typ_ids
 
 
 let extend_env (trm_vars : typ IdMap.t) (typ_vars : (typ * kind) IdMap.t) env =
-  let merge_fn x left right = match (left, right) with
-    | Some _, Some _ -> failwith (sprintf "rebinding %s in the environment" x)
+  let merge_fn toStr x left right = match (left, right) with
+    | Some t1, Some t2 -> failwith (sprintf "rebinding %s in the environment: currently has type %s and trying to add type %s" x (toStr t1) (toStr t2))
     | None, Some t
     | Some t, None -> Some t
     | None, None -> failwith "impossible case in extend_env" in
-  { env with id_typs = IdMap.merge merge_fn env.id_typs trm_vars;
-             typ_ids = IdMap.merge merge_fn env.typ_ids typ_vars }
+  { env with id_typs = IdMap.merge (merge_fn string_of_typ) env.id_typs trm_vars;
+    typ_ids = IdMap.merge (merge_fn (fun (t, _) -> string_of_typ t)) env.typ_ids typ_vars }
 
 let verify_env env : unit =
   let errors = ref false in
@@ -265,7 +305,8 @@ let verify_env env : unit =
         errors := true
       end in
   IdMap.iter f env.typ_ids;
-  (* 
-  if !errors then
-    raise (Invalid_argument "ill-formed environment")
+(* 
+     if !errors then
+     raise (Invalid_argument "ill-formed environment")
   *)
+

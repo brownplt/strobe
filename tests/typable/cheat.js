@@ -16,3 +16,18 @@ if(typeof d === "boolean") {
 
 
 
+var foo = (/*: cheat Ext*/ (bar))();
+
+
+/*: cheat @Unsafe*/
+var bar;
+bar = /*: cheat @Unsafe*/function() {
+};
+
+/*: cheat @Unsafe*/
+function unsafeFn() {}
+
+/*: Ext */
+function foobar(x, y) { return x; }
+
+if (!false) { 45; } else { 45-"hellow"; }

@@ -31,9 +31,9 @@ module RTSetExt = SetExt.Make (RTSet)
 
 module TypImpl = Typ.Make (P)
 
-include TypImpl
+(* include TypImpl *)
 
-let typ_bool = TUnion (TPrim (True), TPrim (False))
+let typ_bool = TypImpl.TUnion (TypImpl.TPrim "True", TypImpl.TPrim "False")
 
 let any_fld = P.all
 
@@ -54,7 +54,7 @@ type func_info = {
 type exp
   = EConst of pos * JavaScript_syntax.const
   | EBot of pos
-  | EAssertTyp of pos * typ * exp
+  | EAssertTyp of pos * TypImpl.typ * exp
   | EArray of pos * exp list
   | EObject of pos * (string * exp) list
   | EId of pos * id
@@ -66,7 +66,7 @@ type exp
   | EApp of pos * exp * exp list
   | EFunc of pos * id list * func_info * exp
   | ELet of pos * id * exp * exp
-  | ERec of (id * typ * exp) list * exp
+  | ERec of (id * TypImpl.typ * exp) list * exp
   | ESeq of pos * exp * exp
   | ELabel of pos * id * exp 
   | EBreak of pos * id * exp
@@ -77,11 +77,11 @@ type exp
   | ERef of pos * ref_kind * exp
   | EDeref of pos * exp
   | ESetRef of pos * exp * exp
-  | ESubsumption of pos * typ * exp
-  | EDowncast of pos * typ * exp
-  | ETypAbs of pos * id * typ * exp 
-  | ETypApp of pos * exp * typ
-  | ECheat of pos * typ * exp
+  | ESubsumption of pos * TypImpl.typ * exp
+  | EDowncast of pos * TypImpl.typ * exp
+  | ETypAbs of pos * id * TypImpl.typ * exp 
+  | ETypApp of pos * exp * TypImpl.typ
+  | ECheat of pos * TypImpl.typ * exp
   | EParen of pos * exp
 
 (******************************************************************************)
@@ -92,12 +92,12 @@ module WritTyp = struct
   type t = 
     | Str
     | Bool
-    | Prim of prim
+    | Prim of string
     | Union of t * t
     | Inter of t * t
-    | Arrow of t option * t list * t (** [Arrow (this, args, result)] *)
+    | Arrow of t option * t list * t option * t (** [Arrow (this, args, varargs, result)] *)
     | Object of f list
-    | Pat of pat
+    | Pat of TypImpl.pat
     | Ref of t
     | Source of t
     | Top
@@ -106,16 +106,16 @@ module WritTyp = struct
     | Forall of id * t * t
     | Rec of id * t
     | Syn of id
-    | Lambda of (id * kind) list * t
-    | Fix of id * kind * t
+    | Lambda of (id * TypImpl.kind) list * t
+    | Fix of id * TypImpl.kind * t
     | App of t * t list
        
   and f = 
-    | Present of pat * t
-    | Maybe of pat * t
-    | Inherited of pat * t
-    | Absent of pat
-    | Skull of pat
+    | Present of TypImpl.pat * t
+    | Maybe of TypImpl.pat * t
+    | Inherited of TypImpl.pat * t
+    | Absent of TypImpl.pat
+    | Skull of TypImpl.pat
     | Star of t option
 
 end
@@ -123,6 +123,7 @@ end
 type env_decl =
   | EnvBind of pos * id * WritTyp.t
   | EnvType of pos * id * WritTyp.t
+  | EnvPrim of pos * id
 
 type annotation =
   | ATyp of WritTyp.t
@@ -137,22 +138,22 @@ type annotation =
 module Typ = struct
 
 
-  let rec forall_arrow (typ : typ) : (id list * typ) option = match typ with
-    | TArrow _ -> Some ([], typ)
-    | TForall (x, _, typ') -> begin match forall_arrow typ' with
+  let rec forall_arrow (typ : TypImpl.typ) : (id list * TypImpl.typ) option = match typ with
+    | TypImpl.TArrow _ -> Some ([], typ)
+    | TypImpl.TForall (x, _, typ') -> begin match forall_arrow typ' with
   | None -> None
   | Some (xs, t) -> Some (x :: xs, t)
     end
-    | TRec (x , t) -> forall_arrow (typ_subst x typ t)
+    | TypImpl.TRec (x , t) -> forall_arrow (TypImpl.typ_subst x typ t)
     | _ -> None
 
-  let rec match_func_typ (typ : typ) : (typ list * typ) option = match typ with
-    | TForall (_, _, t) -> match_func_typ t
-    | TArrow (args, ret) -> Some (args, ret)
+  let rec match_func_typ (typ : TypImpl.typ) : (TypImpl.typ list * TypImpl.typ option * TypImpl.typ) option = match typ with
+    | TypImpl.TForall (_, _, t) -> match_func_typ t
+    | TypImpl.TArrow (args, varargs, ret) -> Some (args, varargs, ret)
     | _ -> None
 
-  let is_present (fld : field) = match fld with
-    | (_, Present, _) -> true
+  let is_present (fld : TypImpl.field) = match fld with
+    | (_, TypImpl.Present, _) -> true
     | _ -> false
 
 end
@@ -195,12 +196,14 @@ module Exp = struct
     | EParen (p, _) -> p
 end
 
-module Pretty = struct
+module Pretty : sig
+  val exp : exp -> FormatExt.printer
+end = struct
 
   open Format
   open FormatExt
 
-  let typ t = text (string_of_typ t)
+  let typ t = TypImpl.Pretty.typ t
 
   let rec exp e = match e with
     | EConst (_, c) -> JavaScript.Pretty.p_const c
@@ -265,12 +268,10 @@ module Pretty = struct
   and rec_bind (x, t, e) = 
     parens (horz [text x; text ":"; typ t; exp e])
 
-  let p_exp = exp
-   
 end
 
 
-let string_of_exp = FormatExt.to_string Pretty.p_exp
+let string_of_exp = FormatExt.to_string Pretty.exp
 
 let assigned_free_vars (e : exp) = 
   let rec exp : exp -> IdSet.t = function

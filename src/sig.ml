@@ -84,14 +84,6 @@ module type TYP = sig
 
   type pat = Pat.t
 
-
-  type prim =
-    | Num
-    | True
-    | False
-    | Undef
-    | Null
-
   type kind = 
     | KStar
     | KArrow of kind list * kind
@@ -102,10 +94,10 @@ module type TYP = sig
     | Maybe
   
   type typ = 
-    | TPrim of prim
+    | TPrim of string
     | TUnion of typ * typ
     | TIntersect of typ * typ
-    | TArrow of typ list * typ
+    | TArrow of typ list * typ option * typ (* args (including <this>), optional variadic arg, return typ *)
     | TObject of obj_typ
     | TRegex of pat
     | TRef of typ
@@ -125,6 +117,11 @@ module type TYP = sig
   type field = pat * presence * typ
 
   type typenv = (typ * kind) IdMap.t
+
+  module Pretty : sig
+    val typ : typ -> FormatExt.printer
+    val kind : kind -> FormatExt.printer
+  end
 
   val string_of_typ : typ -> string
   val string_of_kind : kind -> string

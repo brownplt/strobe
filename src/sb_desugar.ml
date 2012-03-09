@@ -1,5 +1,6 @@
 open Prelude
 open Typedjs_syntax
+open TypImpl
 
 module W = WritTyp
 module List = ListExt
@@ -34,14 +35,16 @@ let assert_overlap pat1 pat2 = match P.example (P.intersect pat1 pat2) with
     error (sprintf "%s and %s are overlapped. E.g.,\n%s\n is in both patterns." 
        (P.pretty pat1) (P.pretty pat2) str)
 
-let rec typ (writ_typ : W.t) : typ = match writ_typ with
+let rec typ (writ_typ : W.t) : typ =
+  let opt_map f v = match v with None -> None | Some v -> Some (f v) in
+  match writ_typ with
   | W.Str -> TRegex P.all
   | W.Prim p -> TPrim p
-  | W.Bool -> TUnion (TPrim True, TPrim False)
+  | W.Bool -> TUnion (TPrim "True", TPrim "False")
   | W.Union (t1, t2) -> TUnion (typ t1, typ t2)
   | W.Inter (t1, t2) -> TIntersect (typ t1, typ t2)
-  | W.Arrow (None, args, r) -> TArrow (map typ args, typ r)
-  | W.Arrow (Some this, args, r) -> TArrow ((typ this):: (map typ args), typ r)
+  | W.Arrow (None, args, var, r) -> TArrow (map typ args, opt_map typ var, typ r)
+  | W.Arrow (Some this, args, var, r) -> TArrow ((typ this):: (map typ args), opt_map typ var, typ r)
   | W.Object flds -> object_typ flds
   | W.Pat pat -> TRegex pat
   | W.Ref t -> TRef (typ t)

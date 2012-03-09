@@ -1,9 +1,21 @@
 open Prelude
 open Typedjs_syntax
+open TypImpl
 
 exception Kind_error of string
 
 type kind_env = kind IdMap.t
+
+let valid_prims = ref (IdSetExt.from_list [ ])
+
+let list_prims () = IdSetExt.to_list !valid_prims
+
+let new_prim_typ (s : string) : unit =
+  if IdSet.mem s !valid_prims then
+    raise (Kind_error (s ^ " is already defined as a primitive type"))
+  else (
+    (* Printf.printf "Adding prim %s\n" s; *)
+    valid_prims := IdSet.add s !valid_prims)
 
 let kind_mismatch typ calculated_kind expected_kind = 
   raise 
@@ -17,8 +29,12 @@ let kind_mismatch typ calculated_kind expected_kind =
 let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
   | TTop
   | TBot
-  | TRegex _
-  | TPrim _ -> KStar
+  | TRegex _ -> KStar
+  | TPrim s -> 
+    if IdSet.mem s !valid_prims then 
+      KStar
+    else
+      raise (Kind_error (s ^ " is not a primitive type"))
   | TUnion (t1, t2)
   | TIntersect (t1, t2) ->
     begin match kind_check env t1, kind_check env t2 with
@@ -33,11 +49,12 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
       | KStar -> KStar
       | k -> kind_mismatch t k KStar
     end
-  | TArrow (arg_typs, result_typ) ->
+  | TArrow (arg_typs, varargs, result_typ) ->
     let assert_kind t = match kind_check env t with
       | KStar -> ()
       | k -> kind_mismatch t k KStar in
     List.iter assert_kind (result_typ :: arg_typs);
+    (match varargs with None -> () | Some v -> assert_kind v);
     KStar
   | TObject o ->
     List.iter (assert_fld_kind env) (fields o);
@@ -46,7 +63,14 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
     begin 
       try IdMap.find x env
       with Not_found ->
-  raise (Kind_error (sprintf "type variable %s is unbound" x))
+        let strfmt = Format.str_formatter in
+        let envText = (IdMap.iter (fun id k -> 
+          FormatExt.horz [FormatExt.text id; FormatExt.text "="; Pretty.kind k] strfmt;
+          Format.pp_print_newline strfmt ()
+        ) env); Format.flush_str_formatter() in
+        let s = (sprintf "type variable %s is unbound in env:\n%s" x envText) in
+        Printf.printf "%s" s; print_newline();
+        raise (Kind_error s)
     end
   | TForall (x, t1, t2) ->
     begin match kind_check env t1, kind_check (IdMap.add x KStar env) t2 with
