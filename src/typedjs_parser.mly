@@ -17,6 +17,16 @@ let wrapArrow (thistype, args, var, ret) =
                     W.Present(proto_pat, W.Id "Object"); (* ADDING THIS CAUSES AN ERROR "Object is unbound" *)
                     W.Star(None)]))
 
+let pushForallFunction typ = match typ with
+  | W.Forall (var, bound, W.Ref(W.Object([W.Present(code, (W.Arrow _ as arrTyp));
+                                          W.Present(proto, W.Id "Object");
+                                          W.Star(None)])))
+      when code = P.singleton "-*- code -*-" &&
+        proto = proto_pat ->
+    W.Ref(W.Object([W.Present(code, W.Forall(var, bound, arrTyp));
+                    W.Present(proto, W.Id "Object");
+                    W.Star(None)]))
+  | _ -> typ
 %}
 
 %token <string> ID TID STRING REGEX PRIM
@@ -105,8 +115,8 @@ typ
   | args THICKARROW typ { let (args, var) = $1 in W.Arrow (Some W.Top, args, var, $3) }
   | LBRACK typ RBRACK args THICKARROW typ { let (args, var) = $4 in W.Arrow (Some $2, args, var, $6) }
   | LBRACK RBRACK args THICKARROW typ { let (args, var) = $3 in W.Arrow (None, args, var, $5) }
-  | FORALL ID LTCOLON typ DOT typ { W.Forall ($2, $4, $6) }
-  | FORALL ID DOT typ { W.Forall ($2, W.Top, $4) }
+  | FORALL ID LTCOLON typ DOT typ { pushForallFunction (W.Forall ($2, $4, $6)) }
+  | FORALL ID DOT typ { pushForallFunction (W.Forall ($2, W.Top, $4)) }
   | REC ID DOT typ { W.Rec ($2, $4) }
   | TYPLAMBDA ID COLONCOLON kind DOT typ { W.Lambda ([($2, $4)], $6) }
   | TYPREC ID COLONCOLON kind DOT typ { W.Fix ($2, $4, $6) }

@@ -34,3 +34,10 @@ let split_at (n : int) (l : 'a list) : ('a list * 'a list) =
     | _, [] -> ((List.rev revhd), tl)
     | _, hd::tl' -> helper (n-1) (hd::revhd, tl')
   in helper n ([], l)
+
+let remove_dups l =
+  let rec helper l = match l with
+    | [] -> []
+    | [h] -> [h]
+    | h::(m::t as tl) -> if h = m then (helper tl) else h::(helper tl)
+  in helper (List.sort compare l)

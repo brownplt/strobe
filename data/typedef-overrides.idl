@@ -1,0 +1,43 @@
+partial interface nsIFile {
+  [unsafe] void create(in unsigned long type, in unsigned long permissions);
+};
+
+partial interface nsIFileOutputStream {
+  [unsafe] void init(in nsIFile file, in long ioFlags, in long perm,
+                     in long behaviorFlags);
+};
+
+partial interface nsIOutputStream {
+  [unsafe] unsigned long write(in string aBuf, in unsigned long aCount);
+  [unsafe] unsigned long writeFrom(in nsIInputStream aFromStream,
+                                   in unsigned long aCount);
+};
+
+partial interface nsIBinaryOutputStream {
+  [unsafe] void writeBoolean(in boolean aBoolean);
+  [unsafe] void write8(in PRUint8 aByte);
+  [unsafe] void write16(in PRUint16 a16);
+  [unsafe] void write32(in PRUint32 a32);
+  [unsafe] void write64(in PRUint64 a64);
+  [unsafe] void writeFloat(in float aFloat);
+  [unsafe] void writeDouble(in double aDouble);
+  [unsafe] void writeStringZ(in string aString);
+  [unsafe] void writeWStringZ(in wstring aString);
+  [unsafe] void writeUtf8Z(in wstring aString);
+  [unsafe] void writeBytes([size_is(aLength)] in string aString, in PRUint32 aLength);
+  [unsafe] void writeByteArray([array, size_is(aLength)] in PRUint8 aBytes, in PRUint32 aLength);
+};
+
+partial interface nsIPrivateBrowsingService {
+  [PrivateBrowsingCheck] attribute boolean privateBrowsingEnabled;
+};
+
+partial interface nsISupports {
+  [QueryInterfaceType] void QueryInterface(in nsIIDRef uuid, 
+                                           [iid_is(uuid),retval] out nsQIResult result);
+};
+
+partial interface nsIJSCID {
+    [implicit_jscontext,optional_argc,QueryInterfaceType] jsval createInstance([optional] in jsval iid);
+    [implicit_jscontext,optional_argc,QueryInterfaceType] jsval getService([optional] in jsval iid);
+};

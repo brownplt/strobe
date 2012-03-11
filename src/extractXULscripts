@@ -1,0 +1,94 @@
+#!/usr/bin/perl
+
+use XML::LibXML;
+use Data::Dumper;
+use File::Basename;
+use strict;
+
+my @scripts = ();
+my %manifest = ();
+
+sub walkDOM;
+sub translateURL;
+sub readFile;
+sub parseManifest;
+
+sub parseManifest {
+    my ($file) = shift;
+    open FH, $file or die "Can't read $file";
+    my @manifest = <FH>;
+    close FH;
+
+    foreach my $entry (@manifest) {
+        chomp $entry;
+        my @parts = split " ", $entry;
+        if ($#parts == 2) {
+            $parts[2] =~ s/jar:(.*)\.jar!/\1.jar.unzipped/;
+            if ($parts[0] eq "content") {
+                $manifest{$parts[0]}{$parts[1]} = $parts[2];
+            } elsif ($parts[0] eq "overlay") {
+                push @{$manifest{$parts[0]}{$parts[1]}}, $parts[2];
+            }
+        }
+    }
+}
+
+sub translateURL {
+    my ($url) = shift;
+    if ($url =~ /chrome:\/\/([^\/]+)\/([^\/]+)\/(.*)/) {
+        $url = "$manifest{$2}{$1}/$3";
+    }
+    return $url;
+}
+
+sub readFile {
+    my ($file) = translateURL(shift);
+    open FH, $file or return $file;
+    my @lines = <FH>;
+    close FH;
+    return (join "", @lines);
+}
+
+sub walkDOM {
+    my ($elt) = shift;
+    if ($elt->nodeName =~ /script/i) {
+        if ($elt->hasAttribute("src")) { 
+            push @scripts, readFile($elt->getAttribute("src")); 
+        } else {
+            push @scripts, $elt->textContent;
+        }
+    } else {
+        foreach my $attr ($elt->attributes()) {
+            if ($attr and $attr->nodeName =~ /^on/) {
+                push @scripts, ("function(event) { " . $attr->value . " }");
+            }
+        }
+    }
+    my $kid = $elt->firstChild;
+    while ($kid) {
+        walkDOM $kid;
+        $kid = $kid->nextSibling();
+    }
+}
+
+my $manifestFile = shift;
+my ($fname, $baseDir, $suffix) = fileparse($manifestFile);
+
+parseManifest $manifestFile;
+
+chdir $baseDir;
+
+#print Dumper(\%manifest);
+
+my @files = @ARGV;
+foreach my $target (keys %{$manifest{overlay}}) {
+    push @files, (@{$manifest{overlay}{$target}});
+}
+
+foreach my $fileName (@files) {
+    my $dom = XML::LibXML->load_xml(location => translateURL($fileName));
+    $dom->indexElements();
+    walkDOM ($dom->documentElement());
+}
+
+print (join "\n", @scripts);

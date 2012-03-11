@@ -128,7 +128,9 @@ let action_pretty () : unit =
 let action_expr () : unit =
   let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
   let e = from_javascript prog in
-    Exprjs.Pretty.p_expr e std_formatter
+  Exprjs.Pretty.p_expr e std_formatter; print_newline();
+  Exprjs.Pretty.p_expr (lift_decls e) std_formatter
+
 
 let src_js : JavaScript_syntax.prog option ref = ref None
 
@@ -137,7 +139,7 @@ let get_typedjs () =
     | "js" ->
       let js = parse_javascript (get_cin ()) (get_cin_name ()) in
       src_js := Some js;
-      Typedjs_fromExpr.from_exprjs (get_env ()) (from_javascript js)
+      Typedjs_fromExpr.from_exprjs (get_env ()) (lift_decls (from_javascript js))
     | "sb" ->
         (parse_sb (get_cin ()) (get_cin_name ()))
     | ext -> failwith ("unknown file extension " ^ ext)in

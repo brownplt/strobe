@@ -164,7 +164,7 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
            (sprintf "expected Array<%s>" (string_of_typ expect_elt_typ)));
       List.iter (fun e -> check env e expect_elt_typ) es 
   | EParen (_, e) -> check env e typ
-  | EObject (p, fields) -> begin match simpl_typ env typ with
+  | EObject (p, fields) -> begin match expose_simpl_typ env typ with
     | TObject _ as t -> 
       let absPat = P.negate (List.fold_left P.union P.empty 
                                (List.map (fun (f, _) -> P.singleton f) fields)) in
@@ -176,14 +176,14 @@ and check' (env : env) (exp : exp) (typ : typ) : unit = match exp with
                                  absPat) in
       if not (subtype env newObjTyp typ) then
         typ_mismatch (Exp.pos exp)
-          (sprintf "expected %s, got %s" 
+          (sprintf "**expected %s, got %s" 
              (string_of_typ typ)
              (string_of_typ newObjTyp))
     | _ -> typ_mismatch p (sprintf "expected TObject, got %s" (string_of_typ typ))
   end
   | _ -> 
-    let synth_typ = synth env exp in
-    if not (subtype env synth_typ typ) then
+    let synth_typ = expose env (synth env exp) in
+    if not (subtype env synth_typ (expose env typ)) then
       typ_mismatch (Exp.pos exp)
         (sprintf "expected %s, got %s" 
            (string_of_typ typ)
@@ -248,12 +248,15 @@ and synth (env : env) (exp : exp) : typ = match exp with
       | SinkCell -> TSink t
       | RefCell -> TRef t
     end
-  | EDeref (p, e) -> begin match extract_ref "EDeref" p env (expose_simpl_typ env (check_kind p env (expose_simpl_typ env (synth env e)))) with
-      | TRef t -> t
-      | TSource t -> t
-      | t -> raise (Typ_error (p, "cannot read an expression of type " ^
-        (string_of_typ t)))
-  end 
+  | EDeref (p, e) -> 
+    let typ = (expose_simpl_typ env (check_kind p env (expose_simpl_typ env (synth env e)))) in
+    if typ = TPrim "Unsafe" 
+    then raise (Typ_error (p, "Cannot dereference an unsafe value"))
+    else begin match extract_ref "EDeref" p env typ with
+    | TRef t -> t
+    | TSource t -> t
+    | t -> raise (Typ_error (p, "cannot read an expression of type " ^ (string_of_typ t)))
+    end 
   | ESetRef (p, e1, e2) -> 
     let t = extract_ref "ESetRef" p env (expose_simpl_typ env (synth env e1)) in
     begin match  t with
