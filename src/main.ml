@@ -134,6 +134,8 @@ let action_expr () : unit =
 
 let src_js : JavaScript_syntax.prog option ref = ref None
 
+let default_typ : TypImpl.typ option ref = ref None
+
 let get_typedjs () =
   let tjs = match get_sourcetype () with
     | "js" ->
@@ -168,7 +170,7 @@ let action_tc () : unit =
       (extend_env IdMap.empty typ_vars (get_env ()))
       (get_global_object ()) in
   (* verify_env env; *)
-  let _ = typecheck env (weave_annotations (get_typedjs ())) in
+  let _ = typecheck env !default_typ (weave_annotations (get_typedjs ())) in
   if TypImpl.get_num_typ_errors () > 0 then
     exit 2
   else
@@ -206,6 +208,16 @@ let compile_env () : unit =
   (* Printf.printf "****************************************\nDone compiling environment@."; *)
   (* set_env (extend_env idlEnv IdMap.empty (get_env ())) *)
 
+let allow_unbound typStr : unit =
+  let open Lexing in
+  let start_pos = { pos_fname = "<string>"; pos_lnum = 1; pos_bol = 0; pos_cnum = 0 } in
+  let len = String.length typStr in
+  let end_pos = { pos_fname = "<string>"; pos_lnum = 1; pos_bol = len; pos_cnum = len } in
+  match Typedjs_fromExpr.parse_annotation (start_pos, end_pos) typStr with
+  | Typedjs_syntax.ATyp typ ->
+    let typ = Sb_desugar.desugar_typ (start_pos, end_pos) typ in
+    default_typ := Some typ
+  | _ -> ()
 
 let action = ref action_tc
 
@@ -235,6 +247,8 @@ let main () : unit =
        "basic well-formedness checks before type-checking and flow-analysis");
       ("-noflows", Arg.Unit disable_flows,
        "disable flow analysis (benchmarks and debugging)");
+      ("-allow-unbound", Arg.String allow_unbound,
+       "Permit unbound global variables, with default type given by the argument");
       ("-sb", Arg.Unit (set_sourcetype "sb"),
        "Parse strobe source");
       ("-idl", Arg.String load_idl_file,

@@ -4,4 +4,4 @@ open Typedjs_env
 
 val disable_flows : unit -> unit
 
-val typecheck : env -> exp -> unit
+val typecheck : env -> TypImpl.typ option -> exp -> unit
