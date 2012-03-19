@@ -41,3 +41,7 @@ partial interface nsIJSCID {
     [implicit_jscontext,optional_argc,QueryInterfaceType] jsval createInstance([optional] in jsval iid);
     [implicit_jscontext,optional_argc,QueryInterfaceType] jsval getService([optional] in jsval iid);
 };
+
+partial interface nsIInterfaceRequestor {
+  [QueryInterfaceType] void getInterface(in nsIIDRef uuid, [iid_is(uuid),retval] out nsQIResult result);
+};

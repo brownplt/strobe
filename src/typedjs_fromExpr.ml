@@ -173,7 +173,7 @@ let rec exp (env : env) expr = match expr with
                ConstExpr (_, S.CUndefined)),
        next_expr) -> exp env next_expr
   | SeqExpr (a, VarDeclExpr(_, x, BotExpr _), e) ->
-    ELet (a, x, ERef(a, RefCell, EAssertTyp(a, TId "Ext", EBot a)), exp env e)
+    ELet (a, x, ERef(a, RefCell, EAssertTyp(a, TUninit (ref None), EBot a)), exp env e)
   | BotExpr a -> EBot a
   | SeqExpr (a, _, _) -> block_intro env (seq expr)
   | VarDeclExpr (a, x, e) -> 

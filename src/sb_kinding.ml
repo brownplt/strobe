@@ -30,6 +30,10 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
   | TTop
   | TBot
   | TRegex _ -> KStar
+  | TUninit t -> begin match !t with
+    | None -> kind_check env (TPrim "Undef")
+    | Some t -> kind_check env t
+  end
   | TPrim s -> 
     if IdSet.mem s !valid_prims then 
       KStar

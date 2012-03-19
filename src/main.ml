@@ -129,6 +129,7 @@ let action_expr () : unit =
   let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
   let e = from_javascript prog in
   Exprjs.Pretty.p_expr e std_formatter; print_newline();
+  print_newline();
   Exprjs.Pretty.p_expr (lift_decls e) std_formatter
 
 
@@ -280,7 +281,7 @@ with
   | Not_well_formed (p, s) ->
       eprintf "%s not well-formed:\n%s\n" (string_of_position p) s; exit 2
   | TypImpl.Typ_error (p, s) ->
-      eprintf "fatal type error at %s: %s\n" (string_of_position p) s; exit 2
+      eprintf "fatal type error at %s: %s\n" (string_of_position p) (TypImpl.typ_error_details_to_string s); exit 2
   | Sb_kinding.Kind_error s ->
       eprintf "type error (kinding): %s\n" s; exit 2
   | Sb_desugar.Typ_stx_error s ->

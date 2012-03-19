@@ -76,10 +76,7 @@ module type SET = sig
 end
 
 module type TYP = sig
-
-  exception Typ_error of pos * string
-  exception Not_subtype of string
-
+    
   module Pat : SET
 
   type pat = Pat.t
@@ -111,8 +108,29 @@ module type TYP = sig
     | TLambda of (id * kind) list * typ (** type operator *)
     | TApp of typ * typ list (** type operator application *)
     | TFix of id * kind * typ (** recursive type operators *)
+    | TUninit of typ option ref (** type of uninitialized variables *)
 
   and obj_typ
+
+  type typ_error_details =
+    | TypKind of (typ -> kind -> string) * typ * kind
+    | StringTyp of (string -> typ -> string) * string * typ
+    | FixedString of string
+    | String of (string -> string) * string
+    | TypTyp of (typ -> typ -> string) * typ * typ
+    | NumNum of (int -> int -> string) * int * int
+    | Typ of (typ -> string) * typ
+    | Pat of (pat -> string) * pat
+    | PatPat of (pat -> pat -> string) * pat * pat
+    | PatTyp of (pat -> typ -> string) * pat * typ
+    | TypTypTyp of (typ -> typ -> typ -> string) * typ * typ * typ
+
+
+  exception Typ_error of pos * typ_error_details
+  exception Not_subtype of typ_error_details
+
+  val typ_error_details_to_string : typ_error_details -> string
+
       
   type field = pat * presence * typ
 
@@ -163,7 +181,7 @@ module type TYP = sig
 
   val subtype : typenv -> typ -> typ -> bool
 
-  val typ_mismatch : pos -> string -> unit
+  val typ_mismatch : pos -> typ_error_details -> unit
 
   val get_num_typ_errors : unit -> int
 

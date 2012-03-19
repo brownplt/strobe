@@ -54,7 +54,12 @@ let create_env defs =
   let rec trans_toplevel defs =
     let (iids, componentsAndCID, compType, queryInterfaceType) = build_components (defs) in
     let interfaces = (filterNone (List.map (trans_def TBot queryInterfaceType) (defs))) in
-    let iids = List.map (fun iid -> (P.singleton iid, Present, TSource (TObject (mk_obj_typ [(proto_pat, Present, TId "nsIJSIID")] (P.negate proto_pat))))) iids in
+    let iids = List.map (fun iid -> 
+      let hashIID = P.singleton ("##" ^ iid ^ "##") in (*HACK*)
+      (P.singleton iid, Present, 
+       (*TSource*)TRef (TObject (mk_obj_typ [(proto_pat, Present, TId "nsIJSIID");
+                                     (hashIID, Present, TRegex hashIID)]
+                           (P.negate (P.union hashIID proto_pat)))))) iids in
     ((componentsAndCID :: iids @ interfaces), TId "Components")
   and trans_defs tt defs = 
     let (_, componentsAndCID, _, queryInterfaceType) = build_components (defs) in
@@ -63,7 +68,7 @@ let create_env defs =
     let catchallPat = match allFields with
       | [] -> P.all
       | hd::tl -> P.negate (List.fold_left P.union (fst3 hd) (List.map fst3 tl)) in
-    TSource ((* TRef *) (TObject (mk_obj_typ allFields catchallPat)))
+    (*TSource*)TRef ((* TRef *) (TObject (mk_obj_typ allFields catchallPat)))
   and wrapArrow t =
     TRef(TObject(mk_obj_typ [(P.singleton "-*- code -*-", Present, t);
                              (proto_pat, Present, TId "Object")]
@@ -77,7 +82,7 @@ let create_env defs =
         else let iidName = (Id.string_of_id name) ^ "_IID" in
              Some (iidName,
                    (idToPat name, Present, TId iidName),
-                   (fun tself -> TArrow ([tself; TId iidName], None, (TId (Id.string_of_id name)))))
+                   (fun tself -> TArrow ([TId "nsISupports"; TId iidName], None, (TId (Id.string_of_id name)))))
       | _ -> None in
     let unzip3 abcs =
       let rec helper abcs aas bbs ccs =
@@ -87,19 +92,26 @@ let create_env defs =
       helper abcs [] [] [] in
     let (iids, fields, funs) = unzip3 (filterNone (List.map interfaceToIIDFieldAndFun defs))in
     let proto = (proto_pat, Present, TId "Object") in
-    let compInterface = TSource (TObject (mk_obj_typ (proto::fields) P.empty)) in
+    let compInterface = (*TSource*)TRef (TObject (mk_obj_typ (proto::fields) P.empty)) in
+    let compUtils = (*TSource*)TRef (TObject (mk_obj_typ [(P.singleton "import", Present, wrapArrow (TArrow([TTop; TRegex P.all], None, TPrim "Undef")))] P.empty)) in
+    let compID = wrapArrow(TArrow([TTop; TRegex P.all], None, TId "Ext")) in
     let allOthers = P.negate proto_pat in
     (* NOTE: This should be Maybe, not Present, but the type system complains if I do that... *)
-    let compClasses = TSource (
+    let compClasses = (*TSource*)TRef (
                                  (TObject (mk_obj_typ [(allOthers, Present, (TId "nsIJSCID")); proto] P.empty))) in
     let componentsType = 
-      TSource ((* TRef *) (TObject (mk_obj_typ [(P.singleton "interfaces", Present, compInterface);
-                                          (P.singleton "classes", Present, compClasses);
-                                          proto] P.empty))) in
-    let queryInterfaceType tself = match funs with
-      | [] -> TBot (* absurd *)
-      | [ty] -> wrapArrow (ty tself)
-      | f::fs -> wrapArrow (List.fold_left (fun acc f -> TIntersect (f tself, acc)) (f tself) fs) in
+      (*TSource*)TRef ((* TRef *) (TObject (mk_obj_typ [(P.singleton "interfaces", Present, compInterface);
+                                                (P.singleton "classes", Present, compClasses);
+                                                (P.singleton "utils", Present, compUtils);
+                                                (P.singleton "ID", Present, compID);
+                                                proto] P.empty))) in
+    let queryInterfaceType tself =
+      wrapArrow (List.fold_left (fun acc f -> TIntersect (f tself, acc))
+                   (TArrow ([tself; TId "nsIJSIID"], None, TId "nsISupports")) funs) in
+    (* let queryInterfaceType tself = match funs with *)
+    (*   | [] -> TBot (\* absurd *\) *)
+    (*   | [ty] -> wrapArrow (ty tself) *)
+    (*   | f::fs -> wrapArrow (List.fold_left (fun acc f -> TIntersect (f tself, acc)) (f tself) fs) in *)
     (iids,
      (P.singleton "Components", Present, componentsType),
      componentsType, queryInterfaceType)
@@ -113,13 +125,13 @@ let create_env defs =
       let ifaceTyp = match parent with
         | None -> 
           let proto = (proto_pat, Present, (TId "Object")) in
-          TSource ((* TRef  *)(TObject (mk_obj_typ (proto::transfields) catchallPat)))
+          (*TSource*)TRef ((* TRef  *)(TObject (mk_obj_typ (proto::transfields) catchallPat)))
         | Some pName -> match pName with
           | RelativeName [id] -> 
-            TSource ((* TRef *) 
+            (*TSource*)TRef ((* TRef *) 
                     (TObject (mk_obj_typ ((proto_pat, Present, (TId (Id.string_of_id id)))
                                           :: transfields) catchallPat)))
-          | _ -> TSource ((* TRef *) (TObject (mk_obj_typ transfields catchallPat))) (* absurd, won't happen *)
+          | _ -> (*TSource*)TRef ((* TRef *) (TObject (mk_obj_typ transfields catchallPat))) (* absurd, won't happen *)
       in
       Some (idToPat name, Present, ifaceTyp)
     | ForwardInterface _ -> None
@@ -181,7 +193,7 @@ let create_env defs =
     | Float
     | Double -> TPrim "Num"
     | Boolean -> typ_bool
-    | DOMString -> TId "Str"
+    | DOMString -> TRegex P.all
     | Date -> TId "Date"
     | Object -> TRef (TObject (mk_obj_typ [] P.all))
     | Any -> TTop
@@ -193,7 +205,7 @@ let create_env defs =
         | "wstring"
         | "string"
         | "wchar"
-        | "char" -> TId "Str"
+        | "char" -> TRegex P.all
         | id -> TId id
       end
       | _ -> TId "##unknown##"

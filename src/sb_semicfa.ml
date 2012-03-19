@@ -226,6 +226,10 @@ end = struct
     let open Typedjs_syntax in
     let rt = rt_of_typ ids in
     match t with
+    | TypImpl.TUninit t -> begin match !t with
+      | None -> rt_of_typ ids (TypImpl.TPrim "Undef")
+      | Some t -> rt_of_typ ids t
+    end
       | TypImpl.TArrow _ -> RTSet.singleton RT.Function
       | TypImpl.TUnion (t1, t2) -> RTSet.union (rt t1) (rt t2)
       | TypImpl.TIntersect (t1, t2) -> RTSet.union (rt t1) (rt t2)

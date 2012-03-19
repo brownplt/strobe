@@ -34,9 +34,8 @@ let check_kind p env typ : typ =
     match kind_check env typ with
       | KStar -> typ
       | k ->
-        raise (Typ_error  (p, sprintf "type %s has kind %s; expected *" 
-                                      (string_of_typ typ)
-                                      (string_of_kind k)))
+        raise (Typ_error  (p, TypKind((fun t k -> sprintf "type %s has kind %s; expected *"
+          (string_of_typ t) (string_of_kind k)), typ, k)))
   with
     | Sb_kinding.Kind_error msg ->
         raise (Sb_kinding.Kind_error (string_of_position p ^ ": " ^ msg))
@@ -68,7 +67,8 @@ let extract_ref msg p env t =
     | _ -> (* (printf "%s: Got to %s\n" msg (string_of_typ t)); *) None in
   match helper t with
   | Some t -> t
-  | None -> raise (Typ_error (p, sprintf "%s: Ambiguous ref type for type %s" msg (string_of_typ t)))
+  | None -> raise (Typ_error (p, StringTyp((fun s t -> sprintf "%s: Ambiguous ref type for type %s"
+    s (string_of_typ t)), msg, t)))
 
 let extract_arrow env t = 
   let rec helper t = match expose_simpl_typ env t with
@@ -84,7 +84,7 @@ let extract_arrow env t =
     | _ -> None in
   match helper t with
   | Some t -> t
-  | None -> raise (Typ_error ((Lexing.dummy_pos, Lexing.dummy_pos), sprintf "Ambiguous arrow type for Func"))
+  | None -> raise (Typ_error ((Lexing.dummy_pos, Lexing.dummy_pos), FixedString "Ambiguous arrow type for Func"))
 
 
 let rec check (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit =
@@ -96,11 +96,14 @@ let rec check (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : u
 and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit = match exp with
   | ELabel (p, lbl, e) ->
     let s = synth (bind_lbl lbl typ env) default_typ e in
-    if not (subtype env s typ) then
-      typ_mismatch p (sprintf "label has type %s, but body returns %s"
-                              (string_of_typ typ) (string_of_typ s))
+    if not (subtype env s (expose env typ)) then
+      typ_mismatch p (TypTyp((fun t1 t2 -> sprintf "label has type %s, but body returns %s"
+        (string_of_typ t1) (string_of_typ t2)), typ, s))
   | ELet (_, x, e1, e2) -> 
     check (bind_id x (synth env default_typ e1) env) default_typ e2 typ
+  | ECheat (p, t, (EFunc(pf, args, func_info, body) as f)) -> 
+    let simpl_t = expose_simpl_typ env t in
+    check env default_typ f simpl_t
   | EFunc (p, args, func_info, body) -> 
     let misowned_vars = IdSet.inter !consumed_owned_vars 
       func_info.func_owned in
@@ -111,9 +114,7 @@ and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit
       | (env, TArrow (arg_typs, None, result_typ)) ->
         if not (List.length arg_typs = List.length args) then
           typ_mismatch p
-            (sprintf "given %d argument names, but %d argument types"
-               (List.length args)
-               (List.length arg_typs))
+            (NumNum(sprintf "given %d argument names, but %d argument types", (List.length args), (List.length arg_typs)))
         else
           let bind_arg env x t = bind_id x t env in
           let env = List.fold_left2 bind_arg env args arg_typs in
@@ -143,8 +144,7 @@ and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit
           printf "Rewritten to:\n%s\n\n\n" (string_of_exp body);  *)
           check env default_typ body result_typ
       | _, t -> 
-        raise (Typ_error (p, sprintf "invalid type annotation on a function: %s"
-          (string_of_typ t)))
+        raise (Typ_error (p, Typ((fun t -> sprintf "invalid type annotation on a function: %s" (string_of_typ t)), t)))
     end
   | ERef (p, ref_kind, e) -> 
     begin match ref_kind, extract_ref "ERef" p env (check_kind p env (expose_simpl_typ env typ)) with
@@ -152,7 +152,8 @@ and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit
     | SinkCell, TSink t
     | RefCell, TRef t -> check env default_typ e t
     | _, t  -> typ_mismatch p (* TODO(arjun): error msg *)
-             (sprintf "!!expected %s, got %s" (string_of_typ t) (string_of_typ (synth env default_typ e)))
+             (TypTyp((fun t1 t2 -> sprintf "!!expected %s, got %s"
+               (string_of_typ t1) (string_of_typ t2)), t, (synth env default_typ e)))
     end
   | EArray (p, es) ->
       let expect_elt_typ = 
@@ -161,7 +162,7 @@ and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit
       let expect_array_typ = mk_array_typ p env expect_elt_typ in
       (if not (subtype env (TRef typ) expect_array_typ) then
          typ_mismatch p 
-           (sprintf "expected Array<%s>" (string_of_typ expect_elt_typ)));
+           (TypTyp((fun t1 t2 -> sprintf "check: expected Array<%s>, got %s" (string_of_typ t1) (string_of_typ t2)), expect_elt_typ, (TRef typ))));
       List.iter (fun e -> check env default_typ e expect_elt_typ) es 
   | EParen (_, e) -> check env default_typ e typ
   | EObject (p, fields) -> begin match expose_simpl_typ env typ with
@@ -176,18 +177,16 @@ and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit
                                  absPat) in
       if not (subtype env newObjTyp typ) then
         typ_mismatch (Exp.pos exp)
-          (sprintf "**expected %s, got %s" 
-             (string_of_typ typ)
-             (string_of_typ newObjTyp))
-    | _ -> typ_mismatch p (sprintf "expected TObject, got %s" (string_of_typ typ))
+          (TypTyp((fun t1 t2 -> sprintf "**expected %s, got %s" (string_of_typ t1) (string_of_typ t2)), 
+                  typ, newObjTyp))
+    | _ -> typ_mismatch p (Typ((fun t -> sprintf "expected TObject, got %s" (string_of_typ t)), typ))
   end
   | _ -> 
-    let synth_typ = expose env (synth env default_typ exp) in
-    if not (subtype env synth_typ (expose env typ)) then
+    let synth_typ = expose_simpl_typ env (synth env default_typ exp) in
+    Printf.printf "Checking %s <?: %s\n" (string_of_typ synth_typ) (string_of_typ typ);
+    if not (subtype env synth_typ (expose_simpl_typ env typ)) then
       typ_mismatch (Exp.pos exp)
-        (sprintf "expected %s, got %s" 
-           (string_of_typ typ)
-           (string_of_typ synth_typ))
+        (TypTyp((fun t1 t2 -> sprintf "%%expected %s, got %s" (string_of_typ t1) (string_of_typ t2)), (expose_simpl_typ env typ), synth_typ))
 
 and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp with
   (* TODO: Pure if-splitting rule; make more practical by integrating with
@@ -211,8 +210,8 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
           synth env default_typ true_part in
         typ_union env true_typ false_typ
       | s, t ->
-        raise (Typ_error (p, "expected object and string types, got " ^
-          string_of_typ s ^ " and " ^ string_of_typ t))
+        raise (Typ_error (p, TypTyp((fun t1 t2 -> sprintf "expected object and string types, got %s and %s"
+          (string_of_typ t1) (string_of_typ t2)), s, t)))
     end
   | EConst (_, c) -> tc_const c
   | EBot _ -> TBot
@@ -220,9 +219,9 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
     try 
       lookup_id x env
     with Not_found -> match default_typ with
-    | None -> raise (Typ_error (p, x ^ " is not defined")) (* severe *)
+    | None -> raise (Typ_error (p, String(sprintf "%s is not defined", x))) (* severe *)
     | Some t -> 
-      Printf.eprintf "Warning: Unbound identifier %s at %s" x (string_of_position p);
+      Printf.eprintf "Warning: Unbound identifier %s at %s\n" x (string_of_position p);
       t (* Should probably warn about undefined identifier here *)
   end
   | ELet (_, x, e1, e2) -> synth (bind_id x (synth env default_typ e1) env) default_typ e2
@@ -232,13 +231,13 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
       | _ -> synth env default_typ e2
   end
   | EArray (p, []) -> 
-    raise (Typ_error (p, "an empty array literal requires a type annotation"))
+    raise (Typ_error (p, FixedString "synth: an empty array literal requires a type annotation"))
   | EArray (p, e::es) -> 
     let (t1, ts) = synth env default_typ e, map (synth env default_typ) es in
     let tarr = List.fold_right (typ_union env) ts t1 in
     begin match simpl_typ env (mk_array_typ p env tarr) with
       | TRef t -> t
-      | _ -> failwith "mk_array_typ did not produce a TRef"
+      | _ -> failwith "synth: mk_array_typ did not produce a TRef"
     end
   (* Optimization to avoid reducing TArray<'a> *)
   | ERef (p1, RefCell, EArray (p2, e::es)) ->
@@ -253,23 +252,30 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
       | RefCell -> TRef t
     end
   | EDeref (p, e) -> 
-    let typ = (expose_simpl_typ env (check_kind p env (expose_simpl_typ env (synth env default_typ e)))) in
+    let typ = ((check_kind p env (expose_simpl_typ env (synth env default_typ e)))) in
     if typ = TPrim "Unsafe" 
-    then raise (Typ_error (p, "Cannot dereference an unsafe value"))
+    then raise (Typ_error (p, FixedString "synth: Cannot dereference an unsafe value"))
     else begin match extract_ref "EDeref" p env typ with
     | TRef t -> t
     | TSource t -> t
-    | t -> raise (Typ_error (p, "cannot read an expression of type " ^ (string_of_typ t)))
+    | t -> raise (Typ_error (p, Typ((fun t -> sprintf "synth: cannot read an expression of type %s" (string_of_typ t)), t)))
     end 
   | ESetRef (p, e1, e2) -> 
     let t = extract_ref "ESetRef" p env (expose_simpl_typ env (synth env default_typ e1)) in
     begin match  t with
+    | TRef (TUninit ty) -> begin match !ty with
+      | None -> 
+        let newTy = synth env default_typ e2 in
+        (* Printf.printf "Updating typ at %s to %s\n" (string_of_position p) (string_of_typ newTy); *)
+        ty := Some newTy;
+        newTy
+      | Some s -> (* Printf.printf "Checking typ at %s\n" (string_of_position p); *) check env default_typ e2 s; 
+        TRef s
+    end
       | TRef (TPrim "Unsafe") -> t (* BSL: PUNTING ON ASSIGNMENT TO UNSAFE *)
       | TRef s 
       | TSink s -> check env default_typ e2 s; t
-      | s -> typ_mismatch p
-        (sprintf "left-hand side of assignment has type %s"
-           (string_of_typ s));
+      | s -> typ_mismatch p (Typ((fun t -> sprintf "left-hand side of assignment has type %s" (string_of_typ t)), s));
         t
     end
   | ELabel (p, lbl, e) -> 
@@ -279,7 +285,7 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
     let lbl_typ = 
       try lookup_lbl lbl env
       with Not_found -> (* severe *)
-        raise (Typ_error (p, "label " ^ lbl ^ " is not defined")) in
+        raise (Typ_error (p, String (sprintf "synth: label %s is not defined", lbl))) in
     check env default_typ e lbl_typ;
     TBot
   | ETryCatch (_, e1, x, e2) ->
@@ -301,7 +307,7 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
     | TPrim "False" -> synth env default_typ e3
     | t when subtype env t typ_bool ->
       typ_union env (synth env default_typ e2) (synth env default_typ e3)
-    | _ -> raise (Typ_error (p, "Got non-bool type for condition of if expression")))
+    | _ -> raise (Typ_error (p, FixedString "synth: Got non-bool type for condition of if expression")))
   | EObject (p, fields) ->
     let mk_field (name, exp) = 
       (P.singleton name, Present, synth env default_typ exp) in
@@ -319,7 +325,7 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
       | TRegex pat -> inherits p env (un_null (synth env default_typ obj)) pat
       | idx_typ -> 
         raise (Typ_error
-                 (p, sprintf "index has type %s" (string_of_typ idx_typ)))
+                 (p, Typ((fun t -> sprintf "index has type %s" (string_of_typ t)), idx_typ)))
     end
   | EUpdate (p, obj, field, value) -> begin
     let tobj = synth env default_typ obj in
@@ -330,28 +336,25 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
             if not (P.is_subset (pat_env (tid_env env)) 
                                 idx_pat (cover_pat o))
               then
-                typ_mismatch p (sprintf "%s affects hidden fields"
-                                        (P.pretty idx_pat))
+                typ_mismatch p (Pat((fun p -> sprintf "synth: %s affects hidden fields" (P.pretty p)), idx_pat))
           end;
           begin
             if P.is_overlapped idx_pat (absent_pat o) then
-              typ_mismatch p (sprintf "Assigning to absent field")
+              typ_mismatch p (PatPat((fun p1 p2 -> sprintf "synth: Assigning to field '%s' when absent_pat = %s" (P.pretty p1) (P.pretty p2)), idx_pat, (absent_pat o)))
           end;
           let fs : field list = fields o in
           let okfield (fld_pat, pres, s) = 
             if P.is_overlapped fld_pat idx_pat && not (subtype env typ s) then
               typ_mismatch p
-                (sprintf "field update: %s, the new value, is not subtype of %s at index %s"
-                   (string_of_typ typ) 
-                   (string_of_typ s) 
-                   (string_of_typ tfld)) in
+                (TypTypTyp((fun t1 t2 t3 -> 
+                  sprintf "synth, field update: %s, the new value, is not subtype of %s at index %s"
+                    (string_of_typ t1) (string_of_typ t2) (string_of_typ t3)), typ, s, tfld)) in
           let _ = List.iter okfield fs in
           tobj
         | obj, fld, typ ->
-          let _ = typ_mismatch p (sprintf "Bad update: %s[%s = %s]"
-                                    (string_of_typ obj) 
-                                    (string_of_typ fld) 
-                                    (string_of_typ typ)) in
+          let _ = typ_mismatch p (TypTypTyp((fun t1 t2 t3 -> 
+            sprintf "Bad update: %s[%s = %s]"
+              (string_of_typ t1) (string_of_typ t2) (string_of_typ t3)), obj, fld, typ)) in
           obj
           
   end
@@ -367,8 +370,8 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
             try List.iter2 (check env default_typ) args expected_typs
             with Invalid_argument "List.iter2" -> 
               typ_mismatch p
-                (sprintf "arity-mismatch:  %d args expected, but %d given"
-                   (List.length expected_typs) (List.length args))
+                (NumNum(sprintf "arity-mismatch:  %d args expected, but %d given",
+                        (List.length expected_typs), (List.length args)))
           end;
           result_typ
         | TArrow (expected_typs, Some vararg_typ, result_typ) -> 
@@ -403,12 +406,12 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
           (match r1, r2 with
           | Some r, None
           | None, Some r -> r
-          | _ -> raise (Typ_error (p, sprintf "Ambiguous union of functions")))
+          | _ -> raise (Typ_error (p, FixedString "synth: Ambiguous union of functions")))
         | (TForall _) as quant_typ -> 
           begin match Typ.forall_arrow quant_typ with
             | None -> 
-              raise (Typ_error (p, sprintf "expected function, got %s"
-                (string_of_typ quant_typ)))
+              raise (Typ_error (p, Typ((fun t -> sprintf "synth: expected function, got %s"
+                (string_of_typ t)), quant_typ)))
             | Some (typ_vars, (TArrow (_, _, r) as arrow_typ)) -> 
               (* guess-work breaks bidirectionality *)
               let arg_typs = map (synth env default_typ) args in
@@ -421,7 +424,7 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
                   let guessed_typ = IdMap.find typ_var assoc in
                   ETypApp (p, exp, guessed_typ) 
                 with Not_found -> begin
-                  raise (Typ_error (p, "$$$ could not instantiate")) end in
+                  raise (Typ_error (p, FixedString "synth: $$$ could not instantiate")) end in
               let guessed_exp = 
                 fold_left guess_typ_app (ECheat (p, quant_typ, f)) 
                   typ_vars in
@@ -431,8 +434,7 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
         | not_func_typ -> 
           (* even in an intersection, this should count as a genuine error *)
           raise (Typ_error (p,
-                            sprintf "expected function, got %s" 
-                              (string_of_typ not_func_typ)))
+                            Typ((fun t -> sprintf "expected function, got %s" (string_of_typ t)), not_func_typ)))
       end in 
     check_app (un_null (synth env default_typ f))
   | ERec (binds, body) -> 
@@ -442,8 +444,8 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
     let env = fold_left f env binds in
     let tc_bind (x, t, e) = check env default_typ e t in
     List.iter tc_bind binds;
-    synth env default_typ body
-  | EFunc (p, args, func_info, body) -> 
+    synth env default_typ body 
+ | EFunc (p, args, func_info, body) -> 
     (* let env = List.fold_left (fun env id -> bind_id id (TId "Ext") env) env args in *)
     (* TArrow(List.map (fun _ -> (TId "Ext")) args, None, synth env body) *)
     (* BSL: Synthesizing Ext *)
@@ -474,17 +476,17 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
         else 
           begin
             typ_mismatch p
-              (sprintf "type-argument %s is not a subtype of the bound %s"
-                 (string_of_typ u) (string_of_typ s));
+              (TypTyp((fun t1 t2 -> sprintf "type-argument %s is not a subtype of the bound %s"
+                 (string_of_typ t1) (string_of_typ t2)), u, s));
             typ_subst x s t (* Warning: produces possibily spurious errors *)
           end
       | t ->
         raise
-          (Typ_error (p, sprintf "expected forall-type in type application, \
-                                  got:\n%s\ntype argument is:\n%s"
-            (string_of_typ t) (string_of_typ u)))
+          (Typ_error (p, TypTyp((fun t1 t2 -> 
+            sprintf "expected forall-type in type application, got:\n%s\ntype argument is:\n%s"
+              (string_of_typ t1) (string_of_typ t2)), t, u)))
     end
-  | ECheat (p, t, _) -> t
+  | ECheat (p, t, _) -> expose_simpl_typ env t
   | EParen (p, e) -> synth env default_typ e
 
 and synths env default_typ es = map (synth env default_typ) es

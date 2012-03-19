@@ -209,22 +209,22 @@ end = struct
     | EConst (_, c) -> JavaScript.Pretty.p_const c
     | EBot _ -> text "bot"
     | EAssertTyp (_, t, e) ->
-        parens (vert [ text "assert-typ"; parens (typ t); exp e ])
+        parens (hov 1 2 [ text "assert-typ"; parens (typ t); exp e ])
     | EArray (_, es) -> brackets (horz (map exp es))
     | EObject (_, ps) -> brackets (vert (map fld ps))
     | EId (_, x) -> text x
-    | EBracket (_, e1, e2) -> squish [ exp e1; brackets (exp e2) ]
+    | EBracket (_, e1, e2) -> hov 0 1 [ exp e1; brackets (exp e2) ]
     | EUpdate (_, e1, e2, e3) -> 
-        squish [ exp e1; 
-                 brackets (squish [ exp e2; text ":="; exp e3])]
+        hov 0 0 [ exp e1; 
+                  brackets (hov 1 1 [ horz [exp e2; text ":="]; exp e3])]
     | EIf (_, e1, e2, e3) ->
         parens (vert [ horz [ text "if"; exp e1 ]; exp e2; exp e3 ])
-    | EApp (_, f, args) -> parens (horz (text "app" :: exp f :: map exp args))
+    | EApp (_, f, args) -> parens (hov 1 1 (text "app" :: exp f :: map exp args))
     | EFunc (_, args, t, body) ->
       parens (vert [ horz [ text "fun"; parens (horz (map text args)); 
                             IdSetExt.p_set text t.func_owned;
                           ];
-                       exp body])
+                     exp body])
     | ELet (_, x, bound, body) ->
         parens (vert [ horz [ text "let";
                               parens (vert (map bind [(x, bound)]))];
@@ -233,8 +233,8 @@ end = struct
         parens (vert [ horz [ text "rec"; parens (vert (map rec_bind binds)) ];
                        exp body ])
     | ESeq (_, e1, e2) -> parens (vert [ sep [ text "seq"; exp e1 ]; exp e2 ])
-    | ELabel (_, x, e) -> parens (vert [ text "label"; text x; exp e ])
-    | EBreak (_, x, e) -> parens (vert [ text "break"; text x; exp e ])
+    | ELabel (_, x, e) -> parens (hov 1 0 [ horz [text "label"; text x]; exp e ])
+    | EBreak (_, x, e) -> parens (hov 1 0 [ horz [text "break"; text x]; exp e ])
     | ETryCatch (_, body, x, catch) ->
         parens (vert [ text "try"; exp body; 
                        parens (vert [ text "catch"; text x; exp body ])])
@@ -246,9 +246,9 @@ end = struct
     | EInfixOp (_, op, e1, e2) -> parens (horz [ exp e1; text op; exp e2 ])
     | ETypecast (_, t, e) ->
         parens (vert [ text "cast"; RTSetExt.p_set RT.pp t; exp e ])
-    | ERef (_, _, e) -> parens (horz [ text "ref"; exp e ])
-    | EDeref (_, e) -> parens (horz [ text "deref"; exp e ])
-    | ESetRef (_, e1, e2) -> parens (horz [ text "set-ref!"; exp e1; exp e2 ])
+    | ERef (_, _, e) -> parens (hov 1 1 [ text "ref"; exp e ])
+    | EDeref (_, e) -> parens (hov 1 1 [ text "deref"; exp e ])
+    | ESetRef (_, e1, e2) -> parens (hov 1 1 [ text "set-ref!"; exp e1; exp e2 ])
     | ESubsumption (_, t, e) ->
         parens (vert [ text "upcast"; parens (typ t); exp e ])
     | EDowncast (_, t, e) ->
@@ -256,11 +256,11 @@ end = struct
     | ETypApp (_, e, t) -> parens (horz [ text "typ-app"; exp e; typ t ])
     | ETypAbs (_, x, t, e) -> 
         parens (horz [ text "typ-abs"; text x; text "<:"; typ t; exp e ])
-    | ECheat (_, t, e) -> parens (horz [ text "cheat"; typ t; exp e ])
-    | EParen (_, e) -> parens (horz [ text "parens"; exp e ])
+    | ECheat (_, t, e) -> parens (hov 1 0 [horz [ text "cheat"; typ t]; exp e ])
+    | EParen (_, e) -> parens (hov 1 0 [ text "parens"; exp e ])
 
   and fld (s, e) =
-    parens (horz [ text s; text ":"; exp e ])
+    parens (hov 1 0 [ horz[ text s; text ":"]; exp e ])
 
   and bind (x, e) = 
     parens (horz [text x; exp e])

@@ -161,6 +161,9 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TLambda _ -> failwith "TLambda in static"
   | TFix _ -> failwith "TLambda in static"
   | TApp _ -> typ
+  | TUninit t -> match !t with
+    | None -> static cs rt (TPrim "Undef")
+    | Some t -> static cs rt t
 
 let rec set_global_object env cname =
   let (ci_typ, ci_kind) = 
