@@ -251,7 +251,7 @@ end = struct
       | TypImpl.TForall _ -> rtany
       | TypImpl.TId x -> begin
         try rt_of_typ ids (IdMap.find x ids)
-        with Not_found -> failwith (sprintf "tid %s not found in rt_of_typ" x)
+        with Not_found -> rtany (* failwith (sprintf "tid %s not found in rt_of_typ" x) *)
       end
       | TypImpl.TRec (x, s) -> rt_of_typ (IdMap.add x t ids) s
       | TypImpl.TApp (t1, t2) -> rtany

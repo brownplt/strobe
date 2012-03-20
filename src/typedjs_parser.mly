@@ -15,17 +15,21 @@ let rec remove_this op = match op with
 let wrapArrow (thistype, args, var, ret) =
   W.Ref( W.Object ([W.Present(P.singleton "-*- code -*-", W.Arrow (thistype, args, var, ret));
                     W.Present(proto_pat, W.Id "Object"); (* ADDING THIS CAUSES AN ERROR "Object is unbound" *)
-                    W.Star(None)]))
+                    W.Present(P.singleton "prototype", W.Id "Ext");
+                    W.Star(Some (W.Id "Ext"))]))
 
 let pushForallFunction typ = match typ with
   | W.Forall (var, bound, W.Ref(W.Object([W.Present(code, (W.Arrow _ as arrTyp));
                                           W.Present(proto, W.Id "Object");
-                                          W.Star(None)])))
+                                          W.Present(prototypePat, W.Id "Ext");
+                                          W.Star(Some (W.Id "Ext"))])))
       when code = P.singleton "-*- code -*-" &&
-        proto = proto_pat ->
+        proto = proto_pat &&
+        prototypePat = P.singleton "prototype" ->
     W.Ref(W.Object([W.Present(code, W.Forall(var, bound, arrTyp));
                     W.Present(proto, W.Id "Object");
-                    W.Star(None)]))
+                    W.Present(P.singleton "prototype", W.Id "Ext");
+                    W.Star(Some (W.Id "Ext"))]))
   | _ -> typ
 %}
 

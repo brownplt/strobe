@@ -137,6 +137,8 @@ let src_js : JavaScript_syntax.prog option ref = ref None
 
 let default_typ : TypImpl.typ option ref = ref None
 
+let assert_typ : TypImpl.typ option ref = ref None
+
 let get_typedjs () =
   let tjs = match get_sourcetype () with
     | "js" ->
@@ -157,8 +159,13 @@ let weave_annotations typedjs =
         ReadTyps.read_typs js (List.rev !JavaScript_lexer.comments) in
       WeaveAnnotations.weave typ_db typedjs
 
+let weave_assertions typedjs =
+  match !assert_typ with
+  | None -> typedjs
+  | Some typ -> WeaveAnnotations.assert_typ typ typedjs
+
 let action_pretypecheck () : unit =
-  let typedjs = weave_annotations (get_typedjs ()) in
+  let typedjs = weave_assertions (weave_annotations (get_typedjs ())) in
     Typedjs_syntax.Pretty.exp typedjs std_formatter
 
 let full_idl_defs : Full_idl_syntax.definition list ref = ref []
@@ -171,7 +178,10 @@ let action_tc () : unit =
       (extend_env IdMap.empty typ_vars (get_env ()))
       (get_global_object ()) in
   (* verify_env env; *)
-  let _ = typecheck env !default_typ (weave_annotations (get_typedjs ())) in
+  let typedjs = get_typedjs () in
+  let annot_js = weave_annotations typedjs in
+  let asserted_js = weave_assertions annot_js in
+  let _ = typecheck env !default_typ asserted_js in
   if TypImpl.get_num_typ_errors () > 0 then
     exit 2
   else
@@ -209,7 +219,7 @@ let compile_env () : unit =
   (* Printf.printf "****************************************\nDone compiling environment@."; *)
   (* set_env (extend_env idlEnv IdMap.empty (get_env ())) *)
 
-let allow_unbound typStr : unit =
+let parseTyp_to_ref typStr typref =
   let open Lexing in
   let start_pos = { pos_fname = "<string>"; pos_lnum = 1; pos_bol = 0; pos_cnum = 0 } in
   let len = String.length typStr in
@@ -217,8 +227,14 @@ let allow_unbound typStr : unit =
   match Typedjs_fromExpr.parse_annotation (start_pos, end_pos) typStr with
   | Typedjs_syntax.ATyp typ ->
     let typ = Sb_desugar.desugar_typ (start_pos, end_pos) typ in
-    default_typ := Some typ
+    typref := Some typ
   | _ -> ()
+
+let allow_unbound typStr : unit =
+  parseTyp_to_ref typStr default_typ
+
+let assert_typ typStr : unit = 
+  parseTyp_to_ref typStr assert_typ
 
 let action = ref action_tc
 
@@ -250,6 +266,8 @@ let main () : unit =
        "disable flow analysis (benchmarks and debugging)");
       ("-allow-unbound", Arg.String allow_unbound,
        "Permit unbound global variables, with default type given by the argument");
+      ("-assert-typ", Arg.String assert_typ,
+       "Assert that all un-annotated assignments have a given type");
       ("-sb", Arg.Unit (set_sourcetype "sb"),
        "Parse strobe source");
       ("-idl", Arg.String load_idl_file,

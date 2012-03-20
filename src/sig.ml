@@ -122,6 +122,7 @@ module type TYP = sig
     | Typ of (typ -> string) * typ
     | Pat of (pat -> string) * pat
     | PatPat of (pat -> pat -> string) * pat * pat
+    | PatPatTyp of (pat -> pat -> typ -> string) * pat * pat * typ
     | PatTyp of (pat -> typ -> string) * pat * typ
     | TypTypTyp of (typ -> typ -> typ -> string) * typ * typ * typ
 

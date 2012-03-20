@@ -183,10 +183,13 @@ and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit
   end
   | _ -> 
     let synth_typ = expose_simpl_typ env (synth env default_typ exp) in
-    Printf.printf "Checking %s <?: %s\n" (string_of_typ synth_typ) (string_of_typ typ);
-    if not (subtype env synth_typ (expose_simpl_typ env typ)) then
+    (* Printf.printf "Checking %s <?: %s\n" (string_of_typ synth_typ) (string_of_typ (expose_simpl_typ env typ)); *)
+    if not (subtype env synth_typ (expose_simpl_typ env typ)) then begin
+      (* Printf.printf "failed.\n"; *)
       typ_mismatch (Exp.pos exp)
         (TypTyp((fun t1 t2 -> sprintf "%%expected %s, got %s" (string_of_typ t1) (string_of_typ t2)), (expose_simpl_typ env typ), synth_typ))
+    end (* else *)
+      (* Printf.printf "Checking finished.\n" *)
 
 and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp with
   (* TODO: Pure if-splitting rule; make more practical by integrating with
@@ -329,6 +332,7 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
     end
   | EUpdate (p, obj, field, value) -> begin
     let tobj = synth env default_typ obj in
+    (* Printf.printf "Synthed type for %s of %s\n" (string_of_exp obj) (string_of_typ tobj); *)
     match expose_simpl_typ env tobj, 
       expose_simpl_typ env (synth env default_typ field), synth env default_typ value with
         | TObject o, (TRegex idx_pat as tfld), typ ->
@@ -340,7 +344,8 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
           end;
           begin
             if P.is_overlapped idx_pat (absent_pat o) then
-              typ_mismatch p (PatPat((fun p1 p2 -> sprintf "synth: Assigning to field '%s' when absent_pat = %s" (P.pretty p1) (P.pretty p2)), idx_pat, (absent_pat o)))
+              (* Printf.eprintf "ERROR: %s failed at field '%s' \nwith type %s, \nwhen absent_pat = %s in typ %s\n" (string_of_exp exp) (P.pretty idx_pat) (string_of_typ typ) (P.pretty (absent_pat o)) (string_of_typ tobj); *)
+              typ_mismatch p (PatPatTyp((fun p1 p2 t -> sprintf "synth: Assigning to field '%s' when absent_pat = %s in typ %s" (P.pretty p1) (P.pretty p2) (string_of_typ t)), idx_pat, (absent_pat o), tobj))
           end;
           let fs : field list = fields o in
           let okfield (fld_pat, pres, s) = 
@@ -445,9 +450,7 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
     let tc_bind (x, t, e) = check env default_typ e t in
     List.iter tc_bind binds;
     synth env default_typ body 
- | EFunc (p, args, func_info, body) -> 
-    (* let env = List.fold_left (fun env id -> bind_id id (TId "Ext") env) env args in *)
-    (* TArrow(List.map (fun _ -> (TId "Ext")) args, None, synth env body) *)
+  | EFunc (p, args, func_info, body) -> 
     (* BSL: Synthesizing Ext *)
     let arrowTyp = TArrow([TId "Ext"], Some (TId "Ext"), TId "Ext") in
     check env default_typ exp arrowTyp;

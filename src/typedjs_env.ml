@@ -209,12 +209,15 @@ let extend_global_env env lst =
       if IdMap.mem x env.id_typs then
         raise (Not_wf_typ (x ^ " is already bound in the environment"))
       else
-        bind_id x (desugar_typ p typ) env
+        let t = desugar_typ p typ in
+        (* Printf.printf "Binding type for %s to %s\n" x (string_of_typ t); *)
+        bind_id x t env
     | EnvType (p, x, writ_typ) ->
       if IdMap.mem x env.typ_ids then
         raise (Not_wf_typ (sprintf "the type %s is already defined" x))
       else
         let t = desugar_typ p writ_typ in
+        (* Printf.printf "Binding %s to %s\n" x (string_of_typ t); *)
         let k = kind_check env t in
         { env with 
           typ_ids = IdMap.add x (t, k) env.typ_ids }

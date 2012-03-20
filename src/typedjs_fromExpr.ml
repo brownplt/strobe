@@ -88,7 +88,11 @@ let rec exp (env : env) expr = match expr with
   | ObjectExpr (a, ps) -> 
       if List.length ps != List.length (nub (map (fun (_, p, _) -> p) ps)) then
         raise (Not_well_formed (a, "repeated field names"));
-      ERef (a, RefCell, EObject (a, map (fun (_, x, e) ->  x, exp env e) ps))
+    let ps = if List.mem "__proto__" (List.map snd3 ps) then ps
+      else (a, "__proto__", VarExpr(a, "Object"))::ps in
+    let ps = if List.mem "-*- code -*-" (List.map snd3 ps) then ps
+      else (a, "-*- code -*-", ConstExpr(a, JavaScript_syntax.CUndefined))::ps in
+    ERef (a, RefCell, EObject (a, map (fun (_, x, e) ->  x, exp env e) ps))
   | ThisExpr a -> EDeref (a, EId (a, "this"))
   | VarExpr (a, x) -> begin try
       if IdMap.find x env then
@@ -102,7 +106,8 @@ let rec exp (env : env) expr = match expr with
       EBracket (a, EDeref (a, to_object a (exp env e1)),
                 to_string a (exp env e2))
   | NewExpr (p, constr, args) ->
-    ELet (p, "%newobj", ERef (p, RefCell, EObject (p, [])), (* still need to set __proto__ *)
+    let constrPrototype = EBracket(p, EDeref(p, exp env constr), EConst(p, JavaScript_syntax.CString "prototype"))
+    in ELet (p, "%newobj", ERef (p, RefCell, EObject (p, [("__proto__", constrPrototype)])), 
           ESeq 
             (p, 
              EApp (p, EBracket(p, EDeref(p, exp env constr), EConst(p, JavaScript_syntax.CString "-*- code -*-")),
@@ -234,6 +239,7 @@ and match_func env expr = match expr with
                                  fold_left mutable_arg
                                    (ELabel (a', "%return", exp env' body))
                                    args));
+                         ("prototype", EAssertTyp(a, TId "Ext", EConst(a, JavaScript_syntax.CUndefined)));
                          ("__proto__", EDeref(a, EId (a, "Object")))])) (* TODO: Make this Function *)
   | FuncExpr (a, _, _) ->
       failwith ("expected a LabelledExpr at " ^ string_of_position a)

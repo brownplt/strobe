@@ -72,6 +72,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | Typ of (typ -> string) * typ
     | Pat of (pat -> string) * pat
     | PatPat of (pat -> pat -> string) * pat * pat
+    | PatPatTyp of (pat -> pat -> typ -> string) * pat * pat * typ
     | PatTyp of (pat -> typ -> string) * pat * typ
     | TypTypTyp of (typ -> typ -> typ -> string) * typ * typ * typ
 
@@ -88,6 +89,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | Typ(s, t) -> s t
     | Pat(s, p) -> s p
     | PatPat(s, p1, p2) -> s p1 p2
+    | PatPatTyp(s, p1, p2, t) -> s p1 p2 t
     | PatTyp(s, p, t) -> s p t
     | TypTypTyp(s, t1, t2, t3) -> s t1 t2 t3
   let typ_mismatch p s = 
@@ -543,7 +545,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | Some t -> inherit_guard_pat env t
     end
     | t -> 
-      Printf.printf "Expected object type, got:\n%s\n" (string_of_typ t);
+      (* Printf.printf "Expected object type, got:\n%s\n" (string_of_typ t); *)
       raise (Invalid_argument ("expected object type, got " ^
                                   (string_of_typ t)))
 
@@ -556,7 +558,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   exception Not_subtype of typ_error_details
 
   let mismatched_typ_exn t1 t2 =
-    Printf.printf "*** Not subtypes: %s </: %s\n" (string_of_typ t1) (string_of_typ t2);
+    (* Printf.printf "*** Not subtypes: %s </: %s\n" (string_of_typ t1) (string_of_typ t2); *)
     raise (Not_subtype 
        (TypTyp((fun t1 t2 -> sprintf " %s is not a subtype of %s"
          (string_of_typ t1) (string_of_typ t2)), t1, t2)))
@@ -629,7 +631,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       let subtype = subt env in
       let simpl_s = simpl_typ env s in
       let simpl_t = simpl_typ env t in
-      Printf.printf "Checking %s against %s\n" (string_of_typ simpl_s) (string_of_typ simpl_t);
+      (* Printf.printf "Checking %s against %s\n" (string_of_typ simpl_s) (string_of_typ simpl_t); *)
       match simpl_s, simpl_t with
       | TUninit t', t2 -> begin match !t' with
         | None -> subt env cache (TPrim "Undef") t2
@@ -719,8 +721,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       if P.is_overlapped pat1 pat2 then
         begin
           subtype_presence pres1 pres2;
-          Printf.printf "%s overlaps %s; checking subtypes of %s <: %s\n"
-            (P.pretty pat1) (P.pretty pat2) (string_of_typ t1) (string_of_typ t2);
+          (* Printf.printf "%s overlaps %s; checking subtypes of %s <: %s\n" *)
+          (*   (P.pretty pat1) (P.pretty pat2) (string_of_typ t1) (string_of_typ t2); *)
           subt env cache t1 t2
         end
       else
