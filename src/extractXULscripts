@@ -29,8 +29,14 @@ sub parseManifest {
       } elsif ($parts[0] eq "overlay") {
         push @{$manifest{$parts[0]}{$parts[1]}}, $parts[2];
       }
-    } elsif ($#parts == 3 and $parts[0] eq "locale") {
-      $manifest{$parts[0]}{$parts[1]}{$parts[2]} = $parts[3];
+    } elsif ($#parts == 3) {
+      if ($parts[0] eq "locale") {
+        $parts[3] =~ s/jar:(.*)\.jar!/\1.jar.unzipped/;
+        $manifest{$parts[0]}{$parts[1]}{$parts[2]} = $parts[3];
+      } elsif ($parts[0] eq "overlay" && $parts[3] eq "application={ec8030f7-c20a-464f-9b0e-13a3a9e97384}") {
+        $parts[2] =~ s/jar:(.*)\.jar!/\1.jar.unzipped/;
+        push @{$manifest{$parts[0]}{$parts[1]}}, $parts[2];
+      }
     }
   }
 }
@@ -51,19 +57,23 @@ sub translateURL {
   return $url;
 }
 
-sub readFile {
-    my ($file) = translateURL(shift);
+sub readFile ($$) {
+    my ($file, $dir) = (translateURL(shift), shift);
+    if (!-e $file) {
+      $file = "$dir/$file";
+    }
     open FH, $file or return $file;
     my @lines = <FH>;
     close FH;
     return (join "", @lines);
 }
 
-sub walkDOM {
-    my ($elt) = shift;
+sub walkDOM ($$) {
+    my ($elt, $sourceFile) = @_;
+    my ($fname, $dir) = fileparse($sourceFile);
     if ($elt->nodeName =~ /script/i) {
         if ($elt->hasAttribute("src")) {
-            push @scripts, readFile($elt->getAttribute("src"));
+            push @scripts, readFile($elt->getAttribute("src"), $dir);
         } else {
             push @scripts, $elt->textContent;
         }
@@ -76,7 +86,7 @@ sub walkDOM {
     }
     my $kid = $elt->firstChild;
     while ($kid) {
-        walkDOM $kid;
+        walkDOM $kid, $sourceFile;
         $kid = $kid->nextSibling();
     }
 }
@@ -122,24 +132,22 @@ sub chromeURLClose {
   close($handler);
 }
 
-# Register them with a instance of XML::LibXML::InputCallback
-my $input_callbacks = XML::LibXML::InputCallback->new();
-$input_callbacks->register_callbacks([ \&chromeURLMatch, \&chromeURLOpen,
-                                       \&chromeURLRead, \&chromeURLClose ] );
-
-  # # Register the callback group at a parser instance
-  # $parser->input_callbacks( $input_callbacks );
-
-  # # $some_xml_file will be parsed using our callbacks
-  # $parser->parse_file( $some_xml_file );
-
 
 foreach my $fileName (@files) {
-  my $parser = XML::LibXML->new();
-  $parser->input_callbacks($input_callbacks);
-  my $dom = $parser->parse_file(translateURL($fileName));
-  $dom->indexElements();
-  walkDOM ($dom->documentElement());
+  eval {
+    # Register them with a instance of XML::LibXML::InputCallback
+    my $input_callbacks = XML::LibXML::InputCallback->new();
+    $input_callbacks->register_callbacks([ \&chromeURLMatch, \&chromeURLOpen,
+                                           \&chromeURLRead, \&chromeURLClose ] );
+    my $parser = XML::LibXML->new();
+    $parser->input_callbacks($input_callbacks);
+    my $dom = $parser->parse_file(translateURL($fileName));
+    $dom->indexElements();
+    walkDOM ($dom->documentElement(), translateURL($fileName));
+  };
+  if ($@) {
+    print STDERR $@;
+  }
 }
 
 print (join "\n", @scripts);
