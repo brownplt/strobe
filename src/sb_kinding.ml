@@ -63,6 +63,10 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
   | TObject o ->
     List.iter (assert_fld_kind env) (fields o);
     KStar
+  | TWith(t, flds) ->
+    ignore (kind_check env t);
+    List.iter (assert_fld_kind env) (fields flds);
+    KStar
   | TId x -> 
     begin 
       try IdMap.find x env

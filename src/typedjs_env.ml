@@ -144,6 +144,7 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
   (* any other app will be an object from a constructor *)
   | TRef (TObject _) -> if RTSet.mem RT.Object rt then typ else TBot
   | TObject _ -> failwith "Static got a functional object"
+  | TWith _ -> failwith "Static got a TWith"
   | TRef t -> TRef t
   | TSource t -> TSource t
   | TSink t -> TSink t

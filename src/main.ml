@@ -171,6 +171,70 @@ let action_pretypecheck () : unit =
 let full_idl_defs : Full_idl_syntax.definition list ref = ref []
 let idl_defs : Idl_syntax.definition list ref = ref []
 
+let rec elim_twith env exp = 
+  let rec squash t = 
+    let open TypImpl in 
+    let optsquash t = match t with None -> None | Some t -> Some (squash t) in
+    match t with
+    | TWith _ ->
+      let ret = Typedjs_env.simpl_typ env t in
+      (* Printf.eprintf "Simplifying\n%s\nto\n%s\n" (string_of_typ t) (string_of_typ ret); *)
+      ret
+    | TRef t -> TRef (squash t)
+    | TSource t -> TSource (squash t)
+    | TSink t -> TSink (squash t)
+    | TUnion (t1, t2) -> TUnion(squash t1, squash t2)
+    | TIntersect(t1, t2) -> TIntersect(squash t1, squash t2)
+    | TArrow(args, vararg, ret) -> TArrow(map squash args, optsquash vararg, squash ret)
+    | TObject ot -> TObject (mk_obj_typ (map (third3 squash) (fields ot)) (absent_pat ot))
+    | TTop
+    | TBot -> t
+    | TForall(id, t, b) -> TForall(id, squash t, squash b)
+    | TId _ 
+    | TRegex _
+    | TPrim _ -> t
+    | TRec(id, t) -> TRec(id, squash t)
+    | TLambda (args, t) -> TLambda(args, squash t)
+    | TApp(t, ts) -> TApp(squash t, map squash ts)
+    | TFix(id, k, t) -> TFix(id, k, squash t)
+    | TUninit ty -> ty := optsquash !ty; t
+  in
+  let elim = elim_twith env in match exp with
+  | EAssertTyp(p, t, e) -> EAssertTyp(p, squash t, elim e)
+  | EArray(p, es) -> EArray(p, map elim es)
+  | EObject (p, props) -> EObject (p, map (second2 elim) props)
+  | EId _ -> exp
+  | EBracket (p, e1, e2) -> EBracket (p, elim e1, elim e2)
+  | EUpdate (p, e1, e2, e3) -> EUpdate (p, elim e1, elim e2, elim e3)
+  | EPrefixOp (p, op, e) -> EPrefixOp (p, op, elim e)
+  | EInfixOp (p, op, e1, e2) -> EInfixOp (p, op, elim e1, elim e2)
+  | EIf (p, e1, e2, e3) -> EIf (p, elim e1, elim e2, elim e3)
+  | EApp (p, e, es) -> EApp (p, elim e, map elim es)
+  | EFunc (p, xs, info, e) -> EFunc (p, xs, info, elim e)
+  | ELet (p, x, e1, e2) -> 
+    let e1' = elim e1 in
+    let e2' = elim e2 in
+    ELet (p, x, e1', e2')
+  | ERec (binds, e) -> ERec (map (third3 elim) binds, elim e)
+  | ESeq (p, e1, e2) -> ESeq (p, elim e1, elim e2)
+  | ELabel (p, x, e) -> ELabel (p, x, elim e)
+  | EBreak (p, x, e) -> EBreak (p, x, elim e)
+  | ETryCatch (p, e1, x, e2) -> ETryCatch (p, elim e1, x, elim e2)
+  | ETryFinally (p, e1, e2) -> ETryFinally (p, elim e1, elim e2)
+  | EThrow (p, e) -> EThrow (p, elim e)
+  | ETypecast (p, rt, e) -> ETypecast (p, rt, elim e)
+  | ERef (p, k, e) -> ERef (p, k, elim e)
+  | EDeref (p, e) -> EDeref (p, elim e)
+  | ESetRef (p, e1, e2) -> ESetRef (p, elim e1, elim e2)
+  | EParen (p, e) -> EParen (p, elim e)
+  | ESubsumption (p, t, e) -> ESubsumption (p, squash t, elim e)
+  | EDowncast (p, t, e) -> EDowncast (p, squash t, elim e)
+  | ETypAbs (p, x, t, e) -> ETypAbs (p, x, squash t, elim e)
+  | ETypApp (p, e, t) -> ETypApp (p, elim e, squash t)
+  | ECheat (p, t, e) -> ECheat (p, squash t, elim e)
+  | EBot _
+  | EConst _ -> exp
+
 let action_tc () : unit =
   let env =
     let typ_vars = Unidl.unidl !idl_defs in
@@ -179,7 +243,7 @@ let action_tc () : unit =
       (get_global_object ()) in
   (* verify_env env; *)
   let typedjs = get_typedjs () in
-  let annot_js = weave_annotations typedjs in
+  let annot_js = elim_twith env (weave_annotations typedjs) in
   let asserted_js = weave_assertions annot_js in
   let _ = typecheck env !default_typ asserted_js in
   if TypImpl.get_num_typ_errors () > 0 then

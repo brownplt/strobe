@@ -37,6 +37,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TIntersect of typ * typ
     | TArrow of typ list * typ option * typ (* args (including <this>), optional variadic arg, return typ *)
     | TObject of obj_typ
+    | TWith of typ * obj_typ
     | TRegex of pat
     | TRef of typ
     | TSource of typ
@@ -238,7 +239,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             with Not_found -> (false, None) in
           let (hasProto, _) = findField proto_pat in
           let (hasCode, codeTyp) = findField (P.singleton "-*- code -*-") in
-          if ((List.length fieldList) = 2 && hasProto && hasCode)
+          let (hasPrototype, protoTyp) = findField (P.singleton "prototype") in
+          let isSimplePrototype = match protoTyp with Some (TId _) -> true | _ -> false in
+          if ((List.length fieldList) = 4 && hasProto && hasCode && hasPrototype && isSimplePrototype)
           then codeTyp
           else None in
         (match isFunctionObject (flds.fields) with
@@ -248,6 +251,10 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
           let abs = horz [ text (P.pretty flds.absent_pat); text ": _" ] in
           braces (hnestOrHorz 0 (intersperse print_space (map pat (flds.fields) @ [abs])))
         )
+      | TWith (t, flds) ->
+        let abs = horz [ text (P.pretty flds.absent_pat); text ": _" ] in
+        braces (hnestOrHorz 0 (typ t :: text " with" :: print_space :: 
+                                 intersperse print_space (map pat (flds.fields) @ [abs])))
       | TRef s -> horz [ text "Ref"; parens (typ s) ]
       | TSource s -> horz [ text "Src"; parens (typ s) ]
       | TSink s -> horz [ text "Snk"; parens (typ s) ]
@@ -316,6 +323,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TApp (t, ss) ->
   unions (free_typ_ids t :: (map free_typ_ids ss))
       | TObject o -> unions (L.map (fun (_, _, t) -> free_typ_ids t) o.fields)
+      | TWith(t, flds) -> union (free_typ_ids t) (free_typ_ids (TObject flds))
       | TFix (x, _, t)
       | TRec (x, t) ->
   remove x (free_typ_ids t)
@@ -337,6 +345,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TArrow (t2s, v, t3)  ->
       let opt_map f v = match v with None -> None | Some v -> Some (f v) in
       TArrow (map (typ_subst x s) t2s, opt_map (typ_subst x s) v, typ_subst x s t3)
+    | TWith(t, flds) -> TWith(typ_subst x s t, flds)
+                              (* mk_obj_typ (map (fun (n, p, t) -> (n, p, typ_subst x s t)) flds.fields) *)
+                              (*   flds.absent_pat) *)
     | TObject o ->
         TObject (mk_obj_typ (map (third3 (typ_subst x s)) o.fields) 
                             o.absent_pat)
@@ -378,7 +389,42 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | None -> typ
       | Some t -> typ_subst x s t
 
-  let rec simpl_typ typenv typ = match typ with
+  let rec merge typ flds = match typ with
+    | TUnion(t1, t2) -> TUnion (merge t1 flds, merge t2 flds)
+    | TIntersect(t1, t2) -> TIntersect(merge t1 flds, merge t2 flds)
+    | TObject o -> begin
+      let unionPats = L.fold_right P.union (map fst3 flds.fields) P.empty in
+      let restrict_field (n, p, t) =
+        let n' = P.subtract n unionPats in
+        if (P.is_empty n') then None
+        else Some (n', p, t) in
+      let oldFields = L.filter_map restrict_field o.fields in
+      let newFields = oldFields @ flds.fields in
+      let newAbsent = P.subtract o.absent_pat unionPats in
+      let newAbsent = if P.is_empty newAbsent then P.empty else newAbsent in
+      let ret = TObject (mk_obj_typ newFields newAbsent) in
+      ret
+    end
+    | TRec(id, t) -> TRec(id, merge t flds)
+    | TRef t -> TRef (merge t flds)
+    | TSource t -> TSource (merge t flds)
+    | TSink t -> TSink (merge t flds)
+    | _ -> typ
+
+  and expose_twith typenv typ = let expose_twith = expose_twith typenv in match typ with
+    | TWith (t, flds) ->
+      let t = match t with TId x -> (fst2 (IdMap.find x typenv)) | _ -> t in
+      let flds' = mk_obj_typ (map (third3 expose_twith) flds.fields) flds.absent_pat in
+      merge t flds' 
+    | TUnion(t1, t2) -> TUnion (expose_twith t1, expose_twith t2)
+    | TIntersect(t1, t2) -> TIntersect(expose_twith t1, expose_twith t2)
+    | TRec(id, t) -> TRec(id, expose_twith t)
+    | TRef t -> TRef (expose_twith t)
+    | TSource t -> TSource (expose_twith t)
+    | TSink t -> TSink (expose_twith t)
+    | _ -> typ
+
+  and simpl_typ typenv typ = match typ with
     | TPrim _ 
     | TUnion _
     | TIntersect _
@@ -393,6 +439,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TObject _
     | TId _  
     | TForall _ -> typ
+    | TWith(t, flds) -> expose_twith typenv typ
     | TFix (x, k, t) -> simpl_typ typenv (typ_subst x typ t)
     | TRec (x, t) -> simpl_typ typenv (typ_subst x typ t)
     | TApp (t1, ts) -> begin match expose typenv (simpl_typ typenv t1) with
@@ -404,9 +451,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | func_t ->
         let msg = sprintf "ill-kinded type application in simpl_typ. Type is \
                            \n%s\ntype in function position is\n%s\n"
-                          (string_of_typ typ) (string_of_typ func_t) in
+          (string_of_typ typ) (string_of_typ func_t) in
         raise (Invalid_argument msg)
-      end
+    end
     | TUninit t -> match !t with
       | None -> typ
       | Some t -> simpl_typ typenv t
@@ -750,12 +797,17 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
           let lhs_typ = inherits bad_p env (TObject obj1) rhs_pat in
           subt env cache lhs_typ rhs_typ
       | _ -> cache in
-    let cache = 
-      L.fold_right check_simple_overlap (L.pairs obj1.fields obj2.fields)
-                   cache in
-    check_pat_containment ();
-    L.iter check_lhs_absent_overlap obj2.fields;
-    fold_right check_rhs_inherited obj2.fields cache
+    (* try  *)
+      let cache = 
+        L.fold_right check_simple_overlap (L.pairs obj1.fields obj2.fields)
+          cache in
+      check_pat_containment ();
+      L.iter check_lhs_absent_overlap obj2.fields;
+      fold_right check_rhs_inherited obj2.fields cache
+    (* with Not_subtype m -> *)
+    (*   Printf.eprintf "Subtype failed for %s </: %s because\n%s\n" *)
+    (*     (string_of_typ (TObject obj1)) (string_of_typ (TObject obj2)) (typ_error_details_to_string m); *)
+    (*   raise (Not_subtype m) *)
 
   and subtypes env ss ts = 
     try 

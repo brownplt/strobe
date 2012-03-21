@@ -46,6 +46,9 @@ let rec typ (writ_typ : W.t) : typ =
   | W.Arrow (None, args, var, r) -> TArrow (map typ args, opt_map typ var, typ r)
   | W.Arrow (Some this, args, var, r) -> TArrow ((typ this):: (map typ args), opt_map typ var, typ r)
   | W.Object flds -> object_typ flds
+  | W.With(t, flds) -> (match object_typ flds with 
+    | TObject objflds -> TWith(typ t, objflds)
+    | _ -> failwith "absurd")
   | W.Pat pat -> TRegex pat
   | W.Ref t -> TRef (typ t)
   | W.Source t -> TSource (typ t)

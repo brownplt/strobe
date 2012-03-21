@@ -10,6 +10,7 @@ let rec remove_this op = match op with
   | W.Inter (t1, t2) -> W.Inter (remove_this t1, remove_this t2)
   | W.Forall (x, s, t) -> W.Forall (x, s, remove_this t)
   | W.Ref (W.Object (W.Present(_, t)::fields)) -> remove_this t
+  | W.With(t, f) -> W.With(remove_this t, f)
   | _ -> failwith "remove_this : illegal argument"
 
 let wrapArrow (thistype, args, var, ret) =
@@ -18,7 +19,7 @@ let wrapArrow (thistype, args, var, ret) =
                     W.Present(P.singleton "prototype", W.Id "Ext");
                     W.Star(Some (W.Id "Ext"))]))
 
-let pushForallFunction typ = match typ with
+let rec pushForallFunction typ = match typ with
   | W.Forall (var, bound, W.Ref(W.Object([W.Present(code, (W.Arrow _ as arrTyp));
                                           W.Present(proto, W.Id "Object");
                                           W.Present(prototypePat, W.Id "Ext");
@@ -30,6 +31,7 @@ let pushForallFunction typ = match typ with
                     W.Present(proto, W.Id "Object");
                     W.Present(P.singleton "prototype", W.Id "Ext");
                     W.Star(Some (W.Id "Ext"))]))
+  | W.With(t, f) -> W.With(pushForallFunction t, f)
   | _ -> typ
 %}
 
@@ -37,7 +39,7 @@ let pushForallFunction typ = match typ with
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF UNION STR
        BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
-       CHEAT REC INTERSECTION UNDERSCORE BAD
+       CHEAT REC INTERSECTION UNDERSCORE BAD WITH
        HASHBRACE EQUALS TYPE QUES BANG TYPREC TYPLAMBDA THICKARROW
        COLONCOLON CARET LLBRACE RRBRACE REF PRIMITIVE DOTS
 
@@ -105,6 +107,7 @@ arg_typ
   | LBRACE fields RBRACE { W.Ref (W.Object $2) }
   | HASHBRACE fields RBRACE { W.Source (W.Object $2) }
   | LLBRACE fields RRBRACE { W.Object $2 }
+  | LBRACE typ WITH fields RBRACE { W.With($2, $4) }
   | LPAREN typ RPAREN { $2 }
   | TID { W.Id $1 }
   | ID { W.Syn $1 }

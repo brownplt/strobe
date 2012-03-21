@@ -80,6 +80,7 @@ rule token = parse
    | "!" { BANG }
    | "rec" { REC }
    | "primitive" { PRIMITIVE }
+   | "with" { WITH }
    | eof { EOF }
    | ident as x { ID x }
    | '"' (double_quoted_string_char* as x) '"' { STRING x }

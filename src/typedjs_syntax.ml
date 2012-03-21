@@ -97,6 +97,7 @@ module WritTyp = struct
     | Inter of t * t
     | Arrow of t option * t list * t option * t (** [Arrow (this, args, varargs, result)] *)
     | Object of f list
+    | With of t * f list
     | Pat of TypImpl.pat
     | Ref of t
     | Source of t

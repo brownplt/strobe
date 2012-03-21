@@ -243,6 +243,7 @@ end = struct
       end
       | TypImpl.TRegex pat -> RTSet.singleton (RT.Re pat)
       | TypImpl.TObject _ -> RTSet.singleton RT.Object
+      | TypImpl.TWith _ -> RTSet.singleton RT.Object
       | TypImpl.TRef t -> rt t
       | TypImpl.TSource t -> rt t
       | TypImpl.TSink t -> rt t
