@@ -239,7 +239,7 @@ and match_func env expr = match expr with
                                  fold_left mutable_arg
                                    (ELabel (a', "%return", exp env' body))
                                    args));
-                         ("prototype", EBot a (* EAssertTyp(a, TId "Ext", EConst(a, JavaScript_syntax.CUndefined)) *));
+                         ("prototype", EAssertTyp(a, TUninit (ref None), EBot a) (* EAssertTyp(a, TId "Ext", EConst(a, JavaScript_syntax.CUndefined)) *));
                          ("__proto__", EDeref(a, EId (a, "Object")))])) (* TODO: Make this Function *)
   | FuncExpr (a, _, _) ->
       failwith ("expected a LabelledExpr at " ^ string_of_position a)
