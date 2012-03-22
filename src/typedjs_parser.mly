@@ -37,7 +37,7 @@ let rec pushForallFunction typ = match typ with
 
 %token <string> ID TID STRING REGEX PRIM
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF UNION STR
-       BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR
+       BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR SEMI
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
        CHEAT REC INTERSECTION UNDERSCORE BAD WITH
        HASHBRACE EQUALS TYPE QUES BANG TYPREC TYPLAMBDA THICKARROW
@@ -47,9 +47,11 @@ let rec pushForallFunction typ = match typ with
 %left LANGLE
 
 %start typ_ann
+%start one_env_decl
 %start env
 
 %type <Typedjs_syntax.annotation> typ_ann
+%type <Typedjs_syntax.env_decl> one_env_decl
 %type <Typedjs_syntax.env_decl list> env
 
 %%
@@ -168,6 +170,8 @@ env_decls
   : { [] }
   | env_decl env_decls { $1 :: $2 }
 
+one_env_decl : 
+  | env_decl SEMI { $1 }
 env
   : env_decls EOF { $1 }
 

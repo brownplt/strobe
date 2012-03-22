@@ -240,7 +240,10 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
           let (hasProto, _) = findField proto_pat in
           let (hasCode, codeTyp) = findField (P.singleton "-*- code -*-") in
           let (hasPrototype, protoTyp) = findField (P.singleton "prototype") in
-          let isSimplePrototype = match protoTyp with Some (TId _) -> true | _ -> false in
+          let isSimplePrototype = match protoTyp with 
+            | Some (TId t) -> t = "Object" || t = "Any" || t = "Ext" 
+                                                || (String.length t > 3 && String.sub t 0 3 = "nsI")
+            | _ -> false in
           if ((List.length fieldList) = 4 && hasProto && hasCode && hasPrototype && isSimplePrototype)
           then codeTyp
           else None in
@@ -592,7 +595,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | Some t -> inherit_guard_pat env t
     end
     | t -> 
-      (* Printf.printf "Expected object type, got:\n%s\n" (string_of_typ t); *)
+      Printf.eprintf "ERROR: Expected object type, got:\n%s\n" (string_of_typ t);
       raise (Invalid_argument ("expected object type, got " ^
                                   (string_of_typ t)))
 

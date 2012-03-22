@@ -121,3 +121,70 @@ interface nsIInterfaceRequestor : nsISupports
 	void getInterface(in nsIIDRef uuid, 
                       [iid_is(uuid),retval] out nsQIResult result);
 };
+
+
+[scriptable, uuid(e162bfa0-01bd-4e9f-9843-8fb2efcd6d1f)]
+interface nsIPrefBranch : nsISupports
+{
+
+  const long PREF_INVALID = 0;
+  const long PREF_STRING = 32;
+  const long PREF_INT = 64;
+  const long PREF_BOOL = 128;
+
+  readonly attribute string root;
+
+  long getPrefType(in string aPrefName);
+
+  boolean getBoolPref(in string aPrefName);
+
+  void setBoolPref(in string aPrefName, in boolean aValue);
+
+  string getCharPref(in string aPrefName);
+
+  void setCharPref(in string aPrefName, in string aValue);
+
+  long getIntPref(in string aPrefName);
+
+  void setIntPref(in string aPrefName, in long aValue);
+
+  void getComplexValue(in string aPrefName, in nsIIDRef aType,
+                       [iid_is(aType), retval] out nsQIResult aValue);
+
+  void setComplexValue(in string aPrefName, in nsIIDRef aType, in nsISupports aValue);
+
+  void clearUserPref(in string aPrefName);
+
+  void lockPref(in string aPrefName);
+
+  boolean prefIsLocked(in string aPrefName);
+
+  void    unlockPref(in string aPrefName);
+
+
+  void deleteBranch(in string aStartingAt);
+
+  void getChildList(in string aStartingAt,
+                    [optional] out unsigned long aCount,
+                    [array, size_is(aCount), retval] out string aChildArray);
+
+  void resetBranch(in string aStartingAt);
+
+};
+
+[scriptable, uuid(decb9cc7-c08f-4ea5-be91-a8fc637ce2d2)]
+interface nsIPrefService : nsISupports
+{
+  void readUserPrefs(in nsIFile aFile);
+
+  void resetPrefs();
+
+  void resetUserPrefs();
+
+  void savePrefFile(in nsIFile aFile);
+
+  nsIPrefBranch getBranch(in string aPrefRoot);
+
+  nsIPrefBranch getDefaultBranch(in string aPrefRoot);
+
+};

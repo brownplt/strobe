@@ -45,6 +45,7 @@ rule token = parse
    | "<" { LANGLE }
    | ">" { RANGLE }
    | "," { COMMA }
+   | ";" { SEMI }
    | "Any" { ANY }
    | "Str" { STR }
    | "Bool" { BOOL }

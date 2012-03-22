@@ -38,6 +38,7 @@ let check_kind p env typ : typ =
           (string_of_typ t) (string_of_kind k)), typ, k)))
   with
     | Sb_kinding.Kind_error msg ->
+      Printf.eprintf "Couldn't check type for %s\n" (string_of_typ typ);
         raise (Sb_kinding.Kind_error (string_of_position p ^ ": " ^ msg))
   
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
@@ -182,6 +183,7 @@ and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit
     | _ -> typ_mismatch p (Typ((fun t -> sprintf "expected TObject, got %s" (string_of_typ t)), typ))
   end
   | _ -> 
+    (* Printf.eprintf "Synthing type for %s\n" (string_of_exp exp); *)
     let synth_typ = expose_simpl_typ env (synth env default_typ exp) in
     (* Printf.printf "Checking %s <?: %s\n" (string_of_typ synth_typ) (string_of_typ (expose_simpl_typ env typ)); *)
     if not (subtype env synth_typ (expose_simpl_typ env typ)) then begin
@@ -191,7 +193,9 @@ and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit
     end (* else *)
       (* Printf.printf "Checking finished.\n" *)
 
-and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp with
+and synth (env : env) (default_typ : typ option) (exp : exp) : typ = 
+    (* Printf.eprintf "*Synthing type for %s\n" (string_of_exp exp); *)
+match exp with
   (* TODO: Pure if-splitting rule; make more practical by integrating with
       flow typing. *)
   | EIf (p, EInfixOp (_, "hasfield",  EDeref (_, EId (_, obj)), (EId (_, fld))),
@@ -258,7 +262,7 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
     let typ = ((check_kind p env (expose_simpl_typ env (synth env default_typ e)))) in
     if typ = TPrim "Unsafe" 
     then raise (Typ_error (p, FixedString "synth: Cannot dereference an unsafe value"))
-    else begin match extract_ref "EDeref" p env typ with
+    else begin match extract_ref ("EDeref: " ^ (string_of_exp e)) p env typ with
     | TRef t -> t
     | TSource t -> t
     | t -> raise (Typ_error (p, Typ((fun t -> sprintf "synth: cannot read an expression of type %s" (string_of_typ t)), t)))
@@ -273,13 +277,13 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
         ty := Some newTy;
         newTy
       | Some s -> (* Printf.printf "Checking typ at %s\n" (string_of_position p); *) check env default_typ e2 s; 
-        TRef s
+        s
     end
       | TRef (TPrim "Unsafe") -> t (* BSL: PUNTING ON ASSIGNMENT TO UNSAFE *)
       | TRef s 
-      | TSink s -> check env default_typ e2 s; t
+      | TSink s -> check env default_typ e2 s; s
       | s -> typ_mismatch p (Typ((fun t -> sprintf "left-hand side of assignment has type %s" (string_of_typ t)), s));
-        t
+        s
     end
   | ELabel (p, lbl, e) -> 
     (* This is a valid assumption for JavaScript. *)
@@ -453,6 +457,7 @@ and synth (env : env) (default_typ : typ option) (exp : exp) : typ = match exp w
   | EFunc (p, args, func_info, body) -> 
     (* BSL: Synthesizing Ext *)
     let arrowTyp = TArrow([TId "Ext"], Some (TId "Ext"), TId "Ext") in
+    (* Printf.eprintf "Checking expression for Ext-arrow:\n%s\n" (string_of_exp exp); *)
     check env default_typ exp arrowTyp;
     arrowTyp
   | ESubsumption (p, t, e) ->

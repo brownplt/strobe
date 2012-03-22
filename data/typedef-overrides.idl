@@ -1,3 +1,6 @@
+typedef nsISupports nsQIResult;
+typedef nsISupports nsIIDRef;
+
 partial interface nsIFile {
   [unsafe] void create(in unsigned long type, in unsigned long permissions);
 };
@@ -44,4 +47,8 @@ partial interface nsIJSCID {
 
 partial interface nsIInterfaceRequestor {
   [QueryInterfaceType] void getInterface(in nsIIDRef uuid, [iid_is(uuid),retval] out nsQIResult result);
+};
+
+partial interface nsIPrefService {
+  [unsafe] void savePrefFile(in nsIFile aFile);
 };

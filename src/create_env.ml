@@ -48,21 +48,22 @@ let create_env defs =
   let isQueryInterfaceType metas = List.exists (fun m -> m = QueryInterfaceType) metas in
   let isRetval metas = List.exists (fun m -> m = Retval) metas in
   let rec trans_toplevel defs =
-    let (iids, componentsAndCID, compType, queryInterfaceType) = build_components (defs) in
+    let (iidsAndConstants, componentsAndCID, compType, queryInterfaceType) = build_components (defs) in
     List.iter (fun i -> match i with
     | Interface (_, _, name, parent, members, _) -> Hashtbl.add ifaceHash name (Raw i)
     | _ -> ()) defs;
     let interfaces = (filter_map (trans_def TBot queryInterfaceType) (defs)) in
-    let iids = filter_map (fun iid ->
+    let iids = filter_map (fun (iid, constants) ->
       let iid_hashname = Id.id_of_string ("##" ^ (iid) ^ "##") in
       let iid_iface = Interface(Lexing.dummy_pos, [], Id.id_of_string iid, 
                                 Some (RelativeName [Id.id_of_string "nsIJSIID"]),
-                                [Attribute(Lexing.dummy_pos, [], NoReadOnly, IsNormal, Any, iid_hashname)], 
+                                ((Attribute(Lexing.dummy_pos, [], NoReadOnly, IsNormal, Any, iid_hashname)) 
+                                 :: constants), 
                                 IsNormalInterface) in
       Hashtbl.add ifaceHash (Id.id_of_string iid) (Raw iid_iface);
       trans_interface TBot queryInterfaceType (Id.id_of_string iid)
-    ) iids in
-    ((componentsAndCID :: iids @ interfaces), TId "Components")
+    ) iidsAndConstants in
+    ((componentsAndCID :: iids @ interfaces), TId "Components", queryInterfaceType (TId "nsISupports"))
   (* and trans_defs tt defs =  *)
   (*   let (_, componentsAndCID, _, queryInterfaceType) = build_components (defs) in *)
   (*   let interfaces = (filter_map (trans_def tt queryInterfaceType) (defs)) in *)
@@ -82,11 +83,12 @@ let create_env defs =
   and build_components defs = 
     let interfaceToIIDFieldAndFun def =
       match def with
-      | Interface (_, metas, name, _, _, _) ->
+      | Interface (_, metas, name, _, members, _) ->
         if (not (isScriptable metas))
         then None
         else let iidName = (Id.string_of_id name) ^ "_IID" in
-             Some (iidName,
+             let constants = filter_map (fun m -> match m with ConstMember _ -> Some m | _ -> None) members in
+             Some ((iidName, constants),
                    (idToPat name, Present, TId iidName),
                    (fun tself -> TArrow ([TId "nsISupports"; TId iidName], None, (TId (Id.string_of_id name)))))
       | _ -> None in

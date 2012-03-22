@@ -155,8 +155,7 @@ let weave_annotations typedjs =
   match !src_js with
     | None -> typedjs
     | Some js ->
-      let typ_db =
-        ReadTyps.read_typs js (List.rev !JavaScript_lexer.comments) in
+      let typ_db = ReadTyps.read_typs js (List.rev !JavaScript_lexer.comments) in
       WeaveAnnotations.weave typ_db typedjs
 
 let weave_assertions typedjs =
@@ -171,36 +170,36 @@ let action_pretypecheck () : unit =
 let full_idl_defs : Full_idl_syntax.definition list ref = ref []
 let idl_defs : Idl_syntax.definition list ref = ref []
 
-let rec elim_twith env exp = 
-  let rec squash t = 
-    let open TypImpl in 
-    let optsquash t = match t with None -> None | Some t -> Some (squash t) in
-    match t with
-    | TWith _ ->
-      let ret = Typedjs_env.simpl_typ env t in
+let rec squash env t = 
+  let squash = squash env in
+  let open TypImpl in 
+  let optsquash t = match t with None -> None | Some t -> Some (squash t) in
+  match t with
+  | TWith _ ->
+    let ret = Typedjs_env.simpl_typ env t in
       (* Printf.eprintf "Simplifying\n%s\nto\n%s\n" (string_of_typ t) (string_of_typ ret); *)
-      ret
-    | TRef t -> TRef (squash t)
-    | TSource t -> TSource (squash t)
-    | TSink t -> TSink (squash t)
-    | TUnion (t1, t2) -> TUnion(squash t1, squash t2)
-    | TIntersect(t1, t2) -> TIntersect(squash t1, squash t2)
-    | TArrow(args, vararg, ret) -> TArrow(map squash args, optsquash vararg, squash ret)
-    | TObject ot -> TObject (mk_obj_typ (map (third3 squash) (fields ot)) (absent_pat ot))
-    | TTop
-    | TBot -> t
-    | TForall(id, t, b) -> TForall(id, squash t, squash b)
-    | TId _ 
-    | TRegex _
-    | TPrim _ -> t
-    | TRec(id, t) -> TRec(id, squash t)
-    | TLambda (args, t) -> TLambda(args, squash t)
-    | TApp(t, ts) -> TApp(squash t, map squash ts)
-    | TFix(id, k, t) -> TFix(id, k, squash t)
-    | TUninit ty -> ty := optsquash !ty; t
-  in
+    ret
+  | TRef t -> TRef (squash t)
+  | TSource t -> TSource (squash t)
+  | TSink t -> TSink (squash t)
+  | TUnion (t1, t2) -> TUnion(squash t1, squash t2)
+  | TIntersect(t1, t2) -> TIntersect(squash t1, squash t2)
+  | TArrow(args, vararg, ret) -> TArrow(map squash args, optsquash vararg, squash ret)
+  | TObject ot -> TObject (mk_obj_typ (map (third3 squash) (fields ot)) (absent_pat ot))
+  | TTop
+  | TBot -> t
+  | TForall(id, t, b) -> TForall(id, squash t, squash b)
+  | TId _ 
+  | TRegex _
+  | TPrim _ -> t
+  | TRec(id, t) -> TRec(id, squash t)
+  | TLambda (args, t) -> TLambda(args, squash t)
+  | TApp(t, ts) -> TApp(squash t, map squash ts)
+  | TFix(id, k, t) -> TFix(id, k, squash t)
+  | TUninit ty -> ty := optsquash !ty; t
+let rec elim_twith env exp = 
   let elim = elim_twith env in match exp with
-  | EAssertTyp(p, t, e) -> EAssertTyp(p, squash t, elim e)
+  | EAssertTyp(p, t, e) -> EAssertTyp(p, squash env t, elim e)
   | EArray(p, es) -> EArray(p, map elim es)
   | EObject (p, props) -> EObject (p, map (second2 elim) props)
   | EId _ -> exp
@@ -227,22 +226,29 @@ let rec elim_twith env exp =
   | EDeref (p, e) -> EDeref (p, elim e)
   | ESetRef (p, e1, e2) -> ESetRef (p, elim e1, elim e2)
   | EParen (p, e) -> EParen (p, elim e)
-  | ESubsumption (p, t, e) -> ESubsumption (p, squash t, elim e)
-  | EDowncast (p, t, e) -> EDowncast (p, squash t, elim e)
-  | ETypAbs (p, x, t, e) -> ETypAbs (p, x, squash t, elim e)
-  | ETypApp (p, e, t) -> ETypApp (p, elim e, squash t)
-  | ECheat (p, t, e) -> ECheat (p, squash t, elim e)
+  | ESubsumption (p, t, e) -> ESubsumption (p, squash env t, elim e)
+  | EDowncast (p, t, e) -> EDowncast (p, squash env t, elim e)
+  | ETypAbs (p, x, t, e) -> ETypAbs (p, x, squash env t, elim e)
+  | ETypApp (p, e, t) -> ETypApp (p, elim e, squash env t)
+  | ECheat (p, t, e) -> ECheat (p, squash env t, elim e)
   | EBot _
   | EConst _ -> exp
 
 let action_tc () : unit =
+  let typedjs = get_typedjs () in
   let env =
     let typ_vars = Unidl.unidl !idl_defs in
     Typedjs_env.set_global_object
       (extend_env IdMap.empty typ_vars (get_env ()))
       (get_global_object ()) in
-  (* verify_env env; *)
-  let typedjs = get_typedjs () in
+  let new_decls = ReadTyps.new_decls (List.rev !JavaScript_lexer.comments) in
+  let env = List.fold_left (fun env d -> match d with
+    | EnvType(p, x, t) -> 
+      let t' = Sb_desugar.desugar_typ p t in
+      let t'' = squash env t' in
+      (bind_typ_id x t'' env)
+    | _ -> env) env new_decls in
+  set_env env;
   let annot_js = elim_twith env (weave_annotations typedjs) in
   let asserted_js = weave_assertions annot_js in
   let _ = typecheck env !default_typ asserted_js in
@@ -274,12 +280,13 @@ let compile_env () : unit =
   (* | ids -> Printf.printf "Found identifiers that are native but not noscript!\n"; *)
   (*   List.iter (fun id -> Printf.printf "  %s\n" id) ids); *)
   (* Print_full_idl.print_defs !full_idl_defs; *)
-  let (idlEnv, compsType) = (Create_env.create_env !full_idl_defs) in
+  let (idlEnv, compsType, qiType) = (Create_env.create_env !full_idl_defs) in
   set_env (bind_recursive_types (ListExt.filter_map (fun (name, _, typ) -> 
     match (P.singleton_string name) with
     | Some name -> Some (name, typ)
     | None -> None) idlEnv) (get_env ()));
-  set_env (bind_id "Components" (TypImpl.TSource compsType) (get_env ()))
+  set_env (bind_id "Components" (TypImpl.TSource compsType) (get_env ()));
+  set_env (bind_typ_id "QueryInterfaceType" qiType (get_env ()))
   (* Printf.printf "****************************************\nDone compiling environment@."; *)
   (* set_env (extend_env idlEnv IdMap.empty (get_env ())) *)
 

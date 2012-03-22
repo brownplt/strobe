@@ -6,14 +6,17 @@ open Typedjs_lexer
 open JavaScript_syntax
 module H = Hashtbl
 
-type ann = (pos * Typedjs_syntax.annotation) list
+type ann = (Prelude.pos * Typedjs_syntax.annotation) list
 
 type comments = (Prelude.pos * string) list
 
-type typ_db = (pos, Typedjs_syntax.annotation) H.t
+type typ_db = (Prelude.pos, Typedjs_syntax.annotation) H.t
+
+let is_typedecl (_, comment) =
+  String.length comment > 1 && comment.[0] = ':' && comment.[1] = ':'
 
 let is_annotation (_, comment) =
-  String.length comment > 0 && String.get comment 0 = ':'
+  String.length comment > 0 && comment.[0] = ':'
 
 let parse_annotation ((pos, end_p), comment) =
   let lexbuf = from_string (String.sub comment 1 (String.length comment - 1)) in
@@ -29,9 +32,27 @@ let parse_annotation ((pos, end_p), comment) =
           failwith (sprintf "error parsing annotation at %s"
                    (string_of_position (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
 
-let annotations_of_comments (comments : (pos * string) list)
-      : (pos * annotation) list = 
-  map parse_annotation (List.filter is_annotation comments)
+let parse_typedecl ((pos, end_p), comment) =
+  let lexbuf = from_string (String.sub comment 2 (String.length comment - 2)) in
+  lexbuf.lex_start_p <- pos;
+  lexbuf.lex_curr_p <- pos;
+  try
+    one_env_decl token lexbuf
+  with
+  | Failure "lexing: empty token" ->
+    failwith (sprintf "error lexing annotation at %s"
+                (string_of_position (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+  | Error ->
+    failwith (sprintf "error parsing annotation at %s, annotation was\n%s"
+                (string_of_position (lexbuf.lex_curr_p, lexbuf.lex_curr_p)) comment)
+
+let new_decls (comments : (Prelude.pos * string) list) : env_decl list =
+  ListExt.filter_map (fun c -> if is_typedecl c then Some (parse_typedecl c) else None) comments
+    
+
+let annotations_of_comments (comments : (pos * string) list) : (pos * annotation) list = 
+  let (_, not_typedecls) = List.partition is_typedecl comments in
+  map parse_annotation (List.filter is_annotation not_typedecls)
 
 let pos_before (p1, _) (p2, _) = p1.pos_cnum < p2.pos_cnum
 
@@ -197,6 +218,7 @@ let assoc_annotations (js_ast : prog) ann_lst =
 
 let read_typs (js_ast : prog) (comments : (pos * string) list) : typ_db =
   assoc_annotations js_ast (annotations_of_comments comments)
+
 
 let get_annotation typ_db p = 
   try 

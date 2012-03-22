@@ -62,7 +62,7 @@ let is_empty lst = match lst with
 type env = bool IdMap.t
 
 let to_string  p e = EPrefixOp (p, "%ToString",  e) 
-let to_object  p e = EPrefixOp (p, "%ToObject",  e) 
+let to_object  p e = e (* EPrefixOp (p, "%ToObject",  e) *) (* HACK!! *)
 let to_boolean p e = EPrefixOp (p, "%ToBoolean", e)
 
 (** [object_and_function expr] is used on the expression in function
@@ -239,7 +239,7 @@ and match_func env expr = match expr with
                                  fold_left mutable_arg
                                    (ELabel (a', "%return", exp env' body))
                                    args));
-                         ("prototype", EAssertTyp(a, TUninit (ref None), EBot a) (* EAssertTyp(a, TId "Ext", EConst(a, JavaScript_syntax.CUndefined)) *));
+                         ("prototype", EBot a (* EAssertTyp(a, TId "Ext", EConst(a, JavaScript_syntax.CUndefined)) *));
                          ("__proto__", EDeref(a, EId (a, "Object")))])) (* TODO: Make this Function *)
   | FuncExpr (a, _, _) ->
       failwith ("expected a LabelledExpr at " ^ string_of_position a)
