@@ -217,7 +217,7 @@ let rec elim_twith env exp =
     let e1' = elim e1 in
     let e2' = elim e2 in
     ELet (p, x, e1', e2')
-  | ERec (binds, e) -> ERec (map (third3 elim) binds, elim e)
+  | ERec (p, binds, e) -> ERec (p, map (third3 elim) binds, elim e)
   | ESeq (p, e1, e2) -> ESeq (p, elim e1, elim e2)
   | ELabel (p, x, e) -> ELabel (p, x, elim e)
   | EBreak (p, x, e) -> EBreak (p, x, elim e)

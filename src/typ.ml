@@ -230,23 +230,23 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
                               end) arg_typs) @ vararg)) in
         hnestOrHorz 0 [ argText; horz [text "->"; typ r_typ ]]
       | TObject flds -> 
-        let isFunctionObject fieldList =
-          let findField namePat = 
-            try
-              let (_, _, typ) = 
-                List.find (fun (n, p, _) -> (p = Present && n = namePat)) fieldList in
-              (true, Some typ)
-            with Not_found -> (false, None) in
-          let (hasProto, _) = findField proto_pat in
-          let (hasCode, codeTyp) = findField (P.singleton "-*- code -*-") in
-          let (hasPrototype, protoTyp) = findField (P.singleton "prototype") in
-          let isSimplePrototype = match protoTyp with 
-            | Some (TId t) -> t = "Object" || t = "Any" || t = "Ext" 
-                                                || (String.length t > 3 && String.sub t 0 3 = "nsI")
-            | _ -> false in
-          if ((List.length fieldList) = 4 && hasProto && hasCode && hasPrototype && isSimplePrototype)
-          then codeTyp
-          else None in
+        let isFunctionObject fieldList = None in
+          (* let findField namePat =  *)
+          (*   try *)
+          (*     let (_, _, typ) =  *)
+          (*       List.find (fun (n, p, _) -> (p = Present && n = namePat)) fieldList in *)
+          (*     (true, Some typ) *)
+          (*   with Not_found -> (false, None) in *)
+          (* let (hasProto, _) = findField proto_pat in *)
+          (* let (hasCode, codeTyp) = findField (P.singleton "-*- code -*-") in *)
+          (* let (hasPrototype, protoTyp) = findField (P.singleton "prototype") in *)
+          (* let isSimplePrototype = match protoTyp with  *)
+          (*   | Some (TId t) -> t = "Object" || t = "Any" || t = "Ext"  *)
+          (*                                       || (String.length t > 3 && String.sub t 0 3 = "nsI") *)
+          (*   | _ -> false in *)
+          (* if ((List.length fieldList) = 4 && hasProto && hasCode && hasPrototype && isSimplePrototype) *)
+          (* then codeTyp *)
+          (* else None in *)
         (match isFunctionObject (flds.fields) with
         | Some arrTyp -> horz [squish [text "{|"; typ' true arrTyp; text "|}"]]
         | None ->

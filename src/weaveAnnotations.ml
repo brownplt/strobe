@@ -23,7 +23,7 @@ let rec weave_rec (db : typ_db) (exp : exp) =
     let e1' = w e1 in
     let e2' = w e2 in
     ELet (p, x, e1', e2')
-  | ERec (binds, e) -> ERec (map (third3 w) binds, w e)
+  | ERec (p, binds, e) -> ERec (p, map (third3 w) binds, w e)
   | ESeq (p, e1, e2) -> ESeq (p, w e1, w e2)
   | ELabel (p, x, e) -> ELabel (p, x, w e)
   | EBreak (p, x, e) -> EBreak (p, x, w e)
@@ -84,7 +84,7 @@ let rec assert_typ typ exp =
       let e1' = w e1 in
       let e2' = w e2 in
       ELet (p, x, e1', e2')
-    | ERec (binds, e) -> ERec (map (third3 w) binds, w e)
+    | ERec (p, binds, e) -> ERec (p, map (third3 w) binds, w e)
     | ESeq (p, e1, e2) -> ESeq (p, w e1, w e2)
     | ELabel (p, x, e) -> ELabel (p, x, w e)
     | EBreak (p, x, e) -> EBreak (p, x, w e)

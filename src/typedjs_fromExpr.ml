@@ -152,7 +152,7 @@ let rec exp (env : env) expr = match expr with
   | ThrowExpr (a, e) -> EThrow (a, exp env e)
   | WhileExpr (a, break_lbls, e1, e2) ->
       let loop_typ = TArrow ([], None, TPrim "Undef") in
-        ERec ([("%loop", loop_typ,
+        ERec (a, [("%loop", loop_typ,
                 EAssertTyp (a, loop_typ, 
                             EFunc (a, [], { func_loop = true;
                                             func_owned = IdSet.empty },
@@ -165,7 +165,7 @@ let rec exp (env : env) expr = match expr with
               EApp (a, EId (a, "%loop"), []))
   | DoWhileExpr (a, break_lbls, body_e, test_e) ->
       let loop_typ = TArrow ([], None, TPrim "Undef") in
-        ERec ([("%loop", loop_typ,
+        ERec (a, [("%loop", loop_typ,
                 EAssertTyp (a, loop_typ,
                 EFunc (a, [], { func_loop = true;
                                 func_owned = IdSet.empty },
@@ -196,7 +196,7 @@ let rec exp (env : env) expr = match expr with
       raise (Not_well_formed (p, "funcasdasdtion is missing a type annotation"))
   | ForInExpr (p, break_lbls, x, obj, body) ->
     let loop_typ = TArrow ([forin_ix_typ], None, TPrim "Undef") in
-    ERec ([("%loop", loop_typ,
+    ERec (p, [("%loop", loop_typ,
             EAssertTyp (p, loop_typ, 
             EFunc (p, [x], {func_loop = true;
                             func_owned = IdSet.empty },

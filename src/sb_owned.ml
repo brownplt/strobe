@@ -75,12 +75,12 @@ let rec f (acc : IdSet.t * IdSet.t) (exp : exp) : (IdSet.t * IdSet.t) * exp =
     let (acc, e1) = f acc e1 in
     let (acc, e2) = f acc e2 in
     (acc, ELet (p, x, e1, e2))
-  | ERec (binds, body) ->
+  | ERec (p, binds, body) ->
     let (acc, binds) = fold_map
       (fun acc (x, t, e) -> let (acc, e) = f acc e in (acc, (x, t, e)))
       binds acc in
     let (acc, body) = f acc body in
-    (acc, ERec (binds, body))
+    (acc, ERec (p, binds, body))
   | ESeq (p, e1, e2) ->
     let (acc, e1) = f acc e1 in
     let (acc, e2) = f acc e2 in

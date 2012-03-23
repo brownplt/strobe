@@ -88,8 +88,89 @@ let extract_arrow env t =
   | None -> raise (Typ_error ((Lexing.dummy_pos, Lexing.dummy_pos), FixedString "Ambiguous arrow type for Func"))
 
 
+let simpl_print e = match e with
+  | EConst(p, _) -> "EConst " ^ (string_of_position p)
+  | EBot(p) -> "EBot " ^ (string_of_position p)
+  | EAssertTyp(p, _, _) -> "EAssertTyp " ^ (string_of_position p)
+  | EArray(p, _) -> "EArray " ^ (string_of_position p)
+  | EObject(p, _) -> "EObject " ^ (string_of_position p)
+  | EId(p, _) -> "EId " ^ (string_of_position p)
+  | EBracket(p, _, _) -> "EBracket " ^ (string_of_position p)
+  | EUpdate(p, _, _, _) -> "EUpdate " ^ (string_of_position p)
+  | EPrefixOp(p, _, _) -> "EPrefixOp " ^ (string_of_position p)
+  | EInfixOp(p, _, _, _) -> "EInfixOp " ^ (string_of_position p)
+  | EIf(p, _, _, _) -> "EIf " ^ (string_of_position p)
+  | EApp(p, _, _) -> "EApp " ^ (string_of_position p)
+  | EFunc(p, _, _, _) -> "EFunc " ^ (string_of_position p)
+  | ELet(p, _, _, _) -> "ELet " ^ (string_of_position p)
+  | ERec(p, _, _) -> "ERec " ^ (string_of_position p)
+  | ESeq(p, _, _) -> "ESeq " ^ (string_of_position p)
+  | ELabel(p, _, _) -> "ELabel " ^ (string_of_position p)
+  | EBreak(p, _, _) -> "EBreak " ^ (string_of_position p)
+  | ETryCatch(p, _, _, _) -> "ETryCatch " ^ (string_of_position p)
+  | ETryFinally(p, _, _) -> "ETryFinally " ^ (string_of_position p)
+  | EThrow(p, _) -> "EThrow " ^ (string_of_position p)
+  | ETypecast(p, _, _) -> "ETypecast " ^ (string_of_position p)
+  | ERef(p, _, _) -> "ERef " ^ (string_of_position p)
+  | EDeref(p, _) -> "EDeref " ^ (string_of_position p)
+  | ESetRef(p, _, _) -> "ESetRef " ^ (string_of_position p)
+  | ESubsumption(p, _, _) -> "ESubsumption " ^ (string_of_position p)
+  | EDowncast(p, _, _) -> "EDowncast " ^ (string_of_position p)
+  | ETypAbs(p, _, _, _) -> "ETypAbs " ^ (string_of_position p)
+  | ETypApp(p, _, _) -> "ETypApp " ^ (string_of_position p)
+  | ECheat(p, _, _) -> "ECheat " ^ (string_of_position p)
+  | EParen(p, _) -> "EParen " ^ (string_of_position p)
+
+
+let rec usesThis exp = match exp with
+  | EConst (p, c) -> false
+  | EBot p -> false
+  | EAssertTyp (p, t, e) -> usesThis e
+  | EArray (p, es) -> List.exists usesThis es
+  | EObject (p, flds) -> List.exists usesThis (map snd flds)
+  | EId (p, x) -> x = "this"
+  | EBracket (p, e1, e2) -> usesThis e1 || usesThis e2
+  | EUpdate (p, e1, e2, e3) -> usesThis e1 || usesThis e2 || usesThis e3
+  | EPrefixOp (p, op, e) -> usesThis e
+  | EInfixOp (p, op, e1, e2) -> usesThis e1 || usesThis e2
+  | EIf (p, e1, e2, e3) -> usesThis e1 || usesThis e2 || usesThis e3
+  | EApp (p, e, es) -> List.exists usesThis (e::es)
+  | EFunc (p, xs, fi, e) -> usesThis e
+  | ELet (p, x, e1, e2) -> usesThis e1 || usesThis e2
+  | ERec (p, binds, body) -> usesThis body
+  | ESeq (p, e1, e2) -> usesThis e1 || usesThis e2
+  | ELabel (p, x,  e) -> usesThis e
+  | EBreak (p, x, e) -> usesThis e
+  | ETryCatch (p, e1, x, e2) -> usesThis e1 || usesThis e2
+  | ETryFinally (p, e1, e2) -> usesThis e1 || usesThis e2
+  | EThrow (p, e) -> usesThis e
+  | ETypecast (p, s, e) -> usesThis e
+  | ERef (p, k, e) -> usesThis e
+  | EDeref (p, e) -> usesThis e
+  | ESetRef (p, e1, e2) -> usesThis e1 || usesThis e2
+  | ESubsumption (p, t, e) -> usesThis e
+  | EDowncast (p, t, e) -> usesThis e
+  | ETypAbs (p, x, t, e) -> usesThis e
+  | ETypApp (p, e, t) -> usesThis e
+  | ECheat (p, t, e) -> usesThis e
+  | EParen (p, e) -> usesThis e
+
+let depth = ref 0
+let trace (msg : string) (thunk : exp -> 'a) (exp : exp)  = thunk exp
+    (* Printf.eprintf "%s-->%s %s\n" (String.make (!depth) ' ') msg (simpl_print exp); *)
+    (* depth := !depth + 1; *)
+    (* try *)
+    (*   let ret = thunk exp in *)
+    (*   depth := !depth - 1; *)
+    (*   Printf.eprintf "%s<--%s %s\n" (String.make (!depth) ' ') msg (simpl_print exp); *)
+    (*   ret *)
+    (* with e -> *)
+    (*   depth := !depth - 1; *)
+    (*   Printf.eprintf "%s<X-%s %s\n" (String.make (!depth) ' ') msg (simpl_print exp); *)
+    (*   raise e *)
+
 let rec check (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit =
-  try check' env default_typ exp typ
+  try trace "Check" (fun exp -> check' env default_typ exp typ) exp
   (* typ_mismatch normally records the error and proceeds. If we're in a
      [with_typ_exns] context, it will re-raise the error. *)
   with Typ_error (p, s) -> typ_mismatch p s
@@ -198,6 +279,8 @@ match exp with
       (* Printf.printf "Checking finished.\n" *)
 
 and synth (env : env) (default_typ : typ option) (exp : exp) : typ = 
+  trace "Synth" (synth' env default_typ) exp
+and synth' env default_typ exp : typ =
     (* Printf.eprintf "*Synthing type for %s\n" (string_of_exp exp); *)
 match exp with
   (* TODO: Pure if-splitting rule; make more practical by integrating with
@@ -348,8 +431,8 @@ match exp with
     (* Printf.eprintf "EUpdate2: Synthed type for value %s is\n%s\n" (string_of_exp value) (string_of_typ (synth env default_typ value)); *)
     (* Printf.eprintf "EUpdate3: %s\n" (string_of_bool (subtype env (synth env default_typ value) (expose env (TId "Ext")))); *)
     match expose_simpl_typ env tobj, 
-      expose_simpl_typ env (synth env default_typ field), synth env default_typ value with
-        | TObject o, TRegex idx_pat, _ (* (TRegex idx_pat as tfld), typ *) ->
+      expose_simpl_typ env (synth env default_typ field)(* , synth env default_typ value *) with
+        | TObject o, TRegex idx_pat (* (TRegex idx_pat as tfld), typ *) ->
           begin
             if not (P.is_subset (pat_env (tid_env env)) 
                                 idx_pat (cover_pat o))
@@ -373,10 +456,10 @@ match exp with
               check env default_typ value s in
           let _ = List.iter okfield fs in
           tobj
-        | obj, fld, typ ->
-          let _ = typ_mismatch p (TypTypTyp((fun t1 t2 t3 -> 
-            sprintf "Bad update: %s[%s = %s]"
-              (string_of_typ t1) (string_of_typ t2) (string_of_typ t3)), obj, fld, typ)) in
+        | obj, fld ->
+          let _ = typ_mismatch p (TypTyp((fun t1 t2 -> 
+            sprintf "Bad update: expected TObject, TRegex, and got %s and %s"
+              (string_of_typ t1) (string_of_typ t2)), obj, fld)) in
           obj
           
   end
@@ -461,7 +544,7 @@ match exp with
       end in 
     (* Printf.eprintf "Synth EApp: Checking function body\n"; *)
     check_app (un_null (synth env default_typ f))
-  | ERec (binds, body) -> 
+  | ERec (p, binds, body) -> 
     (* No kinding check here, but it simply copies the type from the function.
        Let it work. (Actual reason: no position available) *)
     let f env (x, t, e) = bind_id x t env in
@@ -471,7 +554,8 @@ match exp with
     synth env default_typ body 
   | EFunc (p, args, func_info, body) -> 
     (* BSL: Synthesizing Ext *)
-    let arrowTyp = TArrow([TId "Ext"], Some (TId "Ext"), TId "Ext") in
+    let thisType = if usesThis body then TId "Ext" else TTop in
+    let arrowTyp = TArrow([thisType], Some (TId "Ext"), TId "Ext") in
     (* Printf.eprintf "Checking expression for Ext-arrow:\n%s\n" (string_of_exp exp); *)
     check env default_typ exp arrowTyp;
     arrowTyp

@@ -66,7 +66,7 @@ type exp
   | EApp of pos * exp * exp list
   | EFunc of pos * id list * func_info * exp
   | ELet of pos * id * exp * exp
-  | ERec of (id * TypImpl.typ * exp) list * exp
+  | ERec of pos * (id * TypImpl.typ * exp) list * exp
   | ESeq of pos * exp * exp
   | ELabel of pos * id * exp 
   | EBreak of pos * id * exp
@@ -217,7 +217,7 @@ module Exp = struct
     | EApp (p, _, _) -> p
     | EFunc (p, _, _, _) -> p
     | ELet (p, _, _, _) -> p
-    | ERec (_, _) -> failwith "Exp.pos of ERec"
+    | ERec (p, __, _) -> p
     | ESeq (p, _, _) -> p
     | ELabel (p, _, _) -> p
     | EBreak (p, _, _) -> p
@@ -269,7 +269,7 @@ end = struct
         parens (vert [ horz [ text "let";
                               parens (vert (map bind [(x, bound)]))];
                        exp body ])
-    | ERec (binds, body) ->
+    | ERec (_, binds, body) ->
         parens (vert [ horz [ text "rec"; parens (vert (map rec_bind binds)) ];
                        exp body ])
     | ESeq (_, e1, e2) -> parens (vert [ sep [ text "seq"; exp e1 ]; exp e2 ])
@@ -329,7 +329,7 @@ let assigned_free_vars (e : exp) =
     | EApp (_, e, es) -> IdSetExt.unions (map exp (e :: es))
     | EFunc (_, args, _, e) -> fold_right IdSet.remove args (exp e)
     | ELet (_, x, e1, e2) ->  IdSet.union (exp e1) (IdSet.remove x (exp e2))
-    | ERec (binds, e) ->
+    | ERec (_, binds, e) ->
       let (xs, es) = 
         fold_right (fun (x, _, e) (xs, es) -> (x::xs, e::es))
           binds ([], []) in
@@ -385,13 +385,13 @@ let unique_ids (prog : exp) : exp * (string, string) Hashtbl.t =
     | ELet (p, x, e1, e2) ->
       let x' = name x in
       ELet (p, x', exp env e1, exp (IdMap.add x x' env) e2)
-    | ERec (binds, body) ->
+    | ERec (p, binds, body) ->
       let (xs, xs') =
         fold_right 
           (fun (x, _, _) (xs, xs') -> (x::xs, (name x)::xs'))
           binds ([], []) in
       let env = List.fold_right2 IdMap.add xs xs' env in
-      ERec (map (fun (x, t, e) -> (find x env, t, exp env e)) binds,
+      ERec (p, map (fun (x, t, e) -> (find x env, t, exp env e)) binds,
             exp env body)
     | ESeq (p, e1, e2) -> ESeq (p, exp env e1, exp env e2)
     | ELabel (p, x,  e) -> ELabel (p, x, exp env e)

@@ -457,7 +457,7 @@ module Annotate = struct
     | EApp (p, e1, es) -> EApp (p, a_exp e1, map a_exp es)
     | EFunc (p, ids, t, e) -> exp (* no descent into functions *)
     | ELet (p, x, e1, e2) -> ELet (p, x, a_exp e1, a_exp e2)
-    | ERec (binds, e) -> ERec (map a_bind binds, a_exp e)
+    | ERec (p, binds, e) -> ERec (p, map a_bind binds, a_exp e)
     | ESeq (p, e1, e2) -> ESeq (p, a_exp e1, a_exp e2)
     | ELabel (p, i, e) -> ELabel (p, i, a_exp e)
     | EBreak (p, i, e) -> EBreak (p, i, a_exp e)

@@ -181,7 +181,7 @@ seq_exp :
    { let t = match parse_annotation ($startpos, $endpos) $4 with
      | ATyp t -> typ t
      | _ -> failwith "Expected a type for rec, something else" in
-     ERec ([($3, t, $6)], $8) }
+     ERec (($startpos, $endpos), [($3, t, $6)], $8) }
  | cexp SEMI seq_exp
    { ESeq (($startpos, $endpos), $1, $3) }
 
