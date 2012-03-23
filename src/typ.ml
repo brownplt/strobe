@@ -58,7 +58,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     cached_parent_typ : typ option option ref;
     cached_guard_pat : pat option ref;
     cached_cover_pat : pat option ref;
-    cached_possible_cover_pat : pat Lazy.t
+    cached_possible_cover_pat : pat option ref; (* pat Lazy.t *)
   }
       
 
@@ -287,12 +287,16 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       absent_pat = absent_pat;
       cached_parent_typ = ref None;
       cached_guard_pat = ref None;
-      cached_possible_cover_pat = 
-        lazy (fold_right P.union (L.map fst3 fs) P.empty);
+      cached_possible_cover_pat = ref None; (* lazy (fold_right P.union (L.map fst3 fs) P.empty); *)
       cached_cover_pat = ref None
     }
   
-  let possible_field_cover_pat ot = Lazy.force ot.cached_possible_cover_pat
+  let possible_field_cover_pat ot = match !(ot.cached_possible_cover_pat) with
+    | Some p -> p
+    | None -> let ret = fold_right P.union (L.map fst3 ot.fields) P.empty in
+              ot.cached_possible_cover_pat := Some ret;
+              ret
+  (* Lazy.force ot.cached_possible_cover_pat *)
 
   let cover_pat ot =  match !(ot.cached_cover_pat) with
     | None -> 
@@ -387,7 +391,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   assert (not (IdSet.mem y (free_typ_ids s)));
         TRec (y, typ_subst x s t)
       end
-    | TApp (t, ts) -> TApp (typ_subst x s t, List.map (typ_subst x s) ts)
+    | TApp (t, ts) -> 
+      TApp (typ_subst x s t, List.map (typ_subst x s) ts)
     | TUninit t -> match !t with
       | None -> typ
       | Some t -> typ_subst x s t
@@ -440,12 +445,13 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TBot _
     | TLambda _
     | TObject _
-    | TId _  
+    | TId _
     | TForall _ -> typ
     | TWith(t, flds) -> expose_twith typenv typ
     | TFix (x, k, t) -> simpl_typ typenv (typ_subst x typ t)
     | TRec (x, t) -> simpl_typ typenv (typ_subst x typ t)
-    | TApp (t1, ts) -> begin match expose typenv (simpl_typ typenv t1) with
+    | TApp (t1, ts) -> 
+      begin match expose typenv (simpl_typ typenv t1) with
       | TLambda (args, u) -> 
         simpl_typ typenv 
           (List.fold_right2 (* well-kinded, no need to check *)
@@ -462,7 +468,17 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | Some t -> simpl_typ typenv t
 
   and expose typenv typ = match typ with
-    | TId x -> expose typenv (simpl_typ typenv (fst2 (IdMap.find x typenv)))
+    | TId x -> 
+      (try 
+        expose typenv (simpl_typ typenv (fst2 (IdMap.find x typenv)))
+       with Not_found -> Printf.eprintf "Could not find type %s\n" x; raise Not_found)   
+    | _ -> typ
+
+  let expose_arrow env typ = 
+    let clear_id t = match t with TId x -> (fst2 (IdMap.find x env)) | _ -> t in
+    let opt_clear_id t = match t with None -> None | Some t -> Some (clear_id t) in
+    match typ with
+    | TArrow(args, varargs, ret) -> TArrow(map clear_id args, opt_clear_id varargs, clear_id ret)
     | _ -> typ
 
   (** Decides if two types are syntactically equal. This helps subtyping. *)
@@ -679,8 +695,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       cache
     else
       let subtype = subt env in
-      let simpl_s = simpl_typ env s in
-      let simpl_t = simpl_typ env t in
+      let simpl_s = expose env (simpl_typ env s) in
+      let simpl_t = expose env (simpl_typ env t) in
+      if TPSet.mem (simpl_s, simpl_t) cache then cache else
       (* Printf.printf "Checking %s against %s\n" (string_of_typ simpl_s) (string_of_typ simpl_t); *)
       match simpl_s, simpl_t with
       | TUninit t', t2 -> begin match !t' with
@@ -820,9 +837,10 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | Invalid_argument _ -> false (* unequal lengths *)
       | Not_subtype _ -> false
 
+  and cache : TPSet.t ref = ref TPSet.empty 
   and subtype env s t = 
     try
-      let _ = subt env TPSet.empty s t in
+      cache := subt env !cache s t;
       true
     with 
       | Not_subtype str -> false

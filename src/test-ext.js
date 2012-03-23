@@ -1,3 +1,4 @@
+/*: {Ext with prototype : AnObject} */
 function foo() { return null; }
 foo.prototype = { bar: 5 };
 // function foo(x) {

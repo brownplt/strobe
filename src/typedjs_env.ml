@@ -58,12 +58,9 @@ let bind_typ_id (x : id) (t : typ) (env : env) =
     typ_ids = IdMap.add x (t, k) env.typ_ids }
 
 let bind_recursive_types (xts : (id * typ) list) (env : env) =
-  let env' = 
-    List.fold_left
-      (fun env (x, t) -> {env with typ_ids = IdMap.add x (t, KStar) env.typ_ids})
-      env 
-      xts in
-  List.fold_left (fun env (x, t) -> bind_typ_id x t env) env' xts
+  let typ_ids' = List.fold_left (fun ids (x, t) -> IdMap.add x (t, KStar) ids) env.typ_ids xts in
+  let env' = {env with typ_ids = typ_ids'} in
+  timefn "Bindrec/Kind checking" (List.fold_left (fun env (x, t) -> bind_typ_id x t env) env') xts
 
 let lookup_id x env = IdMap.find x env.id_typs
 

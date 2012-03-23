@@ -1,5 +1,5 @@
 .PHONY = debug prof opt clean
-OCAMLBUILD = ocamlbuild -build-dir ../obj -quiet -cflags -annot
+OCAMLBUILD = ocamlbuild -build-dir ../obj -libs unix -quiet -cflags -annot
 
 $(shell mkdir -p ../obj)
 

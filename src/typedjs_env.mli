@@ -21,6 +21,8 @@ exception Not_wf_typ of string
 
   val lookup_id : id -> env -> typ
 
+  val lookup_typ_id : id -> env -> typ * kind
+
   val lookup_lbl : id -> env -> typ
 
   (** JavaScript cannot perform a labelled jump across a function. *)

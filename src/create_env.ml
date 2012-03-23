@@ -52,7 +52,7 @@ let create_env defs =
     List.iter (fun i -> match i with
     | Interface (_, _, name, parent, members, _) -> Hashtbl.add ifaceHash name (Raw i)
     | _ -> ()) defs;
-    let interfaces = (filter_map (trans_def TBot queryInterfaceType) (defs)) in
+    let interfaces = filter_map (trans_def TBot queryInterfaceType) (defs) in
     let iids = filter_map (fun (iid, constants) ->
       let iid_hashname = Id.id_of_string ("##" ^ (iid) ^ "##") in
       let iid_iface = Interface(Lexing.dummy_pos, [], Id.id_of_string iid, 

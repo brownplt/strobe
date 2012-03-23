@@ -23,14 +23,20 @@ let rec pushForallFunction typ = match typ with
   | W.Forall (var, bound, W.Ref(W.Object([W.Present(code, (W.Arrow _ as arrTyp));
                                           W.Present(proto, W.Id "Object");
                                           W.Present(prototypePat, W.Id "Ext");
-                                          W.Star(Some (W.Id "Ext"))])))
-      when code = P.singleton "-*- code -*-" &&
-        proto = proto_pat &&
-        prototypePat = P.singleton "prototype" ->
+                                          W.Star(Some (W.Id "Ext"))]))) ->
     W.Ref(W.Object([W.Present(code, W.Forall(var, bound, arrTyp));
                     W.Present(proto, W.Id "Object");
                     W.Present(P.singleton "prototype", W.Id "Ext");
                     W.Star(Some (W.Id "Ext"))]))
+  | W.Forall (var, bound, W.Ref(W.Object([W.Present(code, (W.Forall _ as arrTyp));
+                                          W.Present(proto, W.Id "Object");
+                                          W.Present(prototypePat, W.Id "Ext");
+                                          W.Star(Some (W.Id "Ext"))]))) ->
+    W.Ref(W.Object([W.Present(code, W.Forall(var, bound, arrTyp));
+                    W.Present(proto, W.Id "Object");
+                    W.Present(P.singleton "prototype", W.Id "Ext");
+                    W.Star(Some (W.Id "Ext"))]))
+  | W.Forall _ -> Printf.eprintf "Found a forall that couldn't be pushed %s\n" (W.print_typ typ); typ
   | W.With(t, f) -> W.With(pushForallFunction t, f)
   | _ -> typ
 %}

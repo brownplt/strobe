@@ -119,6 +119,45 @@ module WritTyp = struct
     | Skull of TypImpl.pat
     | Star of t option
 
+  let print_typ typ = 
+    let open FormatExt in
+    let rec helper typ = match typ with
+      | Str -> text "Str"
+      | Bool -> text "Bool"
+      | Prim s -> squish [text "@"; text s]
+      | Union (t1, t2) -> parens (horz [helper t1; text "+"; helper t2])
+      | Inter (t1, t2) -> parens (horz [helper t1; text "&"; helper t2])
+      | Arrow (this, args, varargs, result) ->
+        horz [
+          (match this with None -> text "[]" | Some t -> brackets (helper t));
+          horz (intersperse (text "*") (map helper args));
+          (match varargs with None -> text "" | Some t -> horz [text "*"; helper t; text "..."]);
+          helper result]
+      | Object f -> braces (obj f)
+      | With (t, f) -> braces (horz [helper t; text "with"; obj f])
+      | Pat p -> text (P.pretty p)
+      | Ref t -> horz [text "Ref"; helper t]
+      | Source t -> horz [text "Src"; helper t]
+      | Top -> text "Top"
+      | Bot -> text "Bot"
+      | Id x -> text x
+      | Forall (x, bound, t) -> horz [text "forall"; text x; text "<:"; helper bound; text "."; helper t]
+      | Rec(x, t) -> horz [text "rec"; text x; text "."; helper t]
+      | Syn x -> parens (horz [text "Syn"; text x])
+      | Lambda(idkinds, t) -> horz [parens (horz (intersperse (text ",") (map (fun (x, k) -> horz [text x; text "::"; text (TypImpl.string_of_kind k)]) idkinds))); text "=>"; helper t]
+      | Fix (x, k, t) -> horz [text "fix"; text x; text "::"; text (TypImpl.string_of_kind k); text "."; helper t]
+      | App (t, args) -> horz [helper t; angles (horz (intersperse (text ",") (map helper args)))]
+    and obj f = vert (map (fun f -> match f with
+      | Present(p, t) -> horz [text (P.pretty p); text ":!"; helper t]
+      | Maybe(p, t) -> horz [text (P.pretty p); text ":?"; helper t]
+      | Inherited(p, t) -> horz [text (P.pretty p); text ":?"; helper t]
+      | Absent p -> horz [text (P.pretty p); text ": _"]
+      | Skull p -> horz [text (P.pretty p); text ": BAD"]
+      | Star t -> (match t with None -> text "* : _" | Some t -> horz [text "* :?"; helper t])) f)
+    in helper typ Format.str_formatter; Format.flush_str_formatter ()
+                          
+
+
 end
 
 type env_decl =
@@ -142,8 +181,8 @@ module Typ = struct
   let rec forall_arrow (typ : TypImpl.typ) : (id list * TypImpl.typ) option = match typ with
     | TypImpl.TArrow _ -> Some ([], typ)
     | TypImpl.TForall (x, _, typ') -> begin match forall_arrow typ' with
-  | None -> None
-  | Some (xs, t) -> Some (x :: xs, t)
+      | None -> None
+      | Some (xs, t) -> Some (x :: xs, t)
     end
     | TypImpl.TRec (x , t) -> forall_arrow (TypImpl.typ_subst x typ t)
     | _ -> None

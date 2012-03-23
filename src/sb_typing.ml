@@ -94,7 +94,9 @@ let rec check (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : u
      [with_typ_exns] context, it will re-raise the error. *)
   with Typ_error (p, s) -> typ_mismatch p s
     
-and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit = match exp with
+and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit = 
+  (* Printf.eprintf "Check': checking %s : %s\n" (string_of_exp exp) (string_of_typ typ); *)
+match exp with
   | ELabel (p, lbl, e) ->
     let s = synth (bind_lbl lbl typ env) default_typ e in
     if not (subtype env s (expose env typ)) then
@@ -173,6 +175,7 @@ and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit
       let newObjTyp = TObject (mk_obj_typ 
                                  (List.map (fun (fieldName, fieldExp) -> 
                                    let fieldTyp = (inherits p env t (P.singleton fieldName)) in
+                                   (* Printf.eprintf "Check' EObject Checking field %s\n" fieldName; *)
                                    check env default_typ fieldExp fieldTyp;
                                    (P.singleton fieldName, Present, fieldTyp)) fields)
                                  absPat) in
@@ -183,13 +186,13 @@ and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit
     | _ -> typ_mismatch p (Typ((fun t -> sprintf "expected TObject, got %s" (string_of_typ t)), typ))
   end
   | _ -> 
-    (* Printf.eprintf "Synthing type for %s\n" (string_of_exp exp); *)
+    (* Printf.eprintf "Check': Synthing type for expression\n"; *)
     let synth_typ = expose_simpl_typ env (synth env default_typ exp) in
     (* Printf.printf "Checking %s <?: %s\n" (string_of_typ synth_typ) (string_of_typ (expose_simpl_typ env typ)); *)
     if not (subtype env synth_typ (expose_simpl_typ env typ)) then begin
       (* Printf.printf "failed.\n"; *)
       typ_mismatch (Exp.pos exp)
-        (TypTyp((fun t1 t2 -> sprintf "%%expected %s, got %s" (string_of_typ t1) (string_of_typ t2)), (expose_simpl_typ env typ), synth_typ))
+        (TypTyp((fun t1 t2 -> sprintf "%%expected %s to have type %s, got %s" (string_of_exp exp) (string_of_typ t1) (string_of_typ t2)), (expose_simpl_typ env typ), synth_typ))
     end (* else *)
       (* Printf.printf "Checking finished.\n" *)
 
@@ -269,7 +272,7 @@ match exp with
     end 
   | ESetRef (p, e1, e2) -> 
     let t = extract_ref "ESetRef" p env (expose_simpl_typ env (synth env default_typ e1)) in
-    begin match  t with
+    begin match t with
     | TRef (TUninit ty) -> begin match !ty with
       | None -> 
         let newTy = synth env default_typ e2 in
@@ -279,11 +282,14 @@ match exp with
       | Some s -> (* Printf.printf "Checking typ at %s\n" (string_of_position p); *) check env default_typ e2 s; 
         s
     end
-      | TRef (TPrim "Unsafe") -> t (* BSL: PUNTING ON ASSIGNMENT TO UNSAFE *)
-      | TRef s 
-      | TSink s -> check env default_typ e2 s; s
-      | s -> typ_mismatch p (Typ((fun t -> sprintf "left-hand side of assignment has type %s" (string_of_typ t)), s));
-        s
+    | TRef (TPrim "Unsafe") -> TPrim "Unsafe" (* BSL: PUNTING ON ASSIGNMENT TO UNSAFE *)
+    | TRef s 
+    | TSink s -> 
+      (* Printf.eprintf "Synth ESetRef: Checking that %s has type %s\n" (string_of_exp e2) (string_of_typ s); *)
+      check env default_typ e2 s; s
+    | s -> 
+      typ_mismatch p (Typ((fun t -> sprintf "left-hand side of assignment has type %s" (string_of_typ t)), s));
+      s
     end
   | ELabel (p, lbl, e) -> 
     (* This is a valid assumption for JavaScript. *)
@@ -312,9 +318,9 @@ match exp with
     (match synth env default_typ e1 with
     | TPrim "True" -> synth env default_typ e2
     | TPrim "False" -> synth env default_typ e3
-    | t when subtype env t typ_bool ->
+    | t (* when subtype env t typ_bool *) ->
       typ_union env (synth env default_typ e2) (synth env default_typ e3)
-    | _ -> raise (Typ_error (p, FixedString "synth: Got non-bool type for condition of if expression")))
+    (* | _ -> raise (Typ_error (p, FixedString "synth: Got non-bool type for condition of if expression")) *) )
   | EObject (p, fields) ->
     let mk_field (name, exp) = 
       (P.singleton name, Present, synth env default_typ exp) in
@@ -336,10 +342,12 @@ match exp with
     end
   | EUpdate (p, obj, field, value) -> begin
     let tobj = synth env default_typ obj in
-    (* Printf.printf "Synthed type for %s of %s\n" (string_of_exp obj) (string_of_typ tobj); *)
+    (* Printf.eprintf "EUpdate1: Synthed type for object %s is\n%s\n" (string_of_exp obj) (string_of_typ tobj); *)
+    (* Printf.eprintf "EUpdate2: Synthed type for value %s is\n%s\n" (string_of_exp value) (string_of_typ (synth env default_typ value)); *)
+    (* Printf.eprintf "EUpdate3: %s\n" (string_of_bool (subtype env (synth env default_typ value) (expose env (TId "Ext")))); *)
     match expose_simpl_typ env tobj, 
       expose_simpl_typ env (synth env default_typ field), synth env default_typ value with
-        | TObject o, (TRegex idx_pat as tfld), typ ->
+        | TObject o, TRegex idx_pat, _ (* (TRegex idx_pat as tfld), typ *) ->
           begin
             if not (P.is_subset (pat_env (tid_env env)) 
                                 idx_pat (cover_pat o))
@@ -353,11 +361,14 @@ match exp with
           end;
           let fs : field list = fields o in
           let okfield (fld_pat, pres, s) = 
-            if P.is_overlapped fld_pat idx_pat && not (subtype env typ s) then
-              typ_mismatch p
-                (TypTypTyp((fun t1 t2 t3 -> 
-                  sprintf "synth, field update: %s, the new value, is not subtype of %s at index %s"
-                    (string_of_typ t1) (string_of_typ t2) (string_of_typ t3)), typ, s, tfld)) in
+            if P.is_overlapped fld_pat idx_pat (* && not (subtype env (expose env typ) (expose env s)) *) then
+              (* try *)
+              (*   with_typ_exns check  *)
+              (* typ_mismatch p *)
+              (*   (TypTypTyp((fun t1 t2 t3 ->  *)
+              (*     sprintf "synth, field update: %s, the new value, is not subtype of %s at index %s" *)
+              (*       (string_of_typ t1) (string_of_typ t2) (string_of_typ t3)), typ, s, tfld)) in *)
+              check env default_typ value s in
           let _ = List.iter okfield fs in
           tobj
         | obj, fld, typ ->
@@ -371,6 +382,7 @@ match exp with
   | EInfixOp (p, op, e1, e2) -> synth env default_typ (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> 
     let rec check_app tfun =
+      (* Printf.eprintf "Checking EApp with function type %s\n" (string_of_typ tfun); *)
       begin match expose_simpl_typ env tfun with 
         | TArrow (expected_typs, None, result_typ) -> 
           let args = fill (List.length expected_typs - List.length args) 
@@ -433,7 +445,7 @@ match exp with
                   let guessed_typ = IdMap.find typ_var assoc in
                   ETypApp (p, exp, guessed_typ) 
                 with Not_found -> begin
-                  raise (Typ_error (p, FixedString "synth: $$$ could not instantiate")) end in
+                  raise (Typ_error (p, FixedString (sprintf "synth: could not instantiate typ_var %s" typ_var))) end in
               let guessed_exp = 
                 fold_left guess_typ_app (ECheat (p, quant_typ, f)) 
                   typ_vars in
@@ -445,6 +457,7 @@ match exp with
           raise (Typ_error (p,
                             Typ((fun t -> sprintf "expected function, got %s" (string_of_typ t)), not_func_typ)))
       end in 
+    (* Printf.eprintf "Synth EApp: Checking function body\n"; *)
     check_app (un_null (synth env default_typ f))
   | ERec (binds, body) -> 
     (* No kinding check here, but it simply copies the type from the function.
@@ -465,6 +478,8 @@ match exp with
     check env default_typ e t;
     t
   | EAssertTyp (p, t, e) ->
+    (* Printf.eprintf "Synth: AssertTyp that %s has type %s\n" (string_of_exp e) (string_of_typ t); *)
+    (* Printf.eprintf "%s\n" (string_of_bool (subtype env (synth env default_typ e) t)); *)
     let t = check_kind p env t in
     let _ = check env default_typ e t in
     t

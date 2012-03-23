@@ -21,9 +21,9 @@ let kind_mismatch typ calculated_kind expected_kind =
   raise 
     (Kind_error 
        (sprintf "Expected kind %s, but got kind %s for type:\n%s"
-    (string_of_kind expected_kind)
-    (string_of_kind calculated_kind)
-    (string_of_typ typ)))
+          (string_of_kind expected_kind)
+          (string_of_kind calculated_kind)
+          (string_of_typ typ)))
 
 
 let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
@@ -42,16 +42,16 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
   | TUnion (t1, t2)
   | TIntersect (t1, t2) ->
     begin match kind_check env t1, kind_check env t2 with
-      | KStar, KStar -> KStar
-      | k1, KStar -> kind_mismatch t1 k1 KStar
-      | _, k2 -> kind_mismatch t2 k2 KStar
+    | KStar, KStar -> KStar
+    | k1, KStar -> kind_mismatch t1 k1 KStar
+    | _, k2 -> kind_mismatch t2 k2 KStar
     end
   | TRef t
   | TSource t
   | TSink t ->
     begin match kind_check env t with
-      | KStar -> KStar
-      | k -> kind_mismatch t k KStar
+    | KStar -> KStar
+    | k -> kind_mismatch t k KStar
     end
   | TArrow (arg_typs, varargs, result_typ) ->
     let assert_kind t = match kind_check env t with
@@ -82,14 +82,14 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
     end
   | TForall (x, t1, t2) ->
     begin match kind_check env t1, kind_check (IdMap.add x KStar env) t2 with
-      | KStar, KStar -> KStar
-      | k1, KStar -> kind_mismatch t1 k1 KStar
-      | _, k2 -> kind_mismatch t2 k2 KStar
+    | KStar, KStar -> KStar
+    | k1, KStar -> kind_mismatch t1 k1 KStar
+    | _, k2 -> kind_mismatch t2 k2 KStar
     end
   | TRec (x, t) ->
     begin match kind_check (IdMap.add x KStar env) t with
-      | KStar -> KStar
-      | k -> kind_mismatch t k KStar
+    | KStar -> KStar
+    | k -> kind_mismatch t k KStar
     end
   | TLambda (args, t) ->
     let env' = fold_right (fun (x, k) env -> IdMap.add x k env) args env in
@@ -100,25 +100,25 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
     else kind_mismatch typ k' k
   | TApp (t_op, t_args) ->
     begin match kind_check env t_op with
-      | KArrow (k_args, k_result) ->
-  begin
-    try
-      let check k_arg t_arg = 
-        let k_actual = kind_check env t_arg in
-        if k_arg = k_actual then
-    ()
-        else 
-    kind_mismatch t_arg k_actual k_arg in
-      let _ = List.iter2 check k_args t_args in
-      k_result
-    with Invalid_argument _ ->
-      raise (Kind_error
-         (sprintf "operator expects %d args, given %d"
-      (List.length k_args) (List.length t_args)))
-  end
-      | KStar ->
-  raise (Kind_error 
-     (sprintf "not a type operator:\n%s" (string_of_typ t_op)))
+    | KArrow (k_args, k_result) ->
+      begin
+        try
+          let check k_arg t_arg = 
+            let k_actual = kind_check env t_arg in
+            if k_arg = k_actual then
+              ()
+            else 
+              kind_mismatch t_arg k_actual k_arg in
+          let _ = List.iter2 check k_args t_args in
+          k_result
+        with Invalid_argument _ ->
+          raise (Kind_error
+                   (sprintf "operator expects %d args, given %d"
+                      (List.length k_args) (List.length t_args)))
+      end
+    | KStar ->
+      raise (Kind_error 
+               (sprintf "not a type operator:\n%s" (string_of_typ t_op)))
     end
 
 and assert_fld_kind (env : kind_env) (_, _, t) = match kind_check env t with

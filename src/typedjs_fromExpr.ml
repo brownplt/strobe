@@ -88,11 +88,14 @@ let rec exp (env : env) expr = match expr with
   | ObjectExpr (a, ps) -> 
       if List.length ps != List.length (nub (map (fun (_, p, _) -> p) ps)) then
         raise (Not_well_formed (a, "repeated field names"));
-    let ps = if List.mem "__proto__" (List.map snd3 ps) then ps
-      else (a, "__proto__", VarExpr(a, "Object"))::ps in
-    let ps = if List.mem "-*- code -*-" (List.map snd3 ps) then ps
-      else (a, "-*- code -*-", ConstExpr(a, JavaScript_syntax.CUndefined))::ps in
-    ERef (a, RefCell, EObject (a, map (fun (_, x, e) ->  x, exp env e) ps))
+    let ps = map (fun (_, x, e) -> x, exp env e) ps in
+    let ps = if List.mem_assoc "__proto__" ps then ps
+      else ("__proto__", exp env (VarExpr(a, "Object")))::ps in
+    let ps = if List.mem_assoc "-*- code -*-" ps then ps
+      else ("-*- code -*-", (* EAssertTyp(a, TUnion (TPrim "Undef",  *)
+                            (*                       TArrow([TId "Ext"], Some (TId "Ext"), TId "Ext")), *)
+                                       (EConst(a, JavaScript_syntax.CUndefined)))::ps in
+    ERef (a, RefCell, EObject (a, ps))
   | ThisExpr a -> EDeref (a, EId (a, "this"))
   | VarExpr (a, x) -> begin try
       if IdMap.find x env then

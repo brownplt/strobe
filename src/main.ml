@@ -120,17 +120,19 @@ let (set_simpl_cps, get_simpl_cps) =
   mk_flag "-simplcps" "use simplified, but slower CPS (broken)" false
 
 
-let action_pretty () : unit =
+let action_pretty () : int =
   let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
-    JavaScript.Pretty.p_prog prog std_formatter;
-    print_newline ()
+  JavaScript.Pretty.p_prog prog std_formatter;
+  print_newline ();
+  0
 
-let action_expr () : unit =
+let action_expr () : int =
   let prog = parse_javascript (get_cin ()) (get_cin_name ()) in
   let e = from_javascript prog in
   Exprjs.Pretty.p_expr e std_formatter; print_newline();
   print_newline();
-  Exprjs.Pretty.p_expr (lift_decls e) std_formatter
+  Exprjs.Pretty.p_expr (lift_decls e) std_formatter;
+  0
 
 
 let src_js : JavaScript_syntax.prog option ref = ref None
@@ -163,9 +165,10 @@ let weave_assertions typedjs =
   | None -> typedjs
   | Some typ -> WeaveAnnotations.assert_typ typ typedjs
 
-let action_pretypecheck () : unit =
+let action_pretypecheck () : int =
   let typedjs = weave_assertions (weave_annotations (get_typedjs ())) in
-    Typedjs_syntax.Pretty.exp typedjs std_formatter
+    Typedjs_syntax.Pretty.exp typedjs std_formatter;
+  0
 
 let full_idl_defs : Full_idl_syntax.definition list ref = ref []
 let idl_defs : Idl_syntax.definition list ref = ref []
@@ -234,13 +237,13 @@ let rec elim_twith env exp =
   | EBot _
   | EConst _ -> exp
 
-let action_tc () : unit =
-  let typedjs = get_typedjs () in
+let action_tc () : int =
   let env =
     let typ_vars = Unidl.unidl !idl_defs in
     Typedjs_env.set_global_object
       (extend_env IdMap.empty typ_vars (get_env ()))
       (get_global_object ()) in
+  let typedjs = get_typedjs () in
   let new_decls = ReadTyps.new_decls (List.rev !JavaScript_lexer.comments) in
   let env = List.fold_left (fun env d -> match d with
     | EnvType(p, x, t) -> 
@@ -253,9 +256,9 @@ let action_tc () : unit =
   let asserted_js = weave_assertions annot_js in
   let _ = typecheck env !default_typ asserted_js in
   if TypImpl.get_num_typ_errors () > 0 then
-    exit 2
+    2
   else
-    ()
+    0
 
 let load_idl_file filename =
   let full_idl = Idl.from_channel (open_in filename) filename in
@@ -273,18 +276,19 @@ let print_idl () : unit =
   Print_full_idl.print_defs !full_idl_defs
 
 let compile_env () : unit =
-  full_idl_defs := Sanitize.resolve_partials
-    (Sanitize.resolve_typedefs (Sanitize.remove_dupes !full_idl_defs));
+  full_idl_defs := timefn "Sanitizing" (fun defs -> Sanitize.resolve_partials
+    (Sanitize.resolve_typedefs (Sanitize.remove_dupes defs))) (!full_idl_defs);
   (* (match (Sanitize.sanity_check !full_idl_defs) with *)
   (* | [] -> Printf.printf "All native types are properly non-scriptable\n" *)
   (* | ids -> Printf.printf "Found identifiers that are native but not noscript!\n"; *)
   (*   List.iter (fun id -> Printf.printf "  %s\n" id) ids); *)
   (* Print_full_idl.print_defs !full_idl_defs; *)
-  let (idlEnv, compsType, qiType) = (Create_env.create_env !full_idl_defs) in
+  let (idlEnv, compsType, qiType) = (timefn "Creating env" Create_env.create_env) (!full_idl_defs) in
+  timefn "Binding recursive types" (fun () ->
   set_env (bind_recursive_types (ListExt.filter_map (fun (name, _, typ) -> 
     match (P.singleton_string name) with
     | Some name -> Some (name, typ)
-    | None -> None) idlEnv) (get_env ()));
+    | None -> None) idlEnv) (get_env ()))) ();
   set_env (bind_id "Components" (TypImpl.TSource compsType) (get_env ()));
   set_env (bind_typ_id "QueryInterfaceType" qiType (get_env ()))
   (* Printf.printf "****************************************\nDone compiling environment@."; *)
@@ -307,11 +311,11 @@ let allow_unbound typStr : unit =
 let assert_typ typStr : unit = 
   parseTyp_to_ref typStr assert_typ
 
-let action = ref action_tc
+let action = ref (timefn "Typechecking" action_tc)
 
 let is_action_set = ref false
 
-let set_action (thunk : unit -> unit) (() : unit) : unit =
+let set_action (thunk : unit -> 'a) (() : unit) : unit =
   if !is_action_set then
     (eprintf "invalid arguments (-help for help)\n"; exit 1)
   else
@@ -319,7 +323,7 @@ let set_action (thunk : unit -> unit) (() : unit) : unit =
 
 let main () : unit =
   Arg.parse
-    [ ("-tc", Arg.Unit (set_action action_tc),
+    [ ("-tc", Arg.Unit (set_action (timefn "Typechecking" action_tc)),
        "type-check the source program (default when no options are given)");
       ("-stdin", Arg.Unit (fun () -> set_cin stdin "<stdin>"),
        "read from stdin instead of a file");
@@ -343,11 +347,11 @@ let main () : unit =
        "Parse strobe source");
       ("-idl", Arg.String load_idl_file,
        "loads an IDL file");
-      ("-newidl", Arg.String load_new_idl_file,
+      ("-newidl", Arg.String (timefn "Loading IDL" load_new_idl_file),
        "loads an IDL file");
       ("-print-idl", Arg.Unit print_idl,
        "Print the current IDL data");
-      ("-compile-env", Arg.Unit compile_env,
+      ("-compile-env", Arg.Unit (timefn "Compiling environment" compile_env),
        "Generate environment from IDL");
       ("-print-env", Arg.Unit print_env,
        "Print the current environment");
@@ -363,8 +367,7 @@ let cleanup () =
 at_exit cleanup;
 Printexc.print main ();
 try
-  !action ();
-  exit 0
+  exit (!action ());
 with
     Failure s ->  eprintf "%s\n" s; exit 3
   | Not_well_formed (p, s) ->
