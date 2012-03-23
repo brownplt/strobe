@@ -94,7 +94,7 @@ let create_env defs =
              let constants = filter_map (fun m -> match m with ConstMember _ -> Some m | _ -> None) members in
              Some ((iidName, constants),
                    (idToPat name, Present, TId iidName),
-                   (fun tself -> TArrow ([TId "nsISupports"; TId iidName], None, (TId (Id.string_of_id name)))))
+                   (fun tself -> TArrow ([TThis (TId "nsISupports"); TId iidName], None, (TId (Id.string_of_id name)))))
       | _ -> None in
     let unzip3 abcs =
       let rec helper abcs aas bbs ccs =
@@ -120,7 +120,7 @@ let create_env defs =
                                                 proto] P.empty))) in
     let queryInterfaceType tself =
       wrapArrow SourceCell (List.fold_left (fun acc f -> TIntersect (f tself, acc))
-                              (TArrow ([tself; TId "nsIJSIID"], None, TId "nsISupports")) funs) in
+                              (TArrow ([TThis tself; TId "nsIJSIID"], None, TId "nsISupports")) funs) in
     (* let queryInterfaceType tself = match funs with *)
     (*   | [] -> TBot (\* absurd *\) *)
     (*   | [ty] -> wrapArrow (ty tself) *)
@@ -181,13 +181,13 @@ let create_env defs =
       else if (isQueryInterfaceType metas) then returnField queryInterfaceType
       else returnField
         (match List.rev args with
-        | [] -> wrapArrow SourceCell (TArrow ([tself], None, trans_typ typ))
+        | [] -> wrapArrow SourceCell (TArrow ([TThis tself], None, trans_typ typ))
         | lastArg::revArgs ->
         let (_, lastMetas, lastTyp, _, _, _) = lastArg in
         if (isRetval lastMetas) 
         then wrapArrow SourceCell 
-          (TArrow (tself :: List.map (trans_arg tself) (List.rev revArgs), None, trans_typ lastTyp))
-        else wrapArrow SourceCell  (TArrow (tself :: List.map (trans_arg tself) args, None, trans_typ typ))
+          (TArrow ((TThis tself) :: List.map (trans_arg tself) (List.rev revArgs), None, trans_typ lastTyp))
+        else wrapArrow SourceCell  (TArrow ((TThis tself) :: List.map (trans_arg tself) args, None, trans_typ typ))
         )
     | ConstMember (_, metas, typ, id, value) -> 
       if (isNoScript metas)

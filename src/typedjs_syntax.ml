@@ -103,6 +103,7 @@ module WritTyp = struct
     | Source of t
     | Top
     | Bot
+    | This of t
     | Id of id
     | Forall of id * t * t
     | Rec of id * t
@@ -141,6 +142,7 @@ module WritTyp = struct
       | Top -> text "Top"
       | Bot -> text "Bot"
       | Id x -> text x
+      | This t -> squish [text "this"; parens (helper t)]
       | Forall (x, bound, t) -> horz [text "forall"; text x; text "<:"; helper bound; text "."; helper t]
       | Rec(x, t) -> horz [text "rec"; text x; text "."; helper t]
       | Syn x -> parens (horz [text "Syn"; text x])

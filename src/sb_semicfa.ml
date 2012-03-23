@@ -231,6 +231,7 @@ end = struct
       | Some t -> rt_of_typ ids t
     end
       | TypImpl.TArrow _ -> RTSet.singleton RT.Function
+      | TypImpl.TThis t -> rt_of_typ ids t
       | TypImpl.TUnion (t1, t2) -> RTSet.union (rt t1) (rt t2)
       | TypImpl.TIntersect (t1, t2) -> RTSet.union (rt t1) (rt t2)
       | TypImpl.TPrim (s) -> begin match s with

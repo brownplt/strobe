@@ -195,6 +195,7 @@ let rec squash env t =
   | TId _ 
   | TRegex _
   | TPrim _ -> t
+  | TThis t -> TThis (squash t)
   | TRec(id, t) -> TRec(id, squash t)
   | TLambda (args, t) -> TLambda(args, squash t)
   | TApp(t, ts) -> TApp(squash t, map squash ts)

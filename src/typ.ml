@@ -36,6 +36,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TUnion of typ * typ
     | TIntersect of typ * typ
     | TArrow of typ list * typ option * typ (* args (including <this>), optional variadic arg, return typ *)
+    | TThis of typ
     | TObject of obj_typ
     | TWith of typ * obj_typ
     | TRegex of pat
@@ -196,6 +197,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
                       (squish (intersperse print_space 
                                  ((horz [empty; typ t]) :: List.map (fun t -> horz [text "&"; typ t]) ts))))
         end
+      | TThis t -> squish [text "this"; parens (typ t)]
       | TArrow (tt::arg_typs, varargs, r_typ) ->
         let multiLine = horzOnly ||
           List.exists (fun at -> match at with 
@@ -327,6 +329,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   union (free_typ_ids t1) (free_typ_ids t2)
       | TArrow (ss, v, t) ->
         unions (free_typ_ids t :: (match v with None -> empty | Some v -> free_typ_ids v) :: (map free_typ_ids ss))
+      | TThis t -> free_typ_ids t
       | TApp (t, ss) ->
   unions (free_typ_ids t :: (map free_typ_ids ss))
       | TObject o -> unions (L.map (fun (_, _, t) -> free_typ_ids t) o.fields)
@@ -352,6 +355,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TArrow (t2s, v, t3)  ->
       let opt_map f v = match v with None -> None | Some v -> Some (f v) in
       TArrow (map (typ_subst x s) t2s, opt_map (typ_subst x s) v, typ_subst x s t3)
+    | TThis t -> TThis (typ_subst x s t)
     | TWith(t, flds) -> TWith(typ_subst x s t, flds)
                               (* mk_obj_typ (map (fun (n, p, t) -> (n, p, typ_subst x s t)) flds.fields) *)
                               (*   flds.absent_pat) *)
@@ -417,6 +421,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TRef t -> TRef (merge t flds)
     | TSource t -> TSource (merge t flds)
     | TSink t -> TSink (merge t flds)
+    | TThis t -> TThis (merge t flds)
     | _ -> typ
 
   and expose_twith typenv typ = let expose_twith = expose_twith typenv in match typ with
@@ -430,6 +435,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TRef t -> TRef (expose_twith t)
     | TSource t -> TSource (expose_twith t)
     | TSink t -> TSink (expose_twith t)
+    | TThis t -> TThis (expose_twith t)
     | _ -> typ
 
   and simpl_typ typenv typ = match typ with
@@ -446,6 +452,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TLambda _
     | TObject _
     | TId _
+    | TThis _
     | TForall _ -> typ
     | TWith(t, flds) -> expose_twith typenv typ
     | TFix (x, k, t) -> simpl_typ typenv (typ_subst x typ t)
@@ -495,6 +502,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TSink s, TSink t
     | TRef s, TRef t ->
       simpl_equiv s t
+    | TThis _, TThis _ -> true (* ASSUMING THAT THIS TYPES ARE EQUIVALENT *)
     | TApp (s1, s2s), TApp (t1, t2s) ->
       (* for well-kinded types, for_all2 should not signal an error *)
       simpl_equiv s1 t1 && List.for_all2 simpl_equiv s2s t2s
@@ -727,6 +735,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             try subtype cache s t1
             with Not_subtype _ -> subtype cache s t2
           end
+        | TThis _, TThis _ -> cache
+        | _, TThis t2 -> subtype cache s t2
+        | TThis t1, _ -> subtype cache t1 t
         | TArrow (args1, v1, r1), TArrow (args2, v2, r2) ->
           begin
             match v1, v2 with

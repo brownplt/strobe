@@ -68,6 +68,7 @@ rule token = parse
    | "upcast" { UPCAST }
    | "downcast" { DOWNCAST }
    | "operator" { OPERATOR }
+   | "this" { THIS }
    | "is" { IS }
    | "cheat" { CHEAT }
    | "val" { VAL }

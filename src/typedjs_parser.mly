@@ -45,7 +45,7 @@ let rec pushForallFunction typ = match typ with
 %token ARROW LPAREN RPAREN ANY STAR COLON EOF UNION STR
        BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR SEMI
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
-       CHEAT REC INTERSECTION UNDERSCORE BAD WITH
+       CHEAT REC INTERSECTION UNDERSCORE BAD WITH THIS
        HASHBRACE EQUALS TYPE QUES BANG TYPREC TYPLAMBDA THICKARROW
        COLONCOLON CARET LLBRACE RRBRACE REF PRIMITIVE DOTS
 
@@ -126,9 +126,13 @@ typ
   : arg_typ { $1 }
   | args ARROW typ { let (args, var) = $1 in wrapArrow (Some W.Top, args, var, $3) }
   | LBRACK typ RBRACK args ARROW typ { let (args, var) = $4 in wrapArrow (Some $2, args, var, $6) }
+  | LBRACK THIS LPAREN typ RPAREN RBRACK args ARROW typ 
+      { let (args, var) = $7 in wrapArrow (Some (W.This $4), args, var, $9) }
   | LBRACK RBRACK args ARROW typ { let (args, var) = $3 in wrapArrow (None, args, var, $5) }
   | args THICKARROW typ { let (args, var) = $1 in W.Arrow (Some W.Top, args, var, $3) }
   | LBRACK typ RBRACK args THICKARROW typ { let (args, var) = $4 in W.Arrow (Some $2, args, var, $6) }
+  | LBRACK THIS LPAREN typ RPAREN RBRACK args THICKARROW typ 
+      { let (args, var) = $7 in W.Arrow (Some (W.This $4), args, var, $9) }
   | LBRACK RBRACK args THICKARROW typ { let (args, var) = $3 in W.Arrow (None, args, var, $5) }
   | FORALL ID LTCOLON typ DOT typ { pushForallFunction (W.Forall ($2, $4, $6)) }
   | FORALL ID DOT typ { pushForallFunction (W.Forall ($2, W.Top, $4)) }

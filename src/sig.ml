@@ -95,6 +95,7 @@ module type TYP = sig
     | TUnion of typ * typ
     | TIntersect of typ * typ
     | TArrow of typ list * typ option * typ (* args (including <this>), optional variadic arg, return typ *)
+    | TThis of typ
     | TObject of obj_typ
     | TWith of typ * obj_typ
     | TRegex of pat

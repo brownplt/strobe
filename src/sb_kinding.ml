@@ -46,6 +46,7 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
     | k1, KStar -> kind_mismatch t1 k1 KStar
     | _, k2 -> kind_mismatch t2 k2 KStar
     end
+  | TThis t -> kind_check env t
   | TRef t
   | TSource t
   | TSink t ->

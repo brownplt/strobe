@@ -150,6 +150,7 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TRef t -> TRef t
   | TSource t -> TSource t
   | TSink t -> TSink t
+  | TThis t -> TThis t
   | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
   | TIntersect (s, t) -> typ_intersect cs (static cs rt s) (static cs rt t)
   | TForall _ -> typ
