@@ -735,7 +735,16 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             try subtype cache s t1
             with Not_subtype _ -> subtype cache s t2
           end
-        | TThis _, TThis _ -> cache
+        | TThis (TRef s), TThis (TRef t)
+        | TThis (TRef s), TThis (TSource t)
+        | TThis (TRef s), TThis (TSink t)
+        | TThis (TSource s), TThis (TRef t)
+        | TThis (TSource s), TThis (TSource t)
+        | TThis (TSource s), TThis (TSink t)
+        | TThis (TSink s), TThis (TRef t)
+        | TThis (TSink s), TThis (TSource t)
+        | TThis (TSink s), TThis (TSink t) -> subtype cache s t (* ONLY HAVE TO GO ONE WAY ON THIS TYPES *)
+        | TThis _, TThis _ -> mismatched_typ_exn s t
         | _, TThis t2 -> subtype cache s t2
         | TThis t1, _ -> subtype cache t1 t
         | TArrow (args1, v1, r1), TArrow (args2, v2, r2) ->
