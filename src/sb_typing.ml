@@ -98,6 +98,7 @@ and check' (env : env) (default_typ : typ option) (exp : exp) (typ : typ) : unit
   (* Printf.eprintf "Check': checking %s : %s\n" (string_of_exp exp) (string_of_typ typ); *)
 match exp with
   | ELabel (p, lbl, e) ->
+    (* Printf.eprintf "Check': Binding label %s in expression %s\n" lbl (string_of_exp e); *)
     let s = synth (bind_lbl lbl typ env) default_typ e in
     if not (subtype env s (expose env typ)) then
       typ_mismatch p (TypTyp((fun t1 t2 -> sprintf "label has type %s, but body returns %s"
@@ -293,6 +294,7 @@ match exp with
     end
   | ELabel (p, lbl, e) -> 
     (* This is a valid assumption for JavaScript. *)
+    (* Printf.eprintf "Synth: Binding label %s in expression %s\n" lbl (string_of_exp e); *)
     synth (bind_lbl lbl (TPrim "Undef") env) default_typ e
   | EBreak (p, lbl, e) ->
     let lbl_typ = 

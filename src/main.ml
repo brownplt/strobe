@@ -285,7 +285,7 @@ let compile_env () : unit =
   (* Print_full_idl.print_defs !full_idl_defs; *)
   let (idlEnv, compsType, qiType) = (timefn "Creating env" Create_env.create_env) (!full_idl_defs) in
   timefn "Binding recursive types" (fun () ->
-  set_env (bind_recursive_types (ListExt.filter_map (fun (name, _, typ) -> 
+  set_env (unchecked_bind_typ_ids (ListExt.filter_map (fun (name, _, typ) -> 
     match (P.singleton_string name) with
     | Some name -> Some (name, typ)
     | None -> None) idlEnv) (get_env ()))) ();

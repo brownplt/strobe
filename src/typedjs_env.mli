@@ -19,6 +19,8 @@ exception Not_wf_typ of string
 
   val bind_recursive_types : (id * typ) list -> env -> env
 
+  val unchecked_bind_typ_ids : (id * typ) list -> env -> env
+
   val lookup_id : id -> env -> typ
 
   val lookup_typ_id : id -> env -> typ * kind

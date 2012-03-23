@@ -150,27 +150,31 @@ let rec exp (env : env) expr = match expr with
   | TryFinallyExpr (a, body, finally) -> 
       ETryFinally (a, exp env body, exp env finally)
   | ThrowExpr (a, e) -> EThrow (a, exp env e)
-  | WhileExpr (a, e1, e2) ->
+  | WhileExpr (a, break_lbls, e1, e2) ->
       let loop_typ = TArrow ([], None, TPrim "Undef") in
         ERec ([("%loop", loop_typ,
                 EAssertTyp (a, loop_typ, 
                             EFunc (a, [], { func_loop = true;
                                             func_owned = IdSet.empty },
-                       EIf (a, exp env e1, 
-                            ESeq (a, exp env e2, 
-                                  EApp (a, EId (a, "%loop"), [])),
-                            EConst (a, S.CUndefined)))))],
+                                   List.fold_right (fun lbl body -> ELabel(a, lbl, body))
+                                     break_lbls
+                                     (EIf (a, exp env e1, 
+                                           ESeq (a, exp env e2, 
+                                                 EApp (a, EId (a, "%loop"), [])),
+                                           EConst (a, S.CUndefined))))))],
               EApp (a, EId (a, "%loop"), []))
-  | DoWhileExpr (a, body_e, test_e) ->
+  | DoWhileExpr (a, break_lbls, body_e, test_e) ->
       let loop_typ = TArrow ([], None, TPrim "Undef") in
         ERec ([("%loop", loop_typ,
                 EAssertTyp (a, loop_typ,
                 EFunc (a, [], { func_loop = true;
                                 func_owned = IdSet.empty },
-                       ESeq (a, exp env body_e, 
-                             EIf (a, exp env test_e, 
-                                  EApp (a, EId (a, "%loop"), []),
-                                    EConst (a, S.CUndefined))))))],
+                       List.fold_right (fun lbl body -> ELabel(a, lbl, body))
+                         break_lbls
+                         (ESeq (a, exp env body_e, 
+                                EIf (a, exp env test_e, 
+                                     EApp (a, EId (a, "%loop"), []),
+                                     EConst (a, S.CUndefined)))))))],
               EApp (a, EId (a, "%loop"), []))
 
   | LabelledExpr (a, x, e) -> ELabel (a, x, exp env e)
@@ -190,18 +194,20 @@ let rec exp (env : env) expr = match expr with
   | FuncExpr _ -> match_func env expr
   | FuncStmtExpr (p, _, _, _) ->
       raise (Not_well_formed (p, "funcasdasdtion is missing a type annotation"))
-  | ForInExpr (p, x, obj, body) ->
+  | ForInExpr (p, break_lbls, x, obj, body) ->
     let loop_typ = TArrow ([forin_ix_typ], None, TPrim "Undef") in
     ERec ([("%loop", loop_typ,
             EAssertTyp (p, loop_typ, 
             EFunc (p, [x], {func_loop = true;
                             func_owned = IdSet.empty },
        (* TODO: not fully-faithful--stopping condition missing *)
-                   ESeq (p, exp env body, 
-                         EApp (p, EId (p, "%loop"), 
-                               [ ECheat (p, forin_ix_typ, EId (p, x)) ])))))],
-    EApp (p, EId (p, "%loop"), 
-    [ ECheat (p, forin_ix_typ, EId (p, x)) ]))
+                   List.fold_right (fun lbl body -> ELabel(p, lbl, body))
+                     break_lbls
+                     (ESeq (p, exp env body, 
+                            EApp (p, EId (p, "%loop"), 
+                                  [ ECheat (p, forin_ix_typ, EId (p, x)) ]))))))],
+          EApp (p, EId (p, "%loop"), 
+                [ ECheat (p, forin_ix_typ, EId (p, x)) ]))
   | ParenExpr (a, e) -> EParen (a, exp env e)
 
 and match_func env expr = match expr with

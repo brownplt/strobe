@@ -72,14 +72,18 @@ let create_env defs =
   (*     | [] -> P.all *)
   (*     | hd::tl -> P.negate (List.fold_left P.union (fst3 hd) (List.map fst3 tl)) in *)
   (*   (\*TSource*\)TRef ((\* TRef *\) (TObject (mk_obj_typ allFields catchallPat))) *)
-  and wrapArrow t =
+  and wrapArrow mutability t =
     let codePat = P.singleton "-*- code -*-" in
     let prototypePat = P.singleton "prototype" in
-    TRef(TObject(mk_obj_typ [(codePat, Present, t);
+    let obj = (TObject(mk_obj_typ [(codePat, Present, t);
                              (proto_pat, Present, TId "Object");
                              (prototypePat, Present, TId "Ext");
                              ((P.negate (P.union (P.union codePat prototypePat) proto_pat)), Maybe, TId "Ext")]
-                   P.empty))
+                   P.empty)) in
+    match mutability with
+    | RefCell -> TRef obj
+    | SourceCell -> TSource obj
+    | SinkCell -> TSink obj
   and build_components defs = 
     let interfaceToIIDFieldAndFun def =
       match def with
@@ -101,8 +105,9 @@ let create_env defs =
     let (iids, fields, funs) = unzip3 (filter_map interfaceToIIDFieldAndFun defs) in
     let proto = (proto_pat, Present, TId "Object") in
     let compInterface = TSource(*TRef*) (TObject (mk_obj_typ (proto::fields) P.empty)) in
-    let compUtils = TSource(*TRef*) (TObject (mk_obj_typ [(P.singleton "import", Present, wrapArrow (TArrow([TTop; TRegex P.all], None, TPrim "Undef")))] P.empty)) in
-    let compID = wrapArrow(TArrow([TTop; TRegex P.all], None, TId "Ext")) in
+    let compUtils = TSource(*TRef*) (TObject (mk_obj_typ [(P.singleton "import", Present, 
+                                                           wrapArrow SourceCell (TArrow([TTop; TRegex P.all], None, TPrim "Undef")))] P.empty)) in
+    let compID = wrapArrow SourceCell (TArrow([TTop; TRegex P.all], None, TId "Ext")) in
     let allOthers = P.negate proto_pat in
     (* NOTE: This should be Maybe, not Present, but the type system complains if I do that... *)
     let compClasses = TSource(*TRef*) (
@@ -114,8 +119,8 @@ let create_env defs =
                                                 (P.singleton "ID", Present, compID);
                                                 proto] P.empty))) in
     let queryInterfaceType tself =
-      wrapArrow (List.fold_left (fun acc f -> TIntersect (f tself, acc))
-                   (TArrow ([tself; TId "nsIJSIID"], None, TId "nsISupports")) funs) in
+      wrapArrow SourceCell (List.fold_left (fun acc f -> TIntersect (f tself, acc))
+                              (TArrow ([tself; TId "nsIJSIID"], None, TId "nsISupports")) funs) in
     (* let queryInterfaceType tself = match funs with *)
     (*   | [] -> TBot (\* absurd *\) *)
     (*   | [ty] -> wrapArrow (ty tself) *)
@@ -176,12 +181,13 @@ let create_env defs =
       else if (isQueryInterfaceType metas) then returnField queryInterfaceType
       else returnField
         (match List.rev args with
-        | [] -> wrapArrow (TArrow ([tself], None, trans_typ typ))
+        | [] -> wrapArrow SourceCell (TArrow ([tself], None, trans_typ typ))
         | lastArg::revArgs ->
         let (_, lastMetas, lastTyp, _, _, _) = lastArg in
         if (isRetval lastMetas) 
-        then wrapArrow (TArrow (tself :: List.map (trans_arg tself) (List.rev revArgs), None, trans_typ lastTyp))
-        else wrapArrow (TArrow (tself :: List.map (trans_arg tself) args, None, trans_typ typ))
+        then wrapArrow SourceCell 
+          (TArrow (tself :: List.map (trans_arg tself) (List.rev revArgs), None, trans_typ lastTyp))
+        else wrapArrow SourceCell  (TArrow (tself :: List.map (trans_arg tself) args, None, trans_typ typ))
         )
     | ConstMember (_, metas, typ, id, value) -> 
       if (isNoScript metas)
