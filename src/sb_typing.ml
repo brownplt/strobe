@@ -50,6 +50,7 @@ let extract_ref msg p env t =
     | TSource _ as t -> Some t
     | TSink _ as t -> Some t
     | TRec _ as t -> helper (simpl_typ env t)
+    | TThis t -> helper t
     | TUnion (t1, t2) -> 
       let r1 = helper t1 in
       let r2 = helper t2 in
@@ -94,7 +95,7 @@ let simpl_print e = match e with
   | EAssertTyp(p, _, _) -> "EAssertTyp " ^ (string_of_position p)
   | EArray(p, _) -> "EArray " ^ (string_of_position p)
   | EObject(p, _) -> "EObject " ^ (string_of_position p)
-  | EId(p, _) -> "EId " ^ (string_of_position p)
+  | EId(p, x) -> "EId " ^ x ^ " " ^ (string_of_position p)
   | EBracket(p, _, _) -> "EBracket " ^ (string_of_position p)
   | EUpdate(p, _, _, _) -> "EUpdate " ^ (string_of_position p)
   | EPrefixOp(p, _, _) -> "EPrefixOp " ^ (string_of_position p)
@@ -467,7 +468,7 @@ match exp with
   | EInfixOp (p, op, e1, e2) -> synth env default_typ (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> 
     let rec check_app tfun =
-      (* Printf.eprintf "Checking EApp with function type %s\n" (string_of_typ tfun); *)
+      (* Printf.eprintf "Checking EApp@%s with function type %s\n" (string_of_position p) (string_of_typ tfun); *)
       begin match expose_simpl_typ env tfun with 
         | TArrow (expected_typs, None, result_typ) -> 
           let args = fill (List.length expected_typs - List.length args) 
