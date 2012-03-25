@@ -1,6 +1,10 @@
 typedef nsISupports nsQIResult;
 typedef nsISupports nsIIDRef;
 
+typedef DOMString ACString;
+typedef DOMString AString;
+typedef DOMString AUTF8String;
+
 partial interface nsIFile {
   [unsafe] void create(in unsigned long type, in unsigned long permissions);
 };
@@ -52,3 +56,77 @@ partial interface nsIInterfaceRequestor {
 partial interface nsIPrefService {
   [unsafe] void savePrefFile(in nsIFile aFile);
 };
+
+partial interface nsIPrefBranch {
+  [QueryElementAtType(1)] void getComplexValue(in string aPrefName, in nsIIDRef aType,
+                                               [iid_is(aType), retval] out nsQIResult aValue);
+};
+
+partial interface nsIArray {
+  [QueryElementAtType(1)] void queryElementAt(in unsigned long index,
+                                              in nsIIDRef uuid,
+                                              [iid_is(uuid), retval] out nsQIResult result);
+};
+
+partial interface nsIAuthPromptProvider {
+  [QueryElementAtType(1)] void getAuthPrompt(in PRUint32 aPromptReason, in nsIIDRef iid,
+                                             [iid_is(iid),retval] out nsQIResult result);
+};
+
+partial interface nsICollection {
+  [QueryElementAtType(1)] void QueryElementAt(in PRUint32 index, in nsIIDRef uuid, 
+                                              [iid_is(uuid),retval] out nsQIResult result);
+};
+
+partial interface nsIFactory {
+  [QueryElementAtTyoe(1)] void createInstance(in nsISupports aOuter, in nsIIDRef iid,
+                                              [retval, iid_is(iid)] out nsQIResult result);
+};
+
+partial interface nsIPromptFactory {
+  [QueryElementAtType(1)] void getPrompt(in nsIDOMWindow aParent, in nsIIDRef iid,
+                                         [iid_is(iid),retval] out nsQIResult result);
+};
+
+partial interface nsIProperties {
+  [QueryElementAtType(1)] void get(in string prop, in nsIIDRef iid, 
+                                   [iid_is(iid),retval] out nsQIResult result);
+};
+
+partial interface nsIPropertyBag2 {
+  [QueryElementAtType(1)] void getPropertyAsInterface(in AString prop,
+                                                      in nsIIDRef iid,
+                                                      [iid_is(iid), retval] out nsQIResult result);
+};
+
+partial interface nsIServiceManager {
+  [QueryElementAtType(1)] void getService(in nsCIDRef aClass, 
+                                          in nsIIDRef aIID, 
+                                          [iid_is(aIID),retval] out nsQIResult result);
+
+  [QueryElementAtType(1)] void getServiceByContractID(in string aContractID,
+                                                      in nsIIDRef aIID, 
+                                                      [iid_is(aIID),retval] out nsQIResult result);
+};
+
+partial interface nsIWeakReference {
+  [QueryInterfaceType] void QueryReferent( in nsIIDRef uuid, [iid_is(uuid), retval] out nsQIResult result );
+};
+
+partial interface nsIXPConnectWrappedJS {
+  [QueryInterfaceType] void aggregatedQueryInterface(in nsIIDRef uuid,
+                                                     [iid_is(uuid),retval] out nsQIResult result);
+};
+
+partial interface nsIXPConnect {
+  [QueryElementAtType(2)] void wrapJS(in JSContextPtr aJSContext,
+                                      in JSObjectPtr  aJSObj,
+                                      in nsIIDRef     aIID,
+                                      [iid_is(aIID),retval] out nsQIResult result);
+  [QueryElementAtType(3)] void wrapJSAggregatedToNative(in nsISupports  aOuter,
+                                                        in JSContextPtr aJSContext,
+                                                        in JSObjectPtr  aJSObj,
+                                                        in nsIIDRef     aIID,
+                                                        [iid_is(aIID),retval] out nsQIResult result);
+};
+

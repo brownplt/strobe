@@ -18,6 +18,7 @@
                 "notxpcom" , NOTXPCOM ;
                 "PrivateBrowsingCheck" , PRIVATEBROWSINGCHECK ;
                 "QueryInterfaceType" , QUERYINTERFACETYPE ;
+                "QueryElementAtType" , QUERYELEMENTATTYPE ;
                 "unsafe" , UNSAFE ;
                 "retval" , RETVAL ;
                 "optional_argc" , OPTIONAL_ARGC ;

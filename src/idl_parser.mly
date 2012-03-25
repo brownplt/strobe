@@ -47,7 +47,7 @@ let noQualifiers = {static=false;getter=false;setter=false;
        ALLOWANY PARTIAL SEQUENCE LANGLE RANGLE CLAMP NOSCRIPT OPTIONAL_ARGC NOTXPCOM RETVAL
        INCLUDE SCRIPTABLE IMPLICIT_JSCONTEXT INHERIT STATIC ENUM SIZE_IS
        BAR XOR AND SHLEFT SHRIGHT PLUS MINUS TILDE TIMES DIVIDE MOD TRUE FALSE
-       PRIVATEBROWSINGCHECK UNSAFE QUERYINTERFACETYPE
+       PRIVATEBROWSINGCHECK UNSAFE QUERYINTERFACETYPE QUERYELEMENTATTYPE
        (* PRUint32 PRInt32 PRUint16 PRInt16 PRUnichar *)
 
 %type <Full_idl_syntax.definition list> idlFile
@@ -468,6 +468,7 @@ extendedAttributeArgList:
   | UUID { Uuid ($1) }
   | CONSTRUCTOR args=delimited(LPAREN, argumentList, RPAREN) { Constructor args }
   | SIZE_IS arg=delimited(LPAREN, ID, RPAREN) { SizeOf arg }
+  | QUERYELEMENTATTYPE arg = delimited(LPAREN, INTLIT, RPAREN) { QueryElementAtType(Int64.to_int arg) }
   | id=identOrKeywordNotConstructor args=delimited(LPAREN, separated_list(COMMA, expr), RPAREN) { AttrArgList (id, args) }
 (* | ID delimited(LPAREN, argumentList, RPAREN) *)
 

@@ -121,6 +121,7 @@ let rec print_defs defs =
     | OptionalArgc -> text "optional_argc"
     | PrivateBrowsingCheck -> text "PrivateBrowsingCheck"
     | QueryInterfaceType -> text "QueryInterfaceType"
+    | QueryElementAtType n -> squish [text "QueryElementAtType"; parens(int n)]
     | Unsafe -> text "unsafe"
     | Clamp -> text "Clamp"
     | Scriptable -> text "Scriptable"

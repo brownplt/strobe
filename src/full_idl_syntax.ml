@@ -86,6 +86,7 @@ and meta =
   | NoScript
   | PrivateBrowsingCheck
   | QueryInterfaceType
+  | QueryElementAtType of int
   | Unsafe
   | Retval
   | Optional

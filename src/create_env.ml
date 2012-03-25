@@ -46,6 +46,9 @@ let create_env defs =
   let isPrivateBrowsingCheck metas = List.exists (fun m -> m = PrivateBrowsingCheck) metas in
   let isUnsafe metas = List.exists (fun m -> m = Unsafe) metas in
   let isQueryInterfaceType metas = List.exists (fun m -> m = QueryInterfaceType) metas in
+  let isQueryElementAtType metas = 
+    try Some (List.find (fun m -> match m with QueryElementAtType _ -> true | _ -> false) metas)
+    with Not_found -> None in
   let isRetval metas = List.exists (fun m -> m = Retval) metas in
   let rec trans_toplevel defs =
     let (iidsAndConstants, componentsAndCID, compType, queryInterfaceType) = build_components (defs) in
@@ -63,7 +66,7 @@ let create_env defs =
       Hashtbl.add ifaceHash (Id.id_of_string iid) (Raw iid_iface);
       trans_interface TBot queryInterfaceType (Id.id_of_string iid)
     ) iidsAndConstants in
-    ((componentsAndCID :: iids @ interfaces), TId "Components", queryInterfaceType (TId "nsISupports"))
+    ((componentsAndCID :: iids @ interfaces), TId "Components", queryInterfaceType (TId "nsISupports") 0)
   (* and trans_defs tt defs =  *)
   (*   let (_, componentsAndCID, _, queryInterfaceType) = build_components (defs) in *)
   (*   let interfaces = (filter_map (trans_def tt queryInterfaceType) (defs)) in *)
@@ -94,7 +97,9 @@ let create_env defs =
              let constants = filter_map (fun m -> match m with ConstMember _ -> Some m | _ -> None) members in
              Some ((iidName, constants),
                    (idToPat name, Present, TId iidName),
-                   (fun tself -> TArrow ([TThis (TId "nsISupports"); TId iidName], None, (TId (Id.string_of_id name)))))
+                   (fun tself n -> 
+                     TArrow (((TThis (TId "nsISupports")) :: (ListExt.create n TTop) @ [TId iidName]),
+                                           None, (TId (Id.string_of_id name)))))
       | _ -> None in
     let unzip3 abcs =
       let rec helper abcs aas bbs ccs =
@@ -113,18 +118,18 @@ let create_env defs =
     let compClasses = TSource(*TRef*) (
                                  (TObject (mk_obj_typ [(allOthers, Present, (TId "nsIJSCID")); proto] P.empty))) in
     let componentsType = 
-      TSource(*TRef*) ((* TRef *) (TObject (mk_obj_typ [(P.singleton "interfaces", Present, compInterface);
-                                                (P.singleton "classes", Present, compClasses);
-                                                (P.singleton "utils", Present, compUtils);
-                                                (P.singleton "ID", Present, compID);
-                                                proto] P.empty))) in
-    let queryInterfaceType tself =
-      wrapArrow SourceCell (List.fold_left (fun acc f -> TIntersect (f tself, acc))
-                              (TArrow ([TThis tself; TId "nsIJSIID"], None, TId "nsISupports")) funs) in
-    (* let queryInterfaceType tself = match funs with *)
+      TSource(* TRef *) (TObject (mk_obj_typ [(P.singleton "interfaces", Present, compInterface);
+                                              (P.singleton "classes", Present, compClasses);
+                                              (P.singleton "utils", Present, compUtils);
+                                              (P.singleton "ID", Present, compID);
+                                              proto] P.empty)) in
+    let queryInterfaceType tself nArgs =
+      wrapArrow SourceCell (List.fold_left (fun acc f -> TIntersect (f tself nArgs, acc))
+                              (TArrow (((TThis tself) :: (ListExt.create nArgs TTop) @ [TId "nsIJSIID"]), None, TId "nsISupports")) funs) in
+    (* let queryInterfaceType tself nArgs = match funs with *)
     (*   | [] -> TBot (\* absurd *\) *)
-    (*   | [ty] -> wrapArrow (ty tself) *)
-    (*   | f::fs -> wrapArrow (List.fold_left (fun acc f -> TIntersect (f tself, acc)) (f tself) fs) in *)
+    (*   | [ty] -> wrapArrow (ty nArgs tself) *)
+    (*   | f::fs -> wrapArrow (List.fold_left (fun acc f -> TIntersect (f tself nArgs, acc)) (f tself nArgs) fs) in *)
     (iids,
      (P.singleton "Components", Present, componentsType),
      componentsType, queryInterfaceType)
@@ -168,18 +173,20 @@ let create_env defs =
       if (isNoScript metas) then None
       else if (isPrivateBrowsingCheck metas) then Some (idToPat name, Present, (TPrim "True"))
       else if (isUnsafe metas) then Some (idToPat name, Present, TPrim "Unsafe")
-      else if (isQueryInterfaceType metas) then Some (idToPat name, Present, queryInterfaceType)
+      else if (isQueryInterfaceType metas) then Some (idToPat name, Present, queryInterfaceType 0)
       else let t = trans_typ typ in 
-           let t = match readOnly with
-             | NoReadOnly -> t
-             | ReadOnly -> TSource t in
+           (* let t = match readOnly with *)
+           (*   | NoReadOnly -> t *)
+           (*   | ReadOnly -> TSource t in *)  (* TSource implies an extra indirection... *)
            Some (idToPat name, Inherited, t)
     | Operation (_, metas, stringifier, quals, typ, nameOpt, args) -> 
       let returnField typ = match nameOpt with None -> None | Some name -> Some (idToPat name, Inherited, typ) in
       if (isNoScript metas) then None
       else if (isUnsafe metas) then returnField (TPrim "Unsafe")
-      else if (isQueryInterfaceType metas) then returnField queryInterfaceType
-      else returnField
+      else if (isQueryInterfaceType metas) then returnField (queryInterfaceType 0)
+      else (match isQueryElementAtType metas with
+      | Some (QueryElementAtType n) -> returnField (queryInterfaceType n)
+      | _ -> returnField
         (match List.rev args with
         | [] -> wrapArrow SourceCell (TArrow ([TThis tself], None, trans_typ typ))
         | lastArg::revArgs ->
@@ -188,11 +195,11 @@ let create_env defs =
         then wrapArrow SourceCell 
           (TArrow ((TThis tself) :: List.map (trans_arg tself) (List.rev revArgs), None, trans_typ lastTyp))
         else wrapArrow SourceCell  (TArrow ((TThis tself) :: List.map (trans_arg tself) args, None, trans_typ typ))
-        )
+        ))
     | ConstMember (_, metas, typ, id, value) -> 
       if (isNoScript metas)
       then None
-      else Some (idToPat id, Inherited, TSource (trans_typ typ))
+      else Some (idToPat id, Inherited, (* TSource *) (trans_typ typ)) (* can't do const correctly *)
     | Stringifier (_, metas) -> None
   and trans_arg tt (direction, metas, typ, variadic, id, defaultOpt) = 
     match direction with

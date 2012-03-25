@@ -165,10 +165,6 @@ let weave_assertions typedjs =
   | None -> typedjs
   | Some typ -> WeaveAnnotations.assert_typ typ typedjs
 
-let action_pretypecheck () : int =
-  let typedjs = weave_assertions (weave_annotations (get_typedjs ())) in
-    Typedjs_syntax.Pretty.exp typedjs std_formatter;
-  0
 
 let full_idl_defs : Full_idl_syntax.definition list ref = ref []
 let idl_defs : Idl_syntax.definition list ref = ref []
@@ -238,7 +234,8 @@ let rec elim_twith env exp =
   | EBot _
   | EConst _ -> exp
 
-let action_tc () : int =
+
+let actual_data () =
   let env =
     let typ_vars = Unidl.unidl !idl_defs in
     Typedjs_env.set_global_object
@@ -255,6 +252,15 @@ let action_tc () : int =
   set_env env;
   let annot_js = elim_twith env (weave_annotations typedjs) in
   let asserted_js = weave_assertions annot_js in
+  (env, asserted_js)
+
+let action_pretypecheck () : int =
+  let (_, typedjs) = actual_data () in
+  Typedjs_syntax.Pretty.exp typedjs std_formatter;
+  0
+
+let action_tc () : int =
+  let (env, asserted_js) = actual_data () in
   let _ = typecheck env !default_typ asserted_js in
   if TypImpl.get_num_typ_errors () > 0 then
     2

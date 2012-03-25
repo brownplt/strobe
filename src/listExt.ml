@@ -41,3 +41,8 @@ let remove_dups l =
     | [h] -> [h]
     | h::(m::t as tl) -> if h = m then (helper tl) else h::(helper tl)
   in helper (List.sort compare l)
+
+let create n v = 
+  let rec helper i acc =
+    if i <= 0 then acc else helper (i-1) (v::acc)
+  in helper n []

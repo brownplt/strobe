@@ -188,3 +188,186 @@ interface nsIPrefService : nsISupports
   nsIPrefBranch getDefaultBranch(in string aPrefRoot);
 
 };
+
+[scriptable, uuid(114744d9-c369-456e-b55a-52fe52880d2d)]
+interface nsIArray : nsISupports
+{
+    readonly attribute unsigned long length;
+
+    void queryElementAt(in unsigned long index, in nsIIDRef uuid, [iid_is(uuid), retval] out nsQIResult result);
+    
+    unsigned long indexOf(in unsigned long startIndex, in nsISupports element);
+
+    nsISimpleEnumerator enumerate();
+};
+
+interface nsISimpleEnumerator : nsISupports {
+  boolean hasMoreElements();
+
+  nsISupports getNext();
+};
+
+[scriptable, uuid(f0980f60-ee3d-11d4-998b-00b0d02354a0)]
+interface nsIX509Cert : nsISupports {
+
+  /**
+   *  A nickname for the certificate.
+   */
+  readonly attribute string nickname;
+
+  /**
+   *  The primary email address of the certificate, if present.
+   */
+  readonly attribute string emailAddress;
+
+  /**
+   *  Obtain a list of all email addresses
+   *  contained in the certificate.
+   *
+   *  @param length The number of strings in the returned array.
+   *  @return An array of email addresses.
+   */
+  void getEmailAddresses(out unsigned long length, 
+                         [retval, array, size_is(length)] out string addresses);
+
+  /**
+   *  Check whether a given address is contained in the certificate.
+   *  The comparison will convert the email address to lowercase.
+   *  The behaviour for non ASCII characters is undefined.
+   *
+   *  @param aEmailAddress The address to search for.
+   *                
+   *  @return True if the address is contained in the certificate.
+   */
+  boolean containsEmailAddress(in string aEmailAddress);
+
+  /**
+   *  The subject owning the certificate.
+   */
+  readonly attribute string subjectName;
+
+  /**
+   *  The subject's common name.
+   */
+  readonly attribute string commonName;
+
+  /**
+   *  The subject's organization.
+   */
+  readonly attribute string organization;
+
+  /**
+   *  The subject's organizational unit.
+   */
+  readonly attribute string organizationalUnit;
+
+  /**
+   *  The fingerprint of the certificate's public key,
+   *  calculated using the SHA1 algorithm.
+   */
+  readonly attribute string sha1Fingerprint;
+
+  /**
+   *  The fingerprint of the certificate's public key,
+   *  calculated using the MD5 algorithm.
+   */
+  readonly attribute string md5Fingerprint;
+
+  /**
+   *  A human readable name identifying the hardware or
+   *  software token the certificate is stored on.
+   */
+  readonly attribute string tokenName;
+
+  /**
+   *  The subject identifying the issuer certificate.
+   */
+  readonly attribute string issuerName;
+
+  /**
+   *  The serial number the issuer assigned to this certificate.
+   */
+  readonly attribute string serialNumber;
+
+  /**
+   *  The issuer subject's common name.
+   */
+  readonly attribute string issuerCommonName;
+
+  /**
+   *  The issuer subject's organization.
+   */
+  readonly attribute string issuerOrganization;
+
+  /**
+   *  The issuer subject's organizational unit.
+   */
+  readonly attribute string issuerOrganizationUnit;
+
+  /**
+   *  The certificate used by the issuer to sign this certificate.
+   */
+  readonly attribute nsIX509Cert issuer;
+
+  /**
+   *  This certificate's validity period.
+   */
+  //readonly attribute nsIX509CertValidity validity;
+
+  /**
+   *  A unique identifier of this certificate within the local storage.
+   */
+  readonly attribute string dbKey;
+
+  /**
+   *  A human readable identifier to label this certificate.
+   */
+  readonly attribute string windowTitle;
+
+  /**
+   *  Constants to classify the type of a certificate.
+   */
+  const unsigned long UNKNOWN_CERT =      0;
+  const unsigned long CA_CERT      = 1 << 0;
+  const unsigned long USER_CERT    = 1 << 1;
+  const unsigned long EMAIL_CERT   = 1 << 2;
+  const unsigned long SERVER_CERT  = 1 << 3;
+  const unsigned long VERIFIED_OK          =      0;
+  const unsigned long NOT_VERIFIED_UNKNOWN = 1 << 0;
+  const unsigned long CERT_REVOKED         = 1 << 1;
+  const unsigned long CERT_EXPIRED         = 1 << 2;
+  const unsigned long CERT_NOT_TRUSTED     = 1 << 3;
+  const unsigned long ISSUER_NOT_TRUSTED   = 1 << 4;
+  const unsigned long ISSUER_UNKNOWN       = 1 << 5;
+  const unsigned long INVALID_CA           = 1 << 6;
+  const unsigned long USAGE_NOT_ALLOWED    = 1 << 7;
+  
+  const unsigned long CERT_USAGE_SSLClient = 0;
+  const unsigned long CERT_USAGE_SSLServer = 1;
+  const unsigned long CERT_USAGE_SSLServerWithStepUp = 2;
+  const unsigned long CERT_USAGE_SSLCA = 3;
+  const unsigned long CERT_USAGE_EmailSigner = 4;
+  const unsigned long CERT_USAGE_EmailRecipient = 5;
+  const unsigned long CERT_USAGE_ObjectSigner = 6;
+  const unsigned long CERT_USAGE_UserCertImport = 7;
+  const unsigned long CERT_USAGE_VerifyCA = 8;
+  const unsigned long CERT_USAGE_ProtectedObjectSigner = 9;
+  const unsigned long CERT_USAGE_StatusResponder = 10;
+  const unsigned long CERT_USAGE_AnyCA = 11;
+  nsIArray getChain();
+
+  void getUsagesArray(in boolean localOnly,
+                      out unsigned long verified,
+                      out unsigned long count, 
+                      [array, size_is(count)] out string usages);
+
+  void getUsagesString(in boolean localOnly, out unsigned long verified, out string usages);
+
+  unsigned long verifyForUsage(in unsigned long usage);
+
+  //readonly attribute nsIASN1Object ASN1Structure;
+
+  void getRawDER(out unsigned long length, [retval, array, size_is(length)] out octet data);
+
+  boolean equals(in nsIX509Cert other);
+};
