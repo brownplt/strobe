@@ -29,7 +29,7 @@ sub parseManifest {
       } elsif ($parts[0] eq "overlay") {
         push @{$manifest{$parts[0]}{$parts[1]}}, $parts[2];
       }
-    } elsif ($#parts == 3) {
+    } elsif ($#parts >= 3) {
       if ($parts[0] eq "locale") {
         $parts[3] =~ s/jar:(.*)\.jar!/\1.jar.unzipped/;
         $manifest{$parts[0]}{$parts[1]}{$parts[2]} = $parts[3];
