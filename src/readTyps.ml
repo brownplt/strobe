@@ -37,7 +37,7 @@ let parse_typedecl ((pos, end_p), comment) =
   lexbuf.lex_start_p <- pos;
   lexbuf.lex_curr_p <- pos;
   try
-    one_env_decl token lexbuf
+    env token lexbuf
   with
   | Failure "lexing: empty token" ->
     failwith (sprintf "error lexing annotation at %s"
@@ -47,7 +47,7 @@ let parse_typedecl ((pos, end_p), comment) =
                 (string_of_position (lexbuf.lex_curr_p, lexbuf.lex_curr_p)) comment)
 
 let new_decls (comments : (Prelude.pos * string) list) : env_decl list =
-  ListExt.filter_map (fun c -> if is_typedecl c then Some (parse_typedecl c) else None) comments
+  List.concat (ListExt.filter_map (fun c -> if is_typedecl c then Some (parse_typedecl c) else None) comments)
     
 
 let annotations_of_comments (comments : (pos * string) list) : (pos * annotation) list = 

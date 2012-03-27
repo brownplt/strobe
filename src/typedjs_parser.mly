@@ -53,11 +53,9 @@ let rec pushForallFunction typ = match typ with
 %left LANGLE
 
 %start typ_ann
-%start one_env_decl
 %start env
 
 %type <Typedjs_syntax.annotation> typ_ann
-%type <Typedjs_syntax.env_decl> one_env_decl
 %type <Typedjs_syntax.env_decl list> env
 
 %%
@@ -178,10 +176,8 @@ env_decl :
 
 env_decls
   : { [] }
-  | env_decl env_decls { $1 :: $2 }
+  | env_decl SEMI? env_decls { $1 :: $3 }
 
-one_env_decl : 
-  | env_decl SEMI { $1 }
 env
   : env_decls EOF { $1 }
 
