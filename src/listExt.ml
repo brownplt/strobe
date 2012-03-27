@@ -46,3 +46,10 @@ let create n v =
   let rec helper i acc =
     if i <= 0 then acc else helper (i-1) (v::acc)
   in helper n []
+
+let product (lists : 'a list list) : 'a list list = 
+  let rec prod xs ys = match xs, ys with
+    | [], _
+    | _, [] -> []
+    | x::xs, _ -> (List.map (fun y -> x :: y) ys) @ prod xs ys
+  in List.fold_right prod lists [[]]

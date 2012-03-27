@@ -379,7 +379,8 @@ match exp with
   | ELabel (p, lbl, e) -> 
     (* This is a valid assumption for JavaScript. *)
     (* Printf.eprintf "Synth: Binding label %s in expression %s\n" lbl (string_of_exp e); *)
-    synth (bind_lbl lbl (TPrim "Undef") env) default_typ e
+    check (bind_lbl lbl (TPrim "Undef") env) default_typ e (TPrim "Undef");
+    TPrim "Undef"
   | EBreak (p, lbl, e) ->
     let lbl_typ = 
       try lookup_lbl lbl env

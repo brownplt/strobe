@@ -58,7 +58,7 @@ let resolve_typedefs defs =
     | ForwardInterface _ -> def
     | Exception(p, metas, id, parent, mems) ->
       Exception(p, metas, id, parent, List.map resolve_mem mems)
-    | Implements _ -> def
+    | Implements(_, _, id1, id2) -> def
     | Const(p, metas, ty, id, value) -> Const(p, metas, resolve_typ ty, id, value)
     | Dictionary(p, metas, id, parent, mems) ->
       Dictionary(p, metas, id, parent, List.map resolve_mem mems)
@@ -148,6 +148,7 @@ let resolve_partials defs =
   let rec merge_ifaces defs = List.fold_left (fun res_defs d -> match d with
     | Interface _ as i -> (merge_iface i)::res_defs
     | PartialInterface _ -> res_defs (* Drop out of it's a partial *)
+    | Implements _ -> d::res_defs
     | _ -> res_defs)
     [] defs
   (* Merge an interface with its partials *)

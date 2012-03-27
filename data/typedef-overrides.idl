@@ -130,3 +130,5 @@ partial interface nsIXPConnect {
                                                         [iid_is(aIID),retval] out nsQIResult result);
 };
 
+nsIDOMElement implements nsIDOMEventTarget;
+nsIDOMElement implements nsIDOMElementCSSInlineStyle;

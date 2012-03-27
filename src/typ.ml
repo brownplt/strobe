@@ -232,27 +232,27 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
                               end) arg_typs) @ vararg)) in
         hnestOrHorz 0 [ argText; horz [text "->"; typ r_typ ]]
       | TObject flds -> 
-        let isFunctionObject fieldList = None in
-          (* let findField namePat =  *)
-          (*   try *)
-          (*     let (_, _, typ) =  *)
-          (*       List.find (fun (n, p, _) -> (p = Present && n = namePat)) fieldList in *)
-          (*     (true, Some typ) *)
-          (*   with Not_found -> (false, None) in *)
-          (* let (hasProto, _) = findField proto_pat in *)
-          (* let (hasCode, codeTyp) = findField (P.singleton "-*- code -*-") in *)
-          (* let (hasPrototype, protoTyp) = findField (P.singleton "prototype") in *)
-          (* let isSimplePrototype = match protoTyp with  *)
-          (*   | Some (TId t) -> t = "Object" || t = "Any" || t = "Ext"  *)
-          (*                                       || (String.length t > 3 && String.sub t 0 3 = "nsI") *)
-          (*   | _ -> false in *)
-          (* if ((List.length fieldList) = 4 && hasProto && hasCode && hasPrototype && isSimplePrototype) *)
-          (* then codeTyp *)
-          (* else None in *)
+        let isFunctionObject fieldList = 
+          let findField namePat =
+            try
+              let (_, _, typ) =
+                List.find (fun (n, p, _) -> (p = Present && n = namePat)) fieldList in
+              (true, Some typ)
+            with Not_found -> (false, None) in
+          let (hasProto, _) = findField proto_pat in
+          let (hasCode, codeTyp) = findField (P.singleton "-*- code -*-") in
+          let (hasPrototype, protoTyp) = findField (P.singleton "prototype") in
+          let isSimplePrototype = match protoTyp with
+            | Some (TId t) -> t = "Object" || t = "Any" || t = "Ext"
+                                                || (String.length t > 3 && String.sub t 0 3 = "nsI")
+            | _ -> false in
+          if ((List.length fieldList) = 4 && hasProto && hasCode && hasPrototype && isSimplePrototype)
+          then codeTyp
+          else None in
         (match isFunctionObject (flds.fields) with
         | Some arrTyp -> horz [squish [text "{|"; typ' true arrTyp; text "|}"]]
         | None ->
-          if (List.length flds.fields > 1200) then braces (text ".......") else
+          if (List.length flds.fields > 12000) then braces (text ".......") else
           let abs = horz [ text (P.pretty flds.absent_pat); text ": _" ] in
           braces (hnestOrHorz 0 (intersperse print_space (map pat (flds.fields) @ [abs])))
         )
@@ -478,7 +478,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TId x -> 
       (try 
         expose typenv (simpl_typ typenv (fst2 (IdMap.find x typenv)))
-       with Not_found -> Printf.eprintf "Could not find type %s\n" x; raise Not_found)   
+       with Not_found -> Printf.eprintf "Could not find type %s\n" x; raise Not_found)
+    | TThis t -> TThis (expose typenv t)
     | _ -> typ
 
   let expose_arrow env typ = 
@@ -743,7 +744,16 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | TThis (TSource s), TThis (TSink t)
         | TThis (TSink s), TThis (TRef t)
         | TThis (TSink s), TThis (TSource t)
-        | TThis (TSink s), TThis (TSink t) -> subtype cache s t (* ONLY HAVE TO GO ONE WAY ON THIS TYPES *)
+        | TThis (TSink s), TThis (TSink t)
+        | TRef s, TThis (TRef t)
+        | TRef s, TThis (TSource t)
+        | TRef s, TThis (TSink t)
+        | TSource s, TThis (TRef t)
+        | TSource s, TThis (TSource t)
+        | TSource s, TThis (TSink t)
+        | TSink s, TThis (TRef t)
+        | TSink s, TThis (TSource t)
+        | TSink s, TThis (TSink t) -> subtype cache s t (* ONLY HAVE TO GO ONE WAY ON THIS TYPES *)
         | TThis _, TThis _ -> mismatched_typ_exn s t
         | _, TThis t2 -> subtype cache s t2
         | TThis t1, _ -> subtype cache t1 t

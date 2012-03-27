@@ -37,15 +37,22 @@ let sort_defs defs = List.stable_sort (fun d1 d2 ->
 ) defs
 
 
-type cachedInterface = Raw of Full_idl_syntax.definition | Comp of TypImpl.typ
+type cachedInterface = 
+  | Raw of Full_idl_syntax.definition * bool
+  | Comp of TypImpl.typ * (TypImpl.typ -> TypImpl.typ) option (* interface type, type as a [function] *)
 let create_env defs = 
   let ifaceHash : (Id.t, cachedInterface) Hashtbl.t = Hashtbl.create 1200 in
+  let implementsHash : (Id.t, Id.t) Hashtbl.t = Hashtbl.create 200 in
   let idToPat id = P.singleton (Id.string_of_id id) in
-  let isNoScript metas = List.exists (fun m -> m = NoScript || m = NotXPCOM) metas in
-  let isScriptable metas = List.exists (fun m -> m = Scriptable) metas in
-  let isPrivateBrowsingCheck metas = List.exists (fun m -> m = PrivateBrowsingCheck) metas in
-  let isUnsafe metas = List.exists (fun m -> m = Unsafe) metas in
-  let isQueryInterfaceType metas = List.exists (fun m -> m = QueryInterfaceType) metas in
+  let find_in_list l v = List.exists (fun m -> m = v) l in
+  let isNoScript metas = find_in_list metas NoScript || find_in_list metas NotXPCOM in
+  let isScriptable metas = find_in_list metas Scriptable in
+  let isPrivateBrowsingCheck metas = find_in_list metas PrivateBrowsingCheck  in
+  let isUnsafe metas = find_in_list metas Unsafe in
+  let isGetter metas = find_in_list metas (AttrNoArgs (Id.id_of_string "getter")) in
+  let isFunction metas = find_in_list metas (AttrNoArgs (Id.id_of_string "function")) in
+  let isOptional metas = find_in_list metas Optional in
+  let isQueryInterfaceType metas = find_in_list metas QueryInterfaceType in
   let isQueryElementAtType metas = 
     try Some (List.find (fun m -> match m with QueryElementAtType _ -> true | _ -> false) metas)
     with Not_found -> None in
@@ -53,7 +60,8 @@ let create_env defs =
   let rec trans_toplevel defs =
     let (iidsAndConstants, componentsAndCID, compType, queryInterfaceType) = build_components (defs) in
     List.iter (fun i -> match i with
-    | Interface (_, _, name, parent, members, _) -> Hashtbl.add ifaceHash name (Raw i)
+    | Interface (_, metas, name, parent, members, _) -> Hashtbl.add ifaceHash name (Raw (i, isFunction metas))
+    | Implements (_, _, id1, id2) -> Hashtbl.add implementsHash id1 id2
     | _ -> ()) defs;
     let interfaces = filter_map (trans_def TBot queryInterfaceType) (defs) in
     let iids = filter_map (fun (iid, constants) ->
@@ -63,7 +71,7 @@ let create_env defs =
                                 ((Attribute(Lexing.dummy_pos, [], NoReadOnly, IsNormal, Any, iid_hashname)) 
                                  :: constants), 
                                 IsNormalInterface) in
-      Hashtbl.add ifaceHash (Id.id_of_string iid) (Raw iid_iface);
+      Hashtbl.add ifaceHash (Id.id_of_string iid) (Raw (iid_iface, false));
       trans_interface TBot queryInterfaceType (Id.id_of_string iid)
     ) iidsAndConstants in
     ((componentsAndCID :: iids @ interfaces), TId "Components", queryInterfaceType (TId "nsISupports") 0)
@@ -149,10 +157,29 @@ let create_env defs =
     | Include _ -> None
   and trans_interface tt queryInterfaceType name =
     match Hashtbl.find ifaceHash name with
-    | Comp typ -> Some (idToPat name, Inherited, typ)
-    | Raw (Interface(_, metas, name, parent, members, isCallback)) ->
+    | Comp (typ, _) -> Some (idToPat name, Inherited, typ)
+    | Raw (Interface(_, metas, name, parent, members, isCallback), _) ->
       let tself = (TId (Id.string_of_id name)) in
       let transfields = trans_fields tself (queryInterfaceType tself) members in
+      (* deal with [function] interfaces *)
+      let funcFunc = if not (isFunction metas) then None else
+          let operationTypes = filter_map (fun (_, _, t) -> match t with
+            | TSource(*TRef*)(TObject f) -> (match TypImpl.fields f with
+              | [(_, Present, t); (_, Present, TId "Object"); (_, Present, TId "Ext"); (_, Maybe, TId "Ext")] ->
+                Some t
+              | _ -> None)
+            | _ -> None) transfields in
+          let rec allEqual ts = match ts with 
+            | [] -> false
+            | [t] -> true
+            | t1::t2::ts -> t1 = t2 && allEqual (t2::ts) in
+          let operationTypes = if allEqual operationTypes then [List.hd operationTypes] else operationTypes in
+          match operationTypes with
+          | [TArrow(_::args, vararg, ret)] -> Some (fun tthis -> TArrow((TThis tthis)::args, vararg, ret))
+          | [TArrow([], vararg, ret)] -> Some (fun tthis -> TArrow([TThis tthis], vararg, ret))
+          | _ -> None (* no (or no unique) operations on the object, despite being [function] *)
+      in
+      (* deal with inherited fields *)
       let parentTyp = match parent with
           | None -> None
           | Some pName -> match pName with
@@ -161,53 +188,122 @@ let create_env defs =
       let parentFields = match parentTyp with
         | Some (_, _, TSource(*TRef*)(TObject f)) -> TypImpl.fields f
         | _ -> [(proto_pat, Present, (TId "Object"))] in
-      let transfields = transfields @ parentFields in
+      let implementsIds = Hashtbl.find_all implementsHash name in
+      let implementsTyps = ListExt.filter_map (trans_interface tt queryInterfaceType) implementsIds in
+      let implementsFields = List.concat (List.map (fun t -> match t with
+        | (_, _, TSource(*TRef*)(TObject f)) -> TypImpl.fields f
+        | _ -> []) implementsTyps) in
+      let transfields = transfields @ parentFields @ implementsFields in
       let catchallPat = P.empty in (*P.negate (List.fold_left P.union proto_pat (List.map fst3 transfields)) in*)
       let ifaceTyp = TSource(*TRef*) (TObject (mk_obj_typ transfields catchallPat)) in
-      Hashtbl.add ifaceHash name (Comp ifaceTyp);
+      Hashtbl.add ifaceHash name (Comp (ifaceTyp, funcFunc));
       Some(idToPat name, Inherited, ifaceTyp)
     | Raw _ -> None
-  and trans_fields tt queryInterfaceType fields = filter_map (trans_field tt queryInterfaceType) fields
+  and trans_fields tt queryInterfaceType fields = List.flatten 
+    (filter_map (trans_field tt queryInterfaceType) fields)
   and trans_field tself queryInterfaceType field = match field with
     | Attribute (_, metas, readOnly, stringifier, typ, name) ->
       if (isNoScript metas) then None
-      else if (isPrivateBrowsingCheck metas) then Some (idToPat name, Present, (TPrim "True"))
-      else if (isUnsafe metas) then Some (idToPat name, Present, TPrim "Unsafe")
-      else if (isQueryInterfaceType metas) then Some (idToPat name, Present, queryInterfaceType 0)
+      else if (isPrivateBrowsingCheck metas) then Some [(idToPat name, Present, (TPrim "True"))]
+      else if (isUnsafe metas) then Some [(idToPat name, Present, TPrim "Unsafe")]
+      else if (isQueryInterfaceType metas) then Some [(idToPat name, Present, queryInterfaceType 0)]
       else let t = trans_typ typ in 
            (* let t = match readOnly with *)
            (*   | NoReadOnly -> t *)
            (*   | ReadOnly -> TSource t in *)  (* TSource implies an extra indirection... *)
-           Some (idToPat name, Inherited, t)
-    | Operation (_, metas, stringifier, quals, typ, nameOpt, args) -> 
-      let returnField typ = match nameOpt with None -> None | Some name -> Some (idToPat name, Inherited, typ) in
+           Some [(idToPat name, Inherited, t)]
+    | Operation (_, metas, stringifier, quals, retTyp, nameOpt, args) -> 
+      let returnField typ = match nameOpt with None -> None | Some name -> Some [(idToPat name, Inherited, typ)] in
+      let transRetTyp = trans_typ retTyp in
+      let adjoinThisRet argss ret =
+        let allPossibleFunctionArgs = ListExt.product argss in
+        (wrapArrow SourceCell
+           (List.fold_left (fun acc args ->
+             let arrowT = TArrow ((TThis tself) :: args, None, ret) in
+             match acc with TBot -> arrowT | _ ->
+               TIntersect (arrowT, acc)) TBot allPossibleFunctionArgs)) in
       if (isNoScript metas) then None
       else if (isUnsafe metas) then returnField (TPrim "Unsafe")
       else if (isQueryInterfaceType metas) then returnField (queryInterfaceType 0)
+      else if (isGetter metas) then 
+        let targs = List.map (trans_arg tself queryInterfaceType) args in
+        let firstArg = List.hd (List.hd targs) in
+        let getterFields = match firstArg with
+          | TPrim "Num" -> let pat = P.parse 
+                             Lexing.dummy_pos "(([0-9])*|(\"+Infinity\"|(\"-Infinity\"|\"NaN\")))" in
+                           (pat, Present, transRetTyp) (* should be Maybe, but that gets annoying with Undefs... *)
+          | TRegex r -> (r, Maybe, transRetTyp)
+          | _ -> failwith "impossible" in
+        (match nameOpt with None -> Some [getterFields]
+        | Some name -> Some [(idToPat name, Present, (adjoinThisRet targs transRetTyp));
+                             getterFields])
       else (match isQueryElementAtType metas with
       | Some (QueryElementAtType n) -> returnField (queryInterfaceType n)
-      | _ -> returnField
-        (match List.rev args with
-        | [] -> wrapArrow SourceCell (TArrow ([TThis tself], None, trans_typ typ))
+      | _ -> begin 
+        match List.rev args with
+        | [] -> returnField (adjoinThisRet [] transRetTyp)
         | lastArg::revArgs ->
-        let (_, lastMetas, lastTyp, _, _, _) = lastArg in
-        if (isRetval lastMetas) 
-        then wrapArrow SourceCell 
-          (TArrow ((TThis tself) :: List.map (trans_arg tself) (List.rev revArgs), None, trans_typ lastTyp))
-        else wrapArrow SourceCell  (TArrow ((TThis tself) :: List.map (trans_arg tself) args, None, trans_typ typ))
-        ))
+          let (_, lastMetas, lastTyp, _, _, _) = lastArg in
+          let normalArrowArgs = 
+            if (isRetval lastMetas)
+            then (adjoinThisRet (List.map (trans_arg tself queryInterfaceType) (List.rev revArgs)) (trans_typ lastTyp))
+            else (adjoinThisRet (List.map (trans_arg tself queryInterfaceType) args) transRetTyp) in
+          returnField normalArrowArgs
+        end)
+    (*  in *)
+    (*   let functionArgs = List.map (fun arg -> *)
+    (*     match (trans_arg tself arg) with *)
+    (*     | (TId name) as t' -> ( *)
+    (*       let name = Id.id_of_string name in *)
+    (*       match Hashtbl.find ifaceHash name with *)
+    (*       | Comp (_, Some funcFunc) -> [funcFunc tself; t'] *)
+    (*       | Comp (_, None) -> [t'] *)
+    (*       | Raw (_, false) -> [t'] *)
+    (*       | Raw (def, true) ->  *)
+    (*         ignore (trans_interface tself (fun _ -> queryInterfaceType) name); *)
+    (*         match Hashtbl.find ifaceHash name with *)
+    (*         | Comp (_, Some funcFunc) -> [wrapArrow SourceCell (funcFunc tself); t'] *)
+    (*         | Comp (_, None) -> [t'] *)
+    (*         | Raw _ -> failwith "Impossible") *)
+    (*     | t -> [t] *)
+    (*   ) args in *)
+    (*   let allPossibleFunctionArgs = ListExt.product functionArgs in *)
+    (*   if (List.length allPossibleFunctionArgs = 1) then returnField (wrapArrow SourceCell normalArrow) *)
+    (*   else  *)
+    (*     returnField (wrapArrow SourceCell *)
+    (*                    (List.fold_left (fun acc args -> *)
+    (*                      let arrowT = TArrow ((TThis tself) :: args, None, transRetTyp) in *)
+    (*                      match acc with TBot -> arrowT | _ -> *)
+    (*                        TIntersect (arrowT, acc)) TBot allPossibleFunctionArgs)) *)
+    (* )) *)
     | ConstMember (_, metas, typ, id, value) -> 
       if (isNoScript metas)
       then None
-      else Some (idToPat id, Inherited, (* TSource *) (trans_typ typ)) (* can't do const correctly *)
+      else Some [(idToPat id, Inherited, (* TSource *) (trans_typ typ)) (* can't do const correctly *)]
     | Stringifier (_, metas) -> None
-  and trans_arg tt (direction, metas, typ, variadic, id, defaultOpt) = 
+  and trans_arg tt queryInterfaceType (direction, metas, typ, variadic, id, defaultOpt) = 
     match direction with
-    | InParam -> trans_typ typ
+    | InParam -> 
+      let addOptional ts = if isOptional metas then (TPrim "Undef") :: ts else ts in
+      addOptional (match trans_typ typ with
+      | (TId name) as t' -> (
+        let name = Id.id_of_string name in
+        match Hashtbl.find ifaceHash name with
+        | Comp (_, Some funcFunc) -> [funcFunc tt; t']
+        | Comp (_, None) -> [t']
+        | Raw (_, false) -> [t']
+        | Raw (def, true) -> 
+          ignore (trans_interface tt (fun _ -> queryInterfaceType) name);
+          match Hashtbl.find ifaceHash name with
+          | Comp (_, Some funcFunc) -> [wrapArrow SourceCell (funcFunc tt); t']
+          | Comp (_, None) -> [t']
+          | Raw _ -> failwith "Impossible")
+      | t -> [t]
+      )
     | OutParam -> 
-      TRef (TObject (mk_obj_typ [(P.singleton "value", Present, TSink (trans_typ typ))] P.empty))
+      [TSink (TObject (mk_obj_typ [(P.singleton "value", Present, (* TSink *) (trans_typ typ))] P.empty))]
     | InOutParam -> 
-      TRef (TObject (mk_obj_typ [(P.singleton "value", Present, (trans_typ typ))] P.empty))
+      [TRef (TObject (mk_obj_typ [(P.singleton "value", Present, (trans_typ typ))] P.empty))]
   and trans_typ typ = match typ with
     | Short Unsigned 
     | Short NoUnsigned

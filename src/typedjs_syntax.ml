@@ -274,7 +274,7 @@ end = struct
     | ERec (_, binds, body) ->
         parens (vert [ horz [ text "rec"; parens (vert (map rec_bind binds)) ];
                        exp body ])
-    | ESeq (_, e1, e2) -> parens (vert [ sep [ text "seq"; exp e1 ]; exp e2 ])
+    | ESeq (_, e1, e2) -> parens (hov 1 0 [ text "seq"; exp e1; exp e2 ])
     | ELabel (_, x, e) -> parens (hov 1 0 [ horz [text "label"; text x]; exp e ])
     | EBreak (_, x, e) -> parens (hov 1 0 [ horz [text "break"; text x]; exp e ])
     | ETryCatch (_, body, x, catch) ->
