@@ -459,6 +459,16 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TRec (x, t) -> simpl_typ typenv (typ_subst x typ t)
     | TApp (t1, ts) -> 
       begin match expose typenv (simpl_typ typenv t1) with
+      | TPrim "Mutable" -> begin
+        match ts with
+        | [t] -> begin match expose typenv (simpl_typ typenv t) with
+          | TRef t -> TRef t
+          | TSource t -> TRef t
+          | TSink t -> TRef t
+          | _ -> raise (Invalid_argument "Expected a TRef, TSoruce or TSink argument to Mutable<T>")
+        end
+        | _ ->  raise (Invalid_argument "Expected one argument to Mutable<T>")
+      end
       | TLambda (args, u) -> 
         simpl_typ typenv 
           (List.fold_right2 (* well-kinded, no need to check *)
@@ -736,6 +746,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             try subtype cache s t1
             with Not_subtype _ -> subtype cache s t2
           end
+        | TPrim "Null", TRef (TObject _)
+        | TPrim "Null", TSource (TObject _)
+        | TPrim "Null", TSink (TObject _) -> cache (* null should be a subtype of all object types *)
         | TThis (TRef s), TThis (TRef t)
         | TThis (TRef s), TThis (TSource t)
         | TThis (TRef s), TThis (TSink t)

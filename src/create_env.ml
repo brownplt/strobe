@@ -107,7 +107,7 @@ let create_env defs =
                    (idToPat name, Present, TId iidName),
                    (fun tself n -> 
                      TArrow (((TThis (TId "nsISupports")) :: (ListExt.create n TTop) @ [TId iidName]),
-                                           None, (TId (Id.string_of_id name)))))
+                                           None, (TApp(TPrim "Mutable", [TId (Id.string_of_id name)])))))
       | _ -> None in
     let unzip3 abcs =
       let rec helper abcs aas bbs ccs =

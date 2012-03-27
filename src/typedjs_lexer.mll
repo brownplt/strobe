@@ -53,6 +53,8 @@ rule token = parse
    | "True" { PRIM "True" }
    | "False" { PRIM "False" }
    | "Undef" { PRIM "Undef" }
+   | "Unsafe" { PRIM "Unsafe" }
+   | "Mutable" { PRIM "Mutable" }
    | "Null" { PRIM "Null" }
    | "@" (ident as x) { PRIM x }
    | "_" { UNDERSCORE }

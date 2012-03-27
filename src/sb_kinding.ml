@@ -100,26 +100,34 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
     if  k' = k then k
     else kind_mismatch typ k' k
   | TApp (t_op, t_args) ->
-    begin match kind_check env t_op with
-    | KArrow (k_args, k_result) ->
-      begin
-        try
-          let check k_arg t_arg = 
-            let k_actual = kind_check env t_arg in
-            if k_arg = k_actual then
-              ()
-            else 
-              kind_mismatch t_arg k_actual k_arg in
-          let _ = List.iter2 check k_args t_args in
-          k_result
-        with Invalid_argument _ ->
-          raise (Kind_error
-                   (sprintf "operator expects %d args, given %d"
-                      (List.length k_args) (List.length t_args)))
-      end
-    | KStar ->
-      raise (Kind_error 
-               (sprintf "not a type operator:\n%s" (string_of_typ t_op)))
+    begin 
+      let check k_arg t_arg = 
+        let k_actual = kind_check env t_arg in
+        if k_arg = k_actual then
+          ()
+        else 
+          kind_mismatch t_arg k_actual k_arg in
+      match t_op with
+      | TPrim "Mutable" ->
+        begin 
+          try List.iter2 check [KStar] t_args
+          with Invalid_argument _ -> raise (Kind_error "Mutable<> expects one argument")
+        end;
+        KStar
+      | _ -> match kind_check env t_op with
+        | KArrow (k_args, k_result) ->
+          begin 
+            try
+              List.iter2 check k_args t_args;
+              k_result
+            with Invalid_argument _ ->
+              raise (Kind_error
+                       (sprintf "operator expects %d args, given %d"
+                          (List.length k_args) (List.length t_args)))
+          end
+        | KStar ->
+          raise (Kind_error 
+                   (sprintf "not a type operator:\n%s" (string_of_typ t_op)))
     end
 
 and assert_fld_kind (env : kind_env) (_, _, t) = match kind_check env t with
