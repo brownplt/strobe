@@ -75,14 +75,6 @@ let is_equal v1 v2 = match v1, v2 with
     StringSet.equal set1 set2
   | _ -> false
 
-let example v = match v with
-  | Finite set -> 
-    if StringSet.is_empty set then
-      None
-    else
-      Some (StringSet.choose set)
-  | CoFinite set -> failwith "example from a co-finite set, whoa"
-
 let pretty_helper v =
   let open FormatExt in
   match v with
@@ -100,6 +92,14 @@ let pretty_helper v =
 
 let pretty v =
   FormatExt.to_string pretty_helper v
+
+let example v = match v with
+  | Finite set -> 
+    if StringSet.is_empty set then
+      None
+    else
+      Some (StringSet.choose set)
+  | CoFinite set -> failwith (sprintf "example from a co-finite set: %s" (pretty v))
   
 
 let rec set_to_nfa set = 
