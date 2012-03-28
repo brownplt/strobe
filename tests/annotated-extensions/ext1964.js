@@ -12,7 +12,6 @@ function(event) { toOpenWindowByType('mozilla:certmanager', 'chrome://pippki/con
 function(event) { toOpenWindowByType('mozilla:certmanager', 'chrome://pippki/content/certManager.xul'); };
 function(event) { toOpenWindowByType('mozilla:certmanager', 'chrome://pippki/content/certManager.xul'); };
 
-/*:: type MutableDOMXULTreeElement = {Ext with view : nsIASN1Tree, columns : nsITreeColumns};*/
 /*: -> nsIX509Cert*/
 function getCurrentCert()
 {
@@ -33,31 +32,31 @@ function getCurrentCert()
     var item = tree.contentView.getItemAtIndex(realIndex);
     var dbKey = item.firstChild.firstChild.getAttribute('display');
     var certdb = Components.classes[nsX509CertDB].getService(nsIX509CertDB);
-    var cert = certdb.findCertByDBKey(""+dbKey,/*:cheat nsISupports*/null);
+    var cert = certdb.findCertByDBKey(""+dbKey,null);
     return cert;
   }
   /* shouldn't really happen */
-  return /*:cheat nsIX509Cert*/null;
+  return null;
+}
+
+/*: nsIX509Cert -> Str */
+function getDERString(cert)
+{
+  var length = {value:0};
+  var derArray = cert.getRawDER(length);
+  var derString = /*:Str*/'';
+  for (var i = 0; i < derArray.length; i++) {
+    derString += String.fromCharCode(derArray[i]);
+  }
+  return derString;
 }
 
 /*: nsIX509Cert -> Str */
 function getPEMString(cert)
 {
   return '-----BEGIN CERTIFICATE-----\r\n'
-        + /*:cheat String*/(btoa(getDERString(cert))).replace(/(\S{64}(?!$))/g, "$1\r\n")
+         + btoa(getDERString(cert)).replace(/(\S{64}(?!$))/g, "$1\r\n")
          + '\r\n-----END CERTIFICATE-----\r\n';
-}
-
-/*: nsIX509Cert -> Str */
-function getDERString(cert)
-{
-  var length = /*:cheat {value:Num}*/{value:0};
-  var derArray = /*:cheat Array<Ext>*/cert.getRawDER(length);
-  var derString = /*:Str*/'';
-  for (var i = 0; i < derArray.length; i++) {
-    derString += String.fromCharCode(derArray[i]);
-  }
-  return derString;
 }
 
 // Reviews from AMO editors now (2009) seem to insist on not polluting
@@ -70,12 +69,10 @@ function getDERString(cert)
       setCertTrust : [this('nsIDOMElement)] nsIDOMEvent -> Undef,
       getCertTrust : [this('cvp)] Ext -> Ext,
       addTrustSettingCheckBoxes: [this('cvp)] -> Undef,
-      };
-*/
-/*::
+  };
   type MainObject = {AnObject with
-  velox : {AnObject with cvp : Cvp}
-      };
+      velox : {AnObject with cvp : Cvp}
+  };
 */
 if (!ch) var ch = /*:cheat MainObject*/{};
 if (!ch.velox) ch.velox = /*: cheat {AnObject with cvp : Cvp}*/{};
@@ -105,8 +102,8 @@ displayPEM: /*: [Cvp] Any * nsIX509Cert -> Undef*/function(parent, cert)
     return;
 
   // required string bundles
-  var bundle = document.getElementById("certviewerplusbundle");
-  var pipnss = document.getElementById("pipnssbundle");
+  var bundle = /*:cheat nsIDOMXULStringBundleElement*/(document.getElementById("certviewerplusbundle"));
+  var pipnss = /*:cheat nsIDOMXULStringBundleElement*/(document.getElementById("pipnssbundle"));
 
   var prefs = Components.classes["@mozilla.org/preferences-service;1"].
               getService(Components.interfaces.nsIPrefService).
@@ -135,8 +132,8 @@ displayPEM: /*: [Cvp] Any * nsIX509Cert -> Undef*/function(parent, cert)
    * to true, this apparently has the effect that no tree is built.
    * Setting collapsed to true, however, will work "as intended".
    */
-  var tempTree = /* want this to be a nsIDOMXULTreeElement, but they're immutable*/
-    /*: cheat MutableDOMXULTreeElement*/(document.getElementById('tempTree'));
+  var tempTree = 
+    /*: cheat Mutable<nsIDOMXULTreeElement>*/(document.getElementById('tempTree'));
   var asn1Tree = Components.classes["@mozilla.org/security/nsASN1Tree;1"].
                  createInstance(Components.interfaces.nsIASN1Tree);
   tempTree.view = asn1Tree;
@@ -148,7 +145,7 @@ displayPEM: /*: [Cvp] Any * nsIX509Cert -> Undef*/function(parent, cert)
   var sourceString = bundle.getFormattedString(chain.length > 1 ?
                                                "displayPEMChainLabel" :
                                                "displayPEMLabel",
-                                               /*:cheat Ext*/[ certname ], 1)
+                                               [ certname ], 1)
                      + "%0d%0a";
 
   for (var i = 0; i < chain.length; i++) {
@@ -168,8 +165,8 @@ displayPEM: /*: [Cvp] Any * nsIX509Cert -> Undef*/function(parent, cert)
       try { subjectName = ch.velox.cvp.reverseRDNs(currCert.subjectName); } catch(e) {}
       try { issuerName = ch.velox.cvp.reverseRDNs(currCert.issuerName); } catch(e) {}
       // same for unparseable time values...
-      var notBefore = /*:Ext*/'';
-      var notAfter = /*:Ext*/'';
+      var notBefore = /*:Str*/'';
+      var notAfter = /*:Str*/'';
       try {
         notBefore = currCert.validity.notBeforeGMT;
       } catch(e) {
@@ -187,7 +184,7 @@ displayPEM: /*: [Cvp] Any * nsIX509Cert -> Undef*/function(parent, cert)
                       + issuerName  + "%0d%0a"
                       + pipnss.getString("CertDumpValidity") + ": "
                       + bundle.getFormattedString("displayPEMValidity",
-                               /*:cheat Ext*/[ notBefore, notAfter ], 2) + "%0d%0a";
+                                                  [ notBefore, notAfter ], 2) + "%0d%0a";
     }
 
     if (format > 1) {
@@ -222,26 +219,26 @@ displayPEM: /*: [Cvp] Any * nsIX509Cert -> Undef*/function(parent, cert)
           if (!tempTree.view.isContainer(j)) {
             sourceString += ch.velox.cvp.indent(currLevel);
             // get the text representation of the ASN.1 data and re-indent
-              sourceString += (/*:cheat String*/(asn1Tree.getDisplayData(j)).
-                                       replace(/\n/g, "\n" + ch.velox.cvp.indent(currLevel)));
+              sourceString += asn1Tree.getDisplayData(j).
+                                       replace(/\n/g, "\n" + ch.velox.cvp.indent(currLevel));
             sourceString += "\n";
           }
         }
       }
       // replace newlines (and double-newlines) with URI escapes
-        sourceString = (/*:cheat String*/sourceString).replace(/\n( *\n)*/g, "%0d%0a");
+        sourceString = sourceString.replace(/\n( *\n)*/g, "%0d%0a");
     }
     // add the Base64 encoded cert
-      sourceString += (/*: cheat String*/(getPEMString(currCert))).replace(/\r\n/g, "%0d%0a");
+      sourceString += getPEMString(currCert).replace(/\r\n/g, "%0d%0a");
   }
 
   // finally, open a view-source window (non-modal, no parent)
   var dataString = Components.classes["@mozilla.org/supports-string;1"].
                    createInstance(Components.interfaces.nsISupportsString);
-    /*:cheat Undef*/(dataString.data = "data:;charset=utf-8," + sourceString);
+  dataString.data = "data:;charset=utf-8," + sourceString;
   Components.classes["@mozilla.org/embedcomp/window-watcher;1"].
              getService(Components.interfaces.nsIWindowWatcher).
-             openWindow(/*:cheat nsIDOMWindow*/null, "chrome://global/content/viewSource.xul",
+             openWindow(null, "chrome://global/content/viewSource.xul",
                         "_blank","scrollbars,resizable,chrome,dialog=no",
                         dataString);
 },
@@ -341,8 +338,8 @@ tuneGeneralTab: function()
    * any in the certificate (displays addresses from both from the subject
    * and the subjectAltName extension)
    */
-    var temp = /*:cheat {value:Num}*/{value:0};
-    var mailaddrs = /*:cheat Array<Ext>*/getCurrentCert().getEmailAddresses(temp);
+  var temp = {value:0};
+  var mailaddrs = getCurrentCert().getEmailAddresses(temp);
   if (mailaddrs.length == 0)
     return;
 
@@ -393,7 +390,7 @@ tuneGeneralTab: function()
    * and insert at the proper place, finally
    */
   var ea_row = snr.parentNode.cloneNode(true);
-  var bundle = document.getElementById("certviewerplusbundle");
+  var bundle = /*:cheat nsIDOMXULStringBundleElement*/(document.getElementById("certviewerplusbundle"));
   ea_row.firstChild.setAttribute("value", numlines > 1 ?
                                  bundle.getString("CertEmailAddresses") :
                                  bundle.getString("CertEmailAddress"));
@@ -413,7 +410,7 @@ addTrustSettingCheckBoxes: /*: [Cvp] -> Undef*/ function()
    * ("Certificate Hierarchy") with a new hbox element
    */
 
-  var bundle = document.getElementById("certviewerplusbundle");
+  var bundle = /*:cheat nsIDOMXULStringBundleElement*/(document.getElementById("certviewerplusbundle"));
   var trustsettings = [ "SSL", "Mail", "Code" ];
 
   var tsd = /*:cheat nsIDOMXULTreeElement*/(document.getElementById("treesetDump"));
@@ -443,9 +440,9 @@ addTrustSettingCheckBoxes: /*: [Cvp] -> Undef*/ function()
    * afterwards. The current label element needs to be enclosed by
    * this hbox, otherwise they would appear vertically.
    */
-  var hb = /*:cheat nsIDOMElement*/document.createElement("hbox");
+  var hb = (/*:cheat nsIDOMDocument*/document).createElement("hbox");
   hb.setAttribute("id", "tsdlabels");
-  var currLabel = /*:cheat nsIDOMElement*/tsd.parentNode.replaceChild(hb, tsd.previousSibling);
+  var currLabel = /*:cheat nsIDOMElement*/tsd.parentElement.replaceChild(hb, tsd.previousElementSibling);
   // insert the current label into the hbox again
   hb.appendChild(currLabel);
   // allow stretching
@@ -465,8 +462,8 @@ addTrustSettingCheckBoxes: /*: [Cvp] -> Undef*/ function()
    */
   var tcwidth = 0;
   for (var i = 0; i < trustsettings.length; i++) {
-    var tlbl = /*:cheat nsIDOMElement*/document.createElement("label");
-    tlbl.setAttribute("value", ""+(bundle.getString("trust" + trustsettings[i])));
+    var tlbl = (/*:cheat nsIDOMDocument*/document).createElement("label");
+    tlbl.setAttribute("value", bundle.getString("trust" + trustsettings[i]));
     hb.appendChild(tlbl);
     var currwidth = parseInt(window.getComputedStyle(tlbl, "").width);
     if (currwidth > tcwidth)
@@ -483,14 +480,14 @@ addTrustSettingCheckBoxes: /*: [Cvp] -> Undef*/ function()
    * addTreeItemToTreeChild() afterwards)
    */
   for (var i = 0; i < trustsettings.length; i++) {
-    var lbl = /*:cheat nsIDOMElement*/(document.createElement("label"));
+    var lbl = (/*:cheat nsIDOMDocument*/document).createElement("label");
     lbl.setAttribute("class", "plain");
     lbl.setAttribute("width", ""+tcwidth);
-    lbl.setAttribute("value", ""+(bundle.getString("trust" + trustsettings[i])));
+    lbl.setAttribute("value", bundle.getString("trust" + trustsettings[i]));
     lbl.setAttribute("tooltip", "tctooltip");
     hb.appendChild(lbl);
 
-    var tc = /*:cheat nsIDOMElement*/(document.createElement("treecol"));
+    var tc = (/*:cheat nsIDOMDocument*/document).createElement("treecol");
     tc.setAttribute("type", "checkbox");
     tc.setAttribute("editable", "true");
     tc.setAttribute("width", ""+tcwidth);
@@ -512,14 +509,14 @@ addTrustSettingCheckBoxes: /*: [Cvp] -> Undef*/ function()
    * the trick for the default themes (winstripe, pinstripe, gnomestripe),
    * scrollbars don't seem to exceed this width.
    */
-  var descspc = /*:cheat nsIDOMElement*/(document.createElement("description"));
+  var descspc = (/*:cheat nsIDOMDocument*/document).createElement("description");
   descspc.setAttribute("id", "descspc");
   descspc.setAttribute("class", "plain box-padded");
   descspc.setAttribute("width", "18");
   descspc.setAttribute("hidden", "true");
   hb.appendChild(descspc);
 
-  var tcolspc = /*:cheat nsIDOMElement*/(document.createElement("treecol"));
+  var tcolspc = (/*:cheat nsIDOMDocument*/document).createElement("treecol");
   tcolspc.setAttribute("id", "tcolspc");
   tcolspc.setAttribute("width", "18");
   tcolspc.setAttribute("hideheader", "true");
@@ -538,14 +535,14 @@ setCertTrust: /*:[nsIDOMElement] nsIDOMEvent -> Undef*/function(evt)
     return;
 
   var certdb = Components.classes[nsX509CertDB].getService(nsIX509CertDB);
-  var cert = /*:cheat nsIX509Cert2*/(certdb.
-             findCertByDBKey(this.parentNode.firstChild.getAttribute("display"),
-                             null));
-  if (!cert) // shouldn't happen, but fail silently if it does...
+  var certv1 = certdb.
+             findCertByDBKey(this.parentElement.firstElementChild.getAttribute("display"),
+                             null);
+  if (!certv1) // shouldn't happen, but fail silently if it does...
     return;
 
   // needed in order to retrieve .certType
-  cert.QueryInterface(Components.interfaces.nsIX509Cert2);
+  var cert = certv1.QueryInterface(Components.interfaces.nsIX509Cert2);
 
   if ((cert.certType == nsIX509Cert.USER_CERT) ||
       (cert.certType == nsIX509Cert.UNKNOWN_CERT) ||
@@ -610,8 +607,9 @@ setCertTrust: /*:[nsIDOMElement] nsIDOMEvent -> Undef*/function(evt)
       }
       if (i == rows.length - 1)
         // remember the last cert - needed for requestUsagesArrayAsync
-        cert = /*:cheat nsIX509Cert2*/(certdb.findCertByDBKey(c.parentNode.firstChild.
-                                                              getAttribute("display"), null));
+        cert = certdb.findCertByDBKey(c.parentElement.firstElementChild.
+                                      getAttribute("display"), null)
+            .QueryInterface(Components.interfaces.nsIX509Cert2);
     }
   }
 
@@ -644,8 +642,8 @@ getCertTrust: /*: [Cvp] Ext -> Ext*/function(dbKey)
   var trust = nsIX509CertDB.UNTRUSTED;
 
   var certdb = Components.classes[nsX509CertDB].getService(nsIX509CertDB);
-  var cert = certdb.findCertByDBKey(""+dbKey,/*:cheat nsISupports*/null);
-  if (!cert) // shouldn't happen, but fail silently if it does...
+  var certv1 = certdb.findCertByDBKey(""+dbKey,null);
+  if (!certv1) // shouldn't happen, but fail silently if it does...
     return trust;
 
   /*
@@ -659,8 +657,8 @@ getCertTrust: /*: [Cvp] Ext -> Ext*/function(dbKey)
   var certType = nsIX509Cert.CA_CERT;
   if (Components.interfaces.nsIX509Cert2) {
     // Great. No ugly workaround needed
-    cert.QueryInterface(Components.interfaces.nsIX509Cert2);
-    certType = (/*:cheat nsIX509Cert2*/cert).certType;
+    var cert = certv1.QueryInterface(Components.interfaces.nsIX509Cert2);
+    certType = cert.certType;
   }
 
   for (var c in ch.velox.cvp.trustconstants) {
@@ -737,7 +735,7 @@ function addTreeItemToTreeChild(treeChild,label,value,addTwistie)
    * changes in the backend).
    */
   var tsd = /*:cheat nsIDOMXULTreeElement*/(document.getElementById("treesetDump"));
-  var trustsettings = /*:cheat Array<Str>*/[ "SSL", "Mail", "Code" ];
+  var trustsettings = [ /*:Str*/"SSL", "Mail", "Code" ];
   for (var i = 0; i < trustsettings.length; i++) {
     var istrusted = (ch.velox.cvp.getCertTrust(value)
                      & ch.velox.cvp.trustconstants[trustsettings[i]]) ? 
@@ -819,7 +817,7 @@ function exportToFile(parent, cert)
   fp.init(parent, bundle.GetStringFromName("SaveCertAs"),
           nsIFilePicker.modeSave);
   var filename = cert.commonName;
-  if (!(/*:cheat String*/filename).length)
+  if (!filename.length)
     filename = cert.windowTitle;
   // remove all whitespace from the default filename
   /*:cheat Undef*/(fp.defaultString = filename.replace(/\s*/g,''));
