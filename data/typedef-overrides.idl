@@ -130,5 +130,40 @@ partial interface nsIXPConnect {
                                                         [iid_is(aIID),retval] out nsQIResult result);
 };
 
+partial interface nsIDOMNode {
+  [UseType("forall n <: nsIDOMNode . [this(nsIDOMNode)] nsIDOMNode * 'n -> 'n")]
+  nsIDOMNode replaceChild(in nsIDOMNode newChild, in nsIDOMNode oldChild) raises(DOMException);
+  [UseType("forall n <: nsIDOMNode . ['n] Bool -> 'n")]
+  nsIDOMNode cloneNode(in boolean deep);
+};
+
+nsIDOMWindow implements nsIDOMJSWindow;
+nsIDOMWindow implements nsIDOMEventTarget;
+
 nsIDOMElement implements nsIDOMEventTarget;
-nsIDOMElement implements nsIDOMElementCSSInlineStyle;
+//nsIDOMElement implements nsIDOMElementCSSInlineStyle;
+partial interface nsIDOMElement {
+  [UseType("Mutable<nsIDOMCSSStyleDeclaration>")] attribute string style;
+};
+partial interface nsIDOMXULTreeElement {
+  readonly attribute nsITreeContentView contentView;
+};
+nsIDOMXULTreeElement implements nsITreeBoxObject;
+nsIDOMXULTreeElement implements nsIDOMXULMultiSelectControlElement;
+nsIDOMXULTreeElement implements nsIAccessibleProvider;
+
+nsIDOMCSSStyleDeclaration implements nsIDOMCSS2Properties;
+
+interface nsIDOMXULTabElement : nsIDOMXULElement {
+};
+nsIDOMXULTabElement implements nsIDOMXULSelectControlItemElement;
+nsIDOMXULTabElement implements nsIAccessibleProvider;
+
+interface nsIDOMXULStringBundleElement : nsIDOMXULElement {
+  readonly attribute nsIStringBundle stringBundle;
+  readonly attribute nsISimpleEnumerator strings;
+  attribute string src;
+  wstring getString(in wstring aStringKey);
+  wstring getFormattedString(in wstring aStringKey, [array, size_is(length)] in wstring aStringsArray,
+                             in unsigned long length);
+};
