@@ -265,9 +265,11 @@ let create_env defs =
           | [] -> returnField (adjoinThisRet [] transRetTyp)
           | lastArg::revArgs ->
             let (_, lastMetas, lastTyp, _, _, _) = lastArg in
+            let addArray metas t = if isArray metas then TApp(TId "Array", [t]) else t in
             let normalArrowArgs = 
               if (isRetval lastMetas)
-              then (adjoinThisRet (trans_args tself queryInterfaceType (List.rev revArgs)) (trans_typ lastTyp))
+              then (adjoinThisRet (trans_args tself queryInterfaceType (List.rev revArgs)) 
+                      (addArray lastMetas (trans_typ lastTyp)))
               else (adjoinThisRet (trans_args tself queryInterfaceType args) transRetTyp) in
             returnField normalArrowArgs
         end)
@@ -317,9 +319,23 @@ let create_env defs =
       | t -> [addArray t]
       )
     | OutParam -> 
-      [TSink (TObject (mk_obj_typ [(P.singleton "value", Present, (* TSink *) addArray (trans_typ typ))] P.empty))]
+      let codePat = P.singleton "-*- code -*-" in
+      let valuePat = P.singleton "value" in
+      let rest = P.negate (P.union valuePat (P.union (P.singleton "-*- code -*-") proto_pat)) in
+      let obj = (TObject(mk_obj_typ [(valuePat, Present, (*TSink*) addArray (trans_typ typ));
+                                     (codePat, Present, TPrim "Undef");
+                                     (proto_pat, Present, TId "Object")]
+                           rest)) in
+      [TSink (obj)]
     | InOutParam -> 
-      [TRef (TObject (mk_obj_typ [(P.singleton "value", Present, addArray (trans_typ typ))] P.empty))])
+      let codePat = P.singleton "-*- code -*-" in
+      let valuePat = P.singleton "value" in
+      let rest = P.negate (P.union valuePat (P.union (P.singleton "-*- code -*-") proto_pat)) in
+      let obj = (TObject(mk_obj_typ [(valuePat, Present, (*TSink*) addArray (trans_typ typ));
+                                     (codePat, Present, TPrim "Undef");
+                                     (proto_pat, Present, TId "Object")]
+                           rest)) in
+      [TRef (obj)])
   and trans_typ typ = match typ with
     | Short Unsigned 
     | Short NoUnsigned
