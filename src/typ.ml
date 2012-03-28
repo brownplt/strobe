@@ -356,9 +356,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       let opt_map f v = match v with None -> None | Some v -> Some (f v) in
       TArrow (map (typ_subst x s) t2s, opt_map (typ_subst x s) v, typ_subst x s t3)
     | TThis t -> TThis (typ_subst x s t)
-    | TWith(t, flds) -> TWith(typ_subst x s t, flds)
-                              (* mk_obj_typ (map (fun (n, p, t) -> (n, p, typ_subst x s t)) flds.fields) *)
-                              (*   flds.absent_pat) *)
+    | TWith(t, flds) -> TWith(typ_subst x s t, 
+                              mk_obj_typ (map (fun (n, p, t) -> (n, p, typ_subst x s t)) flds.fields)
+                                flds.absent_pat)
     | TObject o ->
         TObject (mk_obj_typ (map (third3 (typ_subst x s)) o.fields) 
                             o.absent_pat)
