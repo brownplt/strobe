@@ -46,6 +46,7 @@ let expose_simpl_typ env typ = expose env (simpl_typ env typ)
 let extract_ref msg p env t = 
   let rec helper t = match expose_simpl_typ env t with
     | TPrim _  -> None
+    | TRegex _ -> Some t
     | TRef _ as t -> Some t
     | TSource _ as t -> Some t
     | TSink _ as t -> Some t
@@ -56,14 +57,18 @@ let extract_ref msg p env t =
       let r2 = helper t2 in
       (match r1, r2 with
       | Some r, None
-      | None, Some r -> Some r
+      | None, Some r
+      | Some r, Some (TRegex _)
+      | Some (TRegex _), Some r -> Some r
       | _ -> None) 
     | TIntersect (t1, t2) -> 
       let r1 = helper t1 in
       let r2 = helper t2 in
       (match r1, r2 with
       | Some r, None
-      | None, Some r -> Some r
+      | None, Some r
+      | Some r, Some (TRegex _)
+      | Some (TRegex _), Some r -> Some r
       | _ -> None)
     | TForall _ -> Some t (* BSL : This seems incomplete; extract_ref won't descend under a Forall *)
     | _ -> (* (printf "%s: Got to %s\n" msg (string_of_typ t)); *) None in
@@ -353,6 +358,7 @@ match exp with
     else begin match extract_ref ("EDeref: " ^ (string_of_exp e)) p env typ with
     | TRef t -> t
     | TSource t -> t
+    | TRegex _ -> (match expose_simpl_typ env (TId "String") with TRef t -> t | _ -> failwith "Impossible")
     | t -> raise (Typ_error (p, Typ((fun t -> sprintf "synth: cannot read an expression of type %s" (string_of_typ t)), t)))
     end 
   | ESetRef (p, e1, e2) -> 
@@ -422,7 +428,11 @@ match exp with
                           (P.negate rest))
   | EBracket (p, obj, field) -> 
     begin match expose_simpl_typ env (synth env default_typ field) with
-      | TRegex pat -> inherits p env (un_null (synth env default_typ obj)) pat
+      | TRegex pat -> begin
+        match synth env default_typ obj with
+        | TRegex _ -> inherits p env (TId "String") pat
+        | obj_typ -> inherits p env (un_null obj_typ) pat
+      end
       | idx_typ -> 
         raise (Typ_error
                  (p, Typ((fun t -> sprintf "index has type %s" (string_of_typ t)), idx_typ)))
