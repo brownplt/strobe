@@ -15,7 +15,7 @@ function(event) { toOpenWindowByType('mozilla:certmanager', 'chrome://pippki/con
 /*: -> nsIX509Cert*/
 function getCurrentCert()
 {
-  var realIndex = 0;
+  var realIndex = /*:Ext*/0;
   var tree = document.getElementById('treesetDump');
   if (tree.view.selection.isSelected(tree.currentIndex)
       && !document.getElementById('general_tab').selected) {
