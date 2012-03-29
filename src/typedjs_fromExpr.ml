@@ -79,7 +79,7 @@ let rec object_and_function p (expr : expr) : expr * expr = match expr with
   | expr -> (IdExpr (bad_p, "%global"), expr)
 
 let forin_ix_typ = 
-  TSource (TRegex (P.negate (P.parse Lexing.dummy_pos "__proto__")))
+  TSource (None, TRegex (P.negate (P.parse Lexing.dummy_pos "__proto__")))
 
 let rec exp (env : env) expr = match expr with
   | ConstExpr (a, c) -> EConst (a, c)

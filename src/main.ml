@@ -178,24 +178,24 @@ let rec squash env t =
     let ret = Typedjs_env.simpl_typ env t in
       (* Printf.eprintf "Simplifying\n%s\nto\n%s\n" (string_of_typ t) (string_of_typ ret); *)
     ret
-  | TRef t -> TRef (squash t)
-  | TSource t -> TSource (squash t)
-  | TSink t -> TSink (squash t)
-  | TUnion (t1, t2) -> TUnion(squash t1, squash t2)
-  | TIntersect(t1, t2) -> TIntersect(squash t1, squash t2)
+  | TRef (n, t) -> TRef (n, squash t)
+  | TSource (n, t) -> TSource (n, squash t)
+  | TSink (n, t) -> TSink (n, squash t)
+  | TUnion (n, t1, t2) -> TUnion(n, squash t1, squash t2)
+  | TIntersect(n, t1, t2) -> TIntersect(n, squash t1, squash t2)
   | TArrow(args, vararg, ret) -> TArrow(map squash args, optsquash vararg, squash ret)
   | TObject ot -> TObject (mk_obj_typ (map (third3 squash) (fields ot)) (absent_pat ot))
   | TTop
   | TBot -> t
-  | TForall(id, t, b) -> TForall(id, squash t, squash b)
+  | TForall(n, id, t, b) -> TForall(n, id, squash t, squash b)
   | TId _ 
   | TRegex _
   | TPrim _ -> t
   | TThis t -> TThis (squash t)
-  | TRec(id, t) -> TRec(id, squash t)
-  | TLambda (args, t) -> TLambda(args, squash t)
+  | TRec(n, id, t) -> TRec(n, id, squash t)
+  | TLambda (n, args, t) -> TLambda(n, args, squash t)
   | TApp(t, ts) -> TApp(squash t, map squash ts)
-  | TFix(id, k, t) -> TFix(id, k, squash t)
+  | TFix(n, id, k, t) -> TFix(n, id, k, squash t)
   | TUninit ty -> ty := optsquash !ty; t
 let rec elim_twith env exp = 
   let elim = elim_twith env in match exp with
@@ -247,20 +247,30 @@ let actual_data () =
     | EnvType(p, x, t) -> 
       let t' = Sb_desugar.desugar_typ p t in
       let t'' = squash env t' in
-      (bind_typ_id x t'' env)
+      (bind_typ_id x (TypImpl.replace_name (Some x) t'') env)
     | _ -> env) env new_decls in
   set_env env;
   let annot_js = elim_twith env (weave_annotations typedjs) in
   let asserted_js = weave_assertions annot_js in
   (env, asserted_js)
 
+let do_print_env = ref false
+
+let print_env env : unit =
+ print_env env std_formatter
+
+let set_print_env () : unit =
+ do_print_env := true
+
 let action_pretypecheck () : int =
-  let (_, typedjs) = actual_data () in
+  let (env, typedjs) = actual_data () in
+  if (!do_print_env) then print_env env;
   Typedjs_syntax.Pretty.exp typedjs std_formatter;
   0
 
 let action_tc () : int =
   let (env, asserted_js) = actual_data () in
+  if (!do_print_env) then print_env env;
   let _ = typecheck env !default_typ asserted_js in
   if TypImpl.get_num_typ_errors () > 0 then
     2
@@ -275,9 +285,6 @@ let load_idl_file filename =
 let load_new_idl_file filename =
   let full_idl = Idl.from_channel (open_in filename) filename in
   full_idl_defs := !full_idl_defs @ full_idl
-
-let print_env () : unit =
-  print_env (get_env()) std_formatter
 
 let print_idl () : unit =
   Print_full_idl.print_defs !full_idl_defs
@@ -294,9 +301,9 @@ let compile_env () : unit =
   timefn "Binding recursive types" (fun () ->
   set_env (unchecked_bind_typ_ids (ListExt.filter_map (fun (name, _, typ) -> 
     match (P.singleton_string name) with
-    | Some name -> Some (name, typ)
+    | Some name -> Some (name, TypImpl.replace_name (Some name) typ)
     | None -> None) idlEnv) (get_env ()))) ();
-  set_env (bind_id "Components" (TypImpl.TSource compsType) (get_env ()));
+  set_env (bind_id "Components" (TypImpl.TSource (Some "Components", compsType)) (get_env ()));
   set_env (bind_typ_id "QueryInterfaceType" qiType (get_env ()))
   (* Printf.printf "****************************************\nDone compiling environment@."; *)
   (* set_env (extend_env idlEnv IdMap.empty (get_env ())) *)
@@ -360,7 +367,7 @@ let main () : unit =
        "Print the current IDL data");
       ("-compile-env", Arg.Unit (timefn "Compiling environment" compile_env),
        "Generate environment from IDL");
-      ("-print-env", Arg.Unit print_env,
+      ("-print-env", Arg.Unit set_print_env,
        "Print the current environment");
       set_simpl_cps;
     ]

@@ -33,24 +33,24 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
   
   type typ = 
     | TPrim of string
-    | TUnion of typ * typ
-    | TIntersect of typ * typ
+    | TUnion of string option * typ * typ
+    | TIntersect of string option * typ * typ
     | TArrow of typ list * typ option * typ (* args (including <this>), optional variadic arg, return typ *)
     | TThis of typ
     | TObject of obj_typ
     | TWith of typ * obj_typ
     | TRegex of pat
-    | TRef of typ
-    | TSource of typ
-    | TSink of typ
+    | TRef of string option * typ
+    | TSource of string option * typ
+    | TSink of string option * typ
     | TTop
     | TBot
-    | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
+    | TForall of string option * id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
     | TId of id
-    | TRec of id * typ 
-    | TLambda of (id * kind) list * typ (** type operator *)
+    | TRec of string option * id * typ 
+    | TLambda of string option * (id * kind) list * typ (** type operator *)
     | TApp of typ * typ list (** type operator application *)
-    | TFix of id * kind * typ (** recursive type operators *)
+    | TFix of string option * id * kind * typ (** recursive type operators *)
     | TUninit of typ option ref (** type of not-yet initialized variables -- write once to the ref to update *)
 
   and obj_typ = { 
@@ -149,23 +149,27 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     and typ' horzOnly t = 
       let typ = typ' horzOnly in 
       let hnestOrHorz n = if horzOnly then horz else (fun ps -> hnest n (squish ps)) in
+      let namedType name fmt = match name with None -> fmt | Some n -> text n in
+(* None -> horz [text "Unnamed"; fmt] | Some n -> horz [text "Named"; text n; fmt] in *)
+      let namedRef name mut fmt = match name with None -> fmt | Some n -> squish [text mut; text n] in
       match t with
       | TTop -> text "Any"
       | TBot -> text "DoesNotReturn"
       | TPrim p -> text ("@" ^ p)
-      | TLambda (args, t) -> 
+      | TLambda (n, args, t) -> 
         let p (x, k) = horz [ text x; text "::"; kind k ] in
-        hvert [horz [text "Lambda"; horz (map p args); text "."]; typ t ]
-      | TFix (x, k, t) -> 
-        hvert [horz [text "Fix"; text x; text "::"; kind k; text "."]; typ t ]
+        namedType n (hvert [horz [text "Lambda"; horz (map p args); text "."]; typ t ])
+      | TFix (n, x, k, t) -> 
+        namedType n (hvert [horz [text "Fix"; text x; text "::"; kind k; text "."]; typ t ])
       | TApp (t, ts) ->
         (match ts with
         | [] -> horz [typ t; text "<>"]
         | _ -> parens (horz [typ t; angles (horz (intersperse (text ",") (map typ ts)))]))
       | TRegex pat -> text (P.pretty pat)
-      | TUnion (t1, t2) ->
+      | TUnion (n, t1, t2) ->
+        namedType n (
         let rec collectUnions t = match t with
-          | TUnion (t1, t2) -> 
+          | TUnion (_, t1, t2) -> 
             let (t1h, t1s) = collectUnions t1 in
             let (t2h, t2s) = collectUnions t2 in
             (t1h, t1s @ (t2h :: t2s))
@@ -179,10 +183,11 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             parens (hnest (-1) 
                       (squish (intersperse print_space 
                                  ((horz [empty; typ t]) :: List.map (fun t -> horz [text "+"; typ t]) ts))))
-        end
-      | TIntersect (t1, t2) -> (* horz [typ t1; text "&"; typ t2] *)
+        end)
+      | TIntersect (n, t1, t2) -> (* horz [typ t1; text "&"; typ t2] *)
+        namedType n (
         let rec collectIntersections t = match t with
-          | TIntersect (t1, t2) -> 
+          | TIntersect (_, t1, t2) -> 
             let (t1h, t1s) = collectIntersections t1 in
             let (t2h, t2s) = collectIntersections t2 in
             (t1h, t1s @ (t2h :: t2s))
@@ -196,7 +201,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             parens (hnest (-1) 
                       (squish (intersperse print_space 
                                  ((horz [empty; typ t]) :: List.map (fun t -> horz [text "&"; typ t]) ts))))
-        end
+        end)
       | TThis t -> squish [text "this"; parens (typ t)]
       | TArrow (tt::arg_typs, varargs, r_typ) ->
         let multiLine = horzOnly ||
@@ -260,13 +265,13 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         let abs = horz [ text (P.pretty flds.absent_pat); text ": _" ] in
         braces (hnestOrHorz 0 (typ t :: text " with" :: print_space :: 
                                  intersperse print_space (map pat (flds.fields) @ [abs])))
-      | TRef s -> horz [ text "Ref"; parens (typ s) ]
-      | TSource s -> horz [ text "Src"; parens (typ s) ]
-      | TSink s -> horz [ text "Snk"; parens (typ s) ]
-      | TForall (x, s, t) -> 
-        hvert [ horz [text "forall"; text x; text "<:"; typ s; text "."]; typ t ]
+      | TRef (n, s) -> namedRef n "rw:" (horz [ text "Ref"; parens (typ s) ])
+      | TSource (n, s) -> namedRef n "r:" (horz [ text "Src"; parens (typ s) ])
+      | TSink (n, s) -> namedRef n "w:" (horz [ text "Snk"; parens (typ s) ])
+      | TForall (n, x, s, t) -> 
+        namedType n (hvert [ horz [text "forall"; text x; text "<:"; typ s; text "."]; typ t ])
       | TId x -> text x
-      | TRec (x, t) -> horz [ text "rec"; text x; text "."; typ t ]
+      | TRec (n, x, t) -> namedType n (horz [ text "rec"; text x; text "."; typ t ])
       | TUninit t -> match !t with
         | None -> text "???"
         | Some t -> squish[text "?"; typ t; text "?"]
@@ -317,30 +322,30 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | TBot
       | TPrim _ 
       | TRegex _ -> 
-  empty
+        empty
       | TId x -> 
-  singleton x
-      | TRef t
-      | TSource t
-      | TSink t ->
-  free_typ_ids t
-      | TIntersect (t1, t2)
-      | TUnion (t1, t2) ->
-  union (free_typ_ids t1) (free_typ_ids t2)
+        singleton x
+      | TRef (_, t)
+      | TSource (_, t)
+      | TSink (_, t) ->
+        free_typ_ids t
+      | TIntersect (_, t1, t2)
+      | TUnion (_, t1, t2) ->
+        union (free_typ_ids t1) (free_typ_ids t2)
       | TArrow (ss, v, t) ->
         unions (free_typ_ids t :: (match v with None -> empty | Some v -> free_typ_ids v) :: (map free_typ_ids ss))
       | TThis t -> free_typ_ids t
       | TApp (t, ss) ->
-  unions (free_typ_ids t :: (map free_typ_ids ss))
+        unions (free_typ_ids t :: (map free_typ_ids ss))
       | TObject o -> unions (L.map (fun (_, _, t) -> free_typ_ids t) o.fields)
       | TWith(t, flds) -> union (free_typ_ids t) (free_typ_ids (TObject flds))
-      | TFix (x, _, t)
-      | TRec (x, t) ->
-  remove x (free_typ_ids t)
-      | TForall (x, s, t) ->
-  union (free_typ_ids s) (remove x (free_typ_ids t))
-      | TLambda (xks, t) ->
-  diff (free_typ_ids t) (from_list (map fst2 xks))
+      | TFix (_, x, _, t)
+      | TRec (_, x, t) ->
+        remove x (free_typ_ids t)
+      | TForall (_, x, s, t) ->
+        union (free_typ_ids s) (remove x (free_typ_ids t))
+      | TLambda (_, xks, t) ->
+        diff (free_typ_ids t) (from_list (map fst2 xks))
       | TUninit t -> match !t with 
         | None -> empty
         | Some ty -> free_typ_ids ty
@@ -349,9 +354,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TPrim _ -> typ
     | TRegex _ -> typ
     | TId y -> if x = y then s else typ
-    | TUnion (t1, t2) -> TUnion (typ_subst x s t1, typ_subst x s t2)
-    | TIntersect (t1, t2) ->
-      TIntersect (typ_subst x s t1, typ_subst x s t2)
+    | TUnion (n, t1, t2) -> TUnion (n, typ_subst x s t1, typ_subst x s t2)
+    | TIntersect (n, t1, t2) ->
+      TIntersect (n, typ_subst x s t1, typ_subst x s t2)
     | TArrow (t2s, v, t3)  ->
       let opt_map f v = match v with None -> None | Some v -> Some (f v) in
       TArrow (map (typ_subst x s) t2s, opt_map (typ_subst x s) v, typ_subst x s t3)
@@ -362,38 +367,38 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TObject o ->
         TObject (mk_obj_typ (map (third3 (typ_subst x s)) o.fields) 
                             o.absent_pat)
-    | TRef t -> TRef (typ_subst x s t)
-    | TSource t -> TSource (typ_subst x s t)
-    | TSink t -> TSink (typ_subst x s t)
+    | TRef (n, t) -> TRef (n, typ_subst x s t)
+    | TSource (n, t) -> TSource (n, typ_subst x s t)
+    | TSink (n, t) -> TSink (n, typ_subst x s t)
     | TTop -> TTop
     | TBot -> TBot
-    | TLambda (yks, t) ->
+    | TLambda (n, yks, t) ->
       let ys = IdSetExt.from_list (map fst2 yks) in
       if IdSet.mem x ys then
-  typ
+        typ
       else begin
-  (* TODO: omg this stuff is NOT capture free ... *)
-  assert (IdSet.is_empty (IdSet.inter (free_typ_ids s) ys));
-  TLambda (yks, typ_subst x s t)
+        (* TODO: omg this stuff is NOT capture free ... *)
+        assert (IdSet.is_empty (IdSet.inter (free_typ_ids s) ys));
+        TLambda (n, yks, typ_subst x s t)
       end
-    | TFix (y, k, t) ->
+    | TFix (n, y, k, t) ->
       if x = y then
-  typ
+        typ
       else begin
-  assert (not (IdSet.mem y (free_typ_ids s)));
-  TFix (y, k, typ_subst x s t)
+        assert (not (IdSet.mem y (free_typ_ids s)));
+        TFix (n, y, k, typ_subst x s t)
       end
-    | TForall (y, t1, t2) -> 
+    | TForall (n, y, t1, t2) -> 
       if x = y then 
         typ
       else 
-        TForall (y, typ_subst x s t1, typ_subst x s t2)
-    | TRec (y, t) ->
+        TForall (n, y, typ_subst x s t1, typ_subst x s t2)
+    | TRec (n, y, t) ->
       if x = y then
-  typ
+        typ
       else begin
-  assert (not (IdSet.mem y (free_typ_ids s)));
-        TRec (y, typ_subst x s t)
+        assert (not (IdSet.mem y (free_typ_ids s)));
+        TRec (n, y, typ_subst x s t)
       end
     | TApp (t, ts) -> 
       TApp (typ_subst x s t, List.map (typ_subst x s) ts)
@@ -402,8 +407,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | Some t -> typ_subst x s t
 
   let rec merge typ flds = match typ with
-    | TUnion(t1, t2) -> TUnion (merge t1 flds, merge t2 flds)
-    | TIntersect(t1, t2) -> TIntersect(merge t1 flds, merge t2 flds)
+    | TUnion(n, t1, t2) -> TUnion (n, merge t1 flds, merge t2 flds)
+    | TIntersect(n, t1, t2) -> TIntersect(n, merge t1 flds, merge t2 flds)
     | TObject o -> begin
       let unionPats = L.fold_right P.union (map fst3 flds.fields) P.empty in
       let restrict_field (n, p, t) =
@@ -417,11 +422,35 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       let ret = TObject (mk_obj_typ newFields newAbsent) in
       ret
     end
-    | TRec(id, t) -> TRec(id, merge t flds)
-    | TRef t -> TRef (merge t flds)
-    | TSource t -> TSource (merge t flds)
-    | TSink t -> TSink (merge t flds)
+    | TRec(n, id, t) -> TRec(n, id, merge t flds)
+    | TRef (n, t) -> TRef (n, merge t flds)
+    | TSource (n, t) -> TSource (n, merge t flds)
+    | TSink (n, t) -> TSink (n, merge t flds)
     | TThis t -> TThis (merge t flds)
+    | _ -> typ
+
+  and apply_name n typ = match typ with
+    | TUnion(None, t1, t2) -> TUnion(n, t1, t2)
+    | TIntersect(None, t1, t2) -> TIntersect(n, t1, t2)
+    | TForall(None, x, t, b) -> TForall(n, x, t, b)
+    | TRec(None, x, t) -> TRec(n, x, t)
+    | TLambda(None, ts, t) -> TLambda(n, ts, t)
+    | TFix(None, x, k, t) -> TFix(n, x, k, t)
+    | TRef(None, t) -> TRef(n, t)
+    | TSource(None, t) -> TSource(n, t)
+    | TSink(None, t) -> TSink(n, t)
+    | _ -> typ
+
+  and replace_name n typ = match typ with
+    | TUnion(_, t1, t2) -> TUnion(n, t1, t2)
+    | TIntersect(_, t1, t2) -> TIntersect(n, t1, t2)
+    | TForall(_, x, t, b) -> TForall(n, x, t, b)
+    | TRec(_, x, t) -> TRec(n, x, t)
+    | TLambda(_, ts, t) -> TLambda(n, ts, t)
+    | TFix(_, x, k, t) -> TFix(n, x, k, t)
+    | TRef(_, t) -> TRef(n, t)
+    | TSource(_, t) -> TSource(n, t)
+    | TSink(_, t) -> TSink(n, t)
     | _ -> typ
 
   and expose_twith typenv typ = let expose_twith = expose_twith typenv in match typ with
@@ -429,12 +458,12 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       let t = match t with TId x -> (fst2 (IdMap.find x typenv)) | _ -> t in
       let flds' = mk_obj_typ (map (third3 expose_twith) flds.fields) flds.absent_pat in
       merge t flds' 
-    | TUnion(t1, t2) -> TUnion (expose_twith t1, expose_twith t2)
-    | TIntersect(t1, t2) -> TIntersect(expose_twith t1, expose_twith t2)
-    | TRec(id, t) -> TRec(id, expose_twith t)
-    | TRef t -> TRef (expose_twith t)
-    | TSource t -> TSource (expose_twith t)
-    | TSink t -> TSink (expose_twith t)
+    | TUnion(n, t1, t2) -> TUnion (n, expose_twith t1, expose_twith t2)
+    | TIntersect(n, t1, t2) -> TIntersect(n, expose_twith t1, expose_twith t2)
+    | TRec(n, id, t) -> TRec(n, id, expose_twith t)
+    | TRef (n, t) -> TRef (n, expose_twith t)
+    | TSource (n, t) -> TSource (n, expose_twith t)
+    | TSink (n, t) -> TSink (n, expose_twith t)
     | TThis t -> TThis (expose_twith t)
     | _ -> typ
 
@@ -455,25 +484,25 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TThis _
     | TForall _ -> typ
     | TWith(t, flds) -> expose_twith typenv typ
-    | TFix (x, k, t) -> simpl_typ typenv (typ_subst x typ t)
-    | TRec (x, t) -> simpl_typ typenv (typ_subst x typ t)
+    | TFix (n, x, k, t) -> apply_name n (simpl_typ typenv (typ_subst x typ t))
+    | TRec (n, x, t) -> apply_name n (simpl_typ typenv (typ_subst x typ t))
     | TApp (t1, ts) -> 
       begin match expose typenv (simpl_typ typenv t1) with
       | TPrim "Mutable" -> begin
         match ts with
         | [t] -> begin match expose typenv (simpl_typ typenv t) with
-          | TRef t -> TRef t
-          | TSource t -> TRef t
-          | TSink t -> TRef t
+          | TRef (n, t) -> TRef (n, t)
+          | TSource (n, t) -> TRef (n, t)
+          | TSink (n, t) -> TRef (n, t)
           | _ -> raise (Invalid_argument "Expected a TRef, TSoruce or TSink argument to Mutable<T>")
         end
         | _ ->  raise (Invalid_argument "Expected one argument to Mutable<T>")
       end
-      | TLambda (args, u) -> 
-        simpl_typ typenv 
+      | TLambda (n, args, u) -> 
+        (simpl_typ typenv 
           (List.fold_right2 (* well-kinded, no need to check *)
              (fun (x, k) t2 u -> typ_subst x t2 u)
-             args ts u)
+             args ts u))
       | func_t ->
         let msg = sprintf "ill-kinded type application in simpl_typ. Type is \
                            \n%s\ntype in function position is\n%s\n"
@@ -506,12 +535,12 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       true
     | TPrim p1, TPrim p2 ->
       p1 = p2
-    | TIntersect (s1, s2), TIntersect (t1, t2)
-    | TUnion (s1, s2), TUnion (t1, t2) -> 
+    | TIntersect (_, s1, s2), TIntersect (_, t1, t2)
+    | TUnion (_, s1, s2), TUnion (_, t1, t2) -> 
       simpl_equiv s1 t1 && simpl_equiv s2 t2
-    | TSource s, TSource t
-    | TSink s, TSink t
-    | TRef s, TRef t ->
+    | TSource (_, s), TSource (_, t)
+    | TSink (_, s), TSink (_, t)
+    | TRef (_, s), TRef (_, t) ->
       simpl_equiv s t
     | TThis _, TThis _ -> true (* ASSUMING THAT THIS TYPES ARE EQUIVALENT *)
     | TApp (s1, s2s), TApp (t1, t2s) ->
@@ -527,9 +556,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | None, None -> true
       | Some v1, Some v2 -> simpl_equiv v1 v2
       | _ -> false)
-    | TRec (x, s), TRec (y, t) ->
+    | TRec (_, x, s), TRec (_, y, t) ->
       x = y && simpl_equiv s t
-    | TForall (x, s1, s2), TForall (y, t1, t2) ->
+    | TForall (_, x, s1, s2), TForall (_, y, t1, t2) ->
       x = y && simpl_equiv s1 t1 && simpl_equiv s2 t2
     | TRegex pat1, TRegex pat2 ->
       P.is_equal pat1 pat2
@@ -539,9 +568,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       List.length flds1 = List.length flds2
       && List.for_all2 simpl_equiv_fld flds1 flds2
       && P.is_equal o1.absent_pat o2.absent_pat
-    | TFix (x1, k1, t1), TFix (x2, k2, t2) ->
+    | TFix (_, x1, k1, t1), TFix (_, x2, k2, t2) ->
       x1 = x2 && k1 = k2 && simpl_equiv t1 t2
-    | TLambda (args1, t1), TLambda (args2, t2) ->
+    | TLambda (_, args1, t1), TLambda (_, args2, t2) ->
       args1 = args2 && simpl_equiv t1 t2
     | TUninit t1, TUninit t2 -> begin match !t1, !t2 with
       | None, None -> true
@@ -570,8 +599,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       | true -> begin match pres with
         | Present -> begin match expose env (simpl_typ env fld) with
           | TPrim "Null" -> Some (TPrim "Null")
-          | TSource p
-          | TRef p -> Some (expose env (simpl_typ env p))
+          | TSource (_, p)
+          | TRef (_, p) -> Some (expose env (simpl_typ env p))
           | _ -> raise (Invalid_parent ("__proto__ is "^ (string_of_typ fld)))
           end
         | _ -> raise (Invalid_parent ("Looking for field " ^ (P.pretty pat) ^ " and __proto__ must be present or hidden"))
@@ -733,40 +762,40 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | TRegex pat1, TRegex pat2 ->
           if P.is_subset (pat_env env) pat1 pat2 then cache 
             else mismatched_typ_exn (TRegex pat1) (TRegex pat2)
-        | TIntersect (s1, s2), _ -> 
+        | TIntersect (_, s1, s2), _ -> 
           begin 
             try subtype cache s1 t
             with Not_subtype _ -> subtype cache s2 t
           end
-        | _, TIntersect (t1, t2) ->
+        | _, TIntersect (_, t1, t2) ->
             subt env (subt env cache s t1) s t2
-        | TUnion (s1, s2), _ -> subt env (subt env cache s1 t) s2 t
-        | _, TUnion (t1, t2) ->
+        | TUnion (_, s1, s2), _ -> subt env (subt env cache s1 t) s2 t
+        | _, TUnion (_, t1, t2) ->
           begin 
             try subtype cache s t1
             with Not_subtype _ -> subtype cache s t2
           end
-        | TPrim "Null", TRef (TObject _)
-        | TPrim "Null", TSource (TObject _)
-        | TPrim "Null", TSink (TObject _) -> cache (* null should be a subtype of all object types *)
-        | TThis (TRef s), TThis (TRef t)
-        | TThis (TRef s), TThis (TSource t)
-        | TThis (TRef s), TThis (TSink t)
-        | TThis (TSource s), TThis (TRef t)
-        | TThis (TSource s), TThis (TSource t)
-        | TThis (TSource s), TThis (TSink t)
-        | TThis (TSink s), TThis (TRef t)
-        | TThis (TSink s), TThis (TSource t)
-        | TThis (TSink s), TThis (TSink t)
-        | TRef s, TThis (TRef t)
-        | TRef s, TThis (TSource t)
-        | TRef s, TThis (TSink t)
-        | TSource s, TThis (TRef t)
-        | TSource s, TThis (TSource t)
-        | TSource s, TThis (TSink t)
-        | TSink s, TThis (TRef t)
-        | TSink s, TThis (TSource t)
-        | TSink s, TThis (TSink t) -> subtype cache s t (* ONLY HAVE TO GO ONE WAY ON THIS TYPES *)
+        | TPrim "Null", TRef (_, TObject _)
+        | TPrim "Null", TSource (_, TObject _)
+        | TPrim "Null", TSink (_, TObject _) -> cache (* null should be a subtype of all object types *)
+        | TThis (TRef (_, s)), TThis (TRef (_, t))
+        | TThis (TRef (_, s)), TThis (TSource (_, t))
+        | TThis (TRef (_, s)), TThis (TSink (_, t))
+        | TThis (TSource (_, s)), TThis (TRef (_, t))
+        | TThis (TSource (_, s)), TThis (TSource (_, t))
+        | TThis (TSource (_, s)), TThis (TSink (_, t))
+        | TThis (TSink (_, s)), TThis (TRef (_, t))
+        | TThis (TSink (_, s)), TThis (TSource (_, t))
+        | TThis (TSink (_, s)), TThis (TSink (_, t))
+        | TRef (_, s), TThis (TRef (_, t))
+        | TRef (_, s), TThis (TSource (_, t))
+        | TRef (_, s), TThis (TSink (_, t))
+        | TSource (_, s), TThis (TRef (_, t))
+        | TSource (_, s), TThis (TSource (_, t))
+        | TSource (_, s), TThis (TSink (_, t))
+        | TSink (_, s), TThis (TRef (_, t))
+        | TSink (_, s), TThis (TSource (_, t))
+        | TSink (_, s), TThis (TSink (_, t)) -> subtype cache s t (* ONLY HAVE TO GO ONE WAY ON THIS TYPES *)
         | TThis _, TThis _ -> mismatched_typ_exn s t
         | _, TThis t2 -> subtype cache s t2
         | TThis t1, _ -> subtype cache t1 t
@@ -791,12 +820,12 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
            with Not_found -> Printf.printf "Cannot find %s in environment\n" x; raise Not_found)
         | TObject obj1, TObject obj2 ->
             subtype_object env cache obj1 obj2
-        | TRef s', TRef t' -> subtype (subtype cache s' t') t' s'
-        | TSource s, TSource t -> subtype cache s t
-        | TSink s, TSink t -> subtype cache t s
-        | TRef s, TSource t -> subtype cache s t
-        | TRef s, TSink t -> subtype cache t s
-        | TForall (x1, s1, t1), TForall (x2, s2, t2) -> 
+        | TRef (_, s'), TRef (_, t') -> subtype (subtype cache s' t') t' s'
+        | TSource (_, s), TSource (_, t) -> subtype cache s t
+        | TSink (_, s), TSink (_, t) -> subtype cache t s
+        | TRef (_, s), TSource (_, t) -> subtype cache s t
+        | TRef (_, s), TSink (_, t) -> subtype cache t s
+        | TForall (_, x1, s1, t1), TForall (_, x2, s2, t2) -> 
           (* Kernel rule *)
           (* TODO: ensure s1 = s2 *)
           let cache' = subt env (subt env cache s1 s2) s2 s1 in
@@ -805,7 +834,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
           subt env' cache' t1 t2
         | _, TTop -> cache
         | TBot, _ -> cache
-        | TLambda ([(x, KStar)], s), TLambda ([(y, KStar)], t) ->
+        | TLambda (_, [(x, KStar)], s), TLambda (_, [(y, KStar)], t) ->
           let env = IdMap.add x (TTop, KStar) env in
           let env = IdMap.add y (TTop, KStar) env in
           subt env cache s t
@@ -892,35 +921,42 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       true, true -> s (* t = s *)
     | true, false -> t (* s <: t *)
     | false, true -> s (* t <: s *)
-    | false, false -> TUnion (s, t)
+    | false, false -> TUnion (None, s, t)
 
   and typ_intersect cs s t = match subtype cs s t, subtype cs t s with
     | true, true -> s
     | true, false -> s (* s <: t *)
     | false, true -> t
-    | false, false -> TIntersect (s, t)
+    | false, false -> TIntersect (None, s, t)
 
   let filter_typ (pred : typ -> bool) (typ : typ) = 
     let none_removed = ref true in
-    let rec union (typs : typ list) = match typs with
-      | t1 :: ts -> fold_right (fun s t -> TUnion (s, t)) ts t1
+    let rec union (typs : typ list) n = match typs with
+      | t1 :: ts -> fold_right (fun s t -> TUnion (n, s, t)) ts t1
       | _ -> failwith "expected non-empty list" in
-    let rec f t : typ list = match t with
-      | TUnion (s1, s2) -> f s1 @ f s2
-      | TIntersect (s1, s2) -> begin match f s1, f s2 with
-        | [], [] -> []
-        | [], typs
-        | typs, [] -> typs
-        | typs1, typs2 -> [TIntersect (union typs1, union typs2)]
+    let combine n m = if n = None then m else n in
+    let rec f t n_outer : typ list * string option = match t with
+      | TUnion (n, s1, s2) -> 
+        let n' = combine n n_outer in 
+        let (fs1, n1) = f s1 n' in
+        let (fs2, n2) = f s2 n' in
+        (fs1 @ fs2, combine n' (combine n1 n2))
+      | TIntersect (n, s1, s2) -> 
+        let n' = combine n n_outer in
+        begin match f s1 n', f s2 n' with
+        | ([], n1), ([], n2) -> [], combine n' (combine n1 n2)
+        | ([], n1), (typs, n2)
+        | (typs, n1), ([], n2) -> typs, combine n' (combine n1 n2)
+        | (typs1, n1), (typs2, n2) -> [TIntersect (n', union typs1 n1, union typs2 n2)], combine n' (combine n1 n2)
         end
       | _ -> if pred t then 
-          [t]
+          [t], None
         else 
           begin
             none_removed := false;
-            []
+            [], None
           end in
-    let typ_lst = f typ in
+    let (typ_lst, _) = f typ None in
     (typ_lst, !none_removed)
 
   let is_object_typ t = match t with

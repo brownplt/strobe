@@ -102,14 +102,15 @@ let create_env defs =
     let codePat = P.singleton "-*- code -*-" in
     let prototypePat = P.singleton "prototype" in
     let obj = (TObject(mk_obj_typ [(codePat, Present, t);
-                             (proto_pat, Present, TId "Object");
-                             (prototypePat, Present, TId "Ext");
-                             ((P.negate (P.union (P.union codePat prototypePat) proto_pat)), Maybe, TId "Ext")]
+                                   (proto_pat, Present, TId "Object");
+                                   (prototypePat, Present, TId "Ext");
+                                   ((P.negate (P.union (P.union codePat prototypePat) proto_pat)), 
+                                    Maybe, TId "Ext")]
                    P.empty)) in
     match mutability with
-    | RefCell -> TRef obj
-    | SourceCell -> TSource obj
-    | SinkCell -> TSink obj
+    | RefCell -> TRef (None, obj)
+    | SourceCell -> TSource (None, obj)
+    | SinkCell -> TSink (None, obj)
   and build_components defs = 
     let interfaceToIIDFieldAndFun def =
       match def with
@@ -132,22 +133,25 @@ let create_env defs =
       helper abcs [] [] [] in
     let (iids, fields, funs) = unzip3 (filter_map interfaceToIIDFieldAndFun defs) in
     let proto = (proto_pat, Present, TId "Object") in
-    let compInterface = TSource(*TRef*) (TObject (mk_obj_typ (proto::fields) P.empty)) in
-    let compUtils = TSource(*TRef*) (TObject (mk_obj_typ [(P.singleton "import", Present, 
+    let compInterface = TSource(*TRef*) (Some "Components.interfaces", 
+                                         TObject (mk_obj_typ (proto::fields) P.empty)) in
+    let compUtils = TSource(*TRef*) (Some "Components.utils",
+                                     TObject (mk_obj_typ [(P.singleton "import", Present, 
                                                            wrapArrow SourceCell (TArrow([TTop; TRegex P.all], None, TPrim "Undef")))] P.empty)) in
     let compID = wrapArrow SourceCell (TArrow([TTop; TRegex P.all], None, TId "Ext")) in
     let allOthers = P.negate proto_pat in
     (* NOTE: This should be Maybe, not Present, but the type system complains if I do that... *)
-    let compClasses = TSource(*TRef*) (
-                                 (TObject (mk_obj_typ [(allOthers, Present, (TId "nsIJSCID")); proto] P.empty))) in
+    let compClasses = TSource(*TRef*) (Some "Components.classes",
+                                       (TObject (mk_obj_typ [(allOthers, Present, (TId "nsIJSCID")); proto] P.empty))) in
     let componentsType = 
-      TSource(* TRef *) (TObject (mk_obj_typ [(P.singleton "interfaces", Present, compInterface);
+      TSource(* TRef *) (Some "Components",
+                         TObject (mk_obj_typ [(P.singleton "interfaces", Present, compInterface);
                                               (P.singleton "classes", Present, compClasses);
                                               (P.singleton "utils", Present, compUtils);
                                               (P.singleton "ID", Present, compID);
                                               proto] P.empty)) in
     let queryInterfaceType tself nArgs =
-      wrapArrow SourceCell (List.fold_left (fun acc f -> TIntersect (f tself nArgs, acc))
+      wrapArrow SourceCell (List.fold_left (fun acc f -> TIntersect (Some "QIType", f tself nArgs, acc))
                               (TArrow (((TThis tself) :: (ListExt.create nArgs TTop) @ [TId "nsIJSIID"]), None, TId "nsISupports")) funs) in
     (* let queryInterfaceType tself nArgs = match funs with *)
     (*   | [] -> TBot (\* absurd *\) *)
@@ -179,7 +183,7 @@ let create_env defs =
       (* deal with [function] interfaces *)
       let funcFunc = if not (isFunction metas) then None else
           let operationTypes = filter_map (fun (_, _, t) -> match t with
-            | TSource(*TRef*)(TObject f) -> (match TypImpl.fields f with
+            | TSource(*TRef*)(_, TObject f) -> (match TypImpl.fields f with
               | [(_, Present, t); (_, Present, TId "Object"); (_, Present, TId "Ext"); (_, Maybe, TId "Ext")] ->
                 Some t
               | _ -> None)
@@ -201,16 +205,16 @@ let create_env defs =
             | RelativeName [id] -> trans_interface tt queryInterfaceType id
             | _ -> failwith "absurd, won't happen" in
       let parentFields = match parentTyp with
-        | Some (_, _, TSource(*TRef*)(TObject f)) -> TypImpl.fields f
+        | Some (_, _, TSource(*TRef*)(_, TObject f)) -> TypImpl.fields f
         | _ -> [(proto_pat, Present, (TId "Object"))] in
       let implementsIds = Hashtbl.find_all implementsHash name in
       let implementsTyps = ListExt.filter_map (trans_interface tt queryInterfaceType) implementsIds in
       let implementsFields = List.concat (List.map (fun t -> match t with
-        | (_, _, TSource(*TRef*)(TObject f)) -> TypImpl.fields f
+        | (_, _, TSource(*TRef*)(_, TObject f)) -> TypImpl.fields f
         | _ -> []) implementsTyps) in
       let transfields = transfields @ parentFields @ implementsFields in
       let catchallPat = P.empty in (*P.negate (List.fold_left P.union proto_pat (List.map fst3 transfields)) in*)
-      let ifaceTyp = TSource(*TRef*) (TObject (mk_obj_typ transfields catchallPat)) in
+      let ifaceTyp = TSource(*TRef*) (Some (Id.string_of_id name), TObject (mk_obj_typ transfields catchallPat)) in
       Hashtbl.add ifaceHash name (Comp (ifaceTyp, funcFunc));
       Some(idToPat name, Inherited, ifaceTyp)
     | Raw _ -> None
@@ -239,7 +243,7 @@ let create_env defs =
            (List.fold_left (fun acc args ->
              let arrowT = TArrow ((TThis tself) :: args, None, ret) in
              match acc with TBot -> arrowT | _ ->
-               TIntersect (arrowT, acc)) TBot allPossibleFunctionArgs)) in
+               TIntersect (None, arrowT, acc)) TBot allPossibleFunctionArgs)) in
       if (isNoScript metas) then None
       else if (isUnsafe metas) then returnField (TPrim "Unsafe")
       else if (isQueryInterfaceType metas) then returnField (queryInterfaceType 0)
@@ -257,7 +261,7 @@ let create_env defs =
                              getterFields])
       else (match isUseType metas with
       | Some (AttrArgList(_, [Full_idl_syntax.String ty])) -> 
-        (match parseType ty with TRef t -> returnField (TSource t) | t -> returnField t)
+        (match parseType ty with TRef (n, t) -> returnField (TSource (n, t)) | t -> returnField t)
       | _ -> match isQueryElementAtType metas with
         | Some (QueryElementAtType n) -> returnField (queryInterfaceType n)
         | _ -> begin 
@@ -326,7 +330,7 @@ let create_env defs =
                                      (codePat, Present, TPrim "Undef");
                                      (proto_pat, Present, TId "Object")]
                            rest)) in
-      [TSink (obj)]
+      [TSink (None, obj)]
     | InOutParam -> 
       let codePat = P.singleton "-*- code -*-" in
       let valuePat = P.singleton "value" in
@@ -335,7 +339,7 @@ let create_env defs =
                                      (codePat, Present, TPrim "Undef");
                                      (proto_pat, Present, TId "Object")]
                            rest)) in
-      [TRef (obj)])
+      [TRef (None, obj)])
   and trans_typ typ = match typ with
     | Short Unsigned 
     | Short NoUnsigned
@@ -350,10 +354,10 @@ let create_env defs =
     | Boolean -> typ_bool
     | DOMString -> TRegex P.all
     | Date -> TId "Date"
-    | Object -> TRef (TObject (mk_obj_typ [] P.all))
+    | Object -> TRef (None, TObject (mk_obj_typ [] P.all))
     | Any -> TTop
     | Void -> TPrim "Undef"
-    | Ques t -> TUnion (TPrim "Null", trans_typ t)
+    | Ques t -> TUnion (None, TPrim "Null", trans_typ t)
     | Native s -> TId s
     | Name n -> begin match n with
       | RelativeName [id] -> begin match (Id.string_of_id id) with

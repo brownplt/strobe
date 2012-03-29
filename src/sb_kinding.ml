@@ -39,17 +39,17 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
       KStar
     else
       raise (Kind_error (s ^ " is not a primitive type"))
-  | TUnion (t1, t2)
-  | TIntersect (t1, t2) ->
+  | TUnion (_, t1, t2)
+  | TIntersect (_, t1, t2) ->
     begin match kind_check env t1, kind_check env t2 with
     | KStar, KStar -> KStar
     | k1, KStar -> kind_mismatch t1 k1 KStar
     | _, k2 -> kind_mismatch t2 k2 KStar
     end
   | TThis t -> kind_check env t
-  | TRef t
-  | TSource t
-  | TSink t ->
+  | TRef (_, t)
+  | TSource (_, t)
+  | TSink (_, t) ->
     begin match kind_check env t with
     | KStar -> KStar
     | k -> kind_mismatch t k KStar
@@ -81,21 +81,21 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
         (* Printf.printf "%s" s; print_newline(); *)
         raise (Kind_error s)
     end
-  | TForall (x, t1, t2) ->
+  | TForall (_, x, t1, t2) ->
     begin match kind_check env t1, kind_check (IdMap.add x KStar env) t2 with
     | KStar, KStar -> KStar
     | k1, KStar -> kind_mismatch t1 k1 KStar
     | _, k2 -> kind_mismatch t2 k2 KStar
     end
-  | TRec (x, t) ->
+  | TRec (_, x, t) ->
     begin match kind_check (IdMap.add x KStar env) t with
     | KStar -> KStar
     | k -> kind_mismatch t k KStar
     end
-  | TLambda (args, t) ->
+  | TLambda (_, args, t) ->
     let env' = fold_right (fun (x, k) env -> IdMap.add x k env) args env in
     KArrow (List.map snd2 args, kind_check env' t)
-  | TFix (x, k, t) ->
+  | TFix (_, x, k, t) ->
     let k' = kind_check (IdMap.add x k env) t in
     if  k' = k then k
     else kind_mismatch typ k' k

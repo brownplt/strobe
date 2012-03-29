@@ -23,10 +23,10 @@ let rec skip n l = if n == 0 then l else (skip (n-1) (List.tl l))
 let rec fill n a l = if n <= 0 then l else fill (n-1) a (List.append l [a])
 
 let un_null t = match t with
-  | TUnion (TPrim "Undef", t') -> t'
-  | TUnion (t', TPrim "Undef") -> t'
-  | TUnion (TPrim "Null", t') -> t'
-  | TUnion (t', TPrim "Null") -> t'
+  | TUnion (n, TPrim "Undef", t')
+  | TUnion (n, t', TPrim "Undef")
+  | TUnion (n, TPrim "Null", t')
+  | TUnion (n, t', TPrim "Null") -> apply_name n t'
   | _ -> t
 
 let check_kind p env typ : typ =
@@ -43,36 +43,37 @@ let check_kind p env typ : typ =
   
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
 
+let combine n m = if n = None then m else n
 let extract_ref msg p env t = 
-  let rec helper t = match expose_simpl_typ env t with
+  let rec helper t n = match expose_simpl_typ env t with
     | TPrim _  -> None
     | TRegex _ -> Some t
-    | TRef _ as t -> Some t
-    | TSource _ as t -> Some t
-    | TSink _ as t -> Some t
-    | TRec _ as t -> helper (simpl_typ env t)
-    | TThis t -> helper t
-    | TUnion (t1, t2) -> 
-      let r1 = helper t1 in
-      let r2 = helper t2 in
+    | TRef _ as t -> Some (apply_name n t)
+    | TSource _ as t -> Some (apply_name n t)
+    | TSink _ as t -> Some (apply_name n t)
+    | TRec(n', _, _) as t -> helper (simpl_typ env t) (combine n' n)
+    | TThis t -> helper t n
+    | TUnion (n', t1, t2) -> 
+      let r1 = helper t1 (combine n' n) in
+      let r2 = helper t2 (combine n' n) in
       (match r1, r2 with
       | Some r, None
       | None, Some r
       | Some r, Some (TRegex _)
-      | Some (TRegex _), Some r -> Some r
+      | Some (TRegex _), Some r -> Some (apply_name (combine n' n) r)
       | _ -> None) 
-    | TIntersect (t1, t2) -> 
-      let r1 = helper t1 in
-      let r2 = helper t2 in
+    | TIntersect (n', t1, t2) -> 
+      let r1 = helper t1 (combine n' n) in
+      let r2 = helper t2 (combine n' n) in
       (match r1, r2 with
       | Some r, None
       | None, Some r
       | Some r, Some (TRegex _)
-      | Some (TRegex _), Some r -> Some r
+      | Some (TRegex _), Some r -> Some (apply_name (combine n' n) r)
       | _ -> None)
-    | TForall _ -> Some t (* BSL : This seems incomplete; extract_ref won't descend under a Forall *)
+    | TForall _ -> Some (apply_name n t) (* BSL : This seems incomplete; extract_ref won't descend under a Forall *)
     | _ -> (* (printf "%s: Got to %s\n" msg (string_of_typ t)); *) None in
-  match helper t with
+  match helper t None with
   | Some t -> t
   | None -> raise (Typ_error (p, StringTyp((fun s t -> sprintf "%s: Ambiguous ref type for type %s"
     s (string_of_typ t)), msg, t)))
@@ -80,7 +81,7 @@ let extract_ref msg p env t =
 let extract_arrow env t = 
   let rec helper t = match expose_simpl_typ env t with
     | TArrow _ as t -> Some t
-    | TUnion (t1, t2) -> 
+    | TUnion (_, t1, t2) -> 
       let r1 = helper t1 in
       let r2 = helper t2 in
       (match r1, r2 with
@@ -239,9 +240,9 @@ match exp with
     end
   | ERef (p, ref_kind, e) -> 
     begin match ref_kind, extract_ref "ERef" p env (check_kind p env (expose_simpl_typ env typ)) with
-    | SourceCell, TSource t
-    | SinkCell, TSink t
-    | RefCell, TRef t -> check env default_typ e t
+    | SourceCell, TSource (_, t)
+    | SinkCell, TSink (_, t)
+    | RefCell, TRef (_, t) -> check env default_typ e t
     | _, t  -> typ_mismatch p (* TODO(arjun): error msg *)
              (TypTyp((fun t1 t2 -> sprintf "!!expected %s, got %s"
                (string_of_typ t1) (string_of_typ t2)), t, (synth env default_typ e)))
@@ -251,9 +252,9 @@ match exp with
         simpl_lookup p (tid_env env)
           (un_null (expose_simpl_typ env typ)) array_idx_pat in
       let expect_array_typ = mk_array_typ p env expect_elt_typ in
-      (if not (subtype env (TRef typ) expect_array_typ) then
+      (if not (subtype env (TRef (None, typ)) expect_array_typ) then
          typ_mismatch p 
-           (TypTyp((fun t1 t2 -> sprintf "check: expected Array<%s>, got %s" (string_of_typ t1) (string_of_typ t2)), expect_elt_typ, (TRef typ))));
+           (TypTyp((fun t1 t2 -> sprintf "check: expected Array<%s>, got %s" (string_of_typ t1) (string_of_typ t2)), expect_elt_typ, (TRef (None, typ)))));
       List.iter (fun e -> check env default_typ e expect_elt_typ) es 
   | EParen (_, e) -> check env default_typ e typ
   | EObject (p, fields) -> begin match expose_simpl_typ env typ with
@@ -294,7 +295,7 @@ match exp with
   | EIf (p, EInfixOp (_, "hasfield",  EDeref (_, EId (_, obj)), (EId (_, fld))),
          true_part, false_part) ->
     begin match expose_simpl_typ env (lookup_id obj env), lookup_id fld env with
-      | TRef (TObject ot), TRegex pat -> 
+      | TRef (_, TObject ot), TRegex pat -> 
         let subtract (p, pres, t) =
           if P.is_overlapped p pat then (P.subtract p pat, pres, t) (* perf *)
           else (p, pres, t) in
@@ -336,7 +337,7 @@ match exp with
     let (t1, ts) = synth env default_typ e, map (synth env default_typ) es in
     let tarr = List.fold_right (typ_union env) ts t1 in
     begin match simpl_typ env (mk_array_typ p env tarr) with
-      | TRef t -> t
+      | TRef (_, t) -> t
       | _ -> failwith "synth: mk_array_typ did not produce a TRef"
     end
   (* Optimization to avoid reducing TArray<'a> *)
@@ -347,24 +348,24 @@ match exp with
   | ERef (p, k, e) ->
     let t = synth env default_typ e in
     begin match k with
-      | SourceCell -> TSource t
-      | SinkCell -> TSink t
-      | RefCell -> TRef t
+      | SourceCell -> TSource (None, t)
+      | SinkCell -> TSink (None, t)
+      | RefCell -> TRef (None, t)
     end
   | EDeref (p, e) -> 
     let typ = ((check_kind p env (expose_simpl_typ env (synth env default_typ e)))) in
     if typ = TPrim "Unsafe" 
     then raise (Typ_error (p, FixedString "synth: Cannot dereference an unsafe value"))
     else begin match extract_ref ("EDeref: " ^ (string_of_exp e)) p env typ with
-    | TRef t -> t
-    | TSource t -> t
-    | TRegex _ -> (match expose_simpl_typ env (TId "String") with TRef t -> t | _ -> failwith "Impossible")
+    | TRef (_, t) -> t
+    | TSource (_, t) -> t
+    | TRegex _ -> (match expose_simpl_typ env (TId "String") with TRef (_, t) -> t | _ -> failwith "Impossible")
     | t -> raise (Typ_error (p, Typ((fun t -> sprintf "synth: cannot read an expression of type %s" (string_of_typ t)), t)))
     end 
   | ESetRef (p, e1, e2) -> 
     let t = extract_ref "ESetRef" p env (expose_simpl_typ env (synth env default_typ e1)) in
     begin match t with
-    | TRef (TUninit ty) -> begin match !ty with
+    | TRef (_, TUninit ty) -> begin match !ty with
       | None -> 
         let newTy = synth env default_typ e2 in
         (* Printf.printf "Updating typ at %s to %s\n" (string_of_position p) (string_of_typ newTy); *)
@@ -373,9 +374,9 @@ match exp with
       | Some s -> (* Printf.printf "Checking typ at %s\n" (string_of_position p); *) check env default_typ e2 s; 
         s
     end
-    | TRef (TPrim "Unsafe") -> TPrim "Unsafe" (* BSL: PUNTING ON ASSIGNMENT TO UNSAFE *)
-    | TRef s 
-    | TSink s -> 
+    | TRef (_, TPrim "Unsafe") -> TPrim "Unsafe" (* BSL: PUNTING ON ASSIGNMENT TO UNSAFE *)
+    | TRef (_, s) 
+    | TSink (_, s) -> 
       (* Printf.eprintf "Synth ESetRef: Checking that %s has type %s\n" (string_of_exp e2) (string_of_typ s); *)
       check env default_typ e2 s; s
     | s -> 
@@ -505,7 +506,7 @@ match exp with
             List.iter (fun t -> check env default_typ t vararg_typ) var_args
           end;
           result_typ
-        | TIntersect (t1, t2) -> 
+        | TIntersect (n, t1, t2) -> 
           with_typ_exns
             (fun () ->
               try 
@@ -513,17 +514,17 @@ match exp with
                 begin 
                   try
                     let r2 = check_app t2 in
-                    typ_intersect env r1 r2
+                    apply_name n (typ_intersect env r1 r2)
                   with | Typ_error _ -> r1
                 end
               with | Typ_error _ -> check_app t2)
-        | TUnion (t1, t2) ->
+        | TUnion (n, t1, t2) ->
           let typ_or_err t = with_typ_exns (fun () -> try Some (check_app t) with Typ_error _ -> None) in
           let r1 = typ_or_err t1 in
           let r2 = typ_or_err t2 in
           (match r1, r2 with
           | Some r, None
-          | None, Some r -> r
+          | None, Some r -> apply_name n r
           | _ -> raise (Typ_error (p, FixedString "synth: Ambiguous union of functions")))
         | (TForall _) as quant_typ -> 
           begin match Typ.forall_arrow quant_typ with
@@ -588,12 +589,12 @@ match exp with
   | ETypAbs (p, x, t, e) ->
     (* bind_typ_id does the kinding check *)
     let env = bind_typ_id x t env in
-    TForall (x, t, synth env default_typ e)
+    TForall (None, x, t, synth env default_typ e)
   | ETypApp (p, e, u) ->
     begin match expose_simpl_typ env (synth env default_typ e) with
-      | TForall (x, s, t) ->
+      | TForall (n, x, s, t) ->
         if subtype env u s then
-          typ_subst x u t
+          apply_name n (typ_subst x u t)
         else 
           begin
             typ_mismatch p

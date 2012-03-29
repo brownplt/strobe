@@ -21,12 +21,12 @@ end = struct
     | DOMString -> TRegex Pat.all
     | Date -> TPrim "Null" (* TODO(arjun): wrong *)
     | Any -> TTop
-    | Boolean -> TUnion (TPrim "True", TPrim "False")
+    | Boolean -> TUnion (Some "Bool", TPrim "True", TPrim "False")
     | Object -> TTop
     | Name n -> TApp (TId (scopedName n), [])
     | Void -> TPrim "Undef" 
     | Array t' -> TApp (TId "Array", [from_typ t'])
-    | Ques t' -> TUnion (from_typ t', TPrim "Undef")
+    | Ques t' -> TUnion (None, from_typ t', TPrim "Undef")
     | Sequence t' -> TApp (TId "Array", [from_typ t']) (* TODO(arjun): WRONG *)
 
   
@@ -61,14 +61,14 @@ end = struct
       let proto_absent_pat = 
         Pat.negate (fold_right (fun (pat, _, _) acc -> Pat.union pat acc) 
                     proto_flds Pat.empty) in
-      let proto_typ = TRef (TObject (mk_obj_typ proto_flds proto_absent_pat)) in
+      let proto_typ = TRef (None, TObject (mk_obj_typ proto_flds proto_absent_pat)) in
       let inst_flds = 
         (Pat.singleton "__proto__", Present, proto_typ) :: inst_flds in
       let inst_absent_pat = 
         Pat.negate (fold_right (fun (pat, _, _) acc -> Pat.union pat acc) 
                     inst_flds Pat.empty) in
       let inst_typ = 
-        TLambda ([], TRef (TObject (mk_obj_typ inst_flds inst_absent_pat))) in
+        TLambda (None, [], TRef (None, TObject (mk_obj_typ inst_flds inst_absent_pat))) in
       (trm_vars, 
        IdMap.add name (inst_typ, KArrow ([], KStar)) typ_vars)
 
@@ -80,7 +80,7 @@ end = struct
     | Const (_, t, x) ->
       (IdMap.add (Id.string_of_id x) (from_typ t) trm_vars, typ_vars)
     | Typedef (_, t, x) -> 
-      let typ_op = TApp (TLambda ([], from_typ t), []) in
+      let typ_op = TApp (TLambda (None, [], from_typ t), []) in
       (trm_vars, IdMap.add (Id.string_of_id x) (typ_op, KStar) typ_vars)
     | Exception _ -> (trm_vars, typ_vars)
     | Interface (p, name, super, members, metas) ->
@@ -97,7 +97,7 @@ end = struct
             | Operation (_, rtyp, _,  argtyps) ->
               let name = Id.string_of_id name in
               let t = 
-                TLambda ([], 
+                TLambda (None, [], 
                   TArrow (TTop :: map from_typ argtyps, None, from_typ rtyp)) in
               (trm_vars, IdMap.add name (t, KArrow ([], KStar)) typ_vars)
             | _ -> failwith "catastrophe in unidl.ml"

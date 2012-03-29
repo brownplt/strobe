@@ -17,21 +17,22 @@ type env = {
 }
 
 let print_env env fmt : unit =
+  let unname t = replace_name None t in
   vert [text "Types of term identifiers:";
         vert (List.map (fun (id, t) -> 
-          horz [text id; text "="; (TypImpl.Pretty.typ t)]) (IdMapExt.to_list env.id_typs));
+          horz [text id; text "="; (TypImpl.Pretty.typ (unname t))]) (IdMapExt.to_list env.id_typs));
         empty; 
         text "Primitive types:";
         vert (List.map text (Sb_kinding.list_prims ()));
         empty; 
         text "Types of labels:";
-        vert (List.map (fun (id, t) -> horz[text id; text "="; (TypImpl.Pretty.typ t)]) 
+        vert (List.map (fun (id, t) -> horz[text id; text "="; (TypImpl.Pretty.typ (unname t))]) 
                 (IdMapExt.to_list env.lbl_typs));
         empty; 
         text "Bounded type variables:";
         vert (List.map (fun (id, (t, k)) -> 
           horz [text id; 
-                vert [horz [text "="; (TypImpl.Pretty.typ t)];
+                vert [horz [text "="; (TypImpl.Pretty.typ (unname t))];
                       horz [text "::"; TypImpl.Pretty.kind k]]]) (IdMapExt.to_list env.typ_ids));
         empty
        ] 
@@ -83,7 +84,7 @@ let clear_labels env = { env with lbl_typs =
 let dom env = IdSetExt.from_list (IdMapExt.keys env.id_typs)
 
 let rec bind_typ env typ : env * typ = match typ with
-  | TForall (x, s, t) -> bind_typ (bind_typ_id x s env) t
+  | TForall (n, x, s, t) -> bind_typ (bind_typ_id x s env) (apply_name n t)
   | typ -> (env, typ)
 
 let simpl_typ env typ = TypImpl.simpl_typ env.typ_ids typ
@@ -144,15 +145,15 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
   | TPrim "Unsafe" -> TPrim "Unsafe"
   | TPrim s -> failwith ("**" ^ s ^ "**")
   (* any other app will be an object from a constructor *)
-  | TRef (TObject _) -> if RTSet.mem RT.Object rt then typ else TBot
+  | TRef (_, TObject _) -> if RTSet.mem RT.Object rt then typ else TBot
   | TObject _ -> failwith "Static got a functional object"
   | TWith _ -> failwith "Static got a TWith"
-  | TRef t -> TRef t
-  | TSource t -> TSource t
-  | TSink t -> TSink t
+  | TRef (n, t) -> TRef (n, t)
+  | TSource (n, t) -> TSource (n, t)
+  | TSink (n, t) -> TSink (n, t)
   | TThis t -> TThis t
-  | TUnion (s, t) -> typ_union cs (static cs rt s) (static cs rt t)
-  | TIntersect (s, t) -> typ_intersect cs (static cs rt s) (static cs rt t)
+  | TUnion (n, s, t) -> apply_name n (typ_union cs (static cs rt s) (static cs rt t))
+  | TIntersect (n, s, t) -> apply_name n (typ_intersect cs (static cs rt s) (static cs rt t))
   | TForall _ -> typ
   | TTop -> 
     if RTSet.equal rt rtany then
@@ -160,8 +161,8 @@ let rec static cs (rt : RTSet.t) (typ : typ) : typ = match typ with
     else (* TODO: no arrow type that is the supertype of all arrows *)
       List.fold_left (simpl_static cs) TBot (RTSetExt.to_list rt)
   | TId _ -> typ
-  | TRec (x, t) -> let t' = TRec (x, static cs rt t) in
-                   (match t' with TRec (_, TBot) -> TBot | typ -> typ)
+  | TRec (n, x, t) -> let t' = TRec (n, x, static cs rt t) in
+                   (match t' with TRec (_, _, TBot) -> TBot | typ -> typ)
   | TLambda _ -> failwith "TLambda in static"
   | TFix _ -> failwith "TLambda in static"
   | TApp _ -> typ
@@ -175,12 +176,12 @@ let rec set_global_object env cname =
     with Not_found -> 
       raise (Not_wf_typ ("global object, " ^ cname ^ ", not found")) in
   match simpl_typ env ci_typ, ci_kind with
-    | TRef (TObject o), KStar ->
+    | TRef (n, TObject o), KStar ->
       let fs = fields o in
       let add_field env (x, pres, t) =
         if pres = Present then
           match P.singleton_string x with
-            | Some s -> bind_id s (TRef t) env
+            | Some s -> bind_id s (TRef (n, t)) env
             | None -> 
               raise (Not_wf_typ (cname ^ " field was a regex in global"))
         else
@@ -224,7 +225,7 @@ let extend_global_env env lst =
         (* Printf.printf "Binding %s to %s\n" x (string_of_typ t); *)
         let k = kind_check env t in
         { env with 
-          typ_ids = IdMap.add x (t, k) env.typ_ids }
+          typ_ids = IdMap.add x (apply_name (Some x) t, k) env.typ_ids }
     | EnvPrim (p, s) ->
       Sb_kinding.new_prim_typ  s;
       env
@@ -251,8 +252,8 @@ let rec typ_assoc (env : env) (typ1 : typ) (typ2 : typ) =
   match (typ1, typ2) with
     | TId x, _ -> IdMap.singleton x typ2
     | TApp (s1, [s2]), TApp (t1, [t2])
-    | TIntersect (s1, s2), TIntersect (t1, t2)
-    | TUnion (s1, s2), TUnion (t1, t2) -> 
+    | TIntersect (_, s1, s2), TIntersect (_, t1, t2)
+    | TUnion (_, s1, s2), TUnion (_, t1, t2) -> 
       assoc_merge (typ_assoc env s1 t1) (typ_assoc env s2 t2)
 
     | TApp (s1, s2), t
@@ -265,9 +266,9 @@ let rec typ_assoc (env : env) (typ1 : typ) (typ2 : typ) =
       List.fold_left assoc_merge
         IdMap.empty
         (List.map2_noerr (fld_assoc env) flds1 flds2)
-    | TSource s, TSource t
-    | TSink s, TSink t
-    | TRef s, TRef t ->
+    | TSource (_, s), TSource (_, t)
+    | TSink (_, s), TSink (_, t)
+    | TRef (_, s), TRef (_, t) ->
       typ_assoc env s t
     | TArrow (args1, v1, r1), TArrow (args2, v2, r2) ->
       List.fold_left assoc_merge
@@ -276,10 +277,10 @@ let rec typ_assoc (env : env) (typ1 : typ) (typ2 : typ) =
         | _ -> base)
             (typ_assoc env r1 r2))
         (List.map2_noerr (typ_assoc env) args1 args2)
-    | TRec (x, s), TRec (y, t) ->
+    | TRec (_, x, s), TRec (_, y, t) ->
       (* could do better here, renaming*)
       typ_assoc env s t
-    | TForall (x, s1, s2), TForall (y, t1, t2) ->
+    | TForall (_, x, s1, s2), TForall (_, y, t1, t2) ->
       (* also here *)
       assoc_merge (typ_assoc env s1 t1) (typ_assoc env s2 t2)
     | _ -> IdMap.empty

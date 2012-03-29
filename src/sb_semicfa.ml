@@ -232,8 +232,8 @@ end = struct
     end
       | TypImpl.TArrow _ -> RTSet.singleton RT.Function
       | TypImpl.TThis t -> rt_of_typ ids t
-      | TypImpl.TUnion (t1, t2) -> RTSet.union (rt t1) (rt t2)
-      | TypImpl.TIntersect (t1, t2) -> RTSet.union (rt t1) (rt t2)
+      | TypImpl.TUnion (_, t1, t2) -> RTSet.union (rt t1) (rt t2)
+      | TypImpl.TIntersect (_, t1, t2) -> RTSet.union (rt t1) (rt t2)
       | TypImpl.TPrim (s) -> begin match s with
           | "Num"
           | "True"
@@ -245,9 +245,9 @@ end = struct
       | TypImpl.TRegex pat -> RTSet.singleton (RT.Re pat)
       | TypImpl.TObject _ -> RTSet.singleton RT.Object
       | TypImpl.TWith _ -> RTSet.singleton RT.Object
-      | TypImpl.TRef t -> rt t
-      | TypImpl.TSource t -> rt t
-      | TypImpl.TSink t -> rt t
+      | TypImpl.TRef (_, t) -> rt t
+      | TypImpl.TSource (_, t) -> rt t
+      | TypImpl.TSink (_, t) -> rt t
       | TypImpl.TTop -> rtany
       | TypImpl.TBot -> RTSet.empty
       | TypImpl.TForall _ -> rtany
@@ -255,7 +255,7 @@ end = struct
         try rt_of_typ ids (IdMap.find x ids)
         with Not_found -> rtany (* failwith (sprintf "tid %s not found in rt_of_typ" x) *)
       end
-      | TypImpl.TRec (x, s) -> rt_of_typ (IdMap.add x t ids) s
+      | TypImpl.TRec (_, x, s) -> rt_of_typ (IdMap.add x t ids) s
       | TypImpl.TApp (t1, t2) -> rtany
       | TypImpl.TFix _
       | TypImpl.TLambda _ -> failwith "runtime type test on TFix / TLambda"

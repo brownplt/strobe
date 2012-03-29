@@ -92,24 +92,24 @@ module type TYP = sig
   
   type typ = 
     | TPrim of string
-    | TUnion of typ * typ
-    | TIntersect of typ * typ
+    | TUnion of string option * typ * typ
+    | TIntersect of string option * typ * typ
     | TArrow of typ list * typ option * typ (* args (including <this>), optional variadic arg, return typ *)
     | TThis of typ
     | TObject of obj_typ
     | TWith of typ * obj_typ
     | TRegex of pat
-    | TRef of typ
-    | TSource of typ
-    | TSink of typ
+    | TRef of string option * typ
+    | TSource of string option * typ
+    | TSink of string option * typ
     | TTop
     | TBot
-    | TForall of id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
+    | TForall of string option * id * typ * typ (** [TForall (a, s, t)] forall a <: s . t *)
     | TId of id
-    | TRec of id * typ 
-    | TLambda of (id * kind) list * typ (** type operator *)
+    | TRec of string option * id * typ 
+    | TLambda of string option * (id * kind) list * typ (** type operator *)
     | TApp of typ * typ list (** type operator application *)
-    | TFix of id * kind * typ (** recursive type operators *)
+    | TFix of string option * id * kind * typ (** recursive type operators *)
     | TUninit of typ option ref (** type of uninitialized variables *)
 
   and obj_typ
@@ -169,6 +169,10 @@ module type TYP = sig
   val parent_typ : typenv -> typ -> typ option
 
   val simpl_typ : typenv -> typ -> typ
+
+  val apply_name : string option -> typ -> typ
+
+  val replace_name : string option -> typ -> typ
 
   val expose : typenv -> typ -> typ
 

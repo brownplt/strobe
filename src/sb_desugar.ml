@@ -40,9 +40,9 @@ let rec typ (writ_typ : W.t) : typ =
   match writ_typ with
   | W.Str -> TRegex P.all
   | W.Prim p -> TPrim p
-  | W.Bool -> TUnion (TPrim "True", TPrim "False")
-  | W.Union (t1, t2) -> TUnion (typ t1, typ t2)
-  | W.Inter (t1, t2) -> TIntersect (typ t1, typ t2)
+  | W.Bool -> TUnion (Some "Bool", TPrim "True", TPrim "False")
+  | W.Union (t1, t2) -> TUnion (None, typ t1, typ t2)
+  | W.Inter (t1, t2) -> TIntersect (None, typ t1, typ t2)
   | W.Arrow (None, args, var, r) -> TArrow (map typ args, opt_map typ var, typ r)
   | W.Arrow (Some this, args, var, r) -> TArrow ((typ this):: (map typ args), opt_map typ var, typ r)
   | W.This t -> TThis (typ t)
@@ -51,17 +51,17 @@ let rec typ (writ_typ : W.t) : typ =
     | TObject objflds -> TWith(typ t, objflds)
     | _ -> failwith "absurd")
   | W.Pat pat -> TRegex pat
-  | W.Ref t -> TRef (typ t)
-  | W.Source t -> TSource (typ t)
+  | W.Ref t -> TRef (None, typ t)
+  | W.Source t -> TSource (None, typ t)
   | W.Top -> TTop
   | W.Bot -> TBot
   | W.Syn x -> TId x
   | W.Id x -> TId x
   | W.App (t1, t2s) -> TApp (typ t1, map typ t2s)
-  | W.Forall (x, s, t) -> TForall (x, typ s, typ t)
-  | W.Rec (x, t) -> TRec (x, typ t)
-  | W.Lambda (args, t) -> TLambda (args, typ t)
-  | W.Fix (x, k, t) -> TFix (x, k, typ t)
+  | W.Forall (x, s, t) -> TForall (None, x, typ s, typ t)
+  | W.Rec (x, t) -> TRec (None, x, typ t)
+  | W.Lambda (args, t) -> TLambda (None, args, typ t)
+  | W.Fix (x, k, t) -> TFix (None, x, k, typ t)
 
 and fld (writ_fld : W.f) : field = match writ_fld with
   | W.Present (pat, t) -> (pat, Present, typ t)
