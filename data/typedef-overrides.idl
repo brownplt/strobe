@@ -139,7 +139,7 @@ partial interface nsIDOMNode {
 
 nsIDOMWindow implements nsIDOMJSWindow;
 nsIDOMWindow implements nsIDOMEventTarget;
-
+nsIDOMDocument implements nsIDOMEventTarget;
 nsIDOMElement implements nsIDOMEventTarget;
 //nsIDOMElement implements nsIDOMElementCSSInlineStyle;
 partial interface nsIDOMElement {
@@ -167,3 +167,5 @@ interface nsIDOMXULStringBundleElement : nsIDOMXULElement {
   wstring getFormattedString(in wstring aStringKey, [array, size_is(length)] in wstring aStringsArray,
                              in unsigned long length);
 };
+
+nsIDOMEvent implements nsIDOMNSEvent;
