@@ -3,7 +3,7 @@ var nsIX509CertDB = Components.interfaces.nsIX509CertDB; // Missing include
 var nsIX509Cert = Components.interfaces.nsIX509Cert; // Missing include
 
 function toOpenWindowByType(inType, uri) {
-  var winopts = /*:Ext*/"chrome,extrachrome,menubar,resizable,scrollbars,status,toolbar";
+  var winopts = "chrome,extrachrome,menubar,resizable,scrollbars,status,toolbar";
   window.open(uri, "_blank", winopts);
 }
 function(event) { toOpenWindowByType('mozilla:certmanager', 'chrome://pippki/content/certManager.xul'); };
@@ -15,7 +15,7 @@ function(event) { toOpenWindowByType('mozilla:certmanager', 'chrome://pippki/con
 /*: -> nsIX509Cert*/
 function getCurrentCert()
 {
-  var realIndex = /*:Ext*/0;
+  var realIndex = 0;
   var tree = document.getElementById('treesetDump');
   if (tree.view.selection.isSelected(tree.currentIndex)
       && !document.getElementById('general_tab').selected) {
@@ -807,6 +807,13 @@ var srGetStrBundle = /*:cheat [Any] Str -> nsIStringBundle*/null; // Unknown fun
 /*: nsIDOMWindow * nsIX509Cert -> Undef */
 function exportToFile(parent, cert)
 {
+  /* BSL -- MITIGATION */
+  // var nsIPBM = Components.classes["@mozilla.org/privatebrowsingservice;1"]
+  //       .getService(Components.interfaces.nsIPrivateBrowsingService);
+  // if (nsIPBM.privateBrowsingEnabled)
+  //     return;
+  /* BSL -- END MITIGATION */
+
   var bundle = srGetStrBundle("chrome://certviewerplus/locale/certViewerPlus.properties");
   if (!cert)
     return;
