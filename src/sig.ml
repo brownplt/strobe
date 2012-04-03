@@ -142,10 +142,13 @@ module type TYP = sig
   module Pretty : sig
     val typ : typ -> FormatExt.printer
     val kind : kind -> FormatExt.printer
+    val useNames : bool ref
   end
 
   val string_of_typ : typ -> string
   val string_of_kind : kind -> string
+  
+  val expose_twith : typenv -> typ -> typ
 
   val proto_str : string
 

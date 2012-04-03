@@ -13,31 +13,37 @@ let rec remove_this op = match op with
   | W.With(t, f) -> W.With(remove_this t, f)
   | _ -> failwith "remove_this : illegal argument"
 
-let wrapArrow (thistype, args, var, ret) =
-  W.Ref( W.Object ([W.Present(P.singleton "-*- code -*-", W.Arrow (thistype, args, var, ret));
+let wrapArrow arrTyp =
+  W.Ref( W.Object ([W.Present(P.singleton "-*- code -*-", arrTyp);
                     W.Present(proto_pat, W.Id "Object"); (* ADDING THIS CAUSES AN ERROR "Object is unbound" *)
                     W.Present(P.singleton "prototype", W.Id "Ext");
                     W.Star(Some (W.Id "Ext"))]))
 
+let matchArrow t = match t with
+  | W.Ref(W.Object([W.Present(code, t);
+                    W.Present(proto, W.Id "Object");
+                    W.Present(prototypePat, W.Id "Ext");
+                    W.Star(Some (W.Id "Ext"))])) -> Some t
+  | _ -> None
+
 let rec pushForallFunction typ = match typ with
-  | W.Forall (var, bound, W.Ref(W.Object([W.Present(code, (W.Arrow _ as arrTyp));
-                                          W.Present(proto, W.Id "Object");
-                                          W.Present(prototypePat, W.Id "Ext");
-                                          W.Star(Some (W.Id "Ext"))]))) ->
-    W.Ref(W.Object([W.Present(code, W.Forall(var, bound, arrTyp));
-                    W.Present(proto, W.Id "Object");
-                    W.Present(P.singleton "prototype", W.Id "Ext");
-                    W.Star(Some (W.Id "Ext"))]))
-  | W.Forall (var, bound, W.Ref(W.Object([W.Present(code, (W.Forall _ as arrTyp));
-                                          W.Present(proto, W.Id "Object");
-                                          W.Present(prototypePat, W.Id "Ext");
-                                          W.Star(Some (W.Id "Ext"))]))) ->
-    W.Ref(W.Object([W.Present(code, W.Forall(var, bound, arrTyp));
-                    W.Present(proto, W.Id "Object");
-                    W.Present(P.singleton "prototype", W.Id "Ext");
-                    W.Star(Some (W.Id "Ext"))]))
-  | W.Forall _ -> Printf.eprintf "Found a forall that couldn't be pushed %s\n" (W.print_typ typ); typ
+  | W.Forall (var, bound, t) -> begin
+    match (matchArrow t) with
+    | Some (W.Arrow _ as arrTyp)
+    | Some (W.Forall _ as arrTyp) ->
+      wrapArrow (W.Forall(var, bound, arrTyp))
+    | Some _
+    | None -> Printf.eprintf "Found a forall that couldn't be pushed %s\n" (W.print_typ typ); typ
+  end
   | W.With(t, f) -> W.With(pushForallFunction t, f)
+  | _ -> typ
+
+let rec pushIntersectFunction typ = match typ with
+  | W.Inter(t1, t2) -> begin match (matchArrow t1, matchArrow t2) with
+    | Some t1, Some t2 -> wrapArrow (W.Inter (t1, t2))
+    | _, _ -> Printf.eprintf "Didn't get two function objects to pushIntersectFunction: \n%s\nand\n%s\n"
+      (W.print_typ t1) (W.print_typ t2); typ
+  end
   | _ -> typ
 %}
 
@@ -109,7 +115,7 @@ arg_typ
   | BOOL { W.Bool }
   | REGEX { W.Pat (P.parse $startpos $1) }
   | arg_typ UNION arg_typ { W.Union ($1, $3) }
-  | arg_typ INTERSECTION arg_typ { W.Inter ($1, $3) }
+  | arg_typ INTERSECTION arg_typ { pushIntersectFunction (W.Inter ($1, $3)) }
   | LBRACE fields RBRACE { W.Ref (W.Object $2) }
   | HASHBRACE fields RBRACE { W.Source (W.Object $2) }
   | LLBRACE fields RRBRACE { W.Object $2 }
@@ -122,11 +128,11 @@ arg_typ
 
 typ 
   : arg_typ { $1 }
-  | args ARROW typ { let (args, var) = $1 in wrapArrow (Some W.Top, args, var, $3) }
-  | LBRACK typ RBRACK args ARROW typ { let (args, var) = $4 in wrapArrow (Some $2, args, var, $6) }
+  | args ARROW typ { let (args, var) = $1 in wrapArrow (W.Arrow (Some W.Top, args, var, $3)) }
+  | LBRACK typ RBRACK args ARROW typ { let (args, var) = $4 in wrapArrow (W.Arrow (Some $2, args, var, $6)) }
   | LBRACK THIS LPAREN typ RPAREN RBRACK args ARROW typ 
-      { let (args, var) = $7 in wrapArrow (Some (W.This $4), args, var, $9) }
-  | LBRACK RBRACK args ARROW typ { let (args, var) = $3 in wrapArrow (None, args, var, $5) }
+      { let (args, var) = $7 in wrapArrow (W.Arrow (Some (W.This $4), args, var, $9)) }
+  | LBRACK RBRACK args ARROW typ { let (args, var) = $3 in wrapArrow (W.Arrow (None, args, var, $5)) }
   | args THICKARROW typ { let (args, var) = $1 in W.Arrow (Some W.Top, args, var, $3) }
   | LBRACK typ RBRACK args THICKARROW typ { let (args, var) = $4 in W.Arrow (Some $2, args, var, $6) }
   | LBRACK THIS LPAREN typ RPAREN RBRACK args THICKARROW typ 

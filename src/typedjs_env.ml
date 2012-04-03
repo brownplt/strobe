@@ -17,7 +17,7 @@ type env = {
 }
 
 let print_env env fmt : unit =
-  let unname t = replace_name None t in
+  let unname t = if (!TypImpl.Pretty.useNames) then replace_name None t else t in
   vert [text "Types of term identifiers:";
         vert (List.map (fun (id, t) -> 
           horz [text id; text "="; (TypImpl.Pretty.typ (unname t))]) (IdMapExt.to_list env.id_typs));
@@ -214,15 +214,15 @@ let extend_global_env env lst =
       if IdMap.mem x env.id_typs then
         raise (Not_wf_typ (x ^ " is already bound in the environment"))
       else
-        let t = desugar_typ p typ in
-        (* Printf.printf "Binding type for %s to %s\n" x (string_of_typ t); *)
+        let t = expose_twith env.typ_ids (desugar_typ p typ) in
+        (* Printf.eprintf "Binding type for %s to %s\n" x (string_of_typ t); *)
         bind_id x t env
     | EnvType (p, x, writ_typ) ->
       if IdMap.mem x env.typ_ids then
         raise (Not_wf_typ (sprintf "the type %s is already defined" x))
       else
-        let t = desugar_typ p writ_typ in
-        (* Printf.printf "Binding %s to %s\n" x (string_of_typ t); *)
+        let t = expose_twith env.typ_ids (desugar_typ p writ_typ) in
+        (* Printf.eprintf "Binding %s to %s\n" x (string_of_typ (apply_name (Some x) t)); *)
         let k = kind_check env t in
         { env with 
           typ_ids = IdMap.add x (apply_name (Some x) t, k) env.typ_ids }

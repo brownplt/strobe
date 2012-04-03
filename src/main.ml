@@ -355,6 +355,8 @@ let main () : unit =
        "disable flow analysis (benchmarks and debugging)");
       ("-allow-unbound", Arg.String allow_unbound,
        "Permit unbound global variables, with default type given by the argument");
+      ("-verbose-errors", Arg.Clear TypImpl.Pretty.useNames,
+       "Print types structurally, rather than with pretty names");
       ("-assert-typ", Arg.String assert_typ,
        "Assert that all un-annotated assignments have a given type");
       ("-sb", Arg.Unit (set_sourcetype "sb"),

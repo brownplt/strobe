@@ -126,6 +126,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     open Format
     open FormatExt
       
+    let useNames = ref true
     let rec kind k = match k with
       | KStar -> text "*"
       | KArrow (ks, k) -> 
@@ -149,9 +150,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     and typ' horzOnly t = 
       let typ = typ' horzOnly in 
       let hnestOrHorz n = if horzOnly then horz else (fun ps -> hnest n (squish ps)) in
-      let namedType name fmt = match name with None -> fmt | Some n -> text n in
-(* None -> horz [text "Unnamed"; fmt] | Some n -> horz [text "Named"; text n; fmt] in *)
-      let namedRef name mut fmt = match name with None -> fmt | Some n -> squish [text mut; text n] in
+      let namedType name fmt = 
+        if !useNames 
+        then match name with None -> fmt | Some n -> text n 
+        else match name with None -> horz [text "Unnamed"; fmt] | Some n -> horz [text "Named"; text n; fmt] in
+      let namedRef name mut fmt = 
+        if !useNames
+        then match name with None -> fmt | Some n -> squish [text mut; text n] 
+        else match name with None -> horz [text "Unnamed*"; fmt] | Some n -> horz [text "Named*"; text n; fmt] in
       match t with
       | TTop -> text "Any"
       | TBot -> text "DoesNotReturn"
@@ -457,7 +463,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TWith (t, flds) ->
       let t = match t with TId x -> (fst2 (IdMap.find x typenv)) | _ -> t in
       let flds' = mk_obj_typ (map (third3 expose_twith) flds.fields) flds.absent_pat in
-      merge t flds' 
+      replace_name None (merge t flds')
     | TUnion(n, t1, t2) -> TUnion (n, expose_twith t1, expose_twith t2)
     | TIntersect(n, t1, t2) -> TIntersect(n, expose_twith t1, expose_twith t2)
     | TRec(n, id, t) -> TRec(n, id, expose_twith t)
