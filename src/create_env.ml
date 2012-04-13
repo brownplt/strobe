@@ -137,7 +137,12 @@ let create_env defs =
                                          TObject (mk_obj_typ (proto::fields) P.empty)) in
     let compUtils = TSource(*TRef*) (Some "Components.utils",
                                      TObject (mk_obj_typ [(P.singleton "import", Present, 
-                                                           wrapArrow SourceCell (TArrow([TTop; TRegex P.all], None, TPrim "Undef")))] P.empty)) in
+                                                           wrapArrow SourceCell (TArrow([TTop; TRegex P.all], 
+                                                                                        None, TPrim "Undef")));
+                                                          (P.singleton "reportError", Present,
+                                                          wrapArrow SourceCell (TArrow([TTop; TTop], 
+                                                                                       None, TPrim "Undef")))]
+                                                P.empty)) in
     let compID = wrapArrow SourceCell (TArrow([TTop; TRegex P.all], None, TId "Ext")) in
     let allOthers = P.negate proto_pat in
     (* NOTE: This should be Maybe, not Present, but the type system complains if I do that... *)
