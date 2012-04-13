@@ -9,7 +9,7 @@
 var TheMiddleMouseButtonExt = /*:Ext*/null;
 TheMiddleMouseButtonExt = {
 	init: function() {
-		window.addEventListener('load', function() { TheMiddleMouseButtonExt.load(); }, false);
+		window.addEventListener('load', /*: [Window] -> Undef */function() { TheMiddleMouseButtonExt.load(); }, false);
 	},
 
 	load: function() {

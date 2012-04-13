@@ -1,11 +1,25 @@
+/*::
+type pubObj = {Ext with
+  qc_init : [Window] -> Undef,
+  qc : Bool -> Undef
+};
+
+type seanleblanObj= {Ext with
+  checkfox: pubObj
+};
+
+type checkfox = {Ext with
+  seanleblanc: seanleblanObj
+}; */
+
 if (!org)
-    var org = (/*:Ext*/{});
+    var org = /*:checkfox*/null;
 if (!org.seanleblanc)
-    org.seanleblanc = {};
+    org.seanleblanc = /*: seanleblanObj */null;
 
-org.seanleblanc.checkfox = function() {
+org.seanleblanc.checkfox = (/*: -> pubObj */function() {
 
-    var pub = /*:Ext*/{};
+    var pub = /*: pubObj */null;
     
     // Log messages to console for debugging. Set to false when published.
     function log(msg) {
@@ -17,7 +31,7 @@ org.seanleblanc.checkfox = function() {
     }
     
     //function qc_init() {
-    pub.qc_init = function() {
+    pub.qc_init = /*: [Window] -> Undef */ function() {
         // Eventlistener for the contextmenu
         var menu = document.getElementById("contentAreaContextMenu");
         menu.addEventListener("popupshowing", qc_showMenu, false);
@@ -164,7 +178,7 @@ org.seanleblanc.checkfox = function() {
     };
     
     return pub;
-}();
+})();
 
 // Initializing the extension when the browser is loaded.
 window.addEventListener("load", org.seanleblanc.checkfox.qc_init, false);

@@ -69,6 +69,7 @@ function getPEMString(cert)
       setCertTrust : [this('nsIDOMElement)] nsIDOMEvent -> Undef,
       getCertTrust : [this('cvp)] Ext -> Ext,
       addTrustSettingCheckBoxes: [this('cvp)] -> Undef,
+      tuneGeneralTab : [this('Window)] -> Undef
   };
   type MainObject = {AnObject with
       velox : {AnObject with cvp : Cvp}
@@ -255,7 +256,7 @@ indent: /*: [Cvp] Num -> Str*/function(level)
   return ""+indent;
 },
 
-tuneGeneralTab: function()
+tuneGeneralTab: /*: [Window] -> Undef */function()
 {
   /*
    * Slightly improve/extend the "General" tab of Cert Viewer
@@ -905,7 +906,7 @@ function(event) { exportToFile(/*:cheat nsIDOMWindow*/window, getCurrentCert());
        is already present (the enclosing hbox element doesn't have an id,
        so we can't use a simple overlay with "insertbefore=" */
 
-    window.addEventListener("load", function()
+    window.addEventListener("load", /*: [Window] -> Undef */ function()
     {
       /* return early, if the element is already there */
       if (document.getElementById("display_pem_dt"))
