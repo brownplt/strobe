@@ -185,7 +185,10 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | (t1, [t2]) -> parens (hnestOrHorz 0 [squish [horz [typ t1; text "+"]]; 
                                             if horzOnly then typ t2 else horz[empty;typ t2]])
         | (t, ts) -> 
-          if (List.length ts > 1200) then parens (horz[typ t; text "& ........"]) else
+          if (List.length ts > 1200) then parens (horz[typ t;
+                                                       squish[text "+ ...(";
+                                                              int (List.length ts);
+                                                              text " total fields)....."]]) else
             parens (hnest (-1) 
                       (squish (intersperse print_space 
                                  ((horz [empty; typ t]) :: List.map (fun t -> horz [text "+"; typ t]) ts))))
@@ -203,7 +206,10 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | (t1, [t2]) -> parens (hnest 0 (squish [squish [horz [typ t1; text "&"]]; 
                                                  if horzOnly then typ t2 else horz[empty;typ t2]]))
         | (t, ts) -> 
-          if (List.length ts > 1200) then parens (horz[typ t; text "& ........"]) else
+          if (List.length ts > 1200) then parens (horz[typ t;
+                                                       squish[text "& ...(";
+                                                              int (List.length ts);
+                                                              text " total fields)....."]]) else
             parens (hnest (-1) 
                       (squish (intersperse print_space 
                                  ((horz [empty; typ t]) :: List.map (fun t -> horz [text "&"; typ t]) ts))))
@@ -263,7 +269,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         (match isFunctionObject (flds.fields) with
         | Some arrTyp -> horz [squish [text "{|"; typ' true arrTyp; text "|}"]]
         | None ->
-          if (List.length flds.fields > 12000) then braces (text ".......") else
+          if (List.length flds.fields > 1200) then braces (squish[text "...(";
+                                                                  int (List.length flds.fields);
+                                                                  text " total fields)....."]) else
           let abs = horz [ text (P.pretty flds.absent_pat); text ": _" ] in
           braces (hnestOrHorz 0 (intersperse print_space (map pat (flds.fields) @ [abs])))
         )
