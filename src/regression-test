@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# cd to the src directory
+cd "$( dirname "${BASH_SOURCE[0]}" )"
+
+for f in ../tests/annotated-extensions/*.js; do
+    echo "Begin results for file `basename $f`"
+    ./test-exts "$f" 2>&1 | \
+        grep -vE "(^Loading IDL: )|(^Sanitizing: )|(^Creating env: )|(^Binding recursive types: )|(^Compiling environment: )" | \
+        sed "s/^Typechecking: Done.  Time elapsed: [0-9]*$/Typechecking: Done./g"
+    echo "End results for file `basename $f`"
+done
