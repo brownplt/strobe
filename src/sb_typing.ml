@@ -323,6 +323,9 @@ match exp with
     | None -> raise (Typ_error (p, String(sprintf "%s is not defined", x))) (* severe *)
     | Some t -> 
       Printf.eprintf "Warning: Unbound identifier %s at %s\n" x (string_of_position p);
+      Printf.eprintf "Currently bound identifiers are:\n";
+      IdMap.iter (fun id _ -> Printf.eprintf "%s, " id) (id_env env);
+      Printf.eprintf "\n";
       t (* Should probably warn about undefined identifier here *)
   end
   | ELet (_, x, e1, e2) -> synth (bind_id x (synth env default_typ e1) env) default_typ e2
@@ -531,16 +534,20 @@ match exp with
             | None -> 
               raise (Typ_error (p, Typ((fun t -> sprintf "synth: expected function, got %s"
                 (string_of_typ t)), quant_typ)))
-            | Some (typ_vars, (TArrow (_, _, r) as arrow_typ)) -> 
+            | Some (typ_vars, (TArrow (expected_typs, _, r) as arrow_typ)) -> 
               (* guess-work breaks bidirectionality *)
               let arg_typs = map (synth env default_typ) args in
               let assumed_arg_exps = 
                 List.map2 (fun e t -> ECheat (p, t, e)) args arg_typs in
-              let assoc =
-                typ_assoc env arrow_typ (TArrow (arg_typs, None, r)) in
+              let assoc = typ_assoc env arrow_typ (TArrow (arg_typs, None, r)) in
               let guess_typ_app exp typ_var = 
                 try
-                  let guessed_typ = IdMap.find typ_var assoc in
+                  let guessed_typ = 
+                    try IdMap.find typ_var assoc
+                    with Not_found ->
+                      if (List.length expected_typs > List.length args) 
+                      then (TPrim "Undef")
+                      else raise Not_found in
                   ETypApp (p, exp, guessed_typ) 
                 with Not_found -> begin
                   raise (Typ_error (p, FixedString (sprintf "synth: could not instantiate typ_var %s" typ_var))) end in

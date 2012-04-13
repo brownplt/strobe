@@ -48,7 +48,7 @@ let rec pushIntersectFunction typ = match typ with
 %}
 
 %token <string> ID TID STRING REGEX PRIM
-%token ARROW LPAREN RPAREN ANY STAR COLON EOF UNION STR
+%token ARROW LPAREN RPAREN ANY STAR COLON EOF UNION STR AND
        BOOL LBRACE RBRACE COMMA VAL LBRACK RBRACK DOT OPERATOR SEMI
        UPCAST DOWNCAST FORALL LTCOLON IS LANGLE RANGLE
        CHEAT REC INTERSECTION UNDERSCORE BAD WITH THIS
@@ -180,9 +180,13 @@ env_decl :
       { EnvBind (($startpos, $endpos), $2, remove_this $4) }
   | PRIMITIVE PRIM { EnvPrim (($startpos, $endpos), $2) }
 
+rec_env_decl : 
+  | env_decl { $1 }
+  | REC recs=separated_nonempty_list(AND, env_decl) { RecBind(recs) }
+
 env_decls
   : { [] }
-  | env_decl SEMI? env_decls { $1 :: $3 }
+  | rec_env_decl SEMI? env_decls { $1 :: $3 }
 
 env
   : env_decls EOF { $1 }

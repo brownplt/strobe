@@ -243,12 +243,20 @@ let actual_data () =
       (get_global_object ()) in
   let typedjs = get_typedjs () in
   let new_decls = ReadTyps.new_decls (List.rev !JavaScript_lexer.comments) in
-  let env = List.fold_left (fun env d -> match d with
+  let rec helper recIds env d = match d with
     | EnvType(p, x, t) -> 
       let t' = Sb_desugar.desugar_typ p t in
       let t'' = squash env t' in
-      (bind_typ_id x (TypImpl.replace_name (Some x) t'') env)
-    | _ -> env) env new_decls in
+      (bind_rec_typ_id x recIds (TypImpl.replace_name (Some x) t'') env)
+    | RecBind binds ->
+      let ids = ListExt.filter_map (fun b -> match b with
+        | EnvBind (_, x, _) -> Some x
+        | EnvType (_, x, _) -> Some x
+        | EnvPrim _
+        | RecBind _ -> None) binds in
+      List.fold_left (helper ids) env binds
+    | _ -> env in
+  let env = List.fold_left (helper []) env new_decls in
   set_env env;
   let annot_js = elim_twith env (weave_annotations typedjs) in
   let asserted_js = weave_assertions annot_js in

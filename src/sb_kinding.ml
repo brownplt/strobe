@@ -26,13 +26,13 @@ let kind_mismatch typ calculated_kind expected_kind =
           (string_of_typ typ)))
 
 
-let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
+let rec kind_check (env : kind_env) (recIds : id list) (typ : typ) : kind = match typ with
   | TTop
   | TBot
   | TRegex _ -> KStar
   | TUninit t -> begin match !t with
-    | None -> kind_check env (TPrim "Undef")
-    | Some t -> kind_check env t
+    | None -> kind_check env recIds (TPrim "Undef")
+    | Some t -> kind_check env recIds t
   end
   | TPrim s -> 
     if IdSet.mem s !valid_prims then 
@@ -41,68 +41,70 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
       raise (Kind_error (s ^ " is not a primitive type"))
   | TUnion (_, t1, t2)
   | TIntersect (_, t1, t2) ->
-    begin match kind_check env t1, kind_check env t2 with
+    begin match kind_check env recIds t1, kind_check env recIds t2 with
     | KStar, KStar -> KStar
     | k1, KStar -> kind_mismatch t1 k1 KStar
     | _, k2 -> kind_mismatch t2 k2 KStar
     end
-  | TThis t -> kind_check env t
+  | TThis t -> kind_check env recIds t
   | TRef (_, t)
   | TSource (_, t)
   | TSink (_, t) ->
-    begin match kind_check env t with
+    begin match kind_check env recIds t with
     | KStar -> KStar
     | k -> kind_mismatch t k KStar
     end
   | TArrow (arg_typs, varargs, result_typ) ->
-    let assert_kind t = match kind_check env t with
+    let assert_kind t = match kind_check env recIds t with
       | KStar -> ()
       | k -> kind_mismatch t k KStar in
     List.iter assert_kind (result_typ :: arg_typs);
     (match varargs with None -> () | Some v -> assert_kind v);
     KStar
   | TObject o ->
-    List.iter (assert_fld_kind env) (fields o);
+    List.iter (assert_fld_kind env recIds) (fields o);
     KStar
   | TWith(t, flds) ->
-    ignore (kind_check env t);
-    List.iter (assert_fld_kind env) (fields flds);
+    ignore (kind_check env recIds t);
+    List.iter (assert_fld_kind env recIds) (fields flds);
     KStar
   | TId x -> 
     begin 
       try IdMap.find x env
       with Not_found ->
-        (* let strfmt = Format.str_formatter in *)
-        (* let envText = (IdMap.iter (fun id k ->  *)
-        (*   FormatExt.horz [FormatExt.text id; FormatExt.text "="; Pretty.kind k] strfmt; *)
-        (*   Format.pp_print_newline strfmt () *)
-        (* ) env); Format.flush_str_formatter() in *)
-        let s = (sprintf "type variable %s is unbound in env" x (* envText *)) in
-        (* Printf.printf "%s" s; print_newline(); *)
-        raise (Kind_error s)
+        if (not (List.mem x recIds)) then
+          (* let strfmt = Format.str_formatter in *)
+          (* let envText = (IdMap.iter (fun id k ->  *)
+          (*   FormatExt.horz [FormatExt.text id; FormatExt.text "="; Pretty.kind k] strfmt; *)
+          (*   Format.pp_print_newline strfmt () *)
+          (* ) env); Format.flush_str_formatter() in *)
+          let s = (sprintf "type variable %s is unbound in env" x (* envText *)) in
+          (* Printf.printf "%s" s; print_newline(); *)
+          raise (Kind_error s)
+        else KStar
     end
   | TForall (_, x, t1, t2) ->
-    begin match kind_check env t1, kind_check (IdMap.add x KStar env) t2 with
+    begin match kind_check env recIds t1, kind_check (IdMap.add x KStar env) recIds t2 with
     | KStar, KStar -> KStar
     | k1, KStar -> kind_mismatch t1 k1 KStar
     | _, k2 -> kind_mismatch t2 k2 KStar
     end
   | TRec (_, x, t) ->
-    begin match kind_check (IdMap.add x KStar env) t with
+    begin match kind_check (IdMap.add x KStar env) recIds t with
     | KStar -> KStar
     | k -> kind_mismatch t k KStar
     end
   | TLambda (_, args, t) ->
     let env' = fold_right (fun (x, k) env -> IdMap.add x k env) args env in
-    KArrow (List.map snd2 args, kind_check env' t)
+    KArrow (List.map snd2 args, kind_check env' recIds t)
   | TFix (_, x, k, t) ->
-    let k' = kind_check (IdMap.add x k env) t in
+    let k' = kind_check (IdMap.add x k env) recIds t in
     if  k' = k then k
     else kind_mismatch typ k' k
   | TApp (t_op, t_args) ->
     begin 
       let check k_arg t_arg = 
-        let k_actual = kind_check env t_arg in
+        let k_actual = kind_check env recIds t_arg in
         if k_arg = k_actual then
           ()
         else 
@@ -114,7 +116,7 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
           with Invalid_argument _ -> raise (Kind_error "Mutable<> expects one argument")
         end;
         KStar
-      | _ -> match kind_check env t_op with
+      | _ -> match kind_check env recIds t_op with
         | KArrow (k_args, k_result) ->
           begin 
             try
@@ -130,6 +132,6 @@ let rec kind_check (env : kind_env) (typ : typ) : kind = match typ with
                    (sprintf "not a type operator:\n%s" (string_of_typ t_op)))
     end
 
-and assert_fld_kind (env : kind_env) (_, _, t) = match kind_check env t with
+and assert_fld_kind (env : kind_env) recIds (_, _, t) = match kind_check env recIds t with
   | KStar -> ()
   | k -> kind_mismatch t k KStar

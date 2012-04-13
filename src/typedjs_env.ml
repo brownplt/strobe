@@ -46,17 +46,19 @@ let empty_env = {
   typ_ids = IdMap.empty;
 }
 
-let kind_check env (typ : typ) : kind  =
-  Sb_kinding.kind_check (IdMap.map (fun (_, k) -> k) env.typ_ids) typ
+let kind_check env recIds (typ : typ) : kind  =
+  Sb_kinding.kind_check (IdMap.map (fun (_, k) -> k) env.typ_ids) recIds typ
 
 let bind_id x t env  = { env with id_typs = IdMap.add x t env.id_typs }
 
 let bind_lbl x t env = { env with lbl_typs = IdMap.add x t env.lbl_typs }
 
-let bind_typ_id (x : id) (t : typ) (env : env) = 
-  let k = kind_check env t in
+let bind_rec_typ_id (x : id) recIds (t : typ) (env : env) = 
+  let k = kind_check env recIds t in
   { env with 
     typ_ids = IdMap.add x (t, k) env.typ_ids }
+
+let bind_typ_id x t env = bind_rec_typ_id x [] t env
 
 let bind_recursive_types (xts : (id * typ) list) (env : env) =
   let typ_ids' = List.fold_left (fun ids (x, t) -> IdMap.add x (t, KStar) ids) env.typ_ids xts in
@@ -175,7 +177,7 @@ let rec set_global_object env cname =
     try IdMap.find cname env.typ_ids
     with Not_found -> 
       raise (Not_wf_typ ("global object, " ^ cname ^ ", not found")) in
-  match simpl_typ env ci_typ, ci_kind with
+  match expose env (simpl_typ env ci_typ), ci_kind with
     | TRef (n, TObject o), KStar ->
       let fs = fields o in
       let add_field env (x, pres, t) =
@@ -209,7 +211,7 @@ let parse_env (cin : in_channel) (name : string) : env_decl list =
                      (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
 
 let extend_global_env env lst =
-  let add env decl = match decl with
+  let rec add recIds env decl = match decl with
     | EnvBind (p, x, typ) ->
       if IdMap.mem x env.id_typs then
         raise (Not_wf_typ (x ^ " is already bound in the environment"))
@@ -223,13 +225,22 @@ let extend_global_env env lst =
       else
         let t = expose_twith env.typ_ids (desugar_typ p writ_typ) in
         (* Printf.eprintf "Binding %s to %s\n" x (string_of_typ (apply_name (Some x) t)); *)
-        let k = kind_check env t in
+        let k = kind_check env recIds t in
         { env with 
           typ_ids = IdMap.add x (apply_name (Some x) t, k) env.typ_ids }
     | EnvPrim (p, s) ->
       Sb_kinding.new_prim_typ  s;
       env
-  in List.fold_left add env lst
+    | RecBind (binds) ->
+      let ids = ListExt.filter_map (fun b -> match b with
+        | EnvBind (_, x, _) -> Some x
+        | EnvType (_, x, _) -> Some x
+        | EnvPrim _
+        | RecBind _ -> None) binds in
+      Printf.eprintf "Recursively including ids: ";
+      List.iter (fun x -> Printf.eprintf "%s " x) ids;
+      List.fold_left (add ids) env binds
+  in List.fold_left (add []) env lst
 
 
 
@@ -305,7 +316,7 @@ let verify_env env : unit =
   let errors = ref false in
   let kinding_env = IdMap.map (fun (_, k) -> k) env.typ_ids in
   let f x (t, k) =
-    let k' = Sb_kinding.kind_check kinding_env t in
+    let k' = Sb_kinding.kind_check kinding_env [] t in
     if k = k' then
       ()
     else
@@ -315,9 +326,10 @@ let verify_env env : unit =
           x (string_of_kind k) (string_of_kind k') x (string_of_typ t);
         errors := true
       end in
-  IdMap.iter f env.typ_ids;
+  IdMap.iter f env.typ_ids
 (* 
      if !errors then
      raise (Invalid_argument "ill-formed environment")
   *)
 
+let kind_check env (typ : typ) : kind  =  kind_check env [] typ

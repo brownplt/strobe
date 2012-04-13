@@ -78,6 +78,7 @@ rule token = parse
    | "type" { TYPE }
    | "typlambda" { TYPLAMBDA }
    | "typrec" { TYPREC }
+   | "and" { AND }
    | "<:" { LTCOLON }
    | "?" { QUES }
    | "^" { CARET }

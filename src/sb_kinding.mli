@@ -10,6 +10,6 @@ exception Kind_error of string
     After [new_prim_typ s] succeeds, [kind_check kind_env (TPrim s) = KStar]. *)
 val new_prim_typ : string -> unit
 
-val kind_check : kind IdMap.t -> typ -> kind
+val kind_check : kind IdMap.t -> id list -> typ -> kind
 
 val list_prims : unit -> string list

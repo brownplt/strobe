@@ -784,6 +784,8 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | TPrim "Null", TRef (_, TObject _)
         | TPrim "Null", TSource (_, TObject _)
         | TPrim "Null", TSink (_, TObject _) -> cache (* null should be a subtype of all object types *)
+        | TThis (TId _ as id), t -> subtype cache (TThis (expose env id)) t
+        | t, TThis(TRec _ as r) -> subtype cache t (TThis (expose env r))
         | TThis (TRef (_, s)), TThis (TRef (_, t))
         | TThis (TRef (_, s)), TThis (TSource (_, t))
         | TThis (TRef (_, s)), TThis (TSink (_, t))
