@@ -789,6 +789,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             try subtype cache s t1
             with Not_subtype _ -> subtype cache s t2
           end
+        | _, TThis(TPrim "Unsafe") -> cache (* Can always mask the this parameter as Unsafe *)
         | TPrim "Null", TRef (_, TObject _)
         | TPrim "Null", TSource (_, TObject _)
         | TPrim "Null", TSink (_, TObject _) -> cache (* null should be a subtype of all object types *)

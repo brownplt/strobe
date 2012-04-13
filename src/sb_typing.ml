@@ -574,7 +574,7 @@ match exp with
     synth env default_typ body 
   | EFunc (p, args, func_info, body) -> 
     (* BSL: Synthesizing Ext *)
-    let thisType = if usesThis body then TThis (TId "Ext") else TTop in
+    let thisType = if usesThis body then TThis (TId "Ext") else TThis (TPrim "Unsafe") in
     let arrowTyp = TArrow([thisType], Some (TId "Ext"), TId "Ext") in
     (* Printf.eprintf "Checking expression for Ext-arrow:\n%s\n" (string_of_exp exp); *)
     check env default_typ exp arrowTyp;
