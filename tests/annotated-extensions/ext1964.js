@@ -64,7 +64,7 @@ function getPEMString(cert)
 /*:: 
   type Cvp = rec cvp . {AnObject with
       displayPEM : [this('cvp)] Any * nsIX509Cert -> Undef,
-      reverseRDNs : [this('cvp)] Ext -> Ext,
+      reverseRDNs : [this('cvp)] Str -> Ext,
       indent : [this('cvp)] Num -> Str,
       setCertTrust : [this('nsIDOMElement)] nsIDOMEvent -> Undef,
       getCertTrust : [this('cvp)] Ext -> Ext,
@@ -82,7 +82,7 @@ trustconstants: { SSL:  nsIX509CertDB.TRUSTED_SSL,
                   Mail: nsIX509CertDB.TRUSTED_EMAIL,
                   Code: nsIX509CertDB.TRUSTED_OBJSIGN },
 
-reverseRDNs: /*: [Cvp] Ext -> Ext*/function(dn)
+reverseRDNs: /*: [Cvp] Str -> Ext*/function(dn)
 {
   /*
    * CERT_NameToAscii always returns RDNs in reverse order - undo that here.

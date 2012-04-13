@@ -94,7 +94,7 @@ org.seanleblanc.checkfox = function() {
         var sel = qc_getSelection();
         if (sel && sel.toString().length > 0) {
             log("Text IS selected.");
-            var all = /*:cheat Array<Ext>*/qc_getCheckBoxes();
+            var all = qc_getCheckBoxes();
             var aCheckBox = /*:Ext*/null, checkBoxes = /*:Ext*/null;
             var a = 0;
             for (a = 0; a < all.length; a++) {
@@ -139,7 +139,7 @@ org.seanleblanc.checkfox = function() {
         var sel = qc_getSelection();
         if (sel.toString().length > 0) {
             // Get all check boxes on page:
-            var all = /*:cheat Array<Ext>*/qc_getCheckBoxes();
+            var all = qc_getCheckBoxes();
             var checkBoxes = /*:Ext*/null, aCheckBox = /*:Ext*/null;
             var clickList = /*:cheat Array<Ext>*/new Array();
             
