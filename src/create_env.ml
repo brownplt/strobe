@@ -316,7 +316,7 @@ let create_env defs =
       | (TId name) as t' -> (
         let name = Id.id_of_string name in
         match Hashtbl.find ifaceHash name with
-        | Comp (_, Some funcFunc) -> [funcFunc tt; addArray t']
+        | Comp (_, Some funcFunc) -> [wrapArrow SourceCell (funcFunc tt); addArray t']
         | Comp (_, None) -> [addArray t']
         | Raw (_, false) -> [addArray t']
         | Raw (def, true) -> 
