@@ -278,7 +278,7 @@ let action_pretypecheck () : int =
   Typedjs_syntax.Pretty.exp typedjs std_formatter;
   0
 
-let action_tc () : int =
+let action_tc () : int = timefn "Typechecking" (fun () ->
   let (env, asserted_js) = actual_data () in
   if (!do_print_env) then print_env env;
   let _ = typecheck env !default_typ asserted_js in
@@ -286,6 +286,7 @@ let action_tc () : int =
     2
   else
     0
+) ()
 
 let load_idl_file filename =
   let full_idl = Idl.from_channel (open_in filename) filename in
@@ -299,7 +300,9 @@ let load_new_idl_file filename =
 let print_idl () : unit =
   Print_full_idl.print_defs !full_idl_defs
 
+
 let compile_env () : unit =
+  let timefn _ f a = f a in
   full_idl_defs := timefn "Sanitizing" (fun defs -> Sanitize.resolve_partials
     (Sanitize.resolve_typedefs (Sanitize.remove_dupes defs))) (!full_idl_defs);
   (* (match (Sanitize.sanity_check !full_idl_defs) with *)
@@ -335,7 +338,7 @@ let allow_unbound typStr : unit =
 let assert_typ typStr : unit = 
   parseTyp_to_ref typStr assert_typ
 
-let action = ref (timefn "Typechecking" action_tc)
+let action = ref action_tc
 
 let is_action_set = ref false
 
@@ -346,8 +349,9 @@ let set_action (thunk : unit -> 'a) (() : unit) : unit =
     (is_action_set := true; action := thunk)
 
 let main () : unit =
+  let timefn _ f a = f a in
   Arg.parse
-    [ ("-tc", Arg.Unit (set_action (timefn "Typechecking" action_tc)),
+    [ ("-tc", Arg.Unit (set_action action_tc),
        "type-check the source program (default when no options are given)");
       ("-stdin", Arg.Unit (fun () -> set_cin stdin "<stdin>"),
        "read from stdin instead of a file");
