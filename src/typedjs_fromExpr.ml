@@ -127,13 +127,18 @@ let rec exp (env : env) expr = match expr with
   | InfixExpr (a, op, e1, e2) -> EInfixOp (a, op, exp env e1, exp env e2)
   | IfExpr (a, e1, e2, e3) -> 
       EIf (a, to_boolean a (exp env e1), exp env e2, exp env e3)
-  | AssignExpr (a, VarLValue (p', x), e) -> ESetRef (a, EId (p', x), exp env e)
+  | AssignExpr (a, VarLValue (p', x), e) -> 
+    ESeq(bad_p,     
+         ESetRef (p', EId (p', x), exp env e),
+         EDeref(bad_p, EId(a, x)))
   | AssignExpr (p, PropLValue (_, e1, e2), e3) ->
-      ELet (p, "%obj", to_object p (exp env e1),
-            ESetRef(p, EId (p, "%obj"),
-              EUpdate (p, EDeref (p, EId (p, "%obj")), 
-                       to_string p (exp env e2), 
-                       exp env e3)))
+      ELet (bad_p, "%obj", to_object p (exp env e1),
+            ELet(bad_p, "%field", to_string p (exp env e2),
+                 ESeq(bad_p, 
+                      ESetRef(bad_p, EId (p, "%obj"),
+                              EUpdate (p, EDeref (p, EId (p, "%obj")), 
+                                       EId(p, "%field"), (exp env e3))),
+                      EBracket(p, EDeref(p, EId(p, "%obj")), EId(p, "%field")))))
   (* TODO: What is this hack below? *)
   | AppExpr (a, BracketExpr (a2, e1, 
                              ConstExpr (a3, JavaScript_syntax.CString "charAt")), [arg]) ->
