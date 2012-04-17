@@ -210,6 +210,7 @@ let parse_env (cin : in_channel) (name : string) : env_decl list =
                   (string_of_position 
                      (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
 
+
 let extend_global_env env lst =
   let rec add recIds env decl = match decl with
     | EnvBind (p, x, typ) ->
@@ -231,12 +232,72 @@ let extend_global_env env lst =
     | EnvPrim (p, s) ->
       Sb_kinding.new_prim_typ  s;
       env
+    | ObjectTrio(pos, (c_id, c_typ), (p_id, p_typ), (i_id, i_typ)) ->
+      (* add prototype field to constructor *)
+      let c_typ = expose_twith env.typ_ids (desugar_typ pos c_typ) in
+      let c_absent_pat = match c_typ with TRef(_, TObject(f)) -> absent_pat f | _ -> P.all in
+      let constructor_with = TWith(c_typ, (mk_obj_typ 
+                                             [P.singleton "prototype", Present, TId(p_id)]
+                                             (P.subtract c_absent_pat (P.singleton "prototype")))) in
+      let constructor = replace_name (Some c_id) (expose_twith env.typ_ids constructor_with) in
+      (* add constructor field to prototype *)
+      let p_typ = (desugar_typ pos p_typ) in
+      let p_typ = match p_typ with TId _ -> simpl_typ env p_typ | _ -> p_typ in
+      let (prototype_added_fields, prototype_with) = match p_typ with 
+        | TWith(base, f) ->
+          (fields f), TWith(base, (mk_obj_typ
+                                    ((P.singleton "constructor", Present, TId(c_id))::(fields f))
+                                    (P.subtract (absent_pat f) (P.singleton "constructor"))))
+        | TRef(_, TObject(f))
+        | TSource(_, TObject(f)) ->
+          let temp = 
+            (expose_twith env.typ_ids 
+               (TWith(TId("AnObject"),
+                      (mk_obj_typ
+                         [P.singleton "constructor", Present, TId(c_id)]
+                         (P.subtract (absent_pat f) (P.singleton "constructor")))))) in
+          (fields f), TWith(temp, (mk_obj_typ (fields f) (P.subtract (absent_pat f) (P.singleton "constructor"))))
+        | _ -> failwith "impossible" in
+      let prototype = match expose_twith env.typ_ids prototype_with with TRef (n, t) -> TSource(n, t) | t -> t in
+      (* add __proto__ field to instance *)
+      let i_typ = (desugar_typ pos i_typ) in
+      let i_typ = match i_typ with TId _ -> simpl_typ env i_typ | _ -> i_typ in
+      let instance_with = 
+        let proto_fields = List.map (fun (n, _, t) -> (n, Inherited, t)) prototype_added_fields in
+        let proto_field_pat = P.unions (proto_pat::(List.map fst3 prototype_added_fields)) in
+        match i_typ with 
+        | TWith(base, f) ->
+          let absent_pat = absent_pat f in
+          let new_fields = List.map (fun (pat, p, t) ->
+            (P.subtract (P.subtract pat proto_field_pat) absent_pat, p, t))
+            (fields f) in
+          Printf.eprintf "New_fields = %s\n" (string_of_typ (TObject (mk_obj_typ new_fields absent_pat)));
+          TWith(base, mk_obj_typ ((proto_pat, Present, TId(p_id))::proto_fields@new_fields) absent_pat)
+        | TRef(_, TObject(f))
+        | TSource(_, TObject(f)) ->
+          let absent_pat = P.subtract (absent_pat f) proto_field_pat in
+          let base_fields = List.map (fun (pat, p, t) ->
+            (P.subtract (P.subtract pat proto_field_pat) absent_pat, p, t))
+            (fields f) in
+          TWith(TId "AnObject",
+                (mk_obj_typ ((proto_pat, Present, TId(p_id))::proto_fields@base_fields) absent_pat))
+        | _ -> failwith "impossible" in
+      let instance = replace_name (Some i_id) (expose_twith env.typ_ids instance_with) in
+      let (k_c, k_p, k_i) = (kind_check env [c_id; p_id; i_id] constructor,
+                             kind_check env [c_id; p_id; i_id] prototype,
+                             kind_check env [c_id; p_id; i_id] instance) in
+      { env with 
+        typ_ids = 
+          (IdMap.add c_id (constructor, k_c)
+             (IdMap.add p_id (prototype, k_p)
+                (IdMap.add i_id (instance, k_i) env.typ_ids))) }
     | RecBind (binds) ->
-      let ids = ListExt.filter_map (fun b -> match b with
-        | EnvBind (_, x, _) -> Some x
-        | EnvType (_, x, _) -> Some x
+      let ids = List.concat (List.map (fun b -> match b with
+        | EnvBind (_, x, _) -> [x]
+        | EnvType (_, x, _) -> [x]
+        | ObjectTrio(_, (c, _), (p, _), (i, _)) -> [c;p;i]
         | EnvPrim _
-        | RecBind _ -> None) binds in
+        | RecBind _ -> []) binds) in
       Printf.eprintf "Recursively including ids: ";
       List.iter (fun x -> Printf.eprintf "%s " x) ids;
       List.fold_left (add ids) env binds

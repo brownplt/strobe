@@ -308,13 +308,13 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       absent_pat = absent_pat;
       cached_parent_typ = ref None;
       cached_guard_pat = ref None;
-      cached_possible_cover_pat = ref None; (* lazy (fold_right P.union (L.map fst3 fs) P.empty); *)
+      cached_possible_cover_pat = ref None; (* lazy (P.unions (L.map fst3 fs)); *)
       cached_cover_pat = ref None
     }
   
   let possible_field_cover_pat ot = match !(ot.cached_possible_cover_pat) with
     | Some p -> p
-    | None -> let ret = fold_right P.union (L.map fst3 ot.fields) P.empty in
+    | None -> let ret = P.unions (L.map fst3 ot.fields) in
               ot.cached_possible_cover_pat := Some ret;
               ret
   (* Lazy.force ot.cached_possible_cover_pat *)
@@ -424,14 +424,14 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TUnion(n, t1, t2) -> TUnion (n, merge t1 flds, merge t2 flds)
     | TIntersect(n, t1, t2) -> TIntersect(n, merge t1 flds, merge t2 flds)
     | TObject o -> begin
-      let unionPats = L.fold_right P.union (map fst3 flds.fields) P.empty in
+      let unionPats = P.union (flds.absent_pat) (P.unions (map fst3 flds.fields)) in
       let restrict_field (n, p, t) =
         let n' = P.subtract n unionPats in
         if (P.is_empty n') then None
         else Some (n', p, t) in
       let oldFields = L.filter_map restrict_field o.fields in
       let newFields = oldFields @ flds.fields in
-      let newAbsent = P.subtract o.absent_pat unionPats in
+      let newAbsent = P.union (P.subtract o.absent_pat unionPats) (flds.absent_pat) in
       let newAbsent = if P.is_empty newAbsent then P.empty else newAbsent in
       let ret = TObject (mk_obj_typ newFields newAbsent) in
       ret
@@ -647,9 +647,9 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
                 | Inherited
                 | Present -> Some pat
                 | Maybe _ -> None in
-              L.fold_right P.union (L.filter_map f ot.fields) P.empty
+              P.unions (L.filter_map f ot.fields)
             | Some (TObject _) ->
-              L.fold_right P.union (L.map fst3 ot.fields) ot.absent_pat
+              P.unions (ot.absent_pat::(L.map fst3 ot.fields))
             | Some pt ->
               raise (Invalid_argument 
                  ("invalid parent type in object type: " ^
@@ -696,7 +696,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
        inherit_guard_pat does not apply *)
     match t with
     | TObject ot -> 
-      let guard_pat = L.fold_right P.union (map fst3 ot.fields) P.empty in
+      let guard_pat = P.unions (map fst3 ot.fields) in
       if P.is_subset (pat_env env) pat guard_pat then
         let sel (f_pat, _, f_prop) =
           if P.is_overlapped f_pat pat then Some f_prop

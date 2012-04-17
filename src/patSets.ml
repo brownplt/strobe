@@ -23,17 +23,45 @@ let empty = Finite StringSet.empty
 
 let all = CoFinite StringSet.empty
 
-let intersect v1 v2 = match v1, v2 with
+let is_empty v = match v with
+  | Finite set -> StringSet.is_empty set
+  | CoFinite _ -> false
+
+let intersect v1 v2 = 
+  if (is_empty v1) then empty
+  else if (is_empty v2) then empty
+  else match v1, v2 with
   | Finite set1, Finite set2 -> Finite (StringSet.inter set1 set2)
   | CoFinite set1, CoFinite set2 -> CoFinite (StringSet.union set1 set2)
   | Finite fset, CoFinite cfset
   | CoFinite cfset, Finite fset -> Finite (StringSet.diff fset cfset)
 
-let union v1 v2 = match v1, v2 with
+let intersections ts = match (List.fold_left 
+                         (fun u t -> match u with
+                         | None -> Some t
+                         | Some u -> Some (intersect u t))
+                         None
+                         ts) with
+  | Some u -> u
+  | None -> empty
+
+let union v1 v2 = 
+  if (is_empty v1) then v2
+  else if (is_empty v2) then v1
+  else match v1, v2 with
   | Finite set1, Finite set2 -> Finite (StringSet.union set1 set2)
   | CoFinite set1, CoFinite set2 -> CoFinite (StringSet.inter set1 set2)
   | Finite fset, CoFinite cfset
   | CoFinite cfset, Finite fset -> CoFinite (StringSet.diff cfset fset)
+
+let unions ts = match (List.fold_left 
+                         (fun u t -> match u with
+                         | None -> Some t
+                         | Some u -> Some (union u t))
+                         None
+                         ts) with
+  | Some u -> u
+  | None -> empty
 
 let negate v = match v with
   | Finite set -> CoFinite set
@@ -43,10 +71,6 @@ let subtract v1 v2 = intersect v1 (negate v2)
 
 let concat _ _ =
   failwith "concat not implemented--probably should not be"
-
-let is_empty v = match v with
-  | Finite set -> StringSet.is_empty set
-  | CoFinite _ -> false
 
 let is_overlapped v1 v2 = match v1, v2 with
   | Finite set1, Finite set2 ->
@@ -104,10 +128,14 @@ let example v = match v with
 
 let rec set_to_nfa set = 
   let module R = PatReg in
-  StringSet.fold
-    (fun str nfa -> R.union (R.singleton str) nfa)
-    set
-    R.empty
+  match (StringSet.fold
+           (fun str nfa -> match nfa with 
+           | None -> Some (R.singleton str)
+           | Some nfa -> Some (R.union (R.singleton str) nfa))
+           set
+           None) with
+  | None -> R.empty
+  | Some nfa -> nfa
 
 let to_nfa v = match v with
   | Finite set -> set_to_nfa set

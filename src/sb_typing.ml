@@ -259,8 +259,7 @@ match exp with
   | EParen (_, e) -> check env default_typ e typ
   | EObject (p, fields) -> begin match expose_simpl_typ env typ with
     | TObject _ as t -> 
-      let absPat = P.negate (List.fold_left P.union P.empty 
-                               (List.map (fun (f, _) -> P.singleton f) fields)) in
+      let absPat = P.negate (P.unions (List.map (fun (f, _) -> P.singleton f) fields)) in
       let newObjTyp = TObject (mk_obj_typ 
                                  (List.map (fun (fieldName, fieldExp) -> 
                                    let fieldTyp = (inherits p env t (P.singleton fieldName)) in

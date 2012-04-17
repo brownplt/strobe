@@ -22,7 +22,9 @@ module type PAT = sig
   val all : t
     
   val intersect : t -> t -> t
+  val intersections : t list -> t
   val union : t -> t -> t
+  val unions : t list -> t
   val negate : t -> t
   val subtract : t -> t -> t
   val concat : t -> t -> t
@@ -53,7 +55,9 @@ module type SET = sig
   val all : t
     
   val intersect : t -> t -> t
+  val intersections : t list -> t
   val union : t -> t -> t
+  val unions : t list -> t
   val negate : t -> t
   val subtract : t -> t -> t
   val singleton : string -> t
@@ -166,6 +170,8 @@ module type TYP = sig
 
   (** excludes absent *)
   val possible_field_cover_pat : obj_typ -> pat
+
+  val merge : typ -> obj_typ -> typ
 
   val typ_subst : id -> typ -> typ -> typ
 

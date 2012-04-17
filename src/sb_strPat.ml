@@ -31,10 +31,28 @@ let union v1 v2 = match v1, v2 with
   | Set s, Reg r
   | Reg r, Set s -> Reg (R.union r (S.to_nfa s))
 
+let intersections ts = match (List.fold_left 
+                                (fun u t -> match u with
+                                | None -> Some t
+                                | Some u -> Some (intersect u t))
+                                None
+                                ts) with
+  | Some u -> u
+  | None -> empty
+    
+let unions ts = match (List.fold_left 
+                         (fun u t -> match u with
+                         | None -> Some t
+                         | Some u -> Some (union u t))
+                         None
+                         ts) with
+  | Some u -> u
+  | None -> empty
+      
 let subtract v1 v2 = match v1, v2 with
   | Set s1, Set s2 -> Set (S.subtract s1 s2)
   | Reg r1, Reg r2 -> Reg (R.subtract r1 r2)
-  | Set s, Reg r
+  | Set s, Reg r -> Reg (R.subtract (S.to_nfa s) r)
   | Reg r, Set s -> Reg (R.subtract r (S.to_nfa s))
 
 let negate v = match v with

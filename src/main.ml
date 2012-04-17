@@ -248,12 +248,14 @@ let actual_data () =
       let t' = Sb_desugar.desugar_typ p t in
       let t'' = squash env t' in
       (bind_rec_typ_id x recIds (TypImpl.replace_name (Some x) t'') env)
+    | ObjectTrio _ -> extend_global_env env [d]
     | RecBind binds ->
-      let ids = ListExt.filter_map (fun b -> match b with
-        | EnvBind (_, x, _) -> Some x
-        | EnvType (_, x, _) -> Some x
+      let ids = List.concat (List.map (fun b -> match b with
+        | EnvBind (_, x, _) -> [x]
+        | EnvType (_, x, _) -> [x]
+        | ObjectTrio(_, (c, _), (p, _), (i, _)) -> [c;p;i]
         | EnvPrim _
-        | RecBind _ -> None) binds in
+        | RecBind _ -> []) binds) in
       List.fold_left (helper ids) env binds
     | _ -> env in
   let env = List.fold_left (helper []) env new_decls in

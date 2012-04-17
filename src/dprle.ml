@@ -81,6 +81,25 @@ module Set : Sig.SET = struct
 
   let empty = Pat uniq_empty
 
+
+  let intersections ts = match (List.fold_left 
+                                  (fun u t -> match u with
+                                  | None -> Some t
+                                  | Some u -> Some (intersect u t))
+                                  None
+                                  ts) with
+    | Some u -> u
+    | None -> empty
+
+  let unions ts = match (List.fold_left 
+                           (fun u t -> match u with
+                           | None -> Some t
+                           | Some u -> Some (union u t))
+                           None
+                           ts) with
+    | Some u -> u
+    | None -> empty
+
   let rec unvar env t = match t with
     | Var x -> IdMap.find (Id.string_of_id x) env
     | Union (t1, t2) -> Union (unvar env t1, unvar env t2)

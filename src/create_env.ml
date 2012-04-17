@@ -96,7 +96,7 @@ let create_env defs =
   (*   let allFields = componentsAndCID :: interfaces in *)
   (*   let catchallPat = match allFields with *)
   (*     | [] -> P.all *)
-  (*     | hd::tl -> P.negate (List.fold_left P.union (fst3 hd) (List.map fst3 tl)) in *)
+  (*     | hd::tl -> P.negate (P.unions ((fst3 hd)::(List.map fst3 tl))) in *)
   (*   (\*TSource*\)TRef ((\* TRef *\) (TObject (mk_obj_typ allFields catchallPat))) *)
   and wrapArrow mutability t =
     let codePat = P.singleton "-*- code -*-" in
@@ -104,7 +104,7 @@ let create_env defs =
     let obj = (TObject(mk_obj_typ [(codePat, Present, t);
                                    (proto_pat, Present, TId "Object");
                                    (prototypePat, Present, TId "Ext");
-                                   ((P.negate (P.union (P.union codePat prototypePat) proto_pat)), 
+                                   ((P.negate (P.unions [codePat; prototypePat; proto_pat])), 
                                     Maybe, TId "Ext")]
                    P.empty)) in
     match mutability with
@@ -218,7 +218,7 @@ let create_env defs =
         | (_, _, TSource(*TRef*)(_, TObject f)) -> TypImpl.fields f
         | _ -> []) implementsTyps) in
       let transfields = transfields @ parentFields @ implementsFields in
-      let catchallPat = P.empty in (*P.negate (List.fold_left P.union proto_pat (List.map fst3 transfields)) in*)
+      let catchallPat = P.empty in (*P.negate (P.unions (proto_pat::(List.map fst3 transfields))) in*)
       let ifaceTyp = TSource(*TRef*) (Some (Id.string_of_id name), TObject (mk_obj_typ transfields catchallPat)) in
       Hashtbl.add ifaceHash name (Comp (ifaceTyp, funcFunc));
       Some(idToPat name, Inherited, ifaceTyp)
@@ -330,7 +330,7 @@ let create_env defs =
     | OutParam -> 
       let codePat = P.singleton "-*- code -*-" in
       let valuePat = P.singleton "value" in
-      let rest = P.negate (P.union valuePat (P.union (P.singleton "-*- code -*-") proto_pat)) in
+      let rest = P.negate (P.unions [valuePat; (P.singleton "-*- code -*-"); proto_pat]) in
       let obj = (TObject(mk_obj_typ [(valuePat, Present, (*TSink*) addArray (trans_typ typ));
                                      (codePat, Present, TPrim "Undef");
                                      (proto_pat, Present, TId "Object")]
@@ -339,7 +339,7 @@ let create_env defs =
     | InOutParam -> 
       let codePat = P.singleton "-*- code -*-" in
       let valuePat = P.singleton "value" in
-      let rest = P.negate (P.union valuePat (P.union (P.singleton "-*- code -*-") proto_pat)) in
+      let rest = P.negate (P.unions [valuePat; (P.singleton "-*- code -*-"); proto_pat]) in
       let obj = (TObject(mk_obj_typ [(valuePat, Present, (*TSink*) addArray (trans_typ typ));
                                      (codePat, Present, TPrim "Undef");
                                      (proto_pat, Present, TId "Object")]

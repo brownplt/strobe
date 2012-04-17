@@ -167,6 +167,7 @@ type env_decl =
   | EnvType of pos * id * WritTyp.t
   | EnvPrim of pos * id
   | RecBind of env_decl list
+  | ObjectTrio of pos * (id * WritTyp.t) * (id * WritTyp.t) * (id * WritTyp.t)
 
 type annotation =
   | ATyp of WritTyp.t

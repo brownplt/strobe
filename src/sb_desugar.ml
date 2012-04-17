@@ -75,7 +75,7 @@ and object_typ (flds : W.f list) =
   let (flds_no_absents, absent_pat) = 
     let (absents, others) = List.partition is_absent flds in
     (others, 
-     fold_right (fun w acc -> P.union (pat_of w) acc) absents P.empty) in
+     P.unions (List.map pat_of absents)) in
   let (flds_no_stars, absent_pat) =
     let (stars, others) = List.partition is_star flds_no_absents in
     match stars with
@@ -86,7 +86,7 @@ and object_typ (flds : W.f list) =
             end
     | [W.Star opt_star_typ] ->
       let star_pat =
-        P.negate (fold_right P.union (map pat_of others) absent_pat) in
+        P.negate (P.unions (absent_pat::(map pat_of others))) in
       begin match opt_star_typ with
       | None -> (others, P.union star_pat absent_pat)
       | Some t -> ((W.Maybe (star_pat, t)) :: others, absent_pat)

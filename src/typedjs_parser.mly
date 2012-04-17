@@ -54,6 +54,7 @@ let rec pushIntersectFunction typ = match typ with
        CHEAT REC INTERSECTION UNDERSCORE BAD WITH THIS
        HASHBRACE EQUALS TYPE QUES BANG TYPREC TYPLAMBDA THICKARROW
        COLONCOLON CARET LLBRACE RRBRACE REF PRIMITIVE DOTS
+       CONSTRUCTOR PROTOTYPE INSTANCE
 
 %right UNION INTERSECTION THICKARROW REF
 %left LANGLE
@@ -79,7 +80,7 @@ args
 
 pat :
   | REGEX { (P.parse $startpos $1, true) }
-  | ID { (P.singleton $1, false) }
+  | any_id { (P.singleton $1, false) }
   | STRING { (P.singleton $1, false) }
 
 field :
@@ -108,6 +109,12 @@ typ_list :
   | typ { [$1] }
   | typ COMMA typ_list { $1 :: $3 }
 
+obj_ref_typ:
+  | LBRACE fields RBRACE { W.Ref (W.Object $2) }
+  | HASHBRACE fields RBRACE { W.Source (W.Object $2) }
+  | LBRACE typ WITH fields RBRACE { W.With($2, $4) }
+
+
 arg_typ
   : ANY { W.Top }
   | PRIM { W.Prim $1 }
@@ -116,11 +123,9 @@ arg_typ
   | REGEX { W.Pat (P.parse $startpos $1) }
   | arg_typ UNION arg_typ { W.Union ($1, $3) }
   | arg_typ INTERSECTION arg_typ { pushIntersectFunction (W.Inter ($1, $3)) }
-  | LBRACE fields RBRACE { W.Ref (W.Object $2) }
-  | HASHBRACE fields RBRACE { W.Source (W.Object $2) }
-  | LLBRACE fields RRBRACE { W.Object $2 }
-  | LBRACE typ WITH fields RBRACE { W.With($2, $4) }
   | LPAREN typ RPAREN { $2 }
+  | LLBRACE fields RRBRACE { W.Object $2 }
+  | obj_ref_typ { $1 }
   | TID { W.Id $1 }
   | ID { W.Syn $1 }
   | REF arg_typ { W.Ref $2 } 
@@ -163,6 +168,9 @@ any_id :
   | PRIM { $1 }
   | STR { "Str" }
   | BOOL { "Bool" }
+  | PROTOTYPE { "prototype" }
+  | CONSTRUCTOR { "constructor" }
+  | INSTANCE { "instance" }
 
 id_list :
   | { [] }
@@ -170,6 +178,10 @@ id_list :
   | ID COMMA id_list { $1 :: $3 }
 
 env_decl :
+  | TYPE CONSTRUCTOR c_id=any_id EQUALS c_typ=typ
+      AND PROTOTYPE p_id=any_id EQUALS p_typ=obj_ref_typ
+      AND INSTANCE i_id=any_id EQUALS i_typ=obj_ref_typ
+    { ObjectTrio (($startpos, $endpos), (c_id, c_typ), (p_id, p_typ), (i_id, i_typ)) }
   | TYPE any_id LANGLE id_list RANGLE EQUALS typ 
       { EnvType (($startpos, $endpos), $2,
      W.Lambda (List.map (fun x -> (x, KStar)) $4, $7)) }
