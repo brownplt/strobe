@@ -40,7 +40,13 @@ let rec mk (nfa : nfa) (rx : regex) (start : state) (stop : state) : unit =
         (fun ch -> rx' := Concat (!rx', InSet (CharSet.singleton ch)))
         str;
       mk nfa !rx' start stop
-    | Negate _ -> failwith "trying to construct from Negate regex"
+    | Negate rx' -> 
+      let newStart = new_state nfa in
+      let newStop = new_state nfa in
+      mk nfa rx' newStart newStop;
+      complement nfa;
+      add_trans nfa start Epsilon nfa.s;
+      add_trans nfa nfa.f Epsilon stop
 
       
 let rec to_nfa (rx : regex) : nfa = 

@@ -45,7 +45,11 @@ let valid_char (c : int) : bool =
   c >= 0 && c < 256
       
 let char_as_string (c : int) : string =
-  Printf.sprintf "\\%03d" c
+  if ((c >= (int_of_char 'A') && c <= (int_of_char 'Z')) ||
+         (c >= (int_of_char 'a') && c <= (int_of_char 'z')) ||
+         (c >= (int_of_char '0') && c <= (int_of_char '9')))
+  then Printf.sprintf "%c" (char_of_int c)
+  else Printf.sprintf "\\%03d" c
 
 let string_to_int (c : string) : int =
   if String.length c = 1 then

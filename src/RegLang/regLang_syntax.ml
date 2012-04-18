@@ -11,7 +11,7 @@ type regex =
   | Empty
   | String of string
   | Concat of regex * regex
-  | Negate of regex (** can't construct from this, just for convenience *)
+  | Negate of regex
 
 let compare re1 re2 = match (re1, re2) with
   | NotInSet s1, NotInSet s2

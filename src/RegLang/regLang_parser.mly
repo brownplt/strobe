@@ -29,9 +29,13 @@ atom :
   | DOT { NotInSet CharSet.empty }
   | LBRACK chardescs RBRACK { $2 }
 
-star :
+negate :
   | atom { $1 }
-  | atom STAR { Star $1 }
+  | CARET atom { Negate $2 }
+
+star :
+  | negate { $1 }
+  | negate STAR { Star $1 }
 
 alt :
   | cat { $1 }
