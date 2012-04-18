@@ -53,3 +53,12 @@ let product (lists : 'a list list) : 'a list list =
     | _, [] -> []
     | x::xs, _ -> (List.map (fun y -> x :: y) ys) @ prod xs ys
   in List.fold_right prod lists [[]]
+
+let partitionAll (key : 'a -> 'b) (list : 'a list) : 'a list list =
+  let keyed = List.map (fun v -> (key v, v)) list in
+  let rec helper byKeys = match byKeys with
+    | [] -> []
+    | (key,value)::tl ->
+      let (firstKey, rest) = List.partition (fun (k, v) -> k = key) byKeys in
+      (List.map snd firstKey) :: (helper rest) in
+  helper keyed
