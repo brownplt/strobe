@@ -383,6 +383,11 @@ let main () : unit =
        "Print the current IDL data");
       ("-compile-env", Arg.Unit (timefn "Compiling environment" compile_env),
        "Generate environment from IDL");
+      ("-print-typ", Arg.String (fun ty ->
+        let (typ, _) = lookup_typ_id ty (get_env ()) in
+        horz [text ty; text "="; TypImpl.Pretty.typ (TypImpl.replace_name None typ)] std_formatter;
+        Format.pp_print_flush std_formatter ()),
+       "Print the definition of a single type");
       ("-print-env", Arg.Unit set_print_env,
        "Print the current environment");
       set_simpl_cps;
