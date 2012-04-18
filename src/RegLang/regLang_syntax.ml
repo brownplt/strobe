@@ -12,6 +12,8 @@ type regex =
   | String of string
   | Concat of regex * regex
   | Negate of regex
+  | Subtract of regex * regex
+  | Inter of regex * regex
 
 let compare re1 re2 = match (re1, re2) with
   | NotInSet s1, NotInSet s2
@@ -56,17 +58,32 @@ module Pretty = struct
         squish [text (Char.escaped c1); text "-"; 
                 text (Char.escaped c2)]
 
-  let rec p_re re = match re with
+  let priority s = match s with
+    | String _ -> 0
+    | Star _ -> 1
+    | Concat _ -> 2
+    | Negate _ -> 3
+    | Subtract _ -> 4
+    | Inter _ -> 5
+    | Alt _ -> 6 
+    | _ -> 7
+  let rec parensIf r s =
+    let pr = priority r in
+    let ps = priority s in
+    if (pr < ps || pr = 4 && ps = 4) then parens (p_re s) else p_re s 
+  and p_re re = match re with
     | InSet chs -> let ranges = list_to_ranges (CharSet.elements chs) in
         brackets (horz (map range ranges))
     | NotInSet chs -> let ranges = list_to_ranges (CharSet.elements chs) in
         brackets (horz ((text "^")::(map range ranges)))
-    | Alt (re1, re2) -> parens (horz [p_re re1; text "|"; p_re re2])
-    | Star re -> parens (squish [p_re re; text "*"])
+    | Alt (re1, re2) -> squish [parensIf re re1; text "|"; parensIf re re2]
+    | Star re -> squish [parensIf re re; text "*"]
     | Empty -> text "empty"
     | String s -> text s
-    | Concat (re1, re2) -> squish [p_re re1; p_re re2]
-    | Negate re -> squish [text "complement"; parens (p_re re)]
+    | Inter(r1, r2) -> squish [parensIf re r1; text "&"; parensIf re r2]
+    | Concat (re1, re2) -> squish [parensIf re re1; parensIf re re2]
+    | Negate re -> squish [text "^"; parens (parensIf re re)]
+    | Subtract(r1, r2) -> squish [parensIf re r1; text "\\"; parensIf re r2]
 
   let string_of_re = FormatExt.to_string p_re
 

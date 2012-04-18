@@ -16,6 +16,8 @@ type regex =
   | String of string
   | Concat of regex * regex
   | Negate of regex
+  | Subtract of regex * regex
+  | Inter of regex * regex
 
 val compare : regex -> regex -> int
 
