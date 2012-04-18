@@ -137,6 +137,69 @@ partial interface nsIDOMNode {
   nsIDOMNode cloneNode(in boolean deep);
 };
 
+partial interface nsIDOMWindow {
+//  boolean getBoolPref(in DOMString prefName, in boolean def);
+//  void openUILinkIn(in DOMString url, in DOMString where, in boolean aAllowThirdPartyFixup, in DOMString aPostData, in DOMString refererURI);
+//  void openUILink(in DOMString url, in nsIDOMEvent event, in boolean aIgnoreButton, in boolean aIgnoreAlt, in DOMString where,
+//                  in boolean aAllowThirdPartyFixup, in DOMString aPostData, in DOMString refererURI);
+//  boolean isBlankPageURL(in DOMString aURL);
+//  DOMString getBrowserURL();
+//  nsIDOMWindow getTopWin(in boolean skipPopups);
+//  void openTopWin(in DOMString url);
+//  DOMString whereToOpenLink(in nsIDOMEvent event, in boolean aIgnoreButton, in boolean aIgnoreAlt);
+//  void openLinkIn(in DOMString url, in DOMString where, in jsval params);
+//  void checkForMiddleClick(in nsIDOMNode node, in nsIDOMEvent event);
+//  void closeMenus(in nsIDOMNode node);
+//  DOMString gatherTextUnder(in nsIDOMNode node);
+//  nsIShellService getShellService();
+//  boolean isBidiEnabled();
+//  void openAboutDialog();
+//  nsIDOMWindow openPreferences(in DOMString paneID, in jsval extraArgs);
+//  nsIDOMWindow openAdvancedPreferences(in DOMString tabID);
+//  void openTroubleshootingPage();
+//  void openFeedbackPage();
+//  void buildHelpMenu();
+//  boolean isElementVisible(in nsIDOMElement element);
+//  DOMString makeURLAbsolute(in DOMString aBase, in DOMString aUrl);
+//  void openNewTabWith(in DOMString aUrl, in nsIDocument aDocument, in jsval aPostData, in nsIDOMEvent event, in boolean aAllowThirdPartyFixup,
+//                      in DOMString aReferrer);
+//  void openNewWindowWith (in DOMString aUrl, in nsIDocument aDocument, in jsval aPostData, in boolean aAllowThirdPartyFixup, in DOMString aReferrer);
+//  boolean isValidFeed(in jsval aLink, in DOMString aPrincipal, in boolean aIsFeed);
+//  void openHelpLink(in DOMString aHelpTopic, in boolean aCalledFromModal);
+//  void openPrefsHelp();
+//  DOMString trimURL(in DOMString aUrl);
+  boolean getBoolPref(in jsval prefName, in jsval def);
+  void openUILinkIn(in jsval url, in jsval where, in jsval aAllowThirdPartyFixup, in jsval aPostData, in jsval refererURI);
+  void openUILink(in jsval url, in jsval event, in jsval aIgnoreButton, in jsval aIgnoreAlt, in jsval where,
+                  in jsval aAllowThirdPartyFixup, in jsval aPostData, in jsval refererURI);
+  boolean isBlankPageURL(in jsval aURL);
+  DOMString getBrowserURL();
+  nsIDOMWindow getTopWin(in jsval skipPopups);
+  void openTopWin(in jsval url);
+  DOMString whereToOpenLink(in jsval event, in jsval aIgnoreButton, in jsval aIgnoreAlt);
+  void openLinkIn(in jsval url, in jsval where, in jsval params);
+  void checkForMiddleClick(in jsval node, in jsval event);
+  void closeMenus(in jsval node);
+  DOMString gatherTextUnder(in jsval node);
+  nsIShellService getShellService();
+  boolean isBidiEnabled();
+  void openAboutDialog();
+  nsIDOMWindow openPreferences(in jsval paneID, in jsval extraArgs);
+  nsIDOMWindow openAdvancedPreferences(in jsval tabID);
+  void openTroubleshootingPage();
+  void openFeedbackPage();
+  void buildHelpMenu();
+  boolean isElementVisible(in jsval element);
+  DOMString makeURLAbsolute(in jsval aBase, in jsval aUrl);
+  void openNewTabWith(in jsval aUrl, in jsval aDocument, in jsval aPostData, in jsval event, in jsval aAllowThirdPartyFixup,
+                      in jsval aReferrer);
+  void openNewWindowWith (in DOMString jsval, in jsval aDocument, in jsval aPostData, in jsval aAllowThirdPartyFixup, in jsval aReferrer);
+  boolean isValidFeed(in jsval aLink, in jsval aPrincipal, in jsval aIsFeed);
+  void openHelpLink(in jsval aHelpTopic, in jsval aCalledFromModal);
+  void openPrefsHelp();
+  DOMString trimURL(in jsval aUrl);
+};
+
 nsIDOMWindow implements nsIDOMJSWindow;
 nsIDOMWindow implements nsIDOMEventTarget;
 nsIDOMDocument implements nsIDOMEventTarget;
