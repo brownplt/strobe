@@ -202,78 +202,78 @@ partial interface nsIDOMWindow {
 
 partial interface nsIDOMEventTarget {
   // The default type of listener -- restricted to unknown event types
-  void addEventListener([UseType("/^(mouseup|mousedown|mousemove|click|dlbclick|keydown|keypress|keyup)/")] 
+  void addEventListener([UseType("/^(\"mouseup\"|\"mousedown\"|\"mousemove\"|\"click\"|\"dblclick\"|\"keydown\"|\"keypress\"|\"keyup\")/")] 
                         in DOMString type,
                         in nsIDOMEventListener listener,
                         [optional] in boolean useCapture, [optional] in boolean wantsUntrusted);
-  void addEventListener([UseType("/mouseup/")] in jsval dummy1,
+  void addEventListener([UseType("/\"mouseup\"/")] in jsval dummy1,
                         [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMMouseEvent -> Undef>")]
                         in jsval listener,
                         [optional] in boolean useCapture, [optional] in boolean wantsUntrusted);
-  void addEventListener([UseType("/mouseup/")] in jsval dummy2,
+  void addEventListener([UseType("/\"mousedown\"/")] in jsval dummy2,
                         [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMMouseEvent -> Undef>")]
                         in jsval listener,
                         [optional] in boolean useCapture, [optional] in boolean wantsUntrusted);
-  void addEventListener([UseType("/mousemove/")] in jsval dummy3,
+  void addEventListener([UseType("/\"mousemove\"/")] in jsval dummy3,
                         [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMMouseEvent -> Undef>")]
                         in jsval listener,
                         [optional] in boolean useCapture, [optional] in boolean wantsUntrusted);
-  void addEventListener([UseType("/click/")] in jsval dummy4,
+  void addEventListener([UseType("/\"click\"/")] in jsval dummy4,
                         [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMMouseEvent -> Undef>")]
                         in jsval listener,
                         [optional] in boolean useCapture, [optional] in boolean wantsUntrusted);
-  void addEventListener([UseType("/dblclick/")] in jsval dummy5,
+  void addEventListener([UseType("/\"dblclick\"/")] in jsval dummy5,
                         [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMMouseEvent -> Undef>")]
                         in jsval listener,
                         [optional] in boolean useCapture, [optional] in boolean wantsUntrusted);
-  void addEventListener([UseType("/keydown/")] in jsval dummy6,
+  void addEventListener([UseType("/\"keydown\"/")] in jsval dummy6,
                         [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMKeyEvent -> Undef>")]
                         in jsval listener,
                         [optional] in boolean useCapture, [optional] in boolean wantsUntrusted);
-  void addEventListener([UseType("/keypress/")] in jsval dummy7,
+  void addEventListener([UseType("/\"keypress\"/")] in jsval dummy7,
                         [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMKeyEvent -> Undef>")]
                         in jsval listener,
                         [optional] in boolean useCapture, [optional] in boolean wantsUntrusted);
-  void addEventListener([UseType("/keyup/")] in jsval dummy8,
+  void addEventListener([UseType("/\"keyup\"/")] in jsval dummy8,
                         [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMKeyEvent -> Undef>")]
                         in jsval listener,
                         [optional] in boolean useCapture, [optional] in boolean wantsUntrusted);
 
 
   // The default type of listener -- restricted to unknown event types
-  void removeEventListener([UseType("/^(mouseup|mousedown|mousemove|click|dlbclick|keydown|keypress|keyup)/")] 
+  void removeEventListener([UseType("/^(\"mouseup\"|\"mousedown\"|\"mousemove\"|\"click\"|\"dblclick\"|\"keydown\"|\"keypress\"|\"keyup\")/")] 
                            in DOMString type,
                            in nsIDOMEventListener listener,
                            [optional] in boolean useCapture);
-  void removeEventListener([UseType("/mousedown/")] in jsval dummy1,
+  void removeEventListener([UseType("/\"mousedown\"/")] in jsval dummy1,
                            [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMMouseEvent -> Undef>")]
                            in jsval listener,
                            [optional] in boolean useCapture);
-  void removeEventListener([UseType("/mouseup/")] in jsval dummy2,
+  void removeEventListener([UseType("/\"mouseup\"/")] in jsval dummy2,
                            [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMMouseEvent -> Undef>")]
                            in jsval listener,
                            [optional] in boolean useCapture);
-  void removeEventListener([UseType("/mousemove/")] in jsval dummy3,
+  void removeEventListener([UseType("/\"mousemove\"/")] in jsval dummy3,
                            [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMMouseEvent -> Undef>")]
                            in jsval listener,
                            [optional] in boolean useCapture);
-  void removeEventListener([UseType("/click/")] in jsval dummy4,
+  void removeEventListener([UseType("/\"click\"/")] in jsval dummy4,
                            [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMMouseEvent -> Undef>")]
                            in jsval listener,
                            [optional] in boolean useCapture);
-  void removeEventListener([UseType("/dblclick/")] in jsval dummy5,
+  void removeEventListener([UseType("/\"dblclick\"/")] in jsval dummy5,
                            [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMMouseEvent -> Undef>")]
                            in jsval listener,
                            [optional] in boolean useCapture);
-  void removeEventListener([UseType("/keydown/")] in jsval dummy6,
+  void removeEventListener([UseType("/\"keydown\"/")] in jsval dummy6,
                            [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMKeyEvent -> Undef>")]
                            in jsval listener,
                            [optional] in boolean useCapture);
-  void removeEventListener([UseType("/keypress/")] in jsval dummy7,
+  void removeEventListener([UseType("/\"keypress\"/")] in jsval dummy7,
                            [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMKeyEvent -> Undef>")]
                            in jsval listener,
                            [optional] in boolean useCapture);
-  void removeEventListener([UseType("/keyup/")] in jsval dummy8,
+  void removeEventListener([UseType("/\"keyup\"/")] in jsval dummy8,
                            [UseType("Immutable<[this(nsIDOMEventListener)] nsIDOMKeyEvent -> Undef>")]
                            in jsval listener,
                            [optional] in boolean useCapture);
