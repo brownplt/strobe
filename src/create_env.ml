@@ -111,6 +111,35 @@ let create_env defs =
     | RefCell -> TRef (None, obj)
     | SourceCell -> TSource (None, obj)
     | SinkCell -> TSink (None, obj)
+  and unwrapArrow typ = 
+    let codePat = P.singleton "-*- code -*-" in
+    let prototypePat = P.singleton "prototype" in
+    match typ with
+    | TRef(_, t)
+    | TSource(_, t)
+    | TSink(_, t) -> begin match t with
+      | TObject(flds) -> begin 
+        let fieldList = fields flds in
+        let findField namePat =
+          try
+            let (_, _, t) =
+              List.find (fun (n, p, _) -> (p = Present && n = namePat)) fieldList in
+            (true, Some t)
+          with Not_found -> (false, None) in
+        let (hasProto, _) = findField proto_pat in
+        let (hasCode, codeTyp) = findField codePat in
+        let (hasPrototype, protoTyp) = findField prototypePat in
+        let isSimplePrototype = match protoTyp with
+          | Some (TId t) -> t = "Object" || t = "Any" || t = "Ext"
+                                              || (String.length t > 3 && String.sub t 0 3 = "nsI")
+          | _ -> false in
+        if ((List.length fieldList) = 4 && hasProto && hasCode && hasPrototype && isSimplePrototype)
+        then match codeTyp with Some t -> t | None -> typ
+        else typ 
+      end
+      | _ -> typ
+    end
+    | _ -> typ
   and build_components defs = 
     let interfaceToIIDFieldAndFun def =
       match def with
@@ -223,11 +252,25 @@ let create_env defs =
       Hashtbl.add ifaceHash name (Comp (ifaceTyp, funcFunc));
       Some(idToPat name, Inherited, ifaceTyp)
     | Raw _ -> None
-  and trans_fields tt queryInterfaceType fields = List.flatten 
-    (filter_map (trans_field tt queryInterfaceType) fields)
-  and trans_field tself queryInterfaceType field = match field with
+  and trans_fields tt queryInterfaceType fields = 
+    let trans_fields = List.flatten (filter_map (trans_field tt queryInterfaceType) fields) in
+    let (opers, others) = 
+      List.partition (fun (_, f) -> match f with Operation _ -> true | _ -> false) trans_fields in
+    let others = List.map fst others in
+    let opersByName = ListExt.partitionAll fst3 (List.map fst opers) in
+    let opersCollapsed = List.map (fun operByName ->
+      let (name, presence, ty) =
+        (List.fold_left (fun (_, _, acc) (name, presence, ty) ->
+          match acc with
+          | TBot -> (name, presence, unwrapArrow ty)
+          | _ -> (name, presence, TIntersect (None, unwrapArrow ty, acc))) (P.empty, Maybe, TBot) operByName) in
+      let wrappedTy = if ty = TPrim "Unsafe" then ty else wrapArrow SourceCell ty in
+      (name, presence, wrappedTy)) opersByName in
+    others @ opersCollapsed
+  and trans_field tself queryInterfaceType field : (TypImpl.field * Full_idl_syntax.interfaceMember) list option = 
+    match field with
     | Attribute (_, metas, readOnly, stringifier, typ, name) ->
-      let returnField t = Some [(idToPat name, Present, t)] in
+      let returnField t = Some [((idToPat name, Present, t), field)] in
       if (isNoScript metas) then None
       else if (isPrivateBrowsingCheck metas) then returnField (TPrim "True")
       else if (isUnsafe metas) then returnField (TPrim "Unsafe")
@@ -238,9 +281,11 @@ let create_env defs =
            (* let t = match readOnly with *)
            (*   | NoReadOnly -> t *)
            (*   | ReadOnly -> TSource t in *)  (* TSource implies an extra indirection... *)
-           Some [(idToPat name, Inherited, t)])
+           Some [((idToPat name, Inherited, t), field)])
     | Operation (_, metas, stringifier, quals, retTyp, nameOpt, args) -> 
-      let returnField typ = match nameOpt with None -> None | Some name -> Some [(idToPat name, Inherited, typ)] in
+      let returnField typ = match nameOpt with
+        | None -> None
+        | Some name -> Some [((idToPat name, Inherited, typ), field)] in
       let transRetTyp = trans_typ retTyp in
       let adjoinThisRet argss ret =
         let allPossibleFunctionArgs = ListExt.product argss in
@@ -261,9 +306,10 @@ let create_env defs =
                            (pat, Present, transRetTyp) (* should be Maybe, but that gets annoying with Undefs... *)
           | TRegex r -> (r, Maybe, transRetTyp)
           | _ -> failwith "impossible" in
-        (match nameOpt with None -> Some [getterFields]
-        | Some name -> Some [(idToPat name, Present, (adjoinThisRet targs transRetTyp));
-                             getterFields])
+        let fakeAttr = Attribute(Lexing.dummy_pos, [], NoReadOnly, IsNormal, Any, Id.id_of_string "dummy") in
+        (match nameOpt with None -> Some [(getterFields, fakeAttr)]
+        | Some name -> Some [((idToPat name, Present, (adjoinThisRet targs transRetTyp)), field);
+                             (getterFields, fakeAttr)])
       else (match isUseType metas with
       | Some (AttrArgList(_, [Full_idl_syntax.String ty])) -> 
         (match parseType ty with TRef (n, t) -> returnField (TSource (n, t)) | t -> returnField t)
@@ -285,7 +331,7 @@ let create_env defs =
     | ConstMember (_, metas, typ, id, value) -> 
       if (isNoScript metas)
       then None
-      else Some [(idToPat id, Inherited, (* TSource *) (trans_typ typ)) (* can't do const correctly *)]
+      else Some [((idToPat id, Inherited, (* TSource *) (trans_typ typ)), field) (* can't do const correctly *)]
     | Stringifier (_, metas) -> None
   and trans_args tt queryInterfaceType args = 
     let helper (acc, skippedParams) ((_, _, _, _, id, _) as arg) =
