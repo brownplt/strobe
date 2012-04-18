@@ -303,6 +303,9 @@ let create_env defs =
     (*   | hd::tl -> [List.fold_left (fun acc t -> TUnion(acc,t)) hd tl] in *)
     (* List.map condense *) (List.rev (fst (List.fold_left helper ([], []) args)))
   and trans_arg tt queryInterfaceType (direction, metas, typ, variadic, id, defaultOpt) = 
+    match isUseType metas with
+    | Some(AttrArgList(_, [Full_idl_syntax.String ty])) -> [parseType ty], None 
+    | _ ->
     let findSizeOf metas = try Some (List.find (fun m -> match m with SizeOf _ -> true | _ -> false) metas)
       with Not_found -> None in
     let addSkip ts = match findSizeOf metas with
