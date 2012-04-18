@@ -85,14 +85,23 @@ let cap : set -> set -> set = Hashset.cap
 let choose : set -> int = Hashset.choose
 let from_list : int list -> set = Hashset.from_list
 
-let print_charset (s : set) = 
-  if size s > 126 then
+let fprint_charset f (s : set) = 
+  if size s > 126 then begin
     let negset = minus (create_full ()) s in
-      Printf.printf "neg {";
-      Hashset.iter (fun c-> Printf.printf "%s," (char_as_string c)) negset;
-      Printf.printf "}"
-  else
-    (Printf.printf "{";
-     Hashset.iter (fun c-> Printf.printf "%s," (char_as_string c)) s;
-     Printf.printf "}")
+      Format.pp_print_string f "neg {";
+      Hashset.iter (fun c-> Format.pp_print_string f ((char_as_string c) ^ ",")) negset;
+      Format.pp_print_string f "}"
+  end else begin
+    (Format.pp_print_string f "{";
+     Hashset.iter (fun c-> Format.pp_print_string f ((char_as_string c) ^ ",")) s;
+     Format.pp_print_string f "}")
+  end;
+  Format.pp_print_flush f ()
 
+let print_charset (s : set) = 
+  fprint_charset (Format.std_formatter) s
+
+let charset_to_string (s : set) = 
+  let b = Buffer.create (Hashset.size s + 5) in
+  fprint_charset (Format.formatter_of_buffer b) s;
+  Buffer.contents b

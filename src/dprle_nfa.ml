@@ -325,8 +325,8 @@ let nfa_to_dot (nfa : nfa) : string =
 
   let delta_step q1 rhs =
     let handle_rhs q2 charset = 
-      let thecar = Charset.choose charset in
-  appf "q%d -> q%d [label=\"%d\"];\n" q1 q2 thecar 
+      let thecar = Charset.charset_to_string charset in
+      appf "q%d -> q%d [label=\"%s\"];\n" q1 q2 (thecar)
     in 
       Hashtbl.iter handle_rhs rhs in
 
@@ -335,7 +335,8 @@ let nfa_to_dot (nfa : nfa) : string =
     in iter handle_rhs rhs
   in
     appf "digraph nfa {\nrankdir=LR;\n";
-    appf "node [shape = doublecircle]; q%d;" nfa.f;
+    appf "node [shape = doublecircle]; q%d;\n" nfa.s;
+    appf "node [shape = tripleoctagon]; q%d;\n" nfa.f;
     appf "node [shape = circle];\n";
     Hashtbl.iter delta_step nfa.delta;
     Hashtbl.iter epsilon_step nfa.epsilon;
