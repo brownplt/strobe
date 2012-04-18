@@ -55,6 +55,7 @@ rule token = parse
    | "Undef" { PRIM "Undef" }
    | "Unsafe" { PRIM "Unsafe" }
    | "Mutable" { PRIM "Mutable" }
+   | "Immutable" { PRIM "Immutable" }
    | "Null" { PRIM "Null" }
    | "@" (ident as x) { PRIM x }
    | "_" { UNDERSCORE }

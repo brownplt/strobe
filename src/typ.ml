@@ -512,6 +512,16 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         end
         | _ ->  raise (Invalid_argument "Expected one argument to Mutable<T>")
       end
+      | TPrim "Immutable" -> begin
+        match ts with
+        | [t] -> begin match expose typenv (simpl_typ typenv t) with
+          | TRef (n, t) -> TSource (n, t)
+          | TSource (n, t) -> TSource (n, t)
+          | TSink (n, t) -> TSource (n, t)
+          | _ -> raise (Invalid_argument "Expected a TRef, TSoruce or TSink argument to Immutable<T>")
+        end
+        | _ ->  raise (Invalid_argument "Expected one argument to Mutable<T>")
+      end
       | TLambda (n, args, u) -> 
         (simpl_typ typenv 
           (List.fold_right2 (* well-kinded, no need to check *)

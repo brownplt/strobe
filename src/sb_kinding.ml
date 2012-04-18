@@ -110,10 +110,11 @@ let rec kind_check (env : kind_env) (recIds : id list) (typ : typ) : kind = matc
         else 
           kind_mismatch t_arg k_actual k_arg in
       match t_op with
-      | TPrim "Mutable" ->
+      | TPrim ("Mutable" as p) 
+      | TPrim ("Immutable" as p) ->
         begin 
           try List.iter2 check [KStar] t_args
-          with Invalid_argument _ -> raise (Kind_error "Mutable<> expects one argument")
+          with Invalid_argument _ -> raise (Kind_error (p ^ "<> expects one argument"))
         end;
         KStar
       | _ -> match kind_check env recIds t_op with
