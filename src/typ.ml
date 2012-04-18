@@ -784,8 +784,16 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | TUninit _, _
         | _, TUninit _ -> failwith "Should not be possible!"
         | TRegex pat1, TRegex pat2 ->
-          if P.is_subset (pat_env env) pat1 pat2 then cache 
-            else mismatched_typ_exn (TRegex pat1) (TRegex pat2)
+          (* Printf.eprintf "Is %s <?: %s == " (P.pretty pat1) (P.pretty pat2); *)
+          if P.is_subset (pat_env env) pat1 pat2 then begin
+            (* Printf.eprintf "yes\n"; *)
+            cache
+          end else begin
+              (* Printf.eprintf "no: \"%s\"\n" (match (P.example (P.subtract pat1 pat2)) with *)
+              (* | None -> "CONTRADICTION!" *)
+              (* | Some s -> s);  *)
+              mismatched_typ_exn (TRegex pat1) (TRegex pat2)
+            end
         | TIntersect (_, s1, s2), _ -> 
           begin 
             try subtype cache s1 t
