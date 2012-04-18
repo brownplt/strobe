@@ -183,14 +183,20 @@ let resolve_partials defs =
       let merge_member imems pm =
         let rec helper acc imems = match imems with
           | im::rest -> (* im is the interface member *)
+            let equivArgs ias pas = List.for_all2 
+              (fun (iadir, iametas, iatyp, iav, iaid, iaval) (padir, pametas, patyp, pav, paid, paval) ->
+                iadir = padir & iatyp = patyp & iav = pav & iaid = paid & iaval = paval) ias pas in
+            let merge_args ias pas = List.map2
+              (fun (iadir, iametas, iatyp, iav, iaid, iaval) (padir, pametas, patyp, pav, paid, paval) ->
+                (iadir, (merge_metas iametas pametas), iatyp, iav, iaid, iaval)) ias pas in
             begin match (im,pm) with
               | (Attribute(ip,imetas,iro,is,it,iid), Attribute(_,pmetas,pro,ps,pt,pid)) ->
                 if (iid = pid & iro = pro & is = ps & it = pt) then
                   Attribute(ip,(merge_metas imetas pmetas),iro,is,it,iid)::(acc @ rest)
                 else helper (im::acc) rest
               | (Operation(ip,imetas,is,iq,it,iid,ia), Operation(_,pmetas,ps,pq,pt,pid,pa)) ->
-                if (iid = pid & is = ps & iq = pq & it = pt & ia = pa) then
-                  Operation(ip,(merge_metas imetas pmetas),is,iq,it,iid,ia)::(acc @ rest)
+                if (iid = pid & is = ps & iq = pq & it = pt & (equivArgs ia pa)) then
+                  Operation(ip,(merge_metas imetas pmetas),is,iq,it,iid,(merge_args ia pa))::(acc @ rest)
                 else helper (im::acc) rest
               | (ConstMember(ip,imetas,it,iid,ie), ConstMember(_,pmetas,pt,pid,pe)) ->
                 if (iid = pid & it = pt & ie = pe) then
