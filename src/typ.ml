@@ -455,6 +455,18 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TSink(None, t) -> TSink(n, t)
     | _ -> typ
 
+  and name_of typ =  match typ with
+    | TUnion(name, _, _) -> name
+    | TIntersect(name, _, _) -> name
+    | TForall(name, _, _, _) -> name
+    | TRec(name, _, _) -> name
+    | TLambda(name, _, _) -> name
+    | TFix(name, _, _, _) -> name
+    | TRef(name, _) -> name
+    | TSource(name, _) -> name
+    | TSink(name, _) -> name
+    | _ -> None
+
   and replace_name n typ = match typ with
     | TUnion(_, t1, t2) -> TUnion(n, t1, t2)
     | TIntersect(_, t1, t2) -> TIntersect(n, t1, t2)
@@ -523,10 +535,17 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | _ ->  raise (Invalid_argument "Expected one argument to Mutable<T>")
       end
       | TLambda (n, args, u) -> 
-        (simpl_typ typenv 
-          (List.fold_right2 (* well-kinded, no need to check *)
-             (fun (x, k) t2 u -> typ_subst x t2 u)
-             args ts u))
+        let name = match n with
+          | None -> None
+          | Some n ->
+            let names = intersperse ", "
+              (List.map (fun t -> match name_of t with Some n -> n | None -> string_of_typ t) ts) in
+            Some (n ^ "<" ^ (List.fold_right (^) names ">")) in
+        apply_name name
+          (simpl_typ typenv
+             (List.fold_right2 (* well-kinded, no need to check *)
+                (fun (x, k) t2 u -> typ_subst x t2 u)
+                args ts u))
       | func_t ->
         let msg = sprintf "ill-kinded type application in simpl_typ. Type is \
                            \n%s\ntype in function position is\n%s\n"
