@@ -376,24 +376,8 @@ let create_env defs =
           | Raw _ -> failwith "Impossible")
       | t -> [addArray t]
       )
-    | OutParam -> 
-      let codePat = P.singleton "-*- code -*-" in
-      let valuePat = P.singleton "value" in
-      let rest = P.negate (P.unions [valuePat; (P.singleton "-*- code -*-"); proto_pat]) in
-      let obj = (TObject(mk_obj_typ [(valuePat, Present, (*TSink*) addArray (trans_typ typ));
-                                     (codePat, Present, TPrim "Undef");
-                                     (proto_pat, Present, TId "Object")]
-                           rest)) in
-      [TSink (None, obj)]
-    | InOutParam -> 
-      let codePat = P.singleton "-*- code -*-" in
-      let valuePat = P.singleton "value" in
-      let rest = P.negate (P.unions [valuePat; (P.singleton "-*- code -*-"); proto_pat]) in
-      let obj = (TObject(mk_obj_typ [(valuePat, Present, (*TSink*) addArray (trans_typ typ));
-                                     (codePat, Present, TPrim "Undef");
-                                     (proto_pat, Present, TId "Object")]
-                           rest)) in
-      [TRef (None, obj)])
+    | OutParam -> [TApp(TPrim "Immutable", [TApp(TId "Outparam", [trans_typ typ])])]
+    | InOutParam -> [TApp(TId "Outparam", [trans_typ typ])])
   and trans_typ typ = match typ with
     | Short Unsigned 
     | Short NoUnsigned
