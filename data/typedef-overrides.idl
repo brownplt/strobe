@@ -200,6 +200,11 @@ partial interface nsIDOMWindow {
   DOMString trimURL(in jsval aUrl);
 };
 
+partial interface nsIDOMWindow {
+  nsIDOMWindow openDialog(in DOMString url, [optional] in DOMString name, [optional] in DOMString features,
+                          [optional] in jsval params);
+};
+
 partial interface nsIDOMEventTarget {
   // The default type of listener -- restricted to unknown event types
   void addEventListener([UseType("/^(\"mouseup\"|\"mousedown\"|\"mousemove\"|\"click\"|\"dblclick\"|\"keydown\"|\"keypress\"|\"keyup\")/")] 
