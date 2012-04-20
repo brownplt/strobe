@@ -109,13 +109,12 @@ let rec exp (env : env) expr = match expr with
       EBracket (a, EDeref (a, to_object a (exp env e1)),
                 to_string a (exp env e2))
   | NewExpr (p, constr, args) ->
-    let constrPrototype = EBracket(p, EDeref(p, exp env constr), EConst(p, JavaScript_syntax.CString "prototype"))
-    in ELet (p, "%newobj", ERef (p, RefCell, EObject (p, [("__proto__", constrPrototype)])), 
-          ESeq 
-            (p, 
-             EApp (p, EBracket(p, EDeref(p, exp env constr), EConst(p, JavaScript_syntax.CString "-*- code -*-")),
-                   (EId (p, "%newobj")) :: (map (exp env) args)),
-             EId (p, "%newobj")))
+    (* let constrPrototype = EBracket(p, EDeref(p, exp env constr), EConst(p, JavaScript_syntax.CString "prototype")) *)
+    (* in  *)
+    ELet (p, "%newobj", 
+          EApp (p, EBracket(p, EDeref(p, exp env constr), EConst(p, JavaScript_syntax.CString "-*- code -*-")),
+                (EConst(bad_p, JavaScript_syntax.CNull) :: (map (exp env) args))),
+          EId (p, "%newobj"))
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
   | InfixExpr (p, "&&", e1, e2) -> 
       EIf (p, exp env e1, exp env e2, EConst (p, S.CBool false))
