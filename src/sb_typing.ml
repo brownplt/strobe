@@ -358,11 +358,14 @@ match exp with
     let typ = ((check_kind p env (expose_simpl_typ env (synth env default_typ e)))) in
     if typ = TPrim "Unsafe" 
     then raise (Typ_error (p, FixedString "synth: Cannot dereference an unsafe value"))
-    else begin match extract_ref ("EDeref: " ^ (string_of_exp e)) p env typ with
-    | TRef (_, t) -> t
-    | TSource (_, t) -> t
+    else begin match typ with
+    (* Auto-boxing of primitives *)
+    | TPrim "Num" -> (match expose_simpl_typ env (TId "Number") with TRef (_, t) -> t | _ -> failwith "Impossible")
     | TRegex _ -> (match expose_simpl_typ env (TId "String") with TRef (_, t) -> t | _ -> failwith "Impossible")
-    | t -> raise (Typ_error (p, Typ((fun t -> sprintf "synth: cannot read an expression of type %s" (string_of_typ t)), t)))
+    | _ -> match extract_ref ("EDeref: " ^ (string_of_exp e)) p env typ with
+      | TRef (_, t) -> t
+      | TSource (_, t) -> t
+      | t -> raise (Typ_error (p, Typ((fun t -> sprintf "synth: cannot read an expression of type %s" (string_of_typ t)), t)))
     end 
   | ESetRef (p, e1, e2) -> 
     let t = extract_ref "ESetRef" p env (expose_simpl_typ env (synth env default_typ e1)) in
