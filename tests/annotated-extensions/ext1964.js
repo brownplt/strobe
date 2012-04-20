@@ -345,10 +345,10 @@ tuneGeneralTab: /*: [Window] -> Undef */function()
     return;
 
   // build a multi-line string of unique addresses
-  var email = /*:Ext*/'';
+  var email = /*:Str*/'';
   var numlines = 0;
   for (var i = 0; i < mailaddrs.length; i++) {
-    if (email.search(/*:cheat Ext*/(new RegExp("^" + mailaddrs[i], "m"))) == -1) {
+    if (email.search(new RegExp("^" + mailaddrs[i], "m")) == -1) {
       email += (email ? '\n' : '') + mailaddrs[i];
       numlines++;
     }
@@ -358,17 +358,17 @@ tuneGeneralTab: /*: [Window] -> Undef */function()
    * retrieve the "Serial Number" row, which we use for both getting
    * the CSS properties and for inserting the new "Email address(es)" row
    */
-  var snr = document.getElementById("serialnumber");
-  var snrst = document.defaultView.getComputedStyle(snr, null);
+  var snr = (/*:cheat nsIDOMDocument*/document).getElementById("serialnumber");
+  var snrst = (/*:cheat nsIDOMDocument*/document).defaultView.getComputedStyle(snr, ""+null);
 
   /*
    * create a new textbox (labels can't be multiline, and don't provide
    * scrollbars in case we have a large number of lines)
    */
-  var ea_tbox = document.createElement("textbox");
+  var ea_tbox = (/*:cheat nsIDOMDocument*/document).createElement("textbox");
   ea_tbox.setAttribute("id", "email");
-  ea_tbox.setAttribute("readonly", true);
-  ea_tbox.setAttribute("clickSelectsAll", true);
+  ea_tbox.setAttribute("readonly", ""+true);
+  ea_tbox.setAttribute("clickSelectsAll", ""+true);
   ea_tbox.setAttribute("value", email);
   ea_tbox.setAttribute("class", "plain");
   ea_tbox.style.background = "transparent";
@@ -381,20 +381,20 @@ tuneGeneralTab: /*: [Window] -> Undef */function()
   ea_tbox.style.setProperty("margin-left", snrst.marginLeft, "important");
   ea_tbox.style.setProperty("margin-top", snrst.marginTop, "important");
   if (numlines > 1) {
-    ea_tbox.setAttribute("multiline", true);
+    ea_tbox.setAttribute("multiline", ""+true);
     // setting rows to "2" has space for displaying three lines, actually
-    ea_tbox.setAttribute("rows", numlines < 3 ? numlines - 1 : 2);
+    ea_tbox.setAttribute("rows", ""+(numlines < 3 ? numlines - 1 : 2));
   }
 
   /*
    * create a new row by cloning the "Serial Number" row, adapt as needed,
    * and insert at the proper place, finally
    */
-  var ea_row = snr.parentNode.cloneNode(true);
+  var ea_row = snr.parentElement.cloneNode(true);
   var bundle = /*:cheat nsIDOMXULStringBundleElement*/(document.getElementById("certviewerplusbundle"));
-  ea_row.firstChild.setAttribute("value", numlines > 1 ?
-                                 bundle.getString("CertEmailAddresses") :
-                                 bundle.getString("CertEmailAddress"));
+  ea_row.firstElementChild.setAttribute("value", numlines > 1 ?
+                                        bundle.getString("CertEmailAddresses") :
+                                        bundle.getString("CertEmailAddress"));
   ea_row.replaceChild(ea_tbox, ea_row.lastChild);
   snr.parentNode.parentNode.insertBefore(ea_row, snr.parentNode.nextSibling);
 },
