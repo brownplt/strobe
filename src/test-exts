@@ -6,4 +6,4 @@ if [ "$1" = "-verbose-errors" ] ; then
   shift
 fi
 
-../run $verbose -env ../data/javascript2.env -newidl ../data/all-idls.idl -newidl ../data/typedef-overrides.idl -compile-env -allow-unbound "ref Ext" "$@"
+../run $verbose -noflows -env ../data/javascript2.env -newidl ../data/all-idls.idl -newidl ../data/typedef-overrides.idl -compile-env -allow-unbound "ref Ext" "$@"
