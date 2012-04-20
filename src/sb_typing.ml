@@ -78,7 +78,7 @@ let extract_ref msg p env t =
   | None -> raise (Typ_error (p, StringTyp((fun s t -> sprintf "%s: Ambiguous ref type for type %s"
     s (string_of_typ t)), msg, t)))
 
-let extract_arrow env t = 
+let extract_arrow p env t = 
   let rec helper t = match expose_simpl_typ env t with
     | TArrow _ as t -> Some t
     | TUnion (_, t1, t2) -> 
@@ -88,11 +88,19 @@ let extract_arrow env t =
       | Some r, None
       | None, Some r -> Some r
       | _ -> None) 
+    | TIntersect(n, t1, t2) ->
+      let r1 = helper t1 in
+      let r2 = helper t2 in
+      (match r1, r2 with
+      | Some r, None
+      | None, Some r -> Some r
+      | Some r1, Some r2 -> Some (TIntersect(n, r1, r2))
+      | _ -> None) 
     | TForall _ -> Some t (* BSL : This seems incomplete; extract_arrow won't descend under a Forall *)
     | _ -> None in
   match helper t with
   | Some t -> t
-  | None -> raise (Typ_error ((Lexing.dummy_pos, Lexing.dummy_pos), FixedString "Ambiguous arrow type for Func"))
+  | None -> raise (Typ_error (p, FixedString ("Ambiguous arrow type for " ^ (string_of_typ t))))
 
 
 let simpl_print e = match e with
@@ -202,7 +210,22 @@ match exp with
     consumed_owned_vars := IdSet.union !consumed_owned_vars
       func_info.func_owned;
     let owned_vars = IdSet.diff func_info.func_owned misowned_vars in
-    begin match bind_typ env (extract_arrow env (expose_simpl_typ env (check_kind p env (expose_simpl_typ env typ)))) with
+    begin match bind_typ env (extract_arrow p env (expose_simpl_typ env (check_kind p env (expose_simpl_typ env typ)))) with
+      | (env, (TIntersect(_, t1, t2) as t)) ->
+        (try
+           with_typ_exns (fun () -> check env default_typ exp t1)
+         with Typ_error (p, e) -> typ_mismatch p
+           (TypTyp((fun t1 t2 ->
+             sprintf "Expected function to have type %s, but it failed to have (first-part) type %s because %s"
+               (string_of_typ t1) (string_of_typ t2) (typ_error_details_to_string e)),
+                   t, t1)));
+        (try
+           with_typ_exns (fun () -> check env default_typ exp t2)
+         with Typ_error (p, e) -> typ_mismatch p
+           (TypTyp((fun t1 t2 ->
+             sprintf "Expected function to have type %s, but it failed to have (second-part) type %s because %s"
+               (string_of_typ t1) (string_of_typ t2) (typ_error_details_to_string e)),
+                   t, t1)))
       | (env, TArrow (arg_typs, None, result_typ)) ->
         if not (List.length arg_typs = List.length args) then
           typ_mismatch p
