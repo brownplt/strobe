@@ -5,6 +5,60 @@ typedef DOMString ACString;
 typedef DOMString AString;
 typedef DOMString AUTF8String;
 
+[scriptable]
+interface DOMElementList : nsISupports
+{
+  [getter,forward(getNodeAt)] nsIDOMElement    item(in unsigned long index);
+  readonly attribute unsigned long          length;
+};
+
+partial interface nsIDOMDocument {
+  [UseType("Str -> DOMElementList")] nsIDOMNodeList getElementsByTagName(in DOMString tagname);
+  [UseType("Str * Str -> DOMElementList")] 
+  nsIDOMNodeList getElementsByTagNameNS(in DOMString tagname, 
+                                        in DOMString localName);
+  [UseType("Str -> DOMElementList")] nsIDOMNodeList getElementsByClassName(in DOMString classes);
+};
+
+partial interface nsIDOMHTMLDocument {
+  [UseType("Str -> DOMElementList")] nsIDOMNodeList getElementsByName(in DOMString elementName);
+};
+
+partial interface nsIDOMXULDocument {
+  [UseType("Str * Str -> DOMElementList")] 
+  nsIDOMNodeList getElementsByAttribute(in DOMString name,
+                                        in DOMString value);
+  [UseType("Str * Str * Str -> DOMElementList")] 
+  nsIDOMNodeList getElementsByAttributeNS(in DOMString namespaceURI,
+                                          in DOMString name,
+                                          in DOMString value);
+};
+
+partial interface nsIDOMXULElement {
+  [UseType("Str * Str -> DOMElementList")] 
+  nsIDOMNodeList getElementsByAttribute(in DOMString name,
+                                        in DOMString value);
+  [UseType("Str * Str * Str -> DOMElementList")] 
+  nsIDOMNodeList getElementsByAttributeNS(in DOMString namespaceURI,
+                                          in DOMString name,
+                                          in DOMString value);
+};
+
+partial interface nsIDOMNodeSelector {
+  [UseType("Str -> DOMElementList")]
+  nsIDOMNodeList querySelectorAll([Null(Stringify)] in DOMString selectors);
+};
+
+
+partial interface nsIDOMElement {
+  [UseType("Str -> DOMElementList")] nsIDOMNodeList getElementsByTagName(in DOMString tagname);
+  [UseType("Str * Str -> DOMElementList")] 
+  nsIDOMNodeList getElementsByTagNameNS(in DOMString tagname, 
+                                        in DOMString localName);
+  [UseType("Str -> DOMElementList")] nsIDOMNodeList getElementsByClassName(in DOMString classes);
+};
+
+
 partial interface nsIFile {
   [unsafe] void create(in unsigned long type, in unsigned long permissions);
   [unsafe] void createUnique(in unsigned long type, in unsigned long permissions);
