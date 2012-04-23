@@ -74,8 +74,8 @@ const rfPrefs = Cc["@mozilla.org/preferences-service;1"].getService(Components.i
 		alert("rapidfire: no links found.");
 		return;
 	}
-    var ids = /*: cheat Array<Str> */new Array(links.length);
-    var names = /*: cheat Array<Str> */new Array(links.length);
+    var ids = new /*: Array![Str] */Array(links.length);
+    var names = new /*: Array![Str] */Array(links.length);
     for (var i = 0; i < links.length; i++) {
         var info = links[i].match(/\/files\/(\d+)\/(\S+)/);
         ids[i] = info[1];

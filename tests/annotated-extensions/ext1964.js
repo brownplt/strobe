@@ -591,7 +591,7 @@ setCertTrust: /*:[nsIDOMElement] nsIDOMEvent -> Undef*/function(evt)
    * (through the "ts" attribute) and will turn on the istrusted boolean
    * as soon as we encounter a CA cert where that bit is enabled.
    */
-  var rows = /*:cheat Array<nsIDOMXULElement>*/(document.getElementById("treesetDump").getElementsByTagName("treerow"));
+  var rows = (/*:cheat nsIDOMDocument*/document).getElementById("treesetDump").getElementsByTagName("treerow");
 
   if (rows.length > 1) {
     // we only have to do this if we have a hierarchy with more than one cert
@@ -755,7 +755,7 @@ function addTreeItemToTreeChild(treeChild,label,value,addTwistie)
 
     // if it's not explicitly trusted, check if it inherits something
     if (istrusted == "false") {
-      var rowsabove = /*:cheat Array<nsIDOMElement>*/(tsd.getElementsByTagName("treerow"));
+      var rowsabove = tsd.getElementsByTagName("treerow");
       /*
        * we haven't inserted the current row yet, so we can iterate
        * over all existing treerow childs

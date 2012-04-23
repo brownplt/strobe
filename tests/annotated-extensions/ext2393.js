@@ -56,7 +56,7 @@ org.seanleblanc.checkfox = (/*: -> pubObj */function() {
                                       XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
                                       null);
         log("First eval # of checkBoxes: " + checkBoxes.snapshotLength);
-        var all = /*: cheat Array<Ext>*/new Array(checkBoxes);
+        var all = new /*: Array![Ext]*/Array(checkBoxes);
         
         log("About to check # of frames...");
         if (qc_getContent().frames.length > 0) {
@@ -155,7 +155,7 @@ org.seanleblanc.checkfox = (/*: -> pubObj */function() {
             // Get all check boxes on page:
             var all = qc_getCheckBoxes();
             var checkBoxes = /*:Ext*/null, aCheckBox = /*:Ext*/null;
-            var clickList = /*:cheat Array<Ext>*/new Array();
+            var clickList = new /*: Array![Ext]*/Array();
             
             // Iterate over checkboxes, see if they are selected:
             var a = 0;
