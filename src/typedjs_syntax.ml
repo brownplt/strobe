@@ -174,7 +174,7 @@ type annotation =
   | AUpcast of WritTyp.t
   | ADowncast of WritTyp.t
   | ATypAbs of id * WritTyp.t
-  | ATypApp of WritTyp.t
+  | ATypApp of WritTyp.t list
   | AAssertTyp of WritTyp.t
   | ACheat of WritTyp.t
 

@@ -58,7 +58,9 @@ and weave (db : typ_db) (exp : exp) = match exp with
       | Some (ATypAbs (x, wt)) -> 
           ETypAbs (p, x, desugar_typ p wt, weave_rec db exp)
       | Some (ATypApp wt) -> 
-          ETypApp (p, weave_rec db exp, desugar_typ p wt)
+        let desugared_wt = List.map (desugar_typ p) wt in
+        let weave_exp = weave_rec db exp in
+        List.fold_left (fun e t -> ETypApp(p, e, t)) weave_exp desugared_wt
       | Some (AAssertTyp wt) -> 
           EAssertTyp (p, desugar_typ p wt, weave_rec db exp)
 

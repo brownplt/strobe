@@ -131,8 +131,8 @@ arg_typ
   | REF arg_typ { W.Ref $2 } 
   | arg_typ LANGLE typ_list RANGLE { W.App ($1, $3) }
 
-typ 
-  : arg_typ { $1 }
+typ :
+  | arg_typ { $1 }
   | args ARROW typ { let (args, var) = $1 in wrapArrow (W.Arrow (Some W.Top, args, var, $3)) }
   | LBRACK typ RBRACK args ARROW typ { let (args, var) = $4 in wrapArrow (W.Arrow (Some $2, args, var, $6)) }
   | LBRACK THIS LPAREN typ RPAREN RBRACK args ARROW typ 
@@ -145,8 +145,11 @@ typ
   | LBRACK RBRACK args THICKARROW typ { let (args, var) = $3 in W.Arrow (None, args, var, $5) }
   | FORALL ID LTCOLON typ DOT typ { pushForallFunction (W.Forall ($2, $4, $6)) }
   | FORALL ID DOT typ { pushForallFunction (W.Forall ($2, W.Top, $4)) }
+  | FORALL ID LTCOLON typ COLON typ {  (W.Forall ($2, $4, $6)) } (* Allow for not pushing forall inward *)
+  | FORALL ID COLON typ {  (W.Forall ($2, W.Top, $4)) }
   | REC ID DOT typ { W.Rec ($2, $4) }
-  | TYPLAMBDA ID COLONCOLON kind DOT typ { W.Lambda ([($2, $4)], $6) }
+  | TYPLAMBDA args=separated_nonempty_list(COMMA, separated_pair(ID, COLONCOLON, kind)) DOT typ=typ
+    { W.Lambda (args, typ) }
   | TYPREC ID COLONCOLON kind DOT typ { W.Fix ($2, $4, $6) }
 
 
@@ -157,7 +160,8 @@ annotation :
   | DOWNCAST typ { ADowncast $2 }
   | FORALL ID LTCOLON typ { ATypAbs ($2, $4) }
   | FORALL ID { ATypAbs ($2, W.Top) }
-  | LBRACK typ RBRACK { ATypApp $2 }
+  | LBRACK typ RBRACK { ATypApp [$2] }
+  | ID BANG typs=nonempty_list(delimited(LBRACK, typ, RBRACK)) { ATypApp typs }
   | IS typ { AAssertTyp $2 }
 
 typ_ann :
