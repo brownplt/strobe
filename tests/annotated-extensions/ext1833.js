@@ -35,7 +35,7 @@ type YoonoCmpt = {yoonoGeneric with
   getYServices: -> YServices,
   isAddonInstalled : Str -> Bool,
   addStat : Array<Str> -> Undef,
-  uninstallAddonWhenQuitting : Ext -> Undef,
+  uninstallAddonWhenQuitting : (nsIUpdateItem + Undef) -> Undef,
   getExtensionVersion : -> Str,
   getInstalledAddons : (-> Undef) -> Undef,
   DEVICEVM_EXTENSION_ID : Str
@@ -277,7 +277,7 @@ YoonoSidebar.prototype.splitterMouseDown = /*: [ysInstance] Ext -> Undef */ func
     //dump("mouse move -- resize --> "+width+" - "+direction+"\n");
 
     // NEAL: 'in' doesn't seem to be working correctly
-    if (/*:cheat True*/('ynSidebar' in _self.win)) {
+    if ('ynSidebar' in _self.win) {
       width = _self.win.ynSidebar.getResizeWidth(width, direction);
     }
     
@@ -719,10 +719,10 @@ if ("undefined" == typeof(ynTabbrowserListener)) {
     },
 
     setYoonoProperties : /*: [nsIDOMEventTarget] nsIDOMEvent -> Undef */function(aEvent) {
-      var doc = /*:cheat {nsIDOMXULDocument with getAnonymousElementByAttribute : nsIDOMElement * Str * Str -> nsIDOMElement} */aEvent.target.ownerDocument ;
+      var doc = /*:cheat nsIDOMXULDocument */aEvent.target.ownerDocument ;
       var items = doc.getElementsByAttribute('value', '{d9284e50-81fc-11da-a72b-0800200c9a66}');
       if(items && items[0]) {
-        var item = /*:cheat nsIDOMElement*/items[0];
+        var item = items[0];
         var icon = doc.getAnonymousElementByAttribute(item, 'src', 'chrome://yoono/skin/yoono.png');
         if(icon) {
           icon.setAttribute("src", "chrome://yoono/skin/devicevm/devicevm24.png");
@@ -826,7 +826,7 @@ var YNPREFBRANCH = Components.classes["@mozilla.org/preferences-service;1"].getS
 /*::
 type YUninstallObserver = rec o . {AnObject with
   QueryInterface : QueryInterfaceType,
-  observe : Ext * Ext * Ext -> Undef,
+  observe : [this('o)] nsISupports * Str * Str -> Undef,
   onUninstalling : Ext -> Undef,
   onOperationCancelled : Ext -> Undef,
   register : [this('o)] -> Undef,
@@ -834,10 +834,10 @@ type YUninstallObserver = rec o . {AnObject with
 }; */
 if ("undefined" == typeof(yoonoUninstallObserver)) {
   var yoonoUninstallObserver = /*: YUninstallObserver */{
-    QueryInterface: /*:cheat QueryInterfaceType*/null,
+    QueryInterface: /*: QueryInterfaceType*/null,
     // That's for FF3
-    observe:function(subject,topic,data) {
-        subject = /*:cheat Ext*/(subject.QueryInterface(Components.interfaces.nsIUpdateItem));        
+    observe:function(subj,topic,data) {
+        var subject = subj.QueryInterface(Components.interfaces.nsIUpdateItem);
         if(subject.name == "Yoono") {
             YOONO_LOG.debug('Em Action: ' + data);
             switch(data) {
@@ -874,14 +874,7 @@ if ("undefined" == typeof(yoonoUninstallObserver)) {
       } catch (e) {
          // That's for FF3
         var observerService = Components.classes["@mozilla.org/observer-service;1"].getService(Components.interfaces.nsIObserverService);
-        /*:cheat False */(observerService.addObserver(this, "em-action-requested", false));
-/*
-NEAL: 
-fatal type error at ext1833.js:822:36-40: %expected (deref #262) to have type Src ({|[this(nsIObserverService)]  nsISupports
-                                 * /(.*)/
-                                 * /(.*)/ -> @Undef|}), got r:YUninstallObserver
-but all-idls disagrees.
-*/
+        observerService.addObserver(this, "em-action-requested", false);
       }
     },
   
@@ -893,8 +886,7 @@ but all-idls disagrees.
       } catch (e) {
          // That's for FF3
         var observerService = Components.classes["@mozilla.org/observer-service;1"].getService(Components.interfaces.nsIObserverService);
-        // NEAL: SEE ABOVE
-        /*:cheat False */(observerService.removeObserver(this,"em-action-requested"));
+        observerService.removeObserver(this,"em-action-requested");
       }
     }
   };

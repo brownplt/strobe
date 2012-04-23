@@ -357,6 +357,9 @@ partial interface nsIDOMEventTarget {
 nsIDOMWindow implements nsIDOMJSWindow;
 nsIDOMWindow implements nsIDOMEventTarget;
 nsIDOMDocument implements nsIDOMEventTarget;
+nsIDOMDocument implements nsIDOMDocumentXBL;
+nsIDOMHTMLDocument implements nsIDOMDocument;
+nsIDOMXULDocument implements nsIDOMDocument;
 nsIDOMElement implements nsIDOMEventTarget;
 //nsIDOMElement implements nsIDOMElementCSSInlineStyle;
 partial interface nsIDOMElement {
@@ -386,3 +389,36 @@ interface nsIDOMXULStringBundleElement : nsIDOMXULElement {
 };
 
 nsIDOMEvent implements nsIDOMNSEvent;
+
+
+[scriptable, uuid(f559f340-5160-420f-abc8-19b251708e7e)]
+interface nsIUpdateItem : nsISupports
+{
+  readonly attribute AString  id;
+  readonly attribute AString  version;
+  readonly attribute AString  minAppVersion;
+  readonly attribute AString  maxAppVersion;
+  readonly attribute AString  installLocationKey;
+  readonly attribute AString  name;
+  readonly attribute AString  xpiURL;
+  readonly attribute AString  xpiHash;
+  readonly attribute AString  iconURL;
+  readonly attribute AString  updateRDF;
+  readonly attribute AString  updateKey;
+  const unsigned long TYPE_APP         = 0x01;
+  const unsigned long TYPE_EXTENSION   = 0x02;
+  const unsigned long TYPE_THEME       = 0x04;
+  const unsigned long TYPE_LOCALE      = 0x08;
+  const unsigned long TYPE_MULTI_XPI   = 0x20;
+  const unsigned long TYPE_ADDON       = TYPE_EXTENSION + TYPE_THEME + TYPE_LOCALE;
+  const unsigned long TYPE_ANY         = 0xff;
+  readonly attribute long type;
+  readonly attribute AString  targetAppID;
+  void init(in AString id, in AString version,
+            in AString installLocationKey, in AString minAppVersion,
+            in AString maxAppVersion, in AString name,
+            in AString downloadURL, in AString xpiHash, in AString iconURL,
+            in AString updateURL, in AString updateKey, in long type,
+            in AString targetAppID);
+  readonly attribute AString objectSource;
+};
