@@ -7,6 +7,21 @@ typedef DOMString AUTF8String;
 
 partial interface nsIFile {
   [unsafe] void create(in unsigned long type, in unsigned long permissions);
+  [unsafe] void createUnique(in unsigned long type, in unsigned long permissions);
+};
+
+partial interface nsIProcess {
+  [unsafe] void kill();
+  [unsafe] void run(in boolean blocking, [array, size_is(count)] in string args,
+                    in unsigned long count);
+  [unsafe] void runAsync([array, size_is(count)] in string args, in unsigned long count,
+                         [optional] in nsIObserver observer, [optional] in boolean holdWeak);
+  [unsafe] void runw(in boolean blocking, [array, size_is(count)] in wstring args,
+                     in unsigned long count);
+  [unsafe] void runwAsync([array, size_is(count)] in wstring args,
+                          in unsigned long count,
+                          [optional] in nsIObserver observer, [optional] in boolean holdWeak);
+
 };
 
 partial interface nsIFileOutputStream {
