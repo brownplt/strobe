@@ -1,8 +1,6 @@
 /*::
 type GBrowser = {Ext with
-  currentURI : {Ext with
-    spec : Str
-  }
+  currentURI : nsIURI
 };
 
 type GContextMenu = {
@@ -33,6 +31,7 @@ var gContextMenu = /*: GContextMenu */null;
   return str;
 }
 
+/*: cheat @Unsafe*/
 function openWebfolderViewForUrl(url) {
 
   var oldcursor = window.content.document.body.style.cursor;
@@ -88,13 +87,15 @@ function openWebfolderViewForUrl(url) {
   return false;
 }
 
+/*: cheat @Unsafe*/
 function openWebfolderView() {
   openWebfolderViewForUrl(gBrowser.currentURI.spec);
   return true;
 }
 
+/*: cheat @Unsafe*/
 function openWebfolderViewLink() {
-  openWebfolderViewForUrl(/*:cheat Str*/('getLinkURL' in gContextMenu ? gContextMenu.getLinkURL() : gContextMenu.linkURL()));
+  openWebfolderViewForUrl('getLinkURL' in gContextMenu ? gContextMenu.getLinkURL() : gContextMenu.linkURL());
   return true;
 }
 
@@ -103,7 +104,7 @@ function openWebfolderViewLink() {
   // jre: code below doesn't work anymore in FF 1.5; help appreciated
   // e.view.openWebfolderViewForUrl = openWebfolderViewForUrl;
   
-  var anchors = /*:cheat Array<nsIDOMElement>*/window.content.document.getElementsByTagName("a");
+  var anchors = (/*:cheat nsIDOMWindow*/window).content.document.getElementsByTagName("a");
   if (anchors) {
     for (var i = 0; i < anchors.length; i++) {
       var anch = anchors[i];
@@ -117,7 +118,7 @@ function openWebfolderViewLink() {
 
 /*: Ext */function openWebfolderContextListener(e) {
   if (gContextMenu.onLink) {
-    var target = /*:cheat Str*/('getLinkURL' in gContextMenu ? gContextMenu.getLinkURL() : gContextMenu.linkURL());
+    var target = ('getLinkURL' in gContextMenu ? gContextMenu.getLinkURL() : gContextMenu.linkURL());
     var isHttpTarget = target != null &&
       (target.substr(0, 5).toLowerCase() == "http:" || target.substr(0, 6).toLowerCase() == "https:");
     gContextMenu.showItem("openwebfolder-do-link", isHttpTarget);
@@ -148,6 +149,6 @@ function openWebfolderViewLink() {
 
 window.addEventListener("load", openWebfolderInit, false);
 
-function(event) { openWebfolderView(); };
-function(event) { openWebfolderViewLink(); };
+function(event) { /*: cheat Ext*/(openWebfolderView()); }; // XXX
+function(event) { /*: cheat Ext*/(openWebfolderViewLink()); }; // XXX
 
