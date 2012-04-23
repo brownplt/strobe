@@ -123,7 +123,15 @@ let example v = match v with
       None
     else
       Some (StringSet.choose set)
-  | CoFinite set -> failwith (sprintf "example from a co-finite set: %s" (pretty v))
+  | CoFinite set -> 
+    let lengths = List.sort (compare) (List.map String.length (StringSetExt.to_list set)) in
+    let min_gap = 
+      let rec helper ls = match ls with
+        | l1::l2::ls -> if (l1 + 1 < l2) then l1 + 1 else helper (l2::ls)
+        | [l] -> l+1
+        | [] -> 1 in
+      helper lengths in
+    Some (String.make min_gap 'X')
   
 
 let rec set_to_nfa set = 
