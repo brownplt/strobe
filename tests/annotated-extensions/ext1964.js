@@ -66,7 +66,7 @@ function getPEMString(cert)
       displayPEM : [this('cvp)] Any * nsIX509Cert -> Undef,
       reverseRDNs : [this('cvp)] Str -> Ext,
       indent : [this('cvp)] Num -> Str,
-      setCertTrust : [this('nsIDOMElement)] nsIDOMEvent -> Undef,
+      setCertTrust : [this('nsIDOMElement)] nsIDOMMutationEvent -> Undef,
       getCertTrust : [this('cvp)] Ext -> Ext,
       addTrustSettingCheckBoxes: [this('cvp)] -> Undef,
       tuneGeneralTab : [this('Window)] -> Undef
@@ -525,14 +525,14 @@ addTrustSettingCheckBoxes: /*: [Cvp] -> Undef*/ function()
   dc.parentNode.appendChild(tcolspc);
 },
 
-setCertTrust: /*:[nsIDOMElement] nsIDOMEvent -> Undef*/function(evt)
+setCertTrust: /*:[nsIDOMElement] nsIDOMMutationEvent -> Undef*/function(evt)
 {
   /* we're only interested in DOMAttrModified events where the
    * "value" attribute is changed (changing the "properties" attribute
    * of the treecell elements will also fire this event, but we don't
    * want to do anything in that case)
    */
-  if ((/*:cheat nsIDOMMutationEvent*/evt).attrName != "value")
+  if (evt.attrName != "value")
     return;
 
   var certdb = Components.classes[nsX509CertDB].getService(nsIX509CertDB);
