@@ -46,7 +46,7 @@ ComponentCollectorService.prototype = /*:ComponentCollector*/{
         this.observerService.addObserver(this, 'xpcom-shutdown', false);
         this.observerService.addObserver(this, 'http-on-modify-request', false);
     },
-    observerService : /*: cheat nsIObserverService*/undefined,
+    observerService : null,
 
     deinitializeComponent : /*: [ComponentCollector] -> Undef*/function()
     {
@@ -70,22 +70,23 @@ ComponentCollectorService.prototype = /*:ComponentCollector*/{
         }
     },
 
-    observeRequest : /*:[ComponentCollector] nsISupports -> Undef*/function(aSubject)
+    observeRequest : /*:[ComponentCollector] nsISupports -> Undef*/function(aSubj)
     {
-        if (!(aSubject instanceof nsIHttpChannelIface))
+        if (!(aSubj instanceof nsIHttpChannelIface))
             return;
-
-        if ((/*:cheat nsIHttpChannel*/aSubject).loadFlags & /*cheat nsIChannel*/nsIChannelIface.LOAD_INITIAL_DOCUMENT_URI)
+      var aSubject = aSubj.QueryInterface(nsIHttpChannelIface);
+      
+        if (aSubject.loadFlags & nsIChannelIface.LOAD_INITIAL_DOCUMENT_URI)
         {
             var httpChannel = aSubject.QueryInterface(nsIHttpChannelIface);
             var win = this.getDomWindowForRequest(httpChannel);
-            // if (!win || !win.wrappedJSObject)
-            // {
-            //     // This is not a request that originated from a DOM node (might be
-            //     // a cert validation request, or a phishing protection request,
-            //     // for instance). So we ignore it.
-            //     return;
-            // }
+            if (!win || !("wrappedJSObject" in win))
+            {
+                // This is not a request that originated from a DOM node (might be
+                // a cert validation request, or a phishing protection request,
+                // for instance). So we ignore it.
+                return;
+            }
 
             // scanURL(aSubject, httpChannel.URI);
         }

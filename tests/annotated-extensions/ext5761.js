@@ -247,7 +247,7 @@ textareaCache = {
     whitelist     : /*: Array<Str> */[],
     whitelistTime : 0,     // the time the whitelist is built
 
-    clearSetting  : /*: cheat Num */null,  // could be _neverClear, _restartClear or _timeClear
+    clearSetting  : -1,    // could be _neverClear, _restartClear or _timeClear
     _neverClear   : 0,     // never clear old data unless the cache is full
     _restartClear : 1,     // clear old data in the next session
     _timeClear    : 2,     // clear old data after one or several days
@@ -257,7 +257,7 @@ textareaCache = {
     pref : Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefBranch),
 
     prefObserver : /*: poType */ {
-        _branch : /*: cheat nsIPrefBranch2 */undefined,
+        _branch : /*: nsIPrefBranch2 */null,
         register: /*: [poType] -> Undef */ function () {
             this._branch = Components.classes["@mozilla.org/preferences-service;1"].
                 getService(Components.interfaces.nsIPrefService).getBranch("extensions.tacache.").QueryInterface(Components.interfaces.nsIPrefBranch2);
@@ -458,7 +458,7 @@ textareaCache = {
 
         for ( var i = 0; i < this.whitelist.length; i++ ) {
             keyword = this.whitelist[i];
-            if ( keyword != "" && (/*: cheat RegExp */(new RegExp(keyword))).test(docURL) ) {
+            if ( keyword != "" && (new RegExp(keyword)).test(docURL) ) {
                 return true;
             }
         }
@@ -556,7 +556,7 @@ textareaCache = {
 
     // Update cache from 0.7 to 0.7.1
     cacheUpdate : function () {
-        if ( this.cache.length > 0 && !/*: cheat Bool */("time" in this.cache[0]) ) {
+        if ( this.cache.length > 0 && !("time" in this.cache[0]) ) {
 
             for (var i = 0; i < this.cache.length; i++) {
                 var item = this.cache[i];
@@ -751,7 +751,7 @@ tacacheUI = {
     },
 
     checkStatusButton : /*: [tacUIType] -> Undef */ function () {
-        var aHidden = /*: cheat Str */( this.pref.getBoolPref("extensions.tacache.statusButton") == false ||
+        var aHidden = ( this.pref.getBoolPref("extensions.tacache.statusButton") == false ||
                                         textareaCacheUtil.getPref().length == 0 );
 
         var enumerator = this.WM.getEnumerator("navigator:browser");
@@ -759,7 +759,7 @@ tacacheUI = {
             var win = (/*: cheat nsIDOMWindow */enumerator.getNext());
             var aButton = win.document.getElementById("tacacheStatusButton");
             if ( aButton )
-                aButton.setAttribute("hidden",  aHidden);
+                aButton.setAttribute("hidden",  ""+aHidden);
         }
     },
 
@@ -868,7 +868,7 @@ cacheWindow = {
             m.value = this.cache[i].text;
             m.deckType = ( this.cache[i].id.indexOf(textareaCacheUtil.isDoc) > 0 ) ? this._Doc : this._Text;
             m.id = "cacheTitle" + i;
-            let time = cacheWindow.getTime( (/*: cheat Date */ new Date("test")) );
+            let time = cacheWindow.getTime( new Date("test") );
             m.label = time + this.cache[i].title;
             m.setAttribute("anonid", this.cache[i].id);
             m.setAttribute("oncommand", "cacheWindow.getContent(this);");
@@ -947,7 +947,7 @@ cacheWindow = {
 
     copyAndClose : function () {
         let nodeID = ( this.type == this._Text ) ? "textContent" : "docContent";
-        let node = (/*: cheat nsIDOMXULElement */document.getElementById(nodeID));
+        let node = document.getElementById(nodeID);
 
         node.focus();
         goDoCommand("cmd_selectAll");
@@ -1025,15 +1025,15 @@ tacachePref = {
         var textbox = document.getElementById("tacache-whitelist");
         var newItem = /*:Str */null+"";
         if ( window.arguments ) {
-            newItem = (/*: cheat Str */ window.arguments[0]);
+            newItem = ""+window.arguments[0];
         }
 
         // whitelist
-        var str = textbox.value;
-        textbox.value = (/*: cheat String */str).replace(/ /g, "\n").replace(/%20/g, " ");
+        var str = ""+textbox.value;
+        textbox.value = str.replace(/ /g, "\n").replace(/%20/g, " ");
 
         if ( newItem && newItem != "" ) {
-            newItem = (/*: cheat Str */ (/*: cheat String */newItem).replace(/%20/g, " "));
+            newItem = newItem.replace(/%20/g, " ");
             textbox.value = newItem + "\n" + textbox.value;
 
             setTimeout( function () {
@@ -1069,8 +1069,8 @@ tacachePref = {
         if ( save == true ||
              ( document.documentElement.instantApply && save == "close" ) ) {
             var textbox = document.getElementById("tacache-whitelist");
-            var str = textbox.value;
-            str = (/*: cheat String */str).replace(/ /g, "%20").replace(/\n/g, " ").replace(/^\s+/g, '').replace(/\s+$/g, '');
+            var str = ""+textbox.value;
+            str = str.replace(/ /g, "%20").replace(/\n/g, " ").replace(/^\s+/g, '').replace(/\s+$/g, '');
             this.pref.setCharPref( textbox.getAttribute("preference"), str );
         }
     }
