@@ -237,7 +237,8 @@ let extend_global_env env lst =
       let c_typ = expose_twith env.typ_ids (desugar_typ pos c_typ) in
       let c_absent_pat = match c_typ with TRef(_, TObject(f)) -> absent_pat f | _ -> P.all in
       let constructor_with = TWith(c_typ, (mk_obj_typ 
-                                             [P.singleton "prototype", Present, TId(p_id)]
+                                             [P.singleton "prototype", Present, 
+                                              TApp(TPrim("Mutable"), [TId(p_id)])]
                                              (P.subtract c_absent_pat (P.singleton "prototype")))) in
       let constructor = replace_name (Some c_id) (expose_twith env.typ_ids constructor_with) in
       (* add constructor field to prototype *)
@@ -271,7 +272,6 @@ let extend_global_env env lst =
           let new_fields = List.map (fun (pat, p, t) ->
             (P.subtract (P.subtract pat proto_field_pat) absent_pat, p, t))
             (fields f) in
-          Printf.eprintf "New_fields = %s\n" (string_of_typ (TObject (mk_obj_typ new_fields absent_pat)));
           TWith(base, mk_obj_typ ((proto_pat, Present, TId(p_id))::proto_fields@new_fields) absent_pat)
         | TRef(_, TObject(f))
         | TSource(_, TObject(f)) ->
