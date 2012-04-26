@@ -335,8 +335,8 @@ let create_env defs =
     | Stringifier (_, metas) -> None
   and trans_args tt queryInterfaceType args = 
     let helper (acc, skippedParams) ((_, _, _, _, id, _) as arg) =
-      (* if (List.mem id skippedParams) then (acc, skippedParams) *)
-      (* else  *)
+      if (List.mem id skippedParams) then (acc, skippedParams)
+      else
       match trans_arg tt queryInterfaceType arg with
       | t, Some skip -> (t::acc, skip::skippedParams)
       | t, None -> (t::acc, skippedParams) in

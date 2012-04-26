@@ -146,7 +146,7 @@ displayPEM: /*: [Cvp] Any * nsIX509Cert -> Undef*/function(parent, cert)
   var sourceString = bundle.getFormattedString(chain.length > 1 ?
                                                "displayPEMChainLabel" :
                                                "displayPEMLabel",
-                                               [ certname ], 1)
+                                               [ certname ] /* BUG!! , 1 */)
                      + "%0d%0a";
 
   for (var i = 0; i < chain.length; i++) {
@@ -185,7 +185,7 @@ displayPEM: /*: [Cvp] Any * nsIX509Cert -> Undef*/function(parent, cert)
                       + issuerName  + "%0d%0a"
                       + pipnss.getString("CertDumpValidity") + ": "
                       + bundle.getFormattedString("displayPEMValidity",
-                                                  [ notBefore, notAfter ], 2) + "%0d%0a";
+                                                  [ notBefore, notAfter ] /* BUG!! , 2 */) + "%0d%0a";
     }
 
     if (format > 1) {
