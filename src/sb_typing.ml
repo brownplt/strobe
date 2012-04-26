@@ -535,17 +535,22 @@ match exp with
           end;
           result_typ
         | TIntersect (n, t1, t2) -> 
-          with_typ_exns
-            (fun () ->
-              try 
-                let r1 = check_app t1 in 
-                begin 
-                  try
-                    let r2 = check_app t2 in
-                    apply_name n (typ_intersect env r1 r2)
-                  with | Typ_error _ -> r1
-                end
-              with | Typ_error _ -> check_app t2)
+          (* Trying for **ORDERED** Intersection *)
+          (with_typ_exns
+             (fun () ->
+               try check_app t1
+               with Typ_error _ -> check_app t2))
+          (* with_typ_exns *)
+          (*   (fun () -> *)
+          (*     try  *)
+          (*       let r1 = check_app t1 in  *)
+          (*       begin  *)
+          (*         try *)
+          (*           let r2 = check_app t2 in *)
+          (*           apply_name n (typ_intersect env r1 r2) *)
+          (*         with | Typ_error _ -> r1 *)
+          (*       end *)
+          (*     with | Typ_error _ -> check_app t2) *)
         | TUnion (n, t1, t2) ->
           let typ_or_err t = with_typ_exns (fun () -> try Some (check_app t) with Typ_error _ -> None) in
           let r1 = typ_or_err t1 in
