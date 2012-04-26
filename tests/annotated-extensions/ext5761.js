@@ -20,6 +20,7 @@ var gSanitizePromptDialog = /*: {AnObject with
   time : Num,
   id : Str,
   text : Str,
+  title : Str,
   }; */
 
 /*:: type aNode = rec a . {nsIDOMHTMLElement with
@@ -404,7 +405,7 @@ textareaCache = {
         let title = node.tacacheDoc.title;
 
 
-        var text = /*: Ext */undefined;
+        var text = /*: Str */"";
         if ( node.nodeName.toLowerCase() == "textarea" ) { //textarea
             text = (/*: cheat nsIDOMHTMLTextAreaElement */node).value;
         }
@@ -437,7 +438,7 @@ textareaCache = {
         this.cache.splice(ix, 1);
       }
 
-      var temp = /*: Ext */{ title : title, text : text, id : tacacheID, time : time };
+      var temp = /*: cacheObjType */{ title : title, text : text, id : tacacheID, time : time };
       if ( this.cache.unshift( temp ) > this.maxTextSaved )
         this.cache.pop();
       this.cacheToPref();
