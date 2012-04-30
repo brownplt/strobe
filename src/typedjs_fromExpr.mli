@@ -85,9 +85,9 @@ open JavaScript_syntax
 open Typedjs_env
 
 (** [from_exprjs] raises this exception. *)
-exception Not_well_formed of pos * string
+exception Not_well_formed of Pos.t * string
 
-val parse_annotation : pos -> string -> annotation
+val parse_annotation : Pos.t -> string -> annotation
 
 (** @raise Not_well_formed if any of the well-formed criteria are
    violated (see above).

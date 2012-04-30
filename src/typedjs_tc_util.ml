@@ -28,7 +28,7 @@ let typ_of_value (exp : exp) : typ =
     | EConst (_, c) -> tc_const c
     | EFunc (p, _, _, _) -> 
       raise (Not_value
-               (sprintf "unannotated function at %s" (string_of_position p)))
+               (sprintf "unannotated function at %s" (Pos.toString p)))
     | ERef (_, RefCell, e') -> TRef (None, begin match e' with
       | EObject (_, fields) -> 
     (* TODO: as above *)
@@ -41,7 +41,7 @@ let typ_of_value (exp : exp) : typ =
       | EFunc (p, _, _, _) -> 
         raise (Not_value
                  (sprintf "unannotated function at %s"
-                    (string_of_position p)))
+                    (Pos.toString p)))
       | _ -> raise (Not_value  (string_of_exp e'))
     end)
     | _ -> raise (Not_value (string_of_exp e)) in

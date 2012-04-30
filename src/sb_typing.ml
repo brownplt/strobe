@@ -39,7 +39,7 @@ let check_kind p env typ : typ =
   with
     | Sb_kinding.Kind_error msg ->
       Printf.eprintf "Couldn't check type for %s\n" (string_of_typ typ);
-        raise (Sb_kinding.Kind_error (string_of_position p ^ ": " ^ msg))
+        raise (Sb_kinding.Kind_error (Pos.toString p ^ ": " ^ msg))
   
 let expose_simpl_typ env typ = expose env (simpl_typ env typ)
 
@@ -104,37 +104,37 @@ let extract_arrow p env t =
 
 
 let simpl_print e = match e with
-  | EConst(p, _) -> "EConst " ^ (string_of_position p)
-  | EBot(p) -> "EBot " ^ (string_of_position p)
-  | EAssertTyp(p, _, _) -> "EAssertTyp " ^ (string_of_position p)
-  | EArray(p, _) -> "EArray " ^ (string_of_position p)
-  | EObject(p, _) -> "EObject " ^ (string_of_position p)
-  | EId(p, x) -> "EId " ^ x ^ " " ^ (string_of_position p)
-  | EBracket(p, _, _) -> "EBracket " ^ (string_of_position p)
-  | EUpdate(p, _, _, _) -> "EUpdate " ^ (string_of_position p)
-  | EPrefixOp(p, _, _) -> "EPrefixOp " ^ (string_of_position p)
-  | EInfixOp(p, _, _, _) -> "EInfixOp " ^ (string_of_position p)
-  | EIf(p, _, _, _) -> "EIf " ^ (string_of_position p)
-  | EApp(p, _, _) -> "EApp " ^ (string_of_position p)
-  | EFunc(p, _, _, _) -> "EFunc " ^ (string_of_position p)
-  | ELet(p, _, _, _) -> "ELet " ^ (string_of_position p)
-  | ERec(p, _, _) -> "ERec " ^ (string_of_position p)
-  | ESeq(p, _, _) -> "ESeq " ^ (string_of_position p)
-  | ELabel(p, _, _) -> "ELabel " ^ (string_of_position p)
-  | EBreak(p, _, _) -> "EBreak " ^ (string_of_position p)
-  | ETryCatch(p, _, _, _) -> "ETryCatch " ^ (string_of_position p)
-  | ETryFinally(p, _, _) -> "ETryFinally " ^ (string_of_position p)
-  | EThrow(p, _) -> "EThrow " ^ (string_of_position p)
-  | ETypecast(p, _, _) -> "ETypecast " ^ (string_of_position p)
-  | ERef(p, _, _) -> "ERef " ^ (string_of_position p)
-  | EDeref(p, _) -> "EDeref " ^ (string_of_position p)
-  | ESetRef(p, _, _) -> "ESetRef " ^ (string_of_position p)
-  | ESubsumption(p, _, _) -> "ESubsumption " ^ (string_of_position p)
-  | EDowncast(p, _, _) -> "EDowncast " ^ (string_of_position p)
-  | ETypAbs(p, _, _, _) -> "ETypAbs " ^ (string_of_position p)
-  | ETypApp(p, _, _) -> "ETypApp " ^ (string_of_position p)
-  | ECheat(p, _, _) -> "ECheat " ^ (string_of_position p)
-  | EParen(p, _) -> "EParen " ^ (string_of_position p)
+  | EConst(p, _) -> "EConst " ^ (Pos.toString p)
+  | EBot(p) -> "EBot " ^ (Pos.toString p)
+  | EAssertTyp(p, _, _) -> "EAssertTyp " ^ (Pos.toString p)
+  | EArray(p, _) -> "EArray " ^ (Pos.toString p)
+  | EObject(p, _) -> "EObject " ^ (Pos.toString p)
+  | EId(p, x) -> "EId " ^ x ^ " " ^ (Pos.toString p)
+  | EBracket(p, _, _) -> "EBracket " ^ (Pos.toString p)
+  | EUpdate(p, _, _, _) -> "EUpdate " ^ (Pos.toString p)
+  | EPrefixOp(p, _, _) -> "EPrefixOp " ^ (Pos.toString p)
+  | EInfixOp(p, _, _, _) -> "EInfixOp " ^ (Pos.toString p)
+  | EIf(p, _, _, _) -> "EIf " ^ (Pos.toString p)
+  | EApp(p, _, _) -> "EApp " ^ (Pos.toString p)
+  | EFunc(p, _, _, _) -> "EFunc " ^ (Pos.toString p)
+  | ELet(p, _, _, _) -> "ELet " ^ (Pos.toString p)
+  | ERec(p, _, _) -> "ERec " ^ (Pos.toString p)
+  | ESeq(p, _, _) -> "ESeq " ^ (Pos.toString p)
+  | ELabel(p, _, _) -> "ELabel " ^ (Pos.toString p)
+  | EBreak(p, _, _) -> "EBreak " ^ (Pos.toString p)
+  | ETryCatch(p, _, _, _) -> "ETryCatch " ^ (Pos.toString p)
+  | ETryFinally(p, _, _) -> "ETryFinally " ^ (Pos.toString p)
+  | EThrow(p, _) -> "EThrow " ^ (Pos.toString p)
+  | ETypecast(p, _, _) -> "ETypecast " ^ (Pos.toString p)
+  | ERef(p, _, _) -> "ERef " ^ (Pos.toString p)
+  | EDeref(p, _) -> "EDeref " ^ (Pos.toString p)
+  | ESetRef(p, _, _) -> "ESetRef " ^ (Pos.toString p)
+  | ESubsumption(p, _, _) -> "ESubsumption " ^ (Pos.toString p)
+  | EDowncast(p, _, _) -> "EDowncast " ^ (Pos.toString p)
+  | ETypAbs(p, _, _, _) -> "ETypAbs " ^ (Pos.toString p)
+  | ETypApp(p, _, _) -> "ETypApp " ^ (Pos.toString p)
+  | ECheat(p, _, _) -> "ECheat " ^ (Pos.toString p)
+  | EParen(p, _) -> "EParen " ^ (Pos.toString p)
 
 
 let rec usesThis exp = match exp with
@@ -344,7 +344,7 @@ match exp with
     with Not_found -> match default_typ with
     | None -> raise (Typ_error (p, String(sprintf "%s is not defined", x))) (* severe *)
     | Some t -> 
-      Printf.eprintf "Warning: Unbound identifier %s at %s\n" x (string_of_position p);
+      Printf.eprintf "Warning: Unbound identifier %s at %s\n" x (Pos.toString p);
       Printf.eprintf "Currently bound identifiers are:\n";
       IdMap.iter (fun id _ -> Printf.eprintf "%s, " id) (id_env env);
       Printf.eprintf "\n";
@@ -396,10 +396,10 @@ match exp with
     | TRef (_, TUninit ty) -> begin match !ty with
       | None -> 
         let newTy = synth env default_typ e2 in
-        (* Printf.printf "Updating typ at %s to %s\n" (string_of_position p) (string_of_typ newTy); *)
+        (* Printf.printf "Updating typ at %s to %s\n" (Pos.toString p) (string_of_typ newTy); *)
         ty := Some newTy;
         newTy
-      | Some s -> (* Printf.printf "Checking typ at %s\n" (string_of_position p); *) check env default_typ e2 s; 
+      | Some s -> (* Printf.printf "Checking typ at %s\n" (Pos.toString p); *) check env default_typ e2 s; 
         s
     end
     | TRef (_, TPrim "Unsafe") -> TPrim "Unsafe" (* BSL: PUNTING ON ASSIGNMENT TO UNSAFE *)
@@ -423,7 +423,7 @@ match exp with
         raise (Typ_error (p, String (sprintf "synth: label %s is not defined", lbl))) in
     check env default_typ e lbl_typ;
     TBot
-  | ETryCatch (_, e1, x, e2) ->
+  | ETryCatch (p, e1, x, e2) ->
     let t1 = synth env default_typ e1
     and t2 = synth (bind_id x TTop env) default_typ e2 in
     typ_union env t1 t2
@@ -508,7 +508,7 @@ match exp with
   | EInfixOp (p, op, e1, e2) -> synth env default_typ (EApp (p, EId (p, op), [e1; e2]))
   | EApp (p, f, args) -> 
     let rec check_app tfun =
-      (* Printf.eprintf "Checking EApp@%s with function type %s\n" (string_of_position p) (string_of_typ tfun); *)
+      (* Printf.eprintf "Checking EApp@%s with function type %s\n" (Pos.toString p) (string_of_typ tfun); *)
       begin match expose_simpl_typ env tfun with 
         | TArrow (expected_typs, None, result_typ) -> 
           let args = fill (List.length expected_typs - List.length args) 

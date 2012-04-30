@@ -42,9 +42,10 @@ let parseType typStr =
   let start_pos = { pos_fname = "<string>"; pos_lnum = 1; pos_bol = 0; pos_cnum = 0 } in
   let len = String.length typStr in
   let end_pos = { pos_fname = "<string>"; pos_lnum = 1; pos_bol = len; pos_cnum = len } in
-  match Typedjs_fromExpr.parse_annotation (start_pos, end_pos) typStr with
+  let pos = Pos.real (start_pos, end_pos) in
+  match Typedjs_fromExpr.parse_annotation pos typStr with
   | Typedjs_syntax.ATyp typ ->
-    Sb_desugar.desugar_typ (start_pos, end_pos) typ
+    Sb_desugar.desugar_typ pos typ
   | _ -> raise (Invalid_argument "Didn't get a valid type")
 
 

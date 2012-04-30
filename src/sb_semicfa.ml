@@ -323,7 +323,7 @@ let calc_op2 x node env heap op v1 v2 =
 *)
     | _ -> (Set rtany, heap)
 
-let bound_id_map : (pos * id, node) H.t = H.create 200
+let bound_id_map : (Pos.t * id, node) H.t = H.create 200
 
 let lookup (v : cpsval) (node : node) (env : env) : Absval.t = match v with
   | Id (p, x) -> 

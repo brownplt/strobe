@@ -23,12 +23,12 @@ let parse_sb cin name =
     with
       |  Failure "lexing: empty token" ->
            failwith (sprintf "lexical error at %s"
-                       (string_of_position
-                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+                       (Pos.rangeToString
+                          lexbuf.lex_curr_p lexbuf.lex_curr_p))
       | Sb_parser.Error ->
            failwith (sprintf "parse error at %s; unexpected token %s"
-                       (string_of_position
-                          (lexbuf.lex_curr_p, lexbuf.lex_curr_p))
+                       (Pos.rangeToString
+                          lexbuf.lex_curr_p lexbuf.lex_curr_p)
                        (lexeme lexbuf))
 
 let string_of_cin cin =
@@ -326,9 +326,10 @@ let parseTyp_to_ref typStr typref =
   let start_pos = { pos_fname = "<string>"; pos_lnum = 1; pos_bol = 0; pos_cnum = 0 } in
   let len = String.length typStr in
   let end_pos = { pos_fname = "<string>"; pos_lnum = 1; pos_bol = len; pos_cnum = len } in
-  match Typedjs_fromExpr.parse_annotation (start_pos, end_pos) typStr with
+  let pos = Pos.real (start_pos, end_pos) in
+  match Typedjs_fromExpr.parse_annotation pos typStr with
   | Typedjs_syntax.ATyp typ ->
-    let typ = Sb_desugar.desugar_typ (start_pos, end_pos) typ in
+    let typ = Sb_desugar.desugar_typ pos typ in
     typref := Some typ
   | _ -> ()
 
@@ -406,9 +407,9 @@ try
 with
     Failure s ->  eprintf "%s\n" s; exit 3
   | Not_well_formed (p, s) ->
-      eprintf "%s not well-formed:\n%s\n" (string_of_position p) s; exit 2
+      eprintf "%s not well-formed:\n%s\n" (Pos.toString p) s; exit 2
   | TypImpl.Typ_error (p, s) ->
-      eprintf "fatal type error at %s: %s\n" (string_of_position p) (TypImpl.typ_error_details_to_string s); exit 2
+      eprintf "fatal type error at %s: %s\n" (Pos.toString p) (TypImpl.typ_error_details_to_string s); exit 2
   | Sb_kinding.Kind_error s ->
       eprintf "type error (kinding): %s\n" s; exit 2
   | Sb_desugar.Typ_stx_error s ->

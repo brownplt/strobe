@@ -6,11 +6,11 @@ open Typedjs_lexer
 open JavaScript_syntax
 module H = Hashtbl
 
-type ann = (Prelude.pos * Typedjs_syntax.annotation) list
+type ann = (Prelude.Pos.t * Typedjs_syntax.annotation) list
 
-type comments = (Prelude.pos * string) list
+type comments = (Prelude.Pos.t * string) list
 
-type typ_db = (Prelude.pos, Typedjs_syntax.annotation) H.t
+type typ_db = (Prelude.Pos.t, Typedjs_syntax.annotation) H.t
 
 let is_typedecl (_, comment) =
   String.length comment > 1 && comment.[0] = ':' && comment.[1] = ':'
@@ -18,21 +18,21 @@ let is_typedecl (_, comment) =
 let is_annotation (_, comment) =
   String.length comment > 0 && comment.[0] = ':'
 
-let parse_annotation ((pos, end_p), comment) =
+let parse_annotation ((pos, end_p, _), comment) =
   let lexbuf = from_string (String.sub comment 1 (String.length comment - 1)) in
     lexbuf.lex_start_p <- pos;
     lexbuf.lex_curr_p <- pos;
     try
-      ((pos, end_p), typ_ann token lexbuf)
+      (Pos.real (pos, end_p), typ_ann token lexbuf)
     with
       | Failure "lexing: empty token" ->
           failwith (sprintf "error lexing annotation at %s"
-                   (string_of_position (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+                   (Pos.rangeToString lexbuf.lex_curr_p lexbuf.lex_curr_p))
       | Error ->
           failwith (sprintf "error parsing annotation at %s"
-                   (string_of_position (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+                   (Pos.rangeToString lexbuf.lex_curr_p lexbuf.lex_curr_p))
 
-let parse_typedecl ((pos, end_p), comment) =
+let parse_typedecl ((pos, _, _), comment) =
   let lexbuf = from_string (String.sub comment 2 (String.length comment - 2)) in
   lexbuf.lex_start_p <- pos;
   lexbuf.lex_curr_p <- pos;
@@ -41,66 +41,24 @@ let parse_typedecl ((pos, end_p), comment) =
   with
   | Failure "lexing: empty token" ->
     failwith (sprintf "error lexing annotation at %s"
-                (string_of_position (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+                (Pos.rangeToString lexbuf.lex_curr_p lexbuf.lex_curr_p))
   | Error ->
     failwith (sprintf "error parsing annotation at %s, annotation was\n%s"
-                (string_of_position (lexbuf.lex_curr_p, lexbuf.lex_curr_p)) comment)
+                (Pos.rangeToString lexbuf.lex_curr_p lexbuf.lex_curr_p) comment)
 
-let new_decls (comments : (Prelude.pos * string) list) : env_decl list =
+let new_decls (comments : (Pos.t * string) list) : env_decl list =
   List.concat (ListExt.filter_map (fun c -> if is_typedecl c then Some (parse_typedecl c) else None) comments)
     
 
-let annotations_of_comments (comments : (pos * string) list) : (pos * annotation) list = 
+let annotations_of_comments (comments : (Pos.t * string) list) : (Pos.t * annotation) list = 
   let (_, not_typedecls) = List.partition is_typedecl comments in
   map parse_annotation (List.filter is_annotation not_typedecls)
 
-let pos_before (p1, _) (p2, _) = p1.pos_cnum < p2.pos_cnum
+let pos_before (p1, _, _) (p2, _, _) =
+  p1.pos_cnum < p2.pos_cnum
 
-let pos_near (p1, _) (p2, _) = 
+let pos_near p1 p2 =
   true (* TODO(arjun): figure out nearness *)
-
-let expr_pos (e : expr) : pos = match e with
-  | ConstExpr (p, _) -> p
-  | ArrayExpr (p, _) -> p
-  | ObjectExpr (p, _) -> p
-  | ThisExpr p -> p
-  | VarExpr (p, _) -> p
-  | DotExpr (p, _, _) -> p
-  | BracketExpr (p, _, _) -> p
-  | NewExpr (p, _, _) -> p
-  | PrefixExpr (p, _, _) -> p
-  | UnaryAssignExpr (p, _, _) -> p
-  | InfixExpr (p, _, _, _) -> p
-  | IfExpr (p, _, _, _) -> p
-  | AssignExpr (p, _, _, _) -> p
-  | ParenExpr (p, _) -> p
-  | ListExpr (p, _, _) -> p
-  | CallExpr (p, _, _) -> p
-  | FuncExpr (p, _, _) -> p
-  | NamedFuncExpr (p, _, _, _) -> p
-    
-let stmt_pos (s : stmt) : pos = match s with
-  | BlockStmt (p, stmts) -> p
-  | EmptyStmt p -> p
-  | ExprStmt e -> expr_pos e
-  | IfStmt (p, e1, s2, s3) -> p
-  | IfSingleStmt (p, e1, s2) -> p
-  | SwitchStmt (p, e, cases) -> p
-  | WhileStmt (p, e, s) -> p
-  | DoWhileStmt (p, s1, e2) -> p
-  | BreakStmt p -> p
-  | BreakToStmt (p, _) -> p
-  | ContinueStmt p -> p
-  | ContinueToStmt (p, _) -> p
-  | LabelledStmt (p, _, s) -> p
-  | ForInStmt (p, fii, e, s) -> p
-  | ForStmt (p, fi, e1, e2, s3) -> p
-  | TryStmt (p, s1, catches, s3) -> p
-  | ThrowStmt (p, e) -> p
-  | ReturnStmt (p, e) -> p
-  | WithStmt (e, s) -> expr_pos e (* TODO(arjun): skips start of With *)
-  | VarDeclStmt (p, decls) -> p
-  | FuncStmt (p, f, args, s) -> p
 
 (* [assoc_annotations js_ast ann_lst] produces a map from expressions to
    the annotation on them. *)
@@ -127,14 +85,16 @@ let assoc_annotations (js_ast : prog) ann_lst =
         stmt (fold_left catch (stmt ann s1) catches) s3
     | ThrowStmt (_, e) -> expr ann e
     | ReturnStmt (_, e) -> expr ann e
-    | WithStmt (e, s) -> stmt (expr ann e) s
+    | WithStmt (_, e, s) -> stmt (expr ann e) s
     | VarDeclStmt (_, decls) -> fold_left varDecl ann decls
       (* TODO(arjun): also annotatable *)
     | FuncStmt (stmt_p, f, args, s) -> match ann with
       | ((p, a) :: rest) ->
         (* above statement, or between arguments and opening brace *)
-        if (pos_before p stmt_p) ||
-           (pos_before stmt_p p && pos_before p (stmt_pos s)) then
+        let isSynth = Pos.isSynthetic stmt_p in
+        if (not isSynth &&
+              ((pos_before p stmt_p) ||
+                  (pos_before stmt_p p && pos_before p (pos_stmt s)))) then
           if pos_near stmt_p p then
             begin
               H.add tbl stmt_p a;
@@ -185,8 +145,10 @@ let assoc_annotations (js_ast : prog) ann_lst =
     | FuncExpr (_, _, s)
     | NamedFuncExpr (_, _, _, s) -> match ann with
       | ((p, a) :: rest) ->
-        let expr_p = expr_pos e in
-        if pos_before expr_p p && pos_before p (stmt_pos s) then
+        let expr_p = pos_expr e in
+        let isSynth = Pos.isSynthetic expr_p in
+        if (not isSynth &&
+               (pos_before expr_p p && pos_before p (pos_stmt s))) then
           if pos_near expr_p p then
             begin
               H.add tbl expr_p a;
@@ -200,7 +162,7 @@ let assoc_annotations (js_ast : prog) ann_lst =
   and expr (ann : ann) (e : expr) : ann = match ann with
     | [] -> ann
     | ((p, a) :: rest) -> 
-      let expr_p = expr_pos e in
+      let expr_p = pos_expr e in
       if pos_before p expr_p && pos_near p expr_p then
         begin
           H.add tbl expr_p a;
@@ -216,7 +178,7 @@ let assoc_annotations (js_ast : prog) ann_lst =
     | [] -> tbl
     | _ -> failwith "extra annotations"
 
-let read_typs (js_ast : prog) (comments : (pos * string) list) : typ_db =
+let read_typs (js_ast : prog) (comments : (Pos.t * string) list) : typ_db =
   assoc_annotations js_ast (annotations_of_comments comments)
 
 

@@ -12,9 +12,9 @@ module Desugar = Sb_desugar
 
 let desugar_typ = Desugar.desugar_typ
 
-exception Not_well_formed of pos * string
+exception Not_well_formed of Pos.t * string
 
-let parse_annotation (pos, end_p) str =
+let parse_annotation (pos, _, _) str =
   let lexbuf = Lexing.from_string str in
     lexbuf.Lexing.lex_start_p <- pos;
     lexbuf.Lexing.lex_curr_p <- pos;
@@ -23,15 +23,14 @@ let parse_annotation (pos, end_p) str =
     with
       |  Failure "lexing: empty token" ->
            failwith (sprintf "error lexing annotation at %s"
-                       (string_of_position
-                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
+                       (Pos.rangeToString
+                          lexbuf.Lexing.lex_curr_p lexbuf.Lexing.lex_curr_p))
       |  Typedjs_parser.Error ->
            failwith (sprintf "error parsing annotation at %s"
-                       (string_of_position
-                          (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
+                       (Pos.rangeToString
+                          lexbuf.Lexing.lex_curr_p lexbuf.Lexing.lex_curr_p))
 
 (* TODO(arjun): fix!! *)
-let bad_p = (Lexing.dummy_pos, Lexing.dummy_pos)
 
 (******************************************************************************)
 
@@ -76,10 +75,10 @@ let rec object_and_function p (expr : expr) : expr * expr = match expr with
   | ParenExpr (p, e) -> 
     let (this, func) = object_and_function p e in
     (this, ParenExpr (p, e))
-  | expr -> (IdExpr (bad_p, "%global"), expr)
+  | expr -> (IdExpr (Pos.synth p, "%global"), expr)
 
 let forin_ix_typ = 
-  TSource (None, TRegex (P.negate (P.parse Lexing.dummy_pos "__proto__")))
+  TSource (None, TRegex (P.negate proto_pat))
 
 let rec exp (env : env) expr = match expr with
   | ConstExpr (a, c) -> EConst (a, c)
@@ -113,7 +112,7 @@ let rec exp (env : env) expr = match expr with
     (* in  *)
     ELet (p, "%newobj", 
           EApp (p, EBracket(p, EDeref(p, exp env constr), EConst(p, JavaScript_syntax.CString "-*- code -*-")),
-                (EConst(bad_p, JavaScript_syntax.CNull) :: (map (exp env) args))),
+                (EConst(Pos.synth p, JavaScript_syntax.CNull) :: (map (exp env) args))),
           EId (p, "%newobj"))
   | PrefixExpr (a, op, e) -> EPrefixOp (a, op, exp env e)
   | InfixExpr (p, "&&", e1, e2) -> 
@@ -127,14 +126,14 @@ let rec exp (env : env) expr = match expr with
   | IfExpr (a, e1, e2, e3) -> 
       EIf (a, to_boolean a (exp env e1), exp env e2, exp env e3)
   | AssignExpr (a, VarLValue (p', x), e) -> 
-    ESeq(bad_p,     
+    ESeq(Pos.synth a,     
          ESetRef (p', EId (p', x), exp env e),
-         EDeref(bad_p, EId(a, x)))
+         EDeref(Pos.synth a, EId(a, x)))
   | AssignExpr (p, PropLValue (_, e1, e2), e3) ->
-      ELet (bad_p, "%obj", to_object p (exp env e1),
-            ELet(bad_p, "%field", to_string p (exp env e2),
-                 ESeq(bad_p, 
-                      ESetRef(bad_p, EId (p, "%obj"),
+      ELet (Pos.synth p, "%obj", to_object p (exp env e1),
+            ELet(Pos.synth p, "%field", to_string p (exp env e2),
+                 ESeq(Pos.synth p, 
+                      ESetRef(Pos.synth p, EId (p, "%obj"),
                               EUpdate (p, EDeref (p, EId (p, "%obj")), 
                                        EId(p, "%field"), (exp env e3))),
                       EBracket(p, EDeref(p, EId(p, "%obj")), EId(p, "%field")))))
@@ -255,7 +254,7 @@ and match_func env expr = match expr with
                          ("prototype", EBot a (* EAssertTyp(a, TId "Ext", EConst(a, JavaScript_syntax.CUndefined)) *));
                          ("__proto__", EDeref(a, EId (a, "Object")))])) (* TODO: Make this Function *)
   | FuncExpr (a, _, _) ->
-      failwith ("expected a LabelledExpr at " ^ string_of_position a)
+      failwith ("expected a LabelledExpr at " ^ Pos.toString a)
   | _ -> failwith "hamg --- really should not fail anymore"
 
 and exp_seq env e = match e with
@@ -268,7 +267,7 @@ and func_exp env (_, x, expr) =
 
 and bind_func_ref (x, e) rest_exp = 
   let p = Exp.pos e in
-  ELet (bad_p, x, ERef (bad_p, RefCell, EAssertTyp(p, TId "Ext", EBot p)), rest_exp)
+  ELet (Pos.synth p, x, ERef (Pos.synth p, RefCell, EAssertTyp(p, TId "Ext", EBot p)), rest_exp)
 
 and set_func_ref (x, e) rest_exp =
   let p = Exp.pos e in
@@ -277,7 +276,7 @@ and set_func_ref (x, e) rest_exp =
 and block_intro env (decls, body) = match take_while is_func_decl decls with
     [], [] -> exp_seq env body
   | [], (a, x, e) :: rest ->
-      ELet (a, x, ERef (bad_p, RefCell, exp env e),
+      ELet (a, x, ERef (Pos.synth a, RefCell, exp env e),
             block_intro (IdMap.add x true env) (rest, body))
   | funcs, rest ->
       let new_ids = map snd3 funcs in

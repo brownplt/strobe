@@ -20,13 +20,13 @@ let parse pos str =
     |  Failure "lexing: empty token" ->
       failwith (sprintf "error lexing regex %s at %s"
                   str
-                  (string_of_position 
-                     (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
+                  (Pos.rangeToString
+                     lexbuf.Lexing.lex_curr_p lexbuf.Lexing.lex_curr_p))
     | RegLang_parser.Error ->
       failwith (sprintf "error parsing regex %s at %s"
                   str
-                  (string_of_position 
-                     (lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)))
+                  (Pos.rangeToString
+                     lexbuf.Lexing.lex_curr_p lexbuf.Lexing.lex_curr_p))
 
 let singleton str = (to_nfa (R.String str), R.String str)
 

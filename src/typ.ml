@@ -79,7 +79,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TypTypTyp of (typ -> typ -> typ -> string) * typ * typ * typ
 
 
-  exception Typ_error of pos * typ_error_details
+  exception Typ_error of Pos.t * typ_error_details
 
   let typ_error_details_to_string s = match s with
     | TypKind(s, t, k) -> s t k
@@ -100,7 +100,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     else
       begin
         incr num_typ_errors;
-        eprintf "type error at %s : %s\n" (string_of_position p) (typ_error_details_to_string s)
+        eprintf "type error at %s : %s\n" (Pos.toString p) (typ_error_details_to_string s)
       end
 
   type field = pat * presence * typ
@@ -785,7 +785,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     else if simpl_equiv s t then
       cache
     else
-      let subtype = subt env in
       let simpl_s = expose env (simpl_typ env s) in
       let simpl_t = expose env (simpl_typ env t) in
       if TPSet.mem (simpl_s, simpl_t) cache then cache else
@@ -815,23 +814,23 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
             end
         | TIntersect (_, s1, s2), _ -> 
           begin 
-            try subtype cache s1 t
-            with Not_subtype _ -> subtype cache s2 t
+            try subt env cache s1 t
+            with Not_subtype _ -> subt env cache s2 t
           end
         | _, TIntersect (_, t1, t2) ->
             subt env (subt env cache s t1) s t2
         | TUnion (_, s1, s2), _ -> subt env (subt env cache s1 t) s2 t
         | _, TUnion (_, t1, t2) ->
           begin 
-            try subtype cache s t1
-            with Not_subtype _ -> subtype cache s t2
+            try subt env cache s t1
+            with Not_subtype _ -> subt env cache s t2
           end
         | _, TThis(TPrim "Unsafe") -> cache (* Can always mask the this parameter as Unsafe *)
         | TPrim "Null", TRef (_, TObject _)
         | TPrim "Null", TSource (_, TObject _)
         | TPrim "Null", TSink (_, TObject _) -> cache (* null should be a subtype of all object types *)
-        | TThis (TId _ as id), t -> subtype cache (TThis (expose env id)) t
-        | t, TThis(TRec _ as r) -> subtype cache t (TThis (expose env r))
+        | TThis (TId _ as id), t -> subt env cache (TThis (expose env id)) t
+        | t, TThis(TRec _ as r) -> subt env cache t (TThis (expose env r))
         | TThis (TRef (_, s)), TThis (TRef (_, t))
         | TThis (TRef (_, s)), TThis (TSource (_, t))
         | TThis (TRef (_, s)), TThis (TSink (_, t))
@@ -849,36 +848,36 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
         | TSource (_, s), TThis (TSink (_, t))
         | TSink (_, s), TThis (TRef (_, t))
         | TSink (_, s), TThis (TSource (_, t))
-        | TSink (_, s), TThis (TSink (_, t)) -> subtype cache s t (* ONLY HAVE TO GO ONE WAY ON THIS TYPES *)
+        | TSink (_, s), TThis (TSink (_, t)) -> subt env cache s t (* ONLY HAVE TO GO ONE WAY ON THIS TYPES *)
         | TThis _, TThis _ -> mismatched_typ_exn s t
-        | _, TThis t2 -> subtype cache s t2
-        | TThis t1, _ -> subtype cache t1 t
+        | _, TThis t2 -> subt env cache s t2
+        | TThis t1, _ -> subt env cache t1 t
         | TArrow (args1, v1, r1), TArrow (args2, v2, r2) ->
           begin
             match v1, v2 with
             | None, None ->
-              (try List.fold_left2 subtype cache (r1 :: args2) (r2 :: args1)
+              (try List.fold_left2 (subt env) cache (r1 :: args2) (r2 :: args1)
                with Invalid_argument _ -> mismatched_typ_exn s t)
             | Some v1, Some v2 ->
-              (try List.fold_left2 subtype cache (r1 :: args2 @ [v2]) (r2 :: args1 @ [v1])
+              (try List.fold_left2 (subt env) cache (r1 :: args2 @ [v2]) (r2 :: args1 @ [v1])
                with Invalid_argument _ -> mismatched_typ_exn s t)
             | _ -> mismatched_typ_exn s t
           end
         | TId x, t -> 
           (try
-             subtype cache (fst2 (IdMap.find x env)) t
+             subt env cache (fst2 (IdMap.find x env)) t
            with Not_found -> Printf.printf "Cannot find %s in environment\n" x; raise Not_found)
         | t, TId x -> 
           (try
-             subtype cache t (fst2 (IdMap.find x env))
+             subt env cache t (fst2 (IdMap.find x env))
            with Not_found -> Printf.printf "Cannot find %s in environment\n" x; raise Not_found)
         | TObject obj1, TObject obj2 ->
             subtype_object env cache obj1 obj2
-        | TRef (_, s'), TRef (_, t') -> subtype (subtype cache s' t') t' s'
-        | TSource (_, s), TSource (_, t) -> subtype cache s t
-        | TSink (_, s), TSink (_, t) -> subtype cache t s
-        | TRef (_, s), TSource (_, t) -> subtype cache s t
-        | TRef (_, s), TSink (_, t) -> subtype cache t s
+        | TRef (_, s'), TRef (_, t') -> subt env (subt env cache s' t') t' s'
+        | TSource (_, s), TSource (_, t) -> subt env cache s t
+        | TSink (_, s), TSink (_, t) -> subt env cache t s
+        | TRef (_, s), TSource (_, t) -> subt env cache s t
+        | TRef (_, s), TSink (_, t) -> subt env cache t s
         | TForall (_, x1, s1, t1), TForall (_, x2, s2, t2) -> 
           (* Kernel rule *)
           (* TODO: ensure s1 = s2 *)
@@ -896,7 +895,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
 
   (* Check that an "extra" field is inherited *)
   and check_inherited env cache lang other_proto typ =
-    subt env cache typ (inherits (Lexing.dummy_pos, Lexing.dummy_pos) env other_proto lang)
+    subt env cache typ (inherits Pos.dummy env other_proto lang)
 
   and subtype_presence prop1 prop2 = match prop1, prop2 with
     | Present, Present 
@@ -907,7 +906,6 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | _, _ -> raise (Not_subtype (FixedString"incompatible presence annotations"))
 
   and subtype_object env cache obj1 obj2 : TPSet.t =
-    let bad_p = (Lexing.dummy_pos, Lexing.dummy_pos) in
     let lhs_absent = absent_pat obj1 in
     let rhs_absent = absent_pat obj2 in
     let check_simple_overlap ((pat1, pres1, t1), (pat2, pres2, t2)) cache = 
@@ -940,7 +938,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     let check_rhs_inherited (rhs_pat, rhs_pres, rhs_typ) cache = 
       match rhs_pres with
       | Inherited -> 
-          let lhs_typ = inherits bad_p env (TObject obj1) rhs_pat in
+          let lhs_typ = inherits Pos.dummy env (TObject obj1) rhs_pat in
           subt env cache lhs_typ rhs_typ
       | _ -> cache in
     (* try  *)

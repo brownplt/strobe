@@ -6,8 +6,6 @@ open TypImpl
 module List = ListExt
 exception Not_wf_typ of string
 
-let dummy_pos = (Lexing.dummy_pos, Lexing.dummy_pos)
-
 let desugar_typ = Sb_desugar.desugar_typ
 
 type env = {
@@ -203,12 +201,12 @@ let parse_env (cin : in_channel) (name : string) : env_decl list =
   with
     | Failure "lexing: empty token" ->
       failwith (sprintf "error lexing environment at %s"
-                  (string_of_position 
-                     (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+                  (Pos.rangeToString
+                     lexbuf.lex_curr_p lexbuf.lex_curr_p))
     | Typedjs_parser.Error ->
       failwith (sprintf "error parsing environment at %s"
-                  (string_of_position 
-                     (lexbuf.lex_curr_p, lexbuf.lex_curr_p)))
+                  (Pos.rangeToString
+                     lexbuf.lex_curr_p lexbuf.lex_curr_p))
 
 
 let extend_global_env env lst =

@@ -133,7 +133,7 @@ module type TYP = sig
     | TypTypTyp of (typ -> typ -> typ -> string) * typ * typ * typ
 
 
-  exception Typ_error of pos * typ_error_details
+  exception Typ_error of Pos.t * typ_error_details
   exception Not_subtype of typ_error_details
 
   val typ_error_details_to_string : typ_error_details -> string
@@ -185,9 +185,9 @@ module type TYP = sig
 
   val expose : typenv -> typ -> typ
 
-  val simpl_lookup : pos -> typenv -> typ -> pat -> typ
+  val simpl_lookup : Pos.t -> typenv -> typ -> pat -> typ
 
-  val inherits : pos -> typenv -> typ -> pat -> typ
+  val inherits : Pos.t -> typenv -> typ -> pat -> typ
 
   val typ_union : typenv -> typ -> typ -> typ
 
@@ -197,7 +197,7 @@ module type TYP = sig
 
   val subtype : typenv -> typ -> typ -> bool
 
-  val typ_mismatch : pos -> typ_error_details -> unit
+  val typ_mismatch : Pos.t -> typ_error_details -> unit
 
   val get_num_typ_errors : unit -> int
 

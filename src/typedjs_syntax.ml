@@ -52,37 +52,37 @@ type func_info = {
 (** Typed JavaScript expressions. Additional well-formedness criteria are
     inline. *)
 type exp
-  = EConst of pos * JavaScript_syntax.const
-  | EBot of pos
-  | EAssertTyp of pos * TypImpl.typ * exp
-  | EArray of pos * exp list
-  | EObject of pos * (string * exp) list
-  | EId of pos * id
-  | EBracket of pos * exp * exp
-  | EUpdate of pos * exp * exp * exp
-  | EPrefixOp of pos * id * exp
-  | EInfixOp of pos * id * exp * exp
-  | EIf of pos * exp * exp * exp
-  | EApp of pos * exp * exp list
-  | EFunc of pos * id list * func_info * exp
-  | ELet of pos * id * exp * exp
-  | ERec of pos * (id * TypImpl.typ * exp) list * exp
-  | ESeq of pos * exp * exp
-  | ELabel of pos * id * exp 
-  | EBreak of pos * id * exp
-  | ETryCatch of pos * exp * id * exp
-  | ETryFinally of pos * exp * exp
-  | EThrow of pos * exp
-  | ETypecast of pos * RTSet.t * exp
-  | ERef of pos * ref_kind * exp
-  | EDeref of pos * exp
-  | ESetRef of pos * exp * exp
-  | ESubsumption of pos * TypImpl.typ * exp
-  | EDowncast of pos * TypImpl.typ * exp
-  | ETypAbs of pos * id * TypImpl.typ * exp 
-  | ETypApp of pos * exp * TypImpl.typ
-  | ECheat of pos * TypImpl.typ * exp
-  | EParen of pos * exp
+  = EConst of Pos.t * JavaScript_syntax.const
+  | EBot of Pos.t
+  | EAssertTyp of Pos.t * TypImpl.typ * exp
+  | EArray of Pos.t * exp list
+  | EObject of Pos.t * (string * exp) list
+  | EId of Pos.t * id
+  | EBracket of Pos.t * exp * exp
+  | EUpdate of Pos.t * exp * exp * exp
+  | EPrefixOp of Pos.t * id * exp
+  | EInfixOp of Pos.t * id * exp * exp
+  | EIf of Pos.t * exp * exp * exp
+  | EApp of Pos.t * exp * exp list
+  | EFunc of Pos.t * id list * func_info * exp
+  | ELet of Pos.t * id * exp * exp
+  | ERec of Pos.t * (id * TypImpl.typ * exp) list * exp
+  | ESeq of Pos.t * exp * exp
+  | ELabel of Pos.t * id * exp 
+  | EBreak of Pos.t * id * exp
+  | ETryCatch of Pos.t * exp * id * exp
+  | ETryFinally of Pos.t * exp * exp
+  | EThrow of Pos.t * exp
+  | ETypecast of Pos.t * RTSet.t * exp
+  | ERef of Pos.t * ref_kind * exp
+  | EDeref of Pos.t * exp
+  | ESetRef of Pos.t * exp * exp
+  | ESubsumption of Pos.t * TypImpl.typ * exp
+  | EDowncast of Pos.t * TypImpl.typ * exp
+  | ETypAbs of Pos.t * id * TypImpl.typ * exp 
+  | ETypApp of Pos.t * exp * TypImpl.typ
+  | ECheat of Pos.t * TypImpl.typ * exp
+  | EParen of Pos.t * exp
 
 (******************************************************************************)
 
@@ -163,11 +163,11 @@ module WritTyp = struct
 end
 
 type env_decl =
-  | EnvBind of pos * id * WritTyp.t
-  | EnvType of pos * id * WritTyp.t
-  | EnvPrim of pos * id
+  | EnvBind of Pos.t * id * WritTyp.t
+  | EnvType of Pos.t * id * WritTyp.t
+  | EnvPrim of Pos.t * id
   | RecBind of env_decl list
-  | ObjectTrio of pos * (id * WritTyp.t) * (id * WritTyp.t) * (id * WritTyp.t)
+  | ObjectTrio of Pos.t * (id * WritTyp.t) * (id * WritTyp.t) * (id * WritTyp.t)
 
 type annotation =
   | ATyp of WritTyp.t

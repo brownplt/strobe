@@ -102,7 +102,7 @@ and object_typ (flds : W.f list) =
 
 
 
-let desugar_typ (p : pos) (wt : W.t) : typ =
+let desugar_typ (p : Pos.t) (wt : W.t) : typ =
   try typ wt
   with Typ_stx_error msg ->
-    raise (Typ_stx_error (string_of_position p ^ msg))
+    raise (Typ_stx_error (Pos.toString p ^ msg))

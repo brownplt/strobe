@@ -185,16 +185,16 @@ env_decl :
   | TYPE CONSTRUCTOR c_id=any_id EQUALS c_typ=typ
       AND PROTOTYPE p_id=any_id EQUALS p_typ=obj_ref_typ
       AND INSTANCE i_id=any_id EQUALS i_typ=obj_ref_typ
-    { ObjectTrio (($startpos, $endpos), (c_id, c_typ), (p_id, p_typ), (i_id, i_typ)) }
+    { ObjectTrio (Pos.real ($startpos, $endpos), (c_id, c_typ), (p_id, p_typ), (i_id, i_typ)) }
   | TYPE any_id LANGLE id_list RANGLE EQUALS typ 
-      { EnvType (($startpos, $endpos), $2,
+      { EnvType (Pos.real ($startpos, $endpos), $2,
      W.Lambda (List.map (fun x -> (x, KStar)) $4, $7)) }
-  | TYPE any_id EQUALS typ { EnvType (($startpos, $endpos), $2, $4) }
-  | VAL ID COLON typ { EnvBind (($startpos, $endpos), $2, $4) }
-  | ID COLON typ { EnvBind (($startpos, $endpos), $1, W.Ref $3) }
+  | TYPE any_id EQUALS typ { EnvType (Pos.real ($startpos, $endpos), $2, $4) }
+  | VAL ID COLON typ { EnvBind (Pos.real ($startpos, $endpos), $2, $4) }
+  | ID COLON typ { EnvBind (Pos.real ($startpos, $endpos), $1, W.Ref $3) }
   | OPERATOR STRING COLON typ 
-      { EnvBind (($startpos, $endpos), $2, remove_this $4) }
-  | PRIMITIVE PRIM { EnvPrim (($startpos, $endpos), $2) }
+      { EnvBind (Pos.real ($startpos, $endpos), $2, remove_this $4) }
+  | PRIMITIVE PRIM { EnvPrim (Pos.real ($startpos, $endpos), $2) }
 
 rec_env_decl : 
   | env_decl { $1 }

@@ -70,7 +70,7 @@ val expose : env -> typ -> typ
 
 val typ_assoc : env -> typ -> typ -> typ IdMap.t
 
-val inherits : pos -> env -> typ -> P.t -> typ
+val inherits : Pos.t -> env -> typ -> P.t -> typ
 
 val tid_env : env -> (typ * kind) IdMap.t
 

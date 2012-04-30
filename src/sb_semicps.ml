@@ -32,7 +32,7 @@ and cpsexp =
 
 and cpsval =
   | Const of JavaScript_syntax.const
-  | Id of pos * id
+  | Id of Pos.t * id
   | Lambda of id list * cpsexp
   | ExternalLambda of typ
 
@@ -52,9 +52,7 @@ let new_node : unit -> node =
       incr next_node;
       !next_node - 1
 
-let p = (Lexing.dummy_pos, Lexing.dummy_pos)
-
-let mk_id x = Id (p, x)
+let mk_id x = Id (Pos.dummy, x)
 
 (* [cont] and [ret] preserve tail calls in the CPS translation. *)
 type cont =

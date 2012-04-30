@@ -47,7 +47,7 @@ end = struct
       let name = Id.string_of_id name in
       if IdMap.mem name typ_vars then
         failwith (sprintf "%s: interface %s redefinition" 
-                          (string_of_position (p, p))
+                          (Pos.rangeToString p p)
                           name);
       let self = TTop in (* TODO(arjun): type self for inheritance *)
       let (inst_flds, proto_flds) = 
@@ -92,7 +92,7 @@ end = struct
             List.find pick_handleEvent members
             with Not_found -> raise (Invalid_argument
               (sprintf "%s: no operation in a [Callback]"
-                 (string_of_position (p, p)))) in
+                 (Pos.rangeToString p p))) in
           begin match handler with
             | Operation (_, rtyp, _,  argtyps) ->
               let name = Id.string_of_id name in
@@ -129,12 +129,12 @@ end = struct
                 iface_map
           | _ -> 
             let msg = sprintf "%s: partial interface extends a non-interface"
-                        (string_of_position (p, p)) in
+                        (Pos.rangeToString p p) in
             raise (Invalid_argument msg)
       with Not_found ->
         raise (Invalid_argument (sprintf 
           "%s: interface must come before partial interface"
-            (string_of_position (p, p))))
+            (Pos.rangeToString p p)))
       end
     | Implements (p, obj, trait) ->
       let obj_str = Id.string_of_id obj in
@@ -146,10 +146,10 @@ end = struct
                   (Interface (p1, obj_name, super, mems @ trait_mems, metas))
                   iface_map
             | _ -> raise (Invalid_argument (sprintf "%s: bad implements clause"
-                     (string_of_position (p, p))))
+                     (Pos.rangeToString p p)))
       with Not_found ->
         raise (Invalid_argument (sprintf "%s: not found" 
-          (string_of_position (p, p))))
+          (Pos.rangeToString p p)))
 
   let rec collapse x _ iface_map = match IdMap.find x iface_map with
     | Interface (p, name, Some super, mems, metas) as rhs ->
