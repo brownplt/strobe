@@ -124,11 +124,22 @@ partial interface nsIInterfaceRequestor {
 
 partial interface nsIPrefService {
   [unsafe] void savePrefFile(in nsIFile aFile);
+  [unsafe] void resetPrefs();
+  [unsafe] void resetUserPrefs();
 };
 
 partial interface nsIPrefBranch {
   [QueryElementAtType(1)] void getComplexValue(in string aPrefName, in nsIIDRef aType,
                                                [iid_is(aType), retval] out nsQIResult aValue);
+  [unsafe] void setBoolPref(in string aPrefName, in boolean aValue);
+  [unsafe] void setCharPref(in string aPrefName, in string aValue);
+  [unsafe] void setIntPref(in string aPrefName, in long aValue);
+  [unsafe] void setComplexValue(in string aPrefName, in nsIIDRef aType, in nsISupports aValue);
+  [unsafe] void clearUserPref(in string aPrefName);
+  [unsafe] void deleteBranch(in string aStartingAt);
+  [unsafe] void unlockPref(in string aPrefName);
+  [unsafe] void lockPref(in string aPrefName);
+  [unsafe] void resetBranch(in string aStartingAt);
 };
 
 partial interface nsIArray {
