@@ -126,7 +126,7 @@ let simpl_print e = match e with
   | ETryFinally(p, _, _) -> "ETryFinally " ^ (Pos.toString p)
   | EThrow(p, _) -> "EThrow " ^ (Pos.toString p)
   | ETypecast(p, _, _) -> "ETypecast " ^ (Pos.toString p)
-  | ERef(p, _, _) -> "ERef " ^ (Pos.toString p)
+  | ERef (p, _, _) -> "ERef " ^ (Pos.toString p)
   | EDeref(p, _) -> "EDeref " ^ (Pos.toString p)
   | ESetRef(p, _, _) -> "ESetRef " ^ (Pos.toString p)
   | ESubsumption(p, _, _) -> "ESubsumption " ^ (Pos.toString p)
@@ -263,11 +263,25 @@ match exp with
     end
   | ERef (p, ref_kind, e) -> 
     begin match ref_kind, extract_ref "ERef" p env (check_kind p env (expose_simpl_typ env typ)) with
+    | RefCell, TSource(_, t) -> 
+      let e_typ = (synth env default_typ e) in
+      if not (subtype env e_typ t) 
+      then typ_mismatch p (TypTyp ((fun t1 t2 -> sprintf "Expected TRef(%s), got TSource(%s)" 
+        (string_of_typ t1) (string_of_typ t2)), t, e_typ))
+    | SinkCell, TRef (_, t) ->
+      let e_typ = (synth env default_typ e) in
+      if not (subtype env t e_typ) 
+      then typ_mismatch p (TypTyp ((fun t1 t2 -> sprintf "Expected TSink(%s), got TRef(%s)" 
+        (string_of_typ t1) (string_of_typ t2)), t, e_typ))
     | SourceCell, TSource (_, t)
-    | SinkCell, TSink (_, t)
-    | RefCell, TRef (_, t) -> check env default_typ e t
+    | RefCell, TRef (_, t)
+    | SinkCell, TSink (_, t) -> check env default_typ e t
+    | SourceCell, TRef _ -> typ_mismatch p (FixedString "Expected a SourceCell, got a TRef")
+    | SourceCell, TSink _ -> typ_mismatch p (FixedString "Expected a SourceCell, got a TSink")
+    | SinkCell, TSource _ -> typ_mismatch p (FixedString "Expected a SinkCell, got a TSource")
+    | RefCell, TSink _ -> typ_mismatch p (FixedString "Expected a RefCell, got a TSink")
     | _, t  -> typ_mismatch p (* TODO(arjun): error msg *)
-             (TypTyp((fun t1 t2 -> sprintf "!!expected %s, got %s"
+             (TypTyp((fun t1 t2 -> sprintf "!!for expression %s, expected %s, got %s" (string_of_exp e)
                (string_of_typ t1) (string_of_typ t2)), t, (synth env default_typ e)))
     end
   | EArray (p, es) ->
