@@ -247,6 +247,17 @@ let create_env defs =
       let implementsFields = List.concat (List.map (fun t -> match t with
         | (_, _, TSource(*TRef*)(_, TObject f)) -> TypImpl.fields f
         | _ -> []) implementsTyps) in
+      let (implOthers, implOpers) = List.partition (fun (_, _, t) -> t = unwrapArrow t) implementsFields in
+      let implOpersByName = ListExt.partitionAll fst3 implOpers in
+      let implOpersCollapsed = List.map (fun operByName ->
+        let (name, presence, ty) =
+          (List.fold_left (fun (_, _, acc) (name, presence, ty) ->
+            match acc with
+            | TBot -> (name, presence, unwrapArrow ty)
+            | _ -> (name, presence, TIntersect (None, unwrapArrow ty, acc))) (P.empty, Maybe, TBot) operByName) in
+        let wrappedTy = if ty = TPrim "Unsafe" then ty else wrapArrow SourceCell ty in
+        (name, presence, wrappedTy)) implOpersByName in
+      let implementsFields = implOthers @ implOpersCollapsed in
       let transfields = transfields @ parentFields @ implementsFields in
       let catchallPat = P.empty in (*P.negate (P.unions (proto_pat::(List.map fst3 transfields))) in*)
       let ifaceTyp = TSource(*TRef*) (Some (Id.string_of_id name), TObject (mk_obj_typ transfields catchallPat)) in
