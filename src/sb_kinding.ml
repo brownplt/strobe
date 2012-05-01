@@ -110,6 +110,7 @@ let rec kind_check (env : kind_env) (recIds : id list) (typ : typ) : kind = matc
         else 
           kind_mismatch t_arg k_actual k_arg in
       match t_op with
+      | TPrim ("Constructing" as p)
       | TPrim ("Mutable" as p) 
       | TPrim ("Immutable" as p) ->
         begin 

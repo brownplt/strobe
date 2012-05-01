@@ -514,6 +514,7 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
     | TRec (n, x, t) -> apply_name n (simpl_typ typenv (typ_subst x typ t))
     | TApp (t1, ts) -> 
       begin match expose typenv (simpl_typ typenv t1) with
+      | TPrim "Constructing" -> List.hd ts
       | TPrim "Mutable" -> begin
         match ts with
         | [t] -> begin match expose typenv (simpl_typ typenv t) with

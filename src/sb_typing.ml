@@ -404,6 +404,38 @@ match exp with
       | TSource (_, t) -> t
       | t -> raise (Typ_error (p, Typ((fun t -> sprintf "synth: cannot read an expression of type %s" (string_of_typ t)), t)))
     end 
+  | ESetRef (p, e1, (EAssertTyp(_, TApp(TPrim "Constructing", [targ]), e2))) ->
+    let makeOptional t =
+      let (n, o) = match t with
+        | TRef(n, TObject o) -> (n, o)
+        | TSource(n, TObject o) -> (n, o)
+        | TSink(n, TObject o) -> (n, o)
+        | _ -> failwith "Impossible" in
+      let f = fields o in
+      let f' = List.map (fun (pat, presence, t) ->
+        if (P.is_equal pat proto_pat ||
+              P.is_equal pat (P.singleton "-*- code -*-") ||
+              P.is_equal pat (P.singleton "prototype"))
+        then (pat, presence, t)
+        else (pat, Maybe, t)) f in
+      let obj = (TObject (mk_obj_typ f' (absent_pat o))) in
+      let ret = match t with
+        | TRef _ -> TRef (n, obj)
+        | TSource _ -> TSource (n, obj)
+        | TSink _ -> TSink (n, obj)
+        | _ -> failwith "Impossible" in
+      ret in
+    let tsimpl = simpl_typ env (expose_simpl_typ env targ) in
+    begin match tsimpl with
+    | TSource _
+    | TRef _ ->
+      let _ = check env default_typ e2 (makeOptional tsimpl) in
+      synth env default_typ (ESetRef(p, e1, (ECheat (p, targ, e2))))  (* do the remaining checking for e1 *)
+    | _ ->
+      typ_mismatch p (Typ ((fun t ->
+        sprintf "Expected Constructing<> to be applied to an object type; got %s" (string_of_typ targ)), targ));
+      targ
+    end
   | ESetRef (p, e1, e2) -> 
     let t = extract_ref "ESetRef" p env (expose_simpl_typ env (synth env default_typ e1)) in
     begin match t with
