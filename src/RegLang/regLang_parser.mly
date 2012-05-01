@@ -7,7 +7,7 @@ open RegLang_syntax
 
 %token <string> STRING
 %token <char> CHAR
-%token LPAREN RPAREN STAR PIPE DOT
+%token LPAREN RPAREN STAR PLUS PIPE DOT
        LTCOLON LTSLASHCOLON SEMI EOF LBRACK RBRACK
        HYPHEN CARET
 
@@ -35,6 +35,7 @@ negate :
 
 star :
   | negate { $1 }
+  | negate PLUS { Concat($1, Star $1) }
   | negate STAR { Star $1 }
 
 alt :

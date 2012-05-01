@@ -29,6 +29,7 @@ rule token = parse
    | "^" { CARET }
    | "|" { PIPE }
    | "*" { STAR }
+   | "+" { PLUS }
    | "." { DOT }
    | "<:" { LTCOLON }
    | "</:" { LTSLASHCOLON }
