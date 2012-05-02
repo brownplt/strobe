@@ -42,47 +42,47 @@ function openWebfolderViewForUrl(url) {
     get("WinD", Components.interfaces.nsIFile);
   wscript.append("system32");
   wscript.append("wscript.exe");
-  
+
   if (! wscript.exists()) {
     alert("Windows Script engine not found at '" + wscript.path + "'!");
   }
   else {
     var content = openWebfolderGetContents("chrome://openwebfolder/content/open-webfolder.js");
-  
+
     var process = Components.classes['@mozilla.org/process/util;1'].getService(Components.interfaces.nsIProcess);
     process.init(wscript);
     var arguments = /*:Array<Str>*/[] ;
-  
+
     var tmpfile = Components.classes["@mozilla.org/file/directory_service;1"].
       getService(Components.interfaces.nsIProperties).
       get("TmpD", Components.interfaces.nsIFile);
     tmpfile.append("open-webfolder.js");
 
     tmpfile.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0x664);
-  
+
     var foStream = Components.classes["@mozilla.org/network/file-output-stream;1"]
       .createInstance(Components.interfaces.nsIFileOutputStream);
-  
+
     foStream.init(tmpfile, 0x02 | 0x08 | 0x20, 0x664, 0); // write, create, truncate
     foStream.write(content, content.length);
     foStream.close();
-  
-    // make sure WSH uses the right scripting engine even if the setup 
+
+    // make sure WSH uses the right scripting engine even if the setup
     // is broken
     arguments.push("//E:jscript");
     // make sure the script will time out after 30 seconds
     arguments.push("//T:30");
-    
+
     arguments.push(tmpfile.path);
     arguments.push(url);
-  
+
     var result = {};
-    
+
     process.run(true, arguments, arguments.length, result);
-      
+
     tmpfile.remove(false);
   }
-  
+
   window.content.document.body.style.cursor = oldcursor;
   return false;
 }
@@ -103,7 +103,7 @@ function openWebfolderViewLink() {
 
   // jre: code below doesn't work anymore in FF 1.5; help appreciated
   // e.view.openWebfolderViewForUrl = openWebfolderViewForUrl;
-  
+
   var anchors = (/*:cheat nsIDOMWindow*/window).content.document.getElementsByTagName("a");
   if (anchors) {
     for (var i = 0; i < anchors.length; i++) {
@@ -149,6 +149,5 @@ function openWebfolderViewLink() {
 
 window.addEventListener("load", openWebfolderInit, false);
 
-function(event) { /*: cheat Ext*/(openWebfolderView()); }; // XXX
-function(event) { /*: cheat Ext*/(openWebfolderViewLink()); }; // XXX
-
+function(event) { /*: cheat Innocuous*/(openWebfolderView()); }; // XXX
+function(event) { /*: cheat Innocuous*/(openWebfolderViewLink()); }; // XXX
