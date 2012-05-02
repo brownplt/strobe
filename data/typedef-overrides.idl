@@ -395,3 +395,11 @@ interface nsIUpdateItem : nsISupports
             in AString targetAppID);
   readonly attribute AString objectSource;
 };
+
+nsIPrefService implements nsIPrefBranch;
+nsIPrefService implements nsIPrefBranch2;
+nsIPrefService implements nsIObserver;
+
+nsIDOMHTMLDocument implements nsIDOMXPathEvaluator;
+nsIDOMHTMLDocument implements nsIWebNavigation;
+nsIDOMHTMLDocument implements nsIDocumentLoader;
