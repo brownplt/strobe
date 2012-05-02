@@ -16,8 +16,8 @@ type YServices = {Ext with
 };
 
 type YObserver = rec o . {AnObject with
-  init : [this('o)] -> Undef,
-  continueInit : [this('o)] -> Undef,
+  init : Unsafe,
+  continueInit : Unsafe,
   mouseUpHandler : Ext -> Undef,
   mouseMouveHandler : [this('o)] nsIDOMUIEvent -> Undef,
   processMouseMove : Str * Num -> Undef,
@@ -63,10 +63,10 @@ type yoonoInst = {Ext with
 
 type YoonoGlob = rec g . {AnObject with
   WMED : nsIWindowMediator,
-  updateInterface : -> Undef,
+  updateInterface : Unsafe,
   customizeDeviceVM : -> Undef,
-  activateSmartView : -> Undef,
-  activateDeviceVM : -> Undef,
+  activateSmartView : Unsafe,
+  activateDeviceVM : Unsafe,
   uninstallFromDeviceVM : -> Undef,
   installYoonoButton : -> Undef,
   persistToolbarSet : Ext -> Undef,
@@ -407,7 +407,7 @@ yoonoGlob.WMED = Components.classes['@mozilla.org/appshell/window-mediator;1'].g
 // Il faut gerer l'affichage de boutons nouveaux dans cette version: s'ils sont customizables
 // ils n'apparaissent pas tout seuls. Mais on ne veut pas faire apparaitre d'anciens boutons que
 // l'utilisateur aurait supprimé par customisation...
-yoonoGlob.updateInterface = function() {
+yoonoGlob.updateInterface = /*: cheat @Unsafe */function() {
     YOONO_LOG.debug('updateInterface');
     var partner = YOONO_CMPT.isAddonInstalled(yoono.main.DEVICEVM_EXTENSION_ID);
 
@@ -480,12 +480,12 @@ yoonoGlob.customizeDeviceVM = function() {
 };
 
 // Old name left for compatibility
-yoonoGlob.activateSmartView = function() {
+yoonoGlob.activateSmartView = /*: cheat @Unsafe */function() {
   yoonoGlob.activateDeviceVM();
 };
 
 // this method can be called to activate Yoono from deviceVM add-on
-yoonoGlob.activateDeviceVM = function() {
+yoonoGlob.activateDeviceVM = /*: cheat @Unsafe */function() {
   var agreed = /*: Bool */ false;
   try {
     agreed = YNPREFBRANCH.getBoolPref("devicevm-agreed");
@@ -898,7 +898,7 @@ if ("undefined" == typeof(yoono)) {
 
 if ("undefined" == typeof(yoonoObserver)) {
   var yoonoObserver = /*: YObserver*/ {
-    init: /*: [YObserver] -> Undef */function() {
+    init: /*: cheat @Unsafe */function() {
       var e = /*:Ext*/null;
       try {
         // Yoono services
@@ -918,7 +918,7 @@ if ("undefined" == typeof(yoonoObserver)) {
 
     },
 
-    continueInit : /*: [YObserver] -> Undef */ function() {
+    continueInit : /*: cheat @Unsafe */ function() {
       var e = /*:Ext*/null;
       try {
         var ua = navigator.userAgent.toLowerCase();
@@ -1146,6 +1146,6 @@ if ("undefined" == typeof(yoonoObserver)) {
 };
 
 
-window.addEventListener("load", /*: -> Undef */function() { yoonoObserver.init(); }, false);
+window.addEventListener("load", /*: -> Undef */function() { /*: cheat Innocuous */yoonoObserver.init(); }, false);
 window.addEventListener("unload", /*: -> Undef */function() { yoonoObserver.uninit(); }, false);
 
