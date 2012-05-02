@@ -792,12 +792,12 @@ var ItsAllText = /*: ItsAllTextConstructor */ function () {
         //disabled-debug -- that.debug('!!load', event);
 
         if (typeof(gBrowser) === 'undefined') {
-            /*: cheat False */that.monitor.registerPage(event);
+            /*: cheat Innocuous */that.monitor.registerPage(event);
         } else {
             // Add a callback to be run every time a document loads.
             // note that this includes frames/iframes within the document
 
-            /*: cheat False */that.listen(gBrowser, "load",
+            /*: cheat Innocuous */that.listen(gBrowser, "load",
                         that.monitor.registerPage, true);
         }
 
@@ -832,7 +832,7 @@ var ItsAllText = /*: ItsAllTextConstructor */ function () {
     // }, false);
 
     /* Start your engines! */
-    /*: cheat False */this.init();
+    /*: cheat Innocuous */this.init();
 };
 
 ItsAllText.prototype.init = /*: cheat Unsafe */function () {
@@ -873,7 +873,7 @@ ItsAllText.prototype.init = /*: cheat Unsafe */function () {
     this.thread_id = Math.round(new Date().getTime() * Math.random());
 
     /* Clean the edit directory whenever we create a new window. */
-    (/*: cheat False */(this.cleanEditDir()));
+    (/*: cheat Innocuous */(this.cleanEditDir()));
 
     /* Load the various bits needed to make this work. */
     this.initScripts();
@@ -1275,13 +1275,13 @@ ItsAllText.prototype.getLocale = function () {
 
 var itsalltext = /*: iatInstance */ new ItsAllText();
 
-function(event) { /*: cheat False */itsalltext.onEdit1Node(/*: cheat nsIDOMHTMLTextAreaElement */(document.popupNode)); };
-/*: nsIDOMEvent -> Undef*/function(event) { /*: cheat False */itsalltext.menuNewExtEdit(event); };
-/*: nsIDOMEvent -> Undef*/function(event) { /*: cheat False */itsalltext.menuExtEdit('.txt', false, event); };
+function(event) { /*: cheat Innocuous */itsalltext.onEdit1Node(/*: cheat nsIDOMHTMLTextAreaElement */(document.popupNode)); };
+/*: nsIDOMEvent -> Undef*/function(event) { /*: cheat Innocuous */itsalltext.menuNewExtEdit(event); };
+/*: nsIDOMEvent -> Undef*/function(event) { /*: cheat Innocuous*/itsalltext.menuExtEdit('.txt', false, event); };
 function(event) { itsalltext.openReadme(); };
 function(event) { itsalltext.openPreferences(); };
-/*: nsIDOMEvent -> Undef*/function(event) { /*: cheat False */itsalltext.menuNewExtEdit(event); };
-/*: nsIDOMEvent -> Undef*/function(event) { /*: cheat False */itsalltext.menuExtEdit('.txt', false, event); }; // NEAL: PARAMETERS IN WRONG ORDER
+/*: nsIDOMEvent -> Undef*/function(event) { /*: cheat Innocuous */itsalltext.menuNewExtEdit(event); };
+/*: nsIDOMEvent -> Undef*/function(event) { /*: cheat Innocuous */itsalltext.menuExtEdit('.txt', false, event); }; // NEAL: PARAMETERS IN WRONG ORDER
 function(event) { itsalltext.openReadme(); };
 function(event) { itsalltext.openPreferences(); };
 function(event) { itsalltext.openReadme(); };
@@ -1846,7 +1846,7 @@ var CacheObj = /*: Constructing<CacheObjConstructor> */ function (node) {
     // @todo [security] Add a serial to the uid hash.
 
     node.setUserData(itsalltext.MYSTRING + '_UID', /*: cheat nsIVariant */(that.uid), null);
-    /*: cheat False */itsalltext.addToTracker(/*: cheat realisticStr */(that.uid), that);
+    /*: cheat Innocuous */itsalltext.addToTracker(/*: cheat realisticStr */(that.uid), that);
 
     /* Figure out where we will store the file.  While the filename can
      * change, the directory that the file is stored in should not!
@@ -1878,9 +1878,9 @@ var CacheObj = /*: Constructing<CacheObjConstructor> */ function (node) {
     if (typeof(extension) != 'string' || !extension.match(/^[.a-z0-9]+$/i)) {
         extension = itsalltext.getExtensions()[0];
     }
-    /*: cheat False */that.setExtension(extension);
+    /*: cheat Innocuous */that.setExtension(extension);
 
-    /*: cheat False */that.initFromExistingFile();
+    /*: cheat Innocuous */that.initFromExistingFile();
 
     /**
      * A callback for when the textarea/textbox or button has

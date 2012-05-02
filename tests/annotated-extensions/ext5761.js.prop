@@ -136,7 +136,7 @@ var tacachePref  = /*:tacPrefType */null;
 
 textareaCacheSanitize =  {
     init : function () {
-        /*: cheat False */window.addEventListener("dialogaccept", textareaCacheSanitize.onDialogAccept, false);
+        /*: cheat Innocuous */window.addEventListener("dialogaccept", textareaCacheSanitize.onDialogAccept, false);
 
         if ( textareaCacheUtil.gPref.getBoolPref("extensions.tacache.clearWithSanitize") ) {
             let item = document.querySelector("#itemList > [preference$='formdata']");
@@ -166,7 +166,7 @@ textareaCacheSanitize =  {
 };
 
 window.addEventListener("load", textareaCacheSanitize.init, false);
-/*: cheat False */window.addEventListener("unload", textareaCacheSanitize.exit, false);
+/*: cheat Innocuous */window.addEventListener("unload", textareaCacheSanitize.exit, false);
 
 // -------------------------- common.js ----------------------------------------
 
@@ -694,13 +694,13 @@ textareaCache = {
         }
         catch (e) {}
 
-        /*: cheat False */textareaCache.prepareCache();
+        /*: cheat Innocuous */textareaCache.prepareCache();
 
         let contentMenu = document.getElementById("contentAreaContextMenu");
         if ( contentMenu ) {
-            /*: cheat False */gBrowser.addEventListener("keypress", textareaCache.onKeypress, false);
-            /*: cheat False */gBrowser.addEventListener("change", textareaCache.onChange, false);
-            /*: cheat False */gBrowser.addEventListener("input", textareaCache.onInput, false);
+            /*: cheat Innocuous */gBrowser.addEventListener("keypress", textareaCache.onKeypress, false);
+            /*: cheat Innocuous */gBrowser.addEventListener("change", textareaCache.onChange, false);
+            /*: cheat Innocuous */gBrowser.addEventListener("input", textareaCache.onInput, false);
             contentMenu.addEventListener("popupshowing", tacacheUI.onContentMenu, false);
         }
     },
@@ -712,9 +712,9 @@ textareaCache = {
 
         let contentMenu = document.getElementById("contentAreaContextMenu");
         if ( contentMenu ) {
-            /*: cheat False */gBrowser.removeEventListener("keypress", textareaCache.onKeypress, false);
-            /*: cheat False */gBrowser.removeEventListener("change", textareaCache.onChange, false);
-            /*: cheat False */gBrowser.removeEventListener("input", textareaCache.onInput, false);
+            /*: cheat Innocuous */gBrowser.removeEventListener("keypress", textareaCache.onKeypress, false);
+            /*: cheat Innocuous */gBrowser.removeEventListener("change", textareaCache.onChange, false);
+            /*: cheat Innocuous */gBrowser.removeEventListener("input", textareaCache.onInput, false);
             contentMenu.removeEventListener("popupshowing", tacacheUI.onContentMenu, false);
         }
     }
@@ -1090,11 +1090,11 @@ tacachePref = {
 
 /* -------------------- cacheWindow.xul ---------------------------- */
 
-function(event) { /*: cheat False */cacheWindow.clearThis();};
+function(event) { /*: cheat Innocuous */cacheWindow.clearThis();};
 
-function(event) { if (cacheWindow.confirm((/*: cheat Str */(this.label)), (/*: cheat Str */(this.getAttribute('value')))))  /*: cheat False */cacheWindow.clearThis();};
+function(event) { if (cacheWindow.confirm((/*: cheat Str */(this.label)), (/*: cheat Str */(this.getAttribute('value')))))  /*: cheat Innocuous */cacheWindow.clearThis();};
 
-function(event) { if (cacheWindow.confirm((/*: cheat Str */(this.label)), (/*: cheat Str */(this.getAttribute('value'))))) /*: cheat False */cacheWindow.clearAll();};
+function(event) { if (cacheWindow.confirm((/*: cheat Str */(this.label)), (/*: cheat Str */(this.getAttribute('value'))))) /*: cheat Innocuous */cacheWindow.clearAll();};
 
 function(event) { cacheWindow.init(); /* this.disabled='true'*/};
 
