@@ -1992,7 +1992,7 @@ procon.addonProtectionListener =
     }
 };
 
-(/*:cheat Ext*/((/*:cheat nsIDOMWindow*/window).addEventListener("load", procon.onFirefoxLoad, false)));
+(/*:cheat Innocuous */((/*:cheat nsIDOMWindow*/window).addEventListener("load", procon.onFirefoxLoad, false)));
 (/*:cheat nsIDOMWindow*/window).addEventListener("unload", procon.onFirefoxUnload, false);
 
 /*: nsIDOMEvent -> Undef */function(event) { procon.onMenuItemCommand(event, null); };
@@ -2000,16 +2000,16 @@ procon.addonProtectionListener =
 /*: nsIDOMEvent -> Undef */function(event) { procon.onNotificationPopupShowing(event); };
 /*: nsIDOMEvent -> Undef */function(event) { procon.allowPage(); };
 /*: nsIDOMEvent -> Undef */function(event) { procon.allowDomain(); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addWhitelistSite(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Innocuous */(procon.addWhitelistSite(this)); };
 /*: nsIDOMEvent -> Undef */function(event) { procon.onMenuItemCommand(event); };
 /*: nsIDOMEvent -> Undef */function(event) { procon.openAbout(); };
 /*: nsIDOMEvent -> Undef */function(event) { procon.onStatusbarButtonCommand(); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addBlacklistSite(this)); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addBlacklistWord(this)); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addWhitelistSite(this)); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addProfanitylistWord(this)); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addBlacklistSite(this)); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addBlacklistWord(this)); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addWhitelistSite(this)); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addProfanitylistWord(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Innocuous */(procon.addBlacklistSite(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Innocuous */(procon.addBlacklistWord(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Innocuous */(procon.addWhitelistSite(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Innocuous */(procon.addProfanitylistWord(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Innocuous */(procon.addBlacklistSite(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Innocuous */(procon.addBlacklistWord(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Innocuous */(procon.addWhitelistSite(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Innocuous */(procon.addProfanitylistWord(this)); };
 /*: nsIDOMEvent -> Undef */function(event) { procon.onStatusbarButtonCommand(); };
