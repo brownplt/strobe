@@ -44,7 +44,7 @@ var gSanitizePromptDialog = /*: {AnObject with
   isDoc : Str,
   getPref : [this('u)] -> Array<cacheObjType>,
   setPref : Unsafe,
-  clearCacheByRange : [this('u)] Array<Num> -> Undef,
+  clearCacheByRange : Unsafe,
   savePrefFile : Unsafe,
   }; */
 
@@ -70,6 +70,7 @@ var gSanitizePromptDialog = /*: {AnObject with
   _restartClear : Num,
   _timeClear : Num,
   restartClearTime : Num,
+  clearOldPrefByTime : Unsafe,
   pref : nsIPrefBranch,
   prefObserver : poType,
   getTopDoc : nsIDOMDocument -> nsIDOMDocument,
@@ -77,17 +78,18 @@ var gSanitizePromptDialog = /*: {AnObject with
   getID : aNode -> Str,
   getWhitelist : [this('t)] -> Undef,
   updateSetting : [this('t)] -> Undef,
-  writeToPref : [this('t)] aNode -> Undef,
+  writeToPref : Unsafe,
+  prepareToSave : Unsafe,
   checkWhitelist : [this('t)] aNode -> Bool,
   beforeWrite : [this('t)] aNode -> Undef,
-  saveToFile : [this('t)] -> Undef,
+  saveToFile : Unsafe,
   prefToCache : [this('t)] -> Undef,
-  cacheToPref : [this('t)] -> Undef,
-  prepareCache : [this('t)] -> Undef,
-  onInput : [this(nsIDOMEventTarget)] nsIDOMEvent -> Undef,
-  onChange : [this(nsIDOMEventTarget)] nsIDOMEvent -> Undef,
-  onKeypress : [this(nsIDOMEventTarget)] nsIDOMKeyEvent -> Undef,
-  cacheUpdate : [this('t)] -> Undef,
+  cacheToPref : Unsafe,
+  prepareCache : Unsafe,
+  onInput : Unsafe,
+  onChange : Unsafe,
+  onKeypress : Unsafe,
+  cacheUpdate : Unsafe,
   init : [this(Window)] -> Undef,
   exit : [Window] -> Undef,
   }; */
@@ -111,8 +113,8 @@ var gSanitizePromptDialog = /*: {AnObject with
   copyAndClose : [this('t)] -> Undef,
   pasteClipboard : [this('t)] -> Undef,
   confirm : [this('t)] Str * Str -> Bool,
-  clearThis : [this('t)] -> Undef,
-  clearAll : [this('t)] -> Undef,
+  clearThis : Unsafe,
+  clearAll : Unsafe,
   onContextMenuShowing : [this('t)] -> Undef,
   }; */
 
@@ -123,8 +125,8 @@ var gSanitizePromptDialog = /*: {AnObject with
 
 var textareaCacheSanitize = /*: {Ext with
                               init : [this(Window)] -> Undef,
-                              exit : [this(Window)] -> Undef,
-                              onDialogAccept : [this(Window)] -> Undef,
+                              exit : Unsafe,
+                              onDialogAccept : Unsafe,
                               } */ undefined;
 var textareaCacheUtil = /*:CacheUtilType*/null;
 var textareaCache = /*:tacType*/null;
@@ -134,7 +136,7 @@ var tacachePref  = /*:tacPrefType */null;
 
 textareaCacheSanitize =  {
     init : function () {
-        window.addEventListener("dialogaccept", textareaCacheSanitize.onDialogAccept, false);
+        /*: cheat False */window.addEventListener("dialogaccept", textareaCacheSanitize.onDialogAccept, false);
 
         if ( textareaCacheUtil.gPref.getBoolPref("extensions.tacache.clearWithSanitize") ) {
             let item = document.querySelector("#itemList > [preference$='formdata']");
@@ -145,11 +147,11 @@ textareaCacheSanitize =  {
         }
     },
 
-    exit : function () {
+    exit : /*: cheat Unsafe */function () {
         window.removeEventListener("dialogaccept", textareaCacheSanitize.onDialogAccept, false);
     },
 
-    onDialogAccept : function () {
+    onDialogAccept : /*: cheat Unsafe */function () {
         gSanitizePromptDialog.updatePrefs();
         var s = /*: cheat Ext */(new Sanitizer());
         s.prefDomain = "privacy.cpd.";
@@ -164,7 +166,7 @@ textareaCacheSanitize =  {
 };
 
 window.addEventListener("load", textareaCacheSanitize.init, false);
-window.addEventListener("unload", textareaCacheSanitize.exit, false);
+/*: cheat False */window.addEventListener("unload", textareaCacheSanitize.exit, false);
 
 // -------------------------- common.js ----------------------------------------
 
@@ -209,7 +211,7 @@ textareaCacheUtil = {
     // if range == null, clear all items
     //
     // ** PASSES **
-    clearCacheByRange : /*:[CacheUtilType] Array<Num> -> Undef*/function (range) {
+    clearCacheByRange : /*: cheat Unsafe */function (range) {
         let starttime = range ? range[0] : 0;
         let endtime   = range ? range[1] : Date.now() * 1000;
         let changed   = /*:Bool*/false;
@@ -303,7 +305,7 @@ textareaCache = {
     /*****************************************/
 
     // ORIGINALLY A GETTER
-    inPrivateBrowsing : function () {
+    inPrivateBrowsing : /*: [tacType] -> True */ function () {
         if (this._PBS)
             return ( this._PBS.privateBrowsingEnabled );
         else
@@ -311,7 +313,7 @@ textareaCache = {
             return true;
     },
 
-    saveToFile :  function () {
+    saveToFile : /*: cheat Unsafe */ function () {
         this.isSaving = null;
         textareaCacheUtil.savePrefFile();
     },
@@ -320,7 +322,7 @@ textareaCache = {
         this.cache = textareaCacheUtil.getPref();
     },
 
-    cacheToPref : /*: [tacType] -> Undef */ function () {
+    cacheToPref : /*: cheat Unsafe */ function () {
         textareaCacheUtil.setPref(this.cache);
     },
 
@@ -338,7 +340,7 @@ textareaCache = {
         this.cacheToPref();
     },
 
-    clearOldPrefByTime : function () {
+    clearOldPrefByTime : /*: cheat Unsafe */function () {
         if ( this.clearSetting != this._timeClear )
             return;
         var days = this.pref.getIntPref("extensions.tacache.clearTimeSpan");
@@ -398,7 +400,7 @@ textareaCache = {
         return docShellID + "-" + index + "#" + ( nodeName == "textarea" ? nodeID : textareaCacheUtil.isDoc );
     },
 
-    writeToPref :  function (node) {
+    writeToPref :  /*: cheat Unsafe */function (node) {
         this.prefToCache();
 
         if ( !node.tacacheID ) {
@@ -470,11 +472,11 @@ textareaCache = {
         return false;
     },
 
-    beforeWrite : /*: [tacType] aNode -> Undef */  function (node) {
+    beforeWrite : /*: [tacType] aNode -> Undef */ /* cheat Unsafe */ function (node) {
         (/*: cheat Mutable<aNode> */node).tacacheOnSave = false;
 
         // don't do anything if broswering in private mode and the user wants to disable Textarea Cache
-        if ( this.inPrivateBrowsing )
+        if ( this.inPrivateBrowsing() )
             return;
 
         // in whitelist
@@ -491,13 +493,13 @@ textareaCache = {
         this.writeToPref(node);
     },
 
-    prepareToSave : function () {
+    prepareToSave : /*: cheat Unsafe */function () {
         if ( !this.isSaving ) {
             this.isSaving = window.setTimeout( function () {textareaCache.saveToFile();}, /* this.saveInterval */ 50);
         }
     },
 
-    onInput : /*: [nsIDOMEventTarget] nsIDOMEvent -> Undef */ function (e) {
+    onInput : /*: cheat Unsafe */ function (e) {
         var node = (/*: cheat aNode */(e.target));
 
         // Only for textarea node
@@ -516,7 +518,7 @@ textareaCache = {
         textareaCache.prepareToSave();
     },
 
-    onChange : /*: [nsIDOMEventTarget] nsIDOMEvent -> Undef */ function (e) {
+    onChange : /*: cheat Unsafe */ function (e) {
         var node = (/*: cheat aNode */ (e.target));
 
         // Only for textarea node
@@ -529,7 +531,7 @@ textareaCache = {
         textareaCache.prepareToSave();
     },
 
-    onKeypress : /*: [nsIDOMEventTarget] nsIDOMKeyEvent -> Undef */ function (e) {
+    onKeypress : /*: cheat Unsafe */ function (e) {
         var node = (/*: cheat aNode */e.target);
         var nodeName = node.nodeName.toLowerCase();
 
@@ -560,7 +562,7 @@ textareaCache = {
     },
 
     // Update cache from 0.7 to 0.7.1
-    cacheUpdate : function () {
+    cacheUpdate : /*: cheat Unsafe */function () {
         if ( this.cache.length > 0 && !("time" in this.cache[0]) ) {
 
             for (var i = 0; i < this.cache.length; i++) {
@@ -627,7 +629,7 @@ textareaCache = {
         this.restartClearTime = this.pref.getIntPref("extensions.tacache.restartClearInMin");
     },
 
-    prepareCache : /*: [tacType] -> Undef */function () {
+    prepareCache : /*: cheat Unsafe */function () {
         this.prefToCache();
         this.cacheUpdate();
 
@@ -692,13 +694,13 @@ textareaCache = {
         }
         catch (e) {}
 
-        textareaCache.prepareCache();
+        /*: cheat False */textareaCache.prepareCache();
 
         let contentMenu = document.getElementById("contentAreaContextMenu");
         if ( contentMenu ) {
-            gBrowser.addEventListener("keypress", textareaCache.onKeypress, false);
-            gBrowser.addEventListener("change", textareaCache.onChange, false);
-            gBrowser.addEventListener("input", textareaCache.onInput, false);
+            /*: cheat False */gBrowser.addEventListener("keypress", textareaCache.onKeypress, false);
+            /*: cheat False */gBrowser.addEventListener("change", textareaCache.onChange, false);
+            /*: cheat False */gBrowser.addEventListener("input", textareaCache.onInput, false);
             contentMenu.addEventListener("popupshowing", tacacheUI.onContentMenu, false);
         }
     },
@@ -710,9 +712,9 @@ textareaCache = {
 
         let contentMenu = document.getElementById("contentAreaContextMenu");
         if ( contentMenu ) {
-            gBrowser.removeEventListener("keypress", textareaCache.onKeypress, false);
-            gBrowser.removeEventListener("change", textareaCache.onChange, false);
-            gBrowser.removeEventListener("input", textareaCache.onInput, false);
+            /*: cheat False */gBrowser.removeEventListener("keypress", textareaCache.onKeypress, false);
+            /*: cheat False */gBrowser.removeEventListener("change", textareaCache.onChange, false);
+            /*: cheat False */gBrowser.removeEventListener("input", textareaCache.onInput, false);
             contentMenu.removeEventListener("popupshowing", tacacheUI.onContentMenu, false);
         }
     }
@@ -990,7 +992,7 @@ cacheWindow = {
         return (button == 0);
     },
 
-    clearAll :  function () {
+    clearAll : /*: cheat Unsafe */ function () {
 
         textareaCacheUtil.gPref.clearUserPref("extensions.tacache.cache");
         textareaCacheUtil.savePrefFile();
@@ -998,7 +1000,7 @@ cacheWindow = {
         window.close();
     },
 
-    clearThis : function () {
+    clearThis : /*: cheat Unsafe */function () {
         let index = document.getElementById("cacheMenu").getAttribute("anonid");
         for ( let i = 0; i< this.cache.length; i++ ) {
             if ( this.cache[i].id == index ) {
@@ -1088,11 +1090,11 @@ tacachePref = {
 
 /* -------------------- cacheWindow.xul ---------------------------- */
 
-function(event) {cacheWindow.clearThis();};
+function(event) { /*: cheat False */cacheWindow.clearThis();};
 
-function(event) { if (cacheWindow.confirm((/*: cheat Str */(this.label)), (/*: cheat Str */(this.getAttribute('value')))))  cacheWindow.clearThis();};
+function(event) { if (cacheWindow.confirm((/*: cheat Str */(this.label)), (/*: cheat Str */(this.getAttribute('value')))))  /*: cheat False */cacheWindow.clearThis();};
 
-function(event) { if (cacheWindow.confirm((/*: cheat Str */(this.label)), (/*: cheat Str */(this.getAttribute('value'))))) cacheWindow.clearAll();};
+function(event) { if (cacheWindow.confirm((/*: cheat Str */(this.label)), (/*: cheat Str */(this.getAttribute('value'))))) /*: cheat False */cacheWindow.clearAll();};
 
 function(event) { cacheWindow.init(); /* this.disabled='true'*/};
 

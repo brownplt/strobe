@@ -1,0 +1,45 @@
+
+ItsAllText.preferences.private_set [ nsIPrefBranch.set(Char|Bool|Int)Pref ]
+  ItsAllText.getTrackerId
+    ItsAllText.getFromTracker
+      CacheObj.get
+        ItsAllText.onContextMenu
+          Event : contentAreaContextMenu onContextMenu
+        ItsAllText.rebuildMenu
+        CacheObj.make
+          Monitor.hitched_watcher
+        CacheObj.onContext
+          CacheObj.addGumDrop
+            mouseover
+              Event : gumdrop mouseover, focus
+          Event : contextmenu onContext
+        Monitor.hitched_watcher (Monitor.watcher)
+          Monitor.hitched_handleSubtreeModified (handleSubtreeModified)
+            Monitor.startPage
+          Monitor.hitched_startPage (startPage)
+            Monitor.hitched_registerPage (registerPage)
+              ItsAllText
+    ItsAllText.addToTracker
+      CacheObj
+  ItsAllText.getEditor
+  ItsAllText.appendExtensions
+ItsAllText.getEditDir [ nsIFile.create ]
+  ItsAllText.cleanEditDir
+    ItsAllText.init
+      ItsAllText
+  CacheObj.initFromExistingFile
+    CacheObj
+CacheObj.edit [ nsIProcess.runAsync, nsIProcess.runSync ]
+  ItsAllText.menuNewExtEdit
+    XUL
+  ItsAllText.menuExtEdit
+    XUL
+  CacheObj.hitched_keypress (CacheObj.keypress)
+    Event : node keypress
+  CacheObj.onEditNode
+    XUL
+  CacheObj.onClick
+
+CacheObj.setExtension
+  CacheObj.edit
+  CacheObj
