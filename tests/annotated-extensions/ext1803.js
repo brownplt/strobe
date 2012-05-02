@@ -20,7 +20,7 @@ type publicObjImport = {Ext with
 
 type prefsObjType = {Ext with
   getPrefByType : Str -> (Num + Str + Bool + Null),
-  setPrefByType : Str * Str -> Undef
+  setPrefByType : Unsafe
 };
 
 type prefsObjImport = {Ext with
@@ -29,7 +29,7 @@ type prefsObjImport = {Ext with
 
 
 type addonListenerType = {Ext with
-  onUninstalling : Ext -> Undef,
+  onUninstalling : Unsafe,
   onDisabling : Ext -> Undef
 };
 
@@ -42,11 +42,11 @@ type proconType = {Ext with
   onNotificationPopupShowing : nsIDOMEvent -> Undef,
   allowPage : (nsIDOMEvent + Undef) -> Undef,
   allowDomain : (nsIDOMEvent + Undef) -> Undef,
-  addBlacklistSite : nsIDOMXULLabeledControlElement -> Undef,
-  addBlacklistWord : nsIDOMXULLabeledControlElement -> Undef,
-  addWhitelistSite : nsIDOMXULLabeledControlElement -> Undef,
-  addProfanitylistWord : nsIDOMXULLabeledControlElement -> Undef,
-  onFirefoxLoad : nsIDOMEvent -> Undef,
+  addBlacklistSite : Unsafe,
+  addBlacklistWord : Unsafe,
+  addWhitelistSite : Unsafe,
+  addProfanitylistWord : Unsafe,
+  onFirefoxLoad : Unsafe,
   onFirefoxUnload : nsIDOMEvent -> Undef,
   contentListener : nsIDOMEvent -> Undef,
   configProtectionListener : nsIDOMEvent -> Undef,
@@ -126,7 +126,7 @@ var preferences = /*: prefsObjType */
         return null;
     },
 
-    setPrefByType : function(name, value)
+    setPrefByType : /*: cheat @Unsafe */function(name, value)
     {
         var pref = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefBranch);
         switch (pref.getPrefType(name))
@@ -159,7 +159,7 @@ var EXPORTED_SYMBOLS = ["houseKeeping"];
 
 let currentVersion = "3.3";
 
-function houseKeeping()
+/*: cheat @Unsafe */function houseKeeping()
 {
     let preferences = (/*:cheat prefsObjImport*/(Components.utils.import("resource://procon/preferences.jsm", null))).preferences;
     let PrefsS = Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefService);
@@ -1169,12 +1169,14 @@ type constructor subscriptionsConstructor = [subscriptionsInst] -> subscriptions
 and prototype subscriptionsProto = {AnObject with
   getFromURL : [subscriptionsInst] Str -> Bool,
   isValid : [subscriptionsInst] Str * Str -> Bool,
-  save : [subscriptionsInst] Array<Str> -> Undef,
-  update : [subscriptionsInst] -> Bool
+  save : Unsafe,
+  update : Unsafe
 }
 and instance subscriptionsInst = {Ext with
   jsObject: {Ext with /^("-*- code -*-"|"__proto__")/ :! jsObjectWrapper}
-}; */
+};
+
+*/
 var subscriptions = /*: subscriptionsConstructor */ function()
 {
     this.jsObject = /*: cheat {Ext with /^("-*- code -*-"|"__proto__")/ :! jsObjectWrapper} */
@@ -1284,7 +1286,7 @@ subscriptions.prototype.isValid = /*: [subscriptionsInst] Str * Str -> Bool */fu
     return true;
 };
 
-subscriptions.prototype.save = /*: [subscriptionsInst] Array<Str> -> Undef */function(urls)
+subscriptions.prototype.save = /*: cheat @Unsafe */function(urls)
 {
     Components.utils.import("resource://procon/filter.jsm");
  
@@ -1418,7 +1420,7 @@ subscriptions.prototype.save = /*: [subscriptionsInst] Array<Str> -> Undef */fun
     Prefs.setComplexValue("profanitylist.words", Ci.nsISupportsString, profanity_words_complex);
 };
 
-subscriptions.prototype.update = /*: [subscriptionsInst] -> Bool */ function()
+subscriptions.prototype.update = /*: cheat @Unsafe */ function()
 {
     try
     {
@@ -1655,7 +1657,7 @@ else
 var procon = /*: proconType */null;
 procon =
 {
-    onFirefoxLoad : null,
+    onFirefoxLoad : /*: cheat @Unsafe */null,
     onFirefoxUnload : null,
     contentListener : null,
     configProtectionListener : null,
@@ -1748,7 +1750,7 @@ procon =
         }
     },
 
-    addBlacklistSite : function(el)
+    addBlacklistSite : /*: cheat @Unsafe */function(el)
     {
         if (!procon.common.authenticateUser())
             return;
@@ -1785,7 +1787,7 @@ procon =
         }
     },
 
-    addBlacklistWord : function(el)
+    addBlacklistWord : /*: cheat @Unsafe */function(el)
     {
         if (!procon.common.authenticateUser())
             return;
@@ -1823,7 +1825,7 @@ procon =
         }
     },
 
-    addWhitelistSite : function(el)
+    addWhitelistSite : /*: cheat @Unsafe */function(el)
     {
         if (!procon.common.authenticateUser())
             return;
@@ -1860,7 +1862,7 @@ procon =
         }
     },
 
-    addProfanitylistWord : function(el)
+    addProfanitylistWord : /*: cheat @Unsafe */function(el)
     {
         if (!procon.common.authenticateUser())
             return;
@@ -1904,7 +1906,7 @@ window.addEventListener("load", procon.onLoad, false);
   Copyright (c) 2011 Hunter Paolini.  All Rights Reserved.
   -----------------------------------------------------*/
 
-procon.onFirefoxLoad = function(event)
+procon.onFirefoxLoad = /*: cheat @Unsafe */function(event)
 {
     var PrefsS = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
     var Prefs = PrefsS.getBranch("extensions.procon.");
@@ -1912,7 +1914,7 @@ procon.onFirefoxLoad = function(event)
     // clean unecessary prefs from previous versions
     if (Prefs.getCharPref("currentVersion") < "3.0")
     {
-        (/*: cheat Ext*/Cu.import("resource://procon/houseKeeping.jsm", null)).houseKeeping();
+        (/*: cheat Unsafe*/(Cu.import("resource://procon/houseKeeping.jsm", null).houseKeeping()));
         (/*: cheat proconCommonImport*/Cu.import("chrome://procon/content/common.js", null)).common.updateButtonElements();
     }
 
@@ -1925,7 +1927,7 @@ procon.onFirefoxLoad = function(event)
 
         if (((time - lastUpdateTime) / 3600) > 72)
         {
-            (new ((/*: cheat Ext*/Cu.import("resource://procon/subscriptions.jsm", null)).subscriptions)).update();
+            (/*: cheat subscriptionsInst */(new (Cu.import("resource://procon/subscriptions.jsm", null).subscriptions))).update();
             (/*: cheat publicObjImport*/Cu.import("resource://procon/filter.jsm", null)).publicObj.updatePrefs();
         }
     }
@@ -1970,7 +1972,7 @@ procon.configProtectionListener = function(event)
 
 procon.addonProtectionListener =
 {
-    onUninstalling : function(addon)
+    onUninstalling : /*: cheat @Unsafe */function(addon)
     {
         if (addon.id == "{9D6218B8-03C7-4b91-AA43-680B305DD35C}" && !(/*: cheat proconCommonImport*/Cu.import("chrome://procon/content/common.js", null)).common.authenticateUser())
         {
@@ -1990,7 +1992,7 @@ procon.addonProtectionListener =
     }
 };
 
-(/*:cheat nsIDOMWindow*/window).addEventListener("load", procon.onFirefoxLoad, false);
+(/*:cheat Ext*/((/*:cheat nsIDOMWindow*/window).addEventListener("load", procon.onFirefoxLoad, false)));
 (/*:cheat nsIDOMWindow*/window).addEventListener("unload", procon.onFirefoxUnload, false);
 
 /*: nsIDOMEvent -> Undef */function(event) { procon.onMenuItemCommand(event, null); };
@@ -1998,16 +2000,16 @@ procon.addonProtectionListener =
 /*: nsIDOMEvent -> Undef */function(event) { procon.onNotificationPopupShowing(event); };
 /*: nsIDOMEvent -> Undef */function(event) { procon.allowPage(); };
 /*: nsIDOMEvent -> Undef */function(event) { procon.allowDomain(); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { procon.addWhitelistSite(this); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addWhitelistSite(this)); };
 /*: nsIDOMEvent -> Undef */function(event) { procon.onMenuItemCommand(event); };
 /*: nsIDOMEvent -> Undef */function(event) { procon.openAbout(); };
 /*: nsIDOMEvent -> Undef */function(event) { procon.onStatusbarButtonCommand(); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { procon.addBlacklistSite(this); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { procon.addBlacklistWord(this); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { procon.addWhitelistSite(this); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { procon.addProfanitylistWord(this); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { procon.addBlacklistSite(this); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { procon.addBlacklistWord(this); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { procon.addWhitelistSite(this); };
-/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { procon.addProfanitylistWord(this); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addBlacklistSite(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addBlacklistWord(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addWhitelistSite(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addProfanitylistWord(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addBlacklistSite(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addBlacklistWord(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addWhitelistSite(this)); };
+/*: [nsIDOMXULLabeledControlElement] Ext -> Undef */function(event) { /*: cheat Ext*/(procon.addProfanitylistWord(this)); };
 /*: nsIDOMEvent -> Undef */function(event) { procon.onStatusbarButtonCommand(); };
