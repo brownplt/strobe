@@ -245,7 +245,7 @@ let extend_global_env env lst =
       let (prototype_added_fields, prototype_with) = match p_typ with 
         | TWith(base, f) ->
           (fields f), TWith(base, (mk_obj_typ
-                                    ((P.singleton "constructor", Present, TId(c_id))::(fields f))
+                                    ((P.singleton "constructor", Maybe, TId(c_id))::(fields f))
                                     (P.subtract (absent_pat f) (P.singleton "constructor"))))
         | TRef(_, TObject(f))
         | TSource(_, TObject(f)) ->
