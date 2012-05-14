@@ -267,16 +267,16 @@ let extend_global_env env lst =
         match i_typ with 
         | TWith(base, f) ->
           let absent_pat = absent_pat f in
-          let new_fields = List.map (fun (pat, p, t) ->
+          let new_fields = List.filter (fun (p, _, _) -> not (P.is_empty p)) (List.map (fun (pat, p, t) ->
             (P.subtract (P.subtract pat proto_field_pat) absent_pat, p, t))
-            (fields f) in
+            (fields f)) in
           TWith(base, mk_obj_typ ((proto_pat, Present, TId(p_id))::proto_fields@new_fields) absent_pat)
         | TRef(_, TObject(f))
         | TSource(_, TObject(f)) ->
           let absent_pat = P.subtract (absent_pat f) proto_field_pat in
-          let base_fields = List.map (fun (pat, p, t) ->
+          let base_fields = List.filter (fun (p, _, _) -> not (P.is_empty p)) (List.map (fun (pat, p, t) ->
             (P.subtract (P.subtract pat proto_field_pat) absent_pat, p, t))
-            (fields f) in
+            (fields f)) in
           TWith(TId "AnObject",
                 (mk_obj_typ ((proto_pat, Present, TId(p_id))::proto_fields@base_fields) absent_pat))
         | _ -> failwith "impossible" in
