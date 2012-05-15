@@ -241,7 +241,7 @@ let create_env defs =
             | _ -> failwith "absurd, won't happen" in
       let parentFields = match parentTyp with
         | Some (_, _, TSource(*TRef*)(_, TObject f)) -> TypImpl.fields f
-        | _ -> [(proto_pat, Present, TApp(TPrim "Immutable", [(TId "BlankObject")]))] in
+        | _ -> [] in (* [(proto_pat, Present, TApp(TPrim "Immutable", [(TId "Object")]))] in *)
       let implementsIds = Hashtbl.find_all implementsHash name in
       let implementsTyps = ListExt.filter_map (trans_interface tt queryInterfaceType) implementsIds in
       let implementsFields = List.concat (List.map (fun t -> match t with
