@@ -391,9 +391,24 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
       if IdSet.mem x ys then
         typ
       else begin
-        (* TODO: omg this stuff is NOT capture free ... *)
-        assert (IdSet.is_empty (IdSet.inter (free_typ_ids s) ys));
-        TLambda (n, yks, typ_subst x s t)
+        let fresh_var old = (* a, b, ... z, aa, bb, ..., zz, ... *)
+          let rec try_ascii m n =
+            let attempt = String.make m (Char.chr n) in
+            if not (List.mem attempt old) then attempt
+            else if (n < int_of_char 'z') then try_ascii m (n+1)
+            else try_ascii (m+1) (Char.code 'a') in
+          try_ascii 1 (Char.code 'a') in
+        let free_t = free_typ_ids s in
+        let (rev_new_yks, typ_substs) =
+          List.fold_left (fun (new_yks, typ_substs) (y, k) ->
+            if not (IdSet.mem y free_t) then ((y,k)::new_yks, typ_substs)
+            else 
+              let x = fresh_var ((IdMapExt.keys typ_substs) @ IdSetExt.to_list free_t) in
+              ((x,k)::new_yks, IdMap.add y (TId x) typ_substs))
+            ([], IdMap.empty) yks in
+        let new_yks = List.rev rev_new_yks in
+        let t' = IdMap.fold typ_subst typ_substs t in
+        TLambda (n, new_yks, typ_subst x s t')
       end
     | TFix (n, y, k, t) ->
       if x = y then
