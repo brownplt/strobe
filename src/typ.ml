@@ -828,14 +828,15 @@ module Make (Pat : SET) : (TYP with module Pat = Pat) = struct
               (* | Some s -> s);  *)
               mismatched_typ_exn (TRegex pat1) (TRegex pat2)
             end
+        | _, TIntersect (_, t1, t2) -> (* order matters -- right side must be split first! *)
+            subt env (subt env cache s t1) s t2
         | TIntersect (_, s1, s2), _ -> 
           begin 
             try subt env cache s1 t
             with Not_subtype _ -> subt env cache s2 t
           end
-        | _, TIntersect (_, t1, t2) ->
-            subt env (subt env cache s t1) s t2
-        | TUnion (_, s1, s2), _ -> subt env (subt env cache s1 t) s2 t
+        | TUnion (_, s1, s2), _ -> (* order matters -- left side must be split first! *)
+          subt env (subt env cache s1 t) s2 t
         | _, TUnion (_, t1, t2) ->
           begin 
             try subt env cache s t1
